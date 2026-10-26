@@ -10,6 +10,9 @@ builder.Services.AddSignalR()
 
 var app = builder.Build();
 
+app.UseDefaultFiles();
+app.UseStaticFiles();
+
 app.MapGet("/health", () => Results.Ok("Healthy"));
 app.MapHub<GameHub>("/hubs/game");
 

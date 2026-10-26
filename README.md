@@ -24,6 +24,8 @@ A typical setup is a shared screen (such as a TV or laptop) connected as a spect
 
 - **Backend:** .NET (C#), ASP.NET Core
 - **Real-time updates:** SignalR
+- **Frontend:** plain HTML, CSS and JavaScript, served by the backend
+- **Tests:** xUnit
 
 ## Project Structure
 
@@ -33,6 +35,8 @@ src/GamesLane.Server/          ASP.NET Core backend
   Hubs/GameHub.cs              SignalR hub for creating, joining and playing games
   Sessions/                    Game sessions (players, status) and the in-memory session store
   Games/TicTacToe/             Tic-tac-toe rules
+  wwwroot/                     Web page for players and spectators
+tests/GamesLane.Server.Tests/  Unit tests
 ```
 
 ## Games
@@ -61,5 +65,14 @@ Requires the [.NET 10 SDK](https://dotnet.microsoft.com/download).
 dotnet run --project src/GamesLane.Server
 ```
 
+- Web page: `/` (the address is shown in the console, e.g. `http://localhost:5xxx`)
 - Health check: `GET /health`
 - SignalR hub: `/hubs/game`
+
+To play: open the web page on a shared screen and choose **Create a new game**. The screen shows the board and the game code. Each player opens the page on their phone, enters the code and their name, and chooses **Join as player**. To play from phones on the same Wi-Fi, run the server with `--urls http://0.0.0.0:5000` and open `http://<computer's IP address>:5000`.
+
+## Running Tests
+
+```
+dotnet test
+```
