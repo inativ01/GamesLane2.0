@@ -1,35 +1,60 @@
+using GamesLane.Server.Sessions;
 using Microsoft.AspNetCore.SignalR;
 
 namespace GamesLane.Server.Hubs;
 
 /// <summary>
 /// Real-time connection point for game sessions.
-/// Everyone in a game (players and spectators) joins the game's public group and receives shared board updates.
-/// Players also join a per-player group, used to send private information such as their hand.
+/// Everyone in a game (players and spectators) joins the game's group and receives public "StateUpdated" messages.
+/// Private, per-player information is returned only to the calling connection.
 /// </summary>
-public class GameHub : Hub
+public class GameHub(GameSessionStore store) : Hub
 {
-    public static string GameGroup(string gameId) => $"game:{gameId}";
+    public const string StateUpdated = "StateUpdated";
 
-    public static string PlayerGroup(string gameId, string playerId) => $"game:{gameId}:player:{playerId}";
+    public static string GameGroup(string gameId) => $"game:{gameId.ToUpperInvariant()}";
 
-    public async Task JoinAsSpectator(string gameId)
+    public string CreateGame() => store.Create().Id;
+
+    public async Task<GameState> JoinAsSpectator(string gameId)
     {
-        await Groups.AddToGroupAsync(Context.ConnectionId, GameGroup(gameId));
+        var session = GetSession(gameId);
+        await Groups.AddToGroupAsync(Context.ConnectionId, GameGroup(session.Id));
+        return session.GetState();
     }
 
-    public async Task JoinAsPlayer(string gameId, string playerId)
+    public async Task<PlayerInfo> JoinAsPlayer(string gameId, string playerName)
     {
-        await Groups.AddToGroupAsync(Context.ConnectionId, GameGroup(gameId));
-        await Groups.AddToGroupAsync(Context.ConnectionId, PlayerGroup(gameId, playerId));
+        var session = GetSession(gameId);
+        if (!session.TryAddPlayer(playerName, Context.ConnectionId, out var player, out var error))
+        {
+            throw new HubException(error);
+        }
+
+        await Groups.AddToGroupAsync(Context.ConnectionId, GameGroup(session.Id));
+        await BroadcastState(session);
+        return new PlayerInfo(player.Id, player.Mark);
     }
 
-    public async Task Leave(string gameId, string? playerId = null)
+    public async Task MakeMove(string gameId, int cell)
+    {
+        var session = GetSession(gameId);
+        if (!session.TryMove(Context.ConnectionId, cell, out var error))
+        {
+            throw new HubException(error);
+        }
+
+        await BroadcastState(session);
+    }
+
+    public async Task Leave(string gameId)
     {
         await Groups.RemoveFromGroupAsync(Context.ConnectionId, GameGroup(gameId));
-        if (playerId is not null)
-        {
-            await Groups.RemoveFromGroupAsync(Context.ConnectionId, PlayerGroup(gameId, playerId));
-        }
     }
+
+    private GameSession GetSession(string gameId) =>
+        store.Get(gameId) ?? throw new HubException($"Game '{gameId}' was not found.");
+
+    private Task BroadcastState(GameSession session) =>
+        Clients.Group(GameGroup(session.Id)).SendAsync(StateUpdated, session.GetState());
 }

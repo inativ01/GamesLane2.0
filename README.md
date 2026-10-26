@@ -30,8 +30,28 @@ A typical setup is a shared screen (such as a TV or laptop) connected as a spect
 ```
 GamesLane.slnx                 Solution file
 src/GamesLane.Server/          ASP.NET Core backend
-  Hubs/GameHub.cs              SignalR hub for joining games as a player or spectator
+  Hubs/GameHub.cs              SignalR hub for creating, joining and playing games
+  Sessions/                    Game sessions (players, status) and the in-memory session store
+  Games/TicTacToe/             Tic-tac-toe rules
 ```
+
+## Games
+
+- **Tic-tac-toe** (2 players)
+
+## Game Hub API
+
+Clients connect to the SignalR hub at `/hubs/game` and call these methods:
+
+| Method | Returns | Description |
+| --- | --- | --- |
+| `CreateGame()` | game code | Creates a new game and returns its 6-character code. |
+| `JoinAsPlayer(gameId, playerName)` | `{ playerId, mark }` | Joins as a player. The first player is X, the second is O. The game starts when both have joined. |
+| `JoinAsSpectator(gameId)` | game state | Joins as a spectator and returns the current state. |
+| `MakeMove(gameId, cell)` | — | Places the caller's mark. Cells are numbered 0–8, left to right, top to bottom. |
+| `Leave(gameId)` | — | Stops receiving updates for the game. |
+
+After every change, the server sends a `StateUpdated` message with the public game state to everyone in the game. Errors (e.g. "It is not your turn.") are returned as hub errors to the caller.
 
 ## Running Locally
 
