@@ -9,7 +9,7 @@ public class GameSessionStoreTests
     {
         var store = new GameSessionStore();
 
-        var id = store.Create().Id;
+        var id = store.Create(GameType.TicTacToe).Id;
 
         Assert.Equal(6, id.Length);
         Assert.All(id, c => Assert.Contains(c, "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"));
@@ -20,16 +20,25 @@ public class GameSessionStoreTests
     {
         var store = new GameSessionStore();
 
-        var ids = Enumerable.Range(0, 1000).Select(_ => store.Create().Id).ToList();
+        var ids = Enumerable.Range(0, 1000).Select(_ => store.Create(GameType.TicTacToe).Id).ToList();
 
         Assert.Equal(ids.Count, ids.Distinct().Count());
+    }
+
+    [Fact]
+    public void Creates_a_session_of_the_requested_game_type()
+    {
+        var store = new GameSessionStore();
+
+        Assert.IsType<TicTacToeSession>(store.Create(GameType.TicTacToe));
+        Assert.IsType<RockPaperScissorsSession>(store.Create(GameType.RockPaperScissors));
     }
 
     [Fact]
     public void Finds_games_regardless_of_case()
     {
         var store = new GameSessionStore();
-        var session = store.Create();
+        var session = store.Create(GameType.RockPaperScissors);
 
         Assert.Same(session, store.Get(session.Id.ToLowerInvariant()));
     }

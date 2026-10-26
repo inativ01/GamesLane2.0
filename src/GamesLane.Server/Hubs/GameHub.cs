@@ -1,3 +1,4 @@
+using GamesLane.Server.Games.RockPaperScissors;
 using GamesLane.Server.Sessions;
 using Microsoft.AspNetCore.SignalR;
 
@@ -14,13 +15,21 @@ public class GameHub(GameSessionStore store) : Hub
 
     public static string GameGroup(string gameId) => $"game:{gameId.ToUpperInvariant()}";
 
-    public string CreateGame() => store.Create().Id;
+    public string CreateGame(GameType gameType)
+    {
+        if (!Enum.IsDefined(gameType))
+        {
+            throw new HubException("Unknown game type.");
+        }
 
-    public async Task<GameState> JoinAsSpectator(string gameId)
+        return store.Create(gameType).Id;
+    }
+
+    public async Task<object> JoinAsSpectator(string gameId)
     {
         var session = GetSession(gameId);
         await Groups.AddToGroupAsync(Context.ConnectionId, GameGroup(session.Id));
-        return session.GetState();
+        return session.GetPublicState();
     }
 
     public async Task<PlayerInfo> JoinAsPlayer(string gameId, string playerName)
@@ -33,13 +42,35 @@ public class GameHub(GameSessionStore store) : Hub
 
         await Groups.AddToGroupAsync(Context.ConnectionId, GameGroup(session.Id));
         await BroadcastState(session);
-        return new PlayerInfo(player.Id, player.Mark);
+        return new PlayerInfo(player.Id, player.Seat, session.Type);
     }
 
     public async Task MakeMove(string gameId, int cell)
     {
-        var session = GetSession(gameId);
+        var session = GetSession<TicTacToeSession>(gameId);
         if (!session.TryMove(Context.ConnectionId, cell, out var error))
+        {
+            throw new HubException(error);
+        }
+
+        await BroadcastState(session);
+    }
+
+    public async Task Pick(string gameId, Choice choice)
+    {
+        var session = GetSession<RockPaperScissorsSession>(gameId);
+        if (!session.TryPick(Context.ConnectionId, choice, out var error))
+        {
+            throw new HubException(error);
+        }
+
+        await BroadcastState(session);
+    }
+
+    public async Task NextRound(string gameId, int round)
+    {
+        var session = GetSession<RockPaperScissorsSession>(gameId);
+        if (!session.TryNextRound(Context.ConnectionId, round, out var error))
         {
             throw new HubException(error);
         }
@@ -55,6 +86,9 @@ public class GameHub(GameSessionStore store) : Hub
     private GameSession GetSession(string gameId) =>
         store.Get(gameId) ?? throw new HubException($"Game '{gameId}' was not found.");
 
+    private T GetSession<T>(string gameId) where T : GameSession =>
+        GetSession(gameId) as T ?? throw new HubException("That action is not available in this game.");
+
     private Task BroadcastState(GameSession session) =>
-        Clients.Group(GameGroup(session.Id)).SendAsync(StateUpdated, session.GetState());
+        Clients.Group(GameGroup(session.Id)).SendAsync(StateUpdated, session.GetPublicState());
 }

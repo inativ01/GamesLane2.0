@@ -13,11 +13,18 @@ public class GameSessionStore
 
     private readonly ConcurrentDictionary<string, GameSession> _sessions = new(StringComparer.OrdinalIgnoreCase);
 
-    public GameSession Create()
+    public GameSession Create(GameType type)
     {
         while (true)
         {
-            var session = new GameSession(RandomNumberGenerator.GetString(CodeChars, CodeLength));
+            var id = RandomNumberGenerator.GetString(CodeChars, CodeLength);
+            GameSession session = type switch
+            {
+                GameType.TicTacToe => new TicTacToeSession(id),
+                GameType.RockPaperScissors => new RockPaperScissorsSession(id),
+                _ => throw new ArgumentOutOfRangeException(nameof(type), type, "Unknown game type."),
+            };
+
             if (_sessions.TryAdd(session.Id, session))
             {
                 return session;

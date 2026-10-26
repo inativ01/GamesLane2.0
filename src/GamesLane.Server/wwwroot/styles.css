@@ -69,6 +69,10 @@ input {
     gap: 0.5rem;
 }
 
+.actions.center {
+    justify-content: center;
+}
+
 .hint {
     color: #52606d;
     font-size: 0.9rem;
@@ -114,6 +118,44 @@ input {
 
 .cell[data-mark="O"] {
     color: #b5523b;
+}
+
+.hands {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    margin: 1rem 0;
+}
+
+.hand {
+    flex: 1;
+    max-width: 200px;
+    padding: 1rem;
+    border-radius: 8px;
+    background: #fff;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+}
+
+.hand.winner {
+    outline: 3px solid #3b8a4a;
+}
+
+.hand-symbol {
+    font-size: clamp(3rem, 15vw, 5rem);
+    line-height: 1.2;
+}
+
+.hand-label {
+    color: #52606d;
+}
+
+.pick {
+    font-size: 1.2rem;
+    padding: 0.8rem 1.2rem;
+}
+
+#next-round {
+    margin-top: 1rem;
 }
 
 .players {

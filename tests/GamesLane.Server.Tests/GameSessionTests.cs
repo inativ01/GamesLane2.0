@@ -1,3 +1,4 @@
+using GamesLane.Server.Games.RockPaperScissors;
 using GamesLane.Server.Games.TicTacToe;
 using GamesLane.Server.Sessions;
 
@@ -8,20 +9,21 @@ public class GameSessionTests
     [Fact]
     public void First_player_is_X_and_second_is_O()
     {
-        var session = new GameSession("ABC123");
+        var session = new TicTacToeSession("ABC123");
 
         Assert.True(session.TryAddPlayer("Alice", "conn-a", out var alice, out _));
         Assert.True(session.TryAddPlayer("Bob", "conn-b", out var bob, out _));
 
-        Assert.Equal(Mark.X, alice.Mark);
-        Assert.Equal(Mark.O, bob.Mark);
+        Assert.Equal(0, alice.Seat);
+        Assert.Equal(1, bob.Seat);
         Assert.NotEqual(alice.Id, bob.Id);
+        Assert.Equal([Mark.X, Mark.O], session.GetState().Players.Select(p => p.Mark));
     }
 
     [Fact]
     public void Game_starts_when_both_players_have_joined()
     {
-        var session = new GameSession("ABC123");
+        var session = new TicTacToeSession("ABC123");
         Assert.Equal(GameStatus.WaitingForPlayers, session.GetState().Status);
 
         session.TryAddPlayer("Alice", "conn-a", out _, out _);
@@ -43,7 +45,7 @@ public class GameSessionTests
     [Fact]
     public void Rejects_the_same_connection_joining_twice()
     {
-        var session = new GameSession("ABC123");
+        var session = new TicTacToeSession("ABC123");
         session.TryAddPlayer("Alice", "conn-a", out _, out _);
 
         Assert.False(session.TryAddPlayer("Alice again", "conn-a", out _, out var error));
@@ -55,7 +57,7 @@ public class GameSessionTests
     [InlineData("   ")]
     public void Requires_a_player_name(string name)
     {
-        var session = new GameSession("ABC123");
+        var session = new TicTacToeSession("ABC123");
 
         Assert.False(session.TryAddPlayer(name, "conn-a", out _, out var error));
         Assert.Equal("Player name is required.", error);
@@ -64,7 +66,7 @@ public class GameSessionTests
     [Fact]
     public void Trims_player_names()
     {
-        var session = new GameSession("ABC123");
+        var session = new TicTacToeSession("ABC123");
 
         session.TryAddPlayer("  Alice  ", "conn-a", out var player, out _);
 
@@ -75,7 +77,7 @@ public class GameSessionTests
     [Fact]
     public void No_moves_before_both_players_join()
     {
-        var session = new GameSession("ABC123");
+        var session = new TicTacToeSession("ABC123");
         session.TryAddPlayer("Alice", "conn-a", out _, out _);
 
         Assert.False(session.TryMove("conn-a", 0, out var error));
@@ -135,9 +137,153 @@ public class GameSessionTests
         Assert.Equal(Mark.X, session.GetState().Board[0]);
     }
 
-    private static GameSession StartedSession()
+    private static TicTacToeSession StartedSession() => Started(new TicTacToeSession("ABC123"));
+
+    // Rock-paper-scissors
+
+    [Fact]
+    public void Picks_are_hidden_until_both_players_have_picked()
     {
-        var session = new GameSession("ABC123");
+        var session = StartedRpsSession();
+
+        Assert.True(session.TryPick("conn-a", Choice.Rock, out _));
+        var hidden = session.GetState();
+        Assert.False(hidden.IsRoundComplete);
+        Assert.True(hidden.Players[0].HasPicked);
+        Assert.False(hidden.Players[1].HasPicked);
+        Assert.All(hidden.Players, p => Assert.Equal(Choice.None, p.Pick));
+
+        Assert.True(session.TryPick("conn-b", Choice.Paper, out _));
+        var revealed = session.GetState();
+        Assert.True(revealed.IsRoundComplete);
+        Assert.Equal([Choice.Rock, Choice.Paper], revealed.Players.Select(p => p.Pick));
+    }
+
+    [Theory]
+    [InlineData(Choice.Rock, Choice.Scissors, 0)]
+    [InlineData(Choice.Paper, Choice.Rock, 0)]
+    [InlineData(Choice.Scissors, Choice.Paper, 0)]
+    [InlineData(Choice.Scissors, Choice.Rock, 1)]
+    [InlineData(Choice.Rock, Choice.Paper, 1)]
+    [InlineData(Choice.Paper, Choice.Scissors, 1)]
+    [InlineData(Choice.Rock, Choice.Rock, null)]
+    [InlineData(Choice.Paper, Choice.Paper, null)]
+    [InlineData(Choice.Scissors, Choice.Scissors, null)]
+    public void Decides_and_scores_the_round(Choice first, Choice second, int? winner)
+    {
+        var session = StartedRpsSession();
+
+        session.TryPick("conn-a", first, out _);
+        session.TryPick("conn-b", second, out _);
+
+        var state = session.GetState();
+        Assert.Equal(winner, state.RoundWinner);
+        Assert.Equal(winner == 0 ? 1 : 0, state.Players[0].Score);
+        Assert.Equal(winner == 1 ? 1 : 0, state.Players[1].Score);
+        Assert.Equal(winner is null ? 1 : 0, state.Draws);
+    }
+
+    [Fact]
+    public void Cannot_pick_twice_in_a_round()
+    {
+        var session = StartedRpsSession();
+        session.TryPick("conn-a", Choice.Rock, out _);
+
+        Assert.False(session.TryPick("conn-a", Choice.Paper, out var error));
+        Assert.Equal("You have already picked this round.", error);
+    }
+
+    [Fact]
+    public void Cannot_pick_after_the_round_is_decided()
+    {
+        var session = StartedRpsSession();
+        session.TryPick("conn-a", Choice.Rock, out _);
+        session.TryPick("conn-b", Choice.Rock, out _);
+
+        Assert.False(session.TryPick("conn-a", Choice.Paper, out var error));
+        Assert.Equal("This round is over. Start the next round.", error);
+    }
+
+    [Theory]
+    [InlineData(Choice.None)]
+    [InlineData((Choice)42)]
+    public void Rejects_invalid_picks(Choice choice)
+    {
+        var session = StartedRpsSession();
+
+        Assert.False(session.TryPick("conn-a", choice, out var error));
+        Assert.Equal("Pick rock, paper or scissors.", error);
+    }
+
+    [Fact]
+    public void Only_players_can_pick_and_only_once_both_have_joined()
+    {
+        var session = new RockPaperScissorsSession("ABC123");
+        session.TryAddPlayer("Alice", "conn-a", out _, out _);
+
+        Assert.False(session.TryPick("conn-a", Choice.Rock, out var error));
+        Assert.Equal("The game is not in progress.", error);
+
+        session.TryAddPlayer("Bob", "conn-b", out _, out _);
+        Assert.False(session.TryPick("spectator", Choice.Rock, out error));
+        Assert.Equal("Only players in this game can make moves.", error);
+    }
+
+    [Fact]
+    public void Next_round_clears_picks_and_keeps_scores()
+    {
+        var session = StartedRpsSession();
+        session.TryPick("conn-a", Choice.Rock, out _);
+        session.TryPick("conn-b", Choice.Scissors, out _);
+
+        Assert.True(session.TryNextRound("conn-b", 1, out _));
+
+        var state = session.GetState();
+        Assert.Equal(2, state.Round);
+        Assert.False(state.IsRoundComplete);
+        Assert.Null(state.RoundWinner);
+        Assert.All(state.Players, p => Assert.False(p.HasPicked));
+        Assert.Equal([1, 0], state.Players.Select(p => p.Score));
+    }
+
+    [Fact]
+    public void Next_round_requires_both_picks()
+    {
+        var session = StartedRpsSession();
+        session.TryPick("conn-a", Choice.Rock, out _);
+
+        Assert.False(session.TryNextRound("conn-a", 1, out var error));
+        Assert.Equal("This round is not finished yet.", error);
+    }
+
+    [Fact]
+    public void Next_round_pressed_by_both_players_advances_once()
+    {
+        var session = StartedRpsSession();
+        session.TryPick("conn-a", Choice.Rock, out _);
+        session.TryPick("conn-b", Choice.Rock, out _);
+
+        Assert.True(session.TryNextRound("conn-a", 1, out _));
+        Assert.True(session.TryNextRound("conn-b", 1, out _));
+
+        Assert.Equal(2, session.GetState().Round);
+    }
+
+    [Fact]
+    public void Spectators_cannot_start_the_next_round()
+    {
+        var session = StartedRpsSession();
+        session.TryPick("conn-a", Choice.Rock, out _);
+        session.TryPick("conn-b", Choice.Rock, out _);
+
+        Assert.False(session.TryNextRound("spectator", 1, out _));
+        Assert.Equal(1, session.GetState().Round);
+    }
+
+    private static RockPaperScissorsSession StartedRpsSession() => Started(new RockPaperScissorsSession("ABC123"));
+
+    private static T Started<T>(T session) where T : GameSession
+    {
         session.TryAddPlayer("Alice", "conn-a", out _, out _);
         session.TryAddPlayer("Bob", "conn-b", out _, out _);
         return session;

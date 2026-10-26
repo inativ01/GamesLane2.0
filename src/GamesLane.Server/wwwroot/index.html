@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>GamesLane - Tic-tac-toe</title>
+    <title>GamesLane</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -11,9 +11,12 @@
     <h1>GamesLane</h1>
 
     <section id="home">
-        <h2>Tic-tac-toe</h2>
-        <button id="create" type="button">Create a new game</button>
-        <p class="hint">Shows the board on this screen. Players then join from their phones.</p>
+        <h2>Start a game</h2>
+        <div class="actions center">
+            <button type="button" data-create="TicTacToe">New tic-tac-toe game</button>
+            <button type="button" data-create="RockPaperScissors">New rock-paper-scissors game</button>
+        </div>
+        <p class="hint">Shows the game on this screen. Players then join from their phones.</p>
 
         <form id="join-form">
             <label>Game code <input id="code" maxlength="6" autocomplete="off" autocapitalize="characters"></label>
@@ -26,10 +29,20 @@
     </section>
 
     <section id="game" hidden>
+        <h2 id="game-title"></h2>
         <p class="code">Game code: <strong id="game-code"></strong></p>
         <p id="join-link" class="hint" hidden></p>
         <p id="status" class="status"></p>
-        <div id="board" class="board"></div>
+        <div id="board" class="board" hidden></div>
+        <div id="rps" hidden>
+            <div id="rps-hands" class="hands"></div>
+            <div id="rps-picks" class="actions center" hidden>
+                <button type="button" class="pick" data-choice="Rock">✊ Rock</button>
+                <button type="button" class="pick" data-choice="Paper">✋ Paper</button>
+                <button type="button" class="pick" data-choice="Scissors">✌️ Scissors</button>
+            </div>
+            <button id="next-round" type="button" hidden>Next round</button>
+        </div>
         <ul id="players" class="players"></ul>
         <a href="/">Back to start</a>
     </section>

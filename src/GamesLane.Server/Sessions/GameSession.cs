@@ -1,7 +1,12 @@
 using System.Diagnostics.CodeAnalysis;
-using GamesLane.Server.Games.TicTacToe;
 
 namespace GamesLane.Server.Sessions;
+
+public enum GameType
+{
+    TicTacToe,
+    RockPaperScissors,
+}
 
 public enum GameStatus
 {
@@ -10,37 +15,27 @@ public enum GameStatus
     Finished,
 }
 
-public record Player(string Id, string Name, string ConnectionId, Mark Mark);
+/// <summary>
+/// A player in a game. Seats are assigned in join order, starting at 0.
+/// </summary>
+public record Player(string Id, string Name, string ConnectionId, int Seat);
 
-public record PlayerSummary(string Name, Mark Mark);
-
-public record PlayerInfo(string PlayerId, Mark Mark);
+public record PlayerInfo(string PlayerId, int Seat, GameType GameType);
 
 /// <summary>
-/// Public game state, safe to send to everyone in the game (players and spectators).
+/// A single two-player game. Players are identified by their SignalR connection, so a client can only act for itself.
+/// All public members are thread-safe; derived classes must lock <see cref="Sync"/> when accessing state.
 /// </summary>
-public record GameState(
-    string GameId,
-    GameStatus Status,
-    IReadOnlyList<Mark> Board,
-    Mark CurrentTurn,
-    Mark Winner,
-    bool IsDraw,
-    IReadOnlyList<PlayerSummary> Players);
-
-/// <summary>
-/// A single tic-tac-toe game. Players are identified by their SignalR connection, so a client can only act for itself.
-/// All members are thread-safe.
-/// </summary>
-public class GameSession(string id)
+public abstract class GameSession(string id)
 {
     public const int MaxPlayers = 2;
 
-    private readonly object _sync = new();
-    private readonly List<Player> _players = [];
-    private readonly TicTacToeGame _game = new();
+    protected readonly object Sync = new();
+    protected readonly List<Player> Players = [];
 
     public string Id { get; } = id;
+
+    public abstract GameType Type { get; }
 
     public bool TryAddPlayer(
         string name,
@@ -48,7 +43,7 @@ public class GameSession(string id)
         [NotNullWhen(true)] out Player? player,
         [NotNullWhen(false)] out string? error)
     {
-        lock (_sync)
+        lock (Sync)
         {
             player = null;
 
@@ -58,64 +53,37 @@ public class GameSession(string id)
                 return false;
             }
 
-            if (_players.Any(p => p.ConnectionId == connectionId))
+            if (Players.Any(p => p.ConnectionId == connectionId))
             {
                 error = "You have already joined this game.";
                 return false;
             }
 
-            if (_players.Count >= MaxPlayers)
+            if (Players.Count >= MaxPlayers)
             {
                 error = "The game is full.";
                 return false;
             }
 
-            var mark = _players.Count == 0 ? Mark.X : Mark.O;
-            player = new Player(Guid.NewGuid().ToString("N"), name.Trim(), connectionId, mark);
-            _players.Add(player);
+            player = new Player(Guid.NewGuid().ToString("N"), name.Trim(), connectionId, Players.Count);
+            Players.Add(player);
             error = null;
             return true;
         }
     }
 
-    public bool TryMove(string connectionId, int cell, [NotNullWhen(false)] out string? error)
+    /// <summary>
+    /// Public game state, safe to send to everyone in the game (players and spectators).
+    /// </summary>
+    public abstract object GetPublicState();
+
+    protected bool TryGetPlayer(
+        string connectionId,
+        [NotNullWhen(true)] out Player? player,
+        [NotNullWhen(false)] out string? error)
     {
-        lock (_sync)
-        {
-            var player = _players.FirstOrDefault(p => p.ConnectionId == connectionId);
-            if (player is null)
-            {
-                error = "Only players in this game can make moves.";
-                return false;
-            }
-
-            if (GetStatus() != GameStatus.InProgress)
-            {
-                error = "The game is not in progress.";
-                return false;
-            }
-
-            return _game.TryMove(player.Mark, cell, out error);
-        }
+        player = Players.FirstOrDefault(p => p.ConnectionId == connectionId);
+        error = player is null ? "Only players in this game can make moves." : null;
+        return player is not null;
     }
-
-    public GameState GetState()
-    {
-        lock (_sync)
-        {
-            return new GameState(
-                Id,
-                GetStatus(),
-                _game.Board.ToArray(),
-                _game.CurrentTurn,
-                _game.Winner,
-                _game.IsDraw,
-                _players.Select(p => new PlayerSummary(p.Name, p.Mark)).ToArray());
-        }
-    }
-
-    private GameStatus GetStatus() =>
-        _game.IsOver ? GameStatus.Finished
-        : _players.Count < MaxPlayers ? GameStatus.WaitingForPlayers
-        : GameStatus.InProgress;
 }

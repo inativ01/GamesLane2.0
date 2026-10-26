@@ -35,6 +35,7 @@ src/GamesLane.Server/          ASP.NET Core backend
   Hubs/GameHub.cs              SignalR hub for creating, joining and playing games
   Sessions/                    Game sessions (players, status) and the in-memory session store
   Games/TicTacToe/             Tic-tac-toe rules
+  Games/RockPaperScissors/     Rock-paper-scissors rules
   wwwroot/                     Web page for players and spectators
 tests/GamesLane.Server.Tests/  Unit tests
 ```
@@ -42,6 +43,7 @@ tests/GamesLane.Server.Tests/  Unit tests
 ## Games
 
 - **Tic-tac-toe** (2 players)
+- **Rock-paper-scissors** (2 players): both players pick secretly. When both have picked, the picks are revealed and the winner scores a point. Play continues for as many rounds as you like.
 
 ## Game Hub API
 
@@ -49,13 +51,15 @@ Clients connect to the SignalR hub at `/hubs/game` and call these methods:
 
 | Method | Returns | Description |
 | --- | --- | --- |
-| `CreateGame()` | game code | Creates a new game and returns its 6-character code. |
-| `JoinAsPlayer(gameId, playerName)` | `{ playerId, mark }` | Joins as a player. The first player is X, the second is O. The game starts when both have joined. |
+| `CreateGame(gameType)` | game code | Creates a game (`"TicTacToe"` or `"RockPaperScissors"`) and returns its 6-character code. |
+| `JoinAsPlayer(gameId, playerName)` | `{ playerId, seat, gameType }` | Joins as a player. Seats are 0 and 1 in join order (in tic-tac-toe, seat 0 is X). The game starts when both have joined. |
 | `JoinAsSpectator(gameId)` | game state | Joins as a spectator and returns the current state. |
-| `MakeMove(gameId, cell)` | — | Places the caller's mark. Cells are numbered 0–8, left to right, top to bottom. |
+| `MakeMove(gameId, cell)` | — | Tic-tac-toe: places the caller's mark. Cells are numbered 0–8, left to right, top to bottom. |
+| `Pick(gameId, choice)` | — | Rock-paper-scissors: picks `"Rock"`, `"Paper"` or `"Scissors"` for the current round. |
+| `NextRound(gameId, round)` | — | Rock-paper-scissors: starts the round after `round`. If it has already started, nothing changes. |
 | `Leave(gameId)` | — | Stops receiving updates for the game. |
 
-After every change, the server sends a `StateUpdated` message with the public game state to everyone in the game. Errors (e.g. "It is not your turn.") are returned as hub errors to the caller.
+After every change, the server sends a `StateUpdated` message with the public game state to everyone in the game. The state's `gameType` field tells clients which game it is. In rock-paper-scissors, the public state only shows whether each player has picked; the picks themselves are revealed once both players have picked. Errors (e.g. "It is not your turn.") are returned as hub errors to the caller.
 
 ## Running Locally
 
@@ -69,7 +73,7 @@ dotnet run --project src/GamesLane.Server
 - Health check: `GET /health`
 - SignalR hub: `/hubs/game`
 
-To play: open the web page on a shared screen and choose **Create a new game**. The screen shows the board and the game code. Each player opens the page on their phone, enters the code and their name, and chooses **Join as player**. To play from phones on the same Wi-Fi, run the server with `--urls http://0.0.0.0:5000` and open `http://<computer's IP address>:5000`.
+To play: open the web page on a shared screen and choose a game to create. The screen shows the game and its code. Each player opens the page on their phone, enters the code and their name, and chooses **Join as player**. To play from phones on the same Wi-Fi, run the server with `--urls http://0.0.0.0:5000` and open `http://<computer's IP address>:5000`.
 
 ## Running Tests
 
