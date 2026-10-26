@@ -22,4 +22,24 @@ A typical setup is a shared screen (such as a TV or laptop) connected as a spect
 
 ## Technology
 
-- **Backend:** .NET (C#)
+- **Backend:** .NET (C#), ASP.NET Core
+- **Real-time updates:** SignalR
+
+## Project Structure
+
+```
+GamesLane.slnx                 Solution file
+src/GamesLane.Server/          ASP.NET Core backend
+  Hubs/GameHub.cs              SignalR hub for joining games as a player or spectator
+```
+
+## Running Locally
+
+Requires the [.NET 10 SDK](https://dotnet.microsoft.com/download).
+
+```
+dotnet run --project src/GamesLane.Server
+```
+
+- Health check: `GET /health`
+- SignalR hub: `/hubs/game`
