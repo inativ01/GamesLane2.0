@@ -53,18 +53,30 @@ async function call(method, ...args) {
     }
 }
 
+function joinUrl(id) {
+    return `${location.origin}/join/${id}`;
+}
+
 function enterGame(newRole, id) {
     role = newRole;
     gameId = id;
     $("home").hidden = true;
     $("game").hidden = false;
     $("game-code").textContent = id;
+    $("join-url").href = joinUrl(id);
+    $("join-url").textContent = joinUrl(id);
+    history.replaceState(null, "", role === "spectator" ? `/?game=${id}&role=spectator` : `/?game=${id}`);
+}
 
-    if (role === "spectator") {
-        history.replaceState(null, "", `?game=${id}&role=spectator`);
-        $("join-link").textContent = `Players join at ${location.origin}/?game=${id}`;
-        $("join-link").hidden = false;
+function playerName() {
+    const name = $("name").value.trim();
+    if (!name) {
+        showError("Enter your name first.");
+        $("name").focus();
+        return null;
     }
+    localStorage.setItem("playerName", name);
+    return name;
 }
 
 async function watch(code) {
@@ -106,6 +118,7 @@ function waitingText(state) {
 
 function render(state) {
     lastState = state;
+    $("invite").hidden = !(role === "spectator" || state.status === "WaitingForPlayers");
     $("game-title").textContent = TITLES[state.gameType];
     $("board").hidden = state.gameType !== "TicTacToe";
     $("rps").hidden = state.gameType !== "RockPaperScissors";
@@ -243,23 +256,49 @@ $("next-round").addEventListener("click", () => {
 
 document.querySelectorAll("[data-create]").forEach((button) => {
     button.addEventListener("click", async () => {
+        const asPlayer = button.dataset.role === "player";
+        const name = asPlayer ? playerName() : null;
+        if (asPlayer && !name) {
+            return;
+        }
+
         try {
-            await watch(await call("CreateGame", button.dataset.create));
+            const code = await call("CreateGame", button.dataset.create);
+            await (asPlayer ? joinAsPlayer(code, name) : watch(code));
         } catch {
             // Error already shown.
         }
     });
 });
 
+$("copy-link").addEventListener("click", async () => {
+    try {
+        await navigator.clipboard.writeText(joinUrl(gameId));
+        $("copy-link").textContent = "Copied!";
+        setTimeout(() => { $("copy-link").textContent = "Copy link"; }, 2000);
+    } catch {
+        showError("Could not copy. Select the link and copy it manually.");
+    }
+});
+
+if (navigator.share) {
+    $("share-link").hidden = false;
+    $("share-link").addEventListener("click", () => {
+        navigator.share({ title: "Join my GamesLane game", url: joinUrl(gameId) }).catch(() => {});
+    });
+}
+
 $("join-form").addEventListener("submit", (event) => {
     event.preventDefault();
     const code = $("code").value.trim();
-    const name = $("name").value.trim();
-    if (!code || !name) {
-        showError("Enter a game code and your name.");
+    if (!code) {
+        showError("Enter a game code.");
         return;
     }
-    joinAsPlayer(code, name);
+    const name = playerName();
+    if (name) {
+        joinAsPlayer(code, name);
+    }
 });
 
 $("watch").addEventListener("click", () => {
@@ -271,10 +310,14 @@ $("watch").addEventListener("click", () => {
     watch(code);
 });
 
+$("name").value = localStorage.getItem("playerName") ?? "";
+
 const initialCode = params.get("game");
 if (initialCode) {
     $("code").value = initialCode;
     if (params.get("role") === "spectator") {
         watch(initialCode);
+    } else {
+        ($("name").value ? $("code") : $("name")).focus();
     }
 }

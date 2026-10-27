@@ -70,10 +70,11 @@ dotnet run --project src/GamesLane.Server
 ```
 
 - Web page: `/` (the address is shown in the console, e.g. `http://localhost:5xxx`)
+- Join link: `/join/{code}` opens the main screen with the game code filled in
 - Health check: `GET /health`
 - SignalR hub: `/hubs/game`
 
-To play: open the web page on a shared screen and choose a game to create. The screen shows the game and its code. Each player opens the page on their phone, enters the code and their name, and chooses **Join as player**. To play from phones on the same Wi-Fi, run the server with `--urls http://0.0.0.0:5000` and open `http://<computer's IP address>:5000`.
+To play: on the main screen, enter your name and pick a game. Choose **Play** to join as the first player, or **Show on this screen** to use the screen as a shared board (e.g. a TV). The game screen shows the code and a join link (`/join/{code}`) to send to the other players, who enter their name and choose **Join as player**. To play from phones on the same Wi-Fi, run the server with `--urls http://0.0.0.0:5000` and open `http://<computer's IP address>:5000`.
 
 ## Running Tests
 

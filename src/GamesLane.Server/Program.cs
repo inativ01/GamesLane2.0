@@ -20,6 +20,7 @@ app.UseDefaultFiles();
 app.UseStaticFiles();
 
 app.MapGet("/health", () => Results.Ok("Healthy"));
+app.MapGet("/join/{code}", (string code) => Results.Redirect($"/?game={Uri.EscapeDataString(code.ToUpperInvariant())}"));
 app.MapHub<GameHub>("/hubs/game");
 
 app.Run();

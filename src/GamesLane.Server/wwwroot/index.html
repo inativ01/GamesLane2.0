@@ -11,27 +11,54 @@
     <h1>GamesLane</h1>
 
     <section id="home">
-        <h2>Start a game</h2>
-        <div class="actions center">
-            <button type="button" data-create="TicTacToe">New tic-tac-toe game</button>
-            <button type="button" data-create="RockPaperScissors">New rock-paper-scissors game</button>
-        </div>
-        <p class="hint">Shows the game on this screen. Players then join from their phones.</p>
+        <label class="name-field">Your name <input id="name" maxlength="30" autocomplete="nickname"></label>
 
-        <form id="join-form">
-            <label>Game code <input id="code" maxlength="6" autocomplete="off" autocapitalize="characters"></label>
-            <label>Your name <input id="name" maxlength="30" autocomplete="nickname"></label>
-            <div class="actions">
-                <button type="submit">Join as player</button>
-                <button id="watch" type="button" class="secondary">Watch as spectator</button>
+        <div class="panel">
+            <h2>Join a game</h2>
+            <form id="join-form">
+                <label>Game code <input id="code" maxlength="6" autocomplete="off" autocapitalize="characters"></label>
+                <div class="actions">
+                    <button type="submit">Join as player</button>
+                    <button id="watch" type="button" class="secondary">Watch as spectator</button>
+                </div>
+            </form>
+        </div>
+
+        <div class="panel">
+            <h2>Start a new game</h2>
+            <div class="game-list">
+                <div class="game-card">
+                    <h3>Tic-tac-toe</h3>
+                    <p class="hint">2 players. Get three in a row.</p>
+                    <div class="actions center">
+                        <button type="button" data-create="TicTacToe" data-role="player">Play</button>
+                        <button type="button" data-create="TicTacToe" data-role="spectator" class="secondary">Show on this screen</button>
+                    </div>
+                </div>
+                <div class="game-card">
+                    <h3>Rock-paper-scissors</h3>
+                    <p class="hint">2 players. Pick in secret, keep score over many rounds.</p>
+                    <div class="actions center">
+                        <button type="button" data-create="RockPaperScissors" data-role="player">Play</button>
+                        <button type="button" data-create="RockPaperScissors" data-role="spectator" class="secondary">Show on this screen</button>
+                    </div>
+                </div>
             </div>
-        </form>
+            <p class="hint"><strong>Play</strong> joins you as the first player. <strong>Show on this screen</strong> uses this screen as the shared board (e.g. a TV) and everyone joins from their phones.</p>
+        </div>
     </section>
 
     <section id="game" hidden>
         <h2 id="game-title"></h2>
         <p class="code">Game code: <strong id="game-code"></strong></p>
-        <p id="join-link" class="hint" hidden></p>
+        <div id="invite" class="invite" hidden>
+            <p class="hint">Invite players with this link:</p>
+            <a id="join-url" class="join-url"></a>
+            <div class="actions center">
+                <button id="copy-link" type="button" class="secondary">Copy link</button>
+                <button id="share-link" type="button" class="secondary" hidden>Share…</button>
+            </div>
+        </div>
         <p id="status" class="status"></p>
         <div id="board" class="board" hidden></div>
         <div id="rps" hidden>
