@@ -255,6 +255,10 @@ input {
     padding: 0;
 }
 
+.policy {
+    text-align: left;
+}
+
 .error {
     color: #b42318;
     min-height: 1.5em;
