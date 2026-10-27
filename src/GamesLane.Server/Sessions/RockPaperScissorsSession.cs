@@ -6,7 +6,7 @@ namespace GamesLane.Server.Sessions;
 /// <summary>
 /// A player's public rock-paper-scissors info. <see cref="Pick"/> is <see cref="Choice.None"/> until both players have picked.
 /// </summary>
-public record RockPaperScissorsPlayer(string Name, int Score, bool HasPicked, Choice Pick);
+public record RockPaperScissorsPlayer(string Name, int Score, bool HasPicked, Choice Pick, bool IsConnected);
 
 /// <summary>
 /// Public rock-paper-scissors state. Players are listed in seat order.
@@ -79,7 +79,8 @@ public class RockPaperScissorsSession(string id) : GameSession(id)
                     p.Name,
                     _game.Scores[p.Seat],
                     _game.Picks[p.Seat] != Choice.None,
-                    reveal ? _game.Picks[p.Seat] : Choice.None)).ToArray());
+                    reveal ? _game.Picks[p.Seat] : Choice.None,
+                    p.IsConnected)).ToArray());
         }
     }
 

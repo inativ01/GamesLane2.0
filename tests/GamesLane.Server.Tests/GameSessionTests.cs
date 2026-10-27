@@ -139,6 +139,70 @@ public class GameSessionTests
 
     private static TicTacToeSession StartedSession() => Started(new TicTacToeSession("ABC123"));
 
+    // Rejoining
+
+    [Fact]
+    public void Player_rejoins_their_seat_from_a_new_connection()
+    {
+        var session = new TicTacToeSession("ABC123");
+        session.TryAddPlayer("Alice", "conn-a", out _, out _, "guest:alice");
+        session.TryAddPlayer("Bob", "conn-b", out _, out _, "guest:bob");
+
+        Assert.True(session.Disconnect("conn-a"));
+        Assert.False(session.GetState().Players[0].IsConnected);
+
+        Assert.True(session.TryRejoin("guest:alice", "conn-a2", out var player));
+        Assert.Equal(0, player.Seat);
+        Assert.True(session.GetState().Players[0].IsConnected);
+
+        Assert.False(session.TryMove("conn-a", 0, out _));
+        Assert.True(session.TryMove("conn-a2", 0, out var error), error);
+    }
+
+    [Fact]
+    public void Unknown_user_cannot_rejoin()
+    {
+        var session = StartedSession();
+
+        Assert.False(session.TryRejoin("guest:stranger", "conn-x", out _));
+    }
+
+    [Fact]
+    public void Same_user_cannot_take_two_seats()
+    {
+        var session = new TicTacToeSession("ABC123");
+        session.TryAddPlayer("Alice", "conn-a", out _, out _, "user:alice");
+
+        Assert.False(session.TryAddPlayer("Alice", "conn-a2", out _, out var error, "user:alice"));
+        Assert.Equal("You have already joined this game.", error);
+    }
+
+    [Fact]
+    public void Disconnect_ignores_unknown_and_already_disconnected_connections()
+    {
+        var session = StartedSession();
+
+        Assert.False(session.Disconnect("spectator"));
+        Assert.True(session.Disconnect("conn-a"));
+        Assert.False(session.Disconnect("conn-a"));
+    }
+
+    [Fact]
+    public void Rock_paper_scissors_pick_survives_a_reconnect()
+    {
+        var session = new RockPaperScissorsSession("ABC123");
+        session.TryAddPlayer("Alice", "conn-a", out _, out _, "guest:alice");
+        session.TryAddPlayer("Bob", "conn-b", out _, out _, "guest:bob");
+        session.TryPick("conn-a", Choice.Rock, out _);
+
+        session.Disconnect("conn-a");
+        session.TryRejoin("guest:alice", "conn-a2", out _);
+
+        Assert.True(session.GetState().Players[0].HasPicked);
+        Assert.False(session.TryPick("conn-a2", Choice.Paper, out var error));
+        Assert.Equal("You have already picked this round.", error);
+    }
+
     // Rock-paper-scissors
 
     [Fact]

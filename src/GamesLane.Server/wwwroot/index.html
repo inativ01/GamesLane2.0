@@ -8,7 +8,10 @@
 </head>
 <body>
 <main>
-    <h1>GamesLane</h1>
+    <header class="top">
+        <h1 class="brand">GamesLane</h1>
+        <div id="account" class="account"></div>
+    </header>
 
     <section id="home">
         <label class="name-field">Your name <input id="name" maxlength="30" autocomplete="nickname"></label>
@@ -48,35 +51,10 @@
         </div>
     </section>
 
-    <section id="game" hidden>
-        <h2 id="game-title"></h2>
-        <p class="code">Game code: <strong id="game-code"></strong></p>
-        <div id="invite" class="invite" hidden>
-            <p class="hint">Invite players with this link:</p>
-            <a id="join-url" class="join-url"></a>
-            <div class="actions center">
-                <button id="copy-link" type="button" class="secondary">Copy link</button>
-                <button id="share-link" type="button" class="secondary" hidden>Share…</button>
-            </div>
-        </div>
-        <p id="status" class="status"></p>
-        <div id="board" class="board" hidden></div>
-        <div id="rps" hidden>
-            <div id="rps-hands" class="hands"></div>
-            <div id="rps-picks" class="actions center" hidden>
-                <button type="button" class="pick" data-choice="Rock">✊ Rock</button>
-                <button type="button" class="pick" data-choice="Paper">✋ Paper</button>
-                <button type="button" class="pick" data-choice="Scissors">✌️ Scissors</button>
-            </div>
-            <button id="next-round" type="button" hidden>Next round</button>
-        </div>
-        <ul id="players" class="players"></ul>
-        <a href="/">Back to start</a>
-    </section>
-
     <p id="error" class="error" role="alert"></p>
 </main>
 <script src="https://cdn.jsdelivr.net/npm/@microsoft/signalr@10.0.11/dist/browser/signalr.min.js"></script>
-<script src="app.js"></script>
+<script src="common.js"></script>
+<script src="home.js"></script>
 </body>
 </html>

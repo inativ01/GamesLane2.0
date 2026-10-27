@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using GamesLane.Server.Games.RockPaperScissors;
 using GamesLane.Server.Sessions;
 using Microsoft.AspNetCore.SignalR;
@@ -8,12 +9,66 @@ namespace GamesLane.Server.Hubs;
 /// Real-time connection point for game sessions.
 /// Everyone in a game (players and spectators) joins the game's group and receives public "StateUpdated" messages.
 /// Private, per-player information is returned only to the calling connection.
+/// Players are identified by their signed-in account or, for guests, by a random guest ID the browser keeps
+/// (sent as the <c>guestId</c> query parameter), so they can rejoin their seat after a refresh or reconnect.
 /// </summary>
 public class GameHub(GameSessionStore store) : Hub
 {
     public const string StateUpdated = "StateUpdated";
 
     public static string GameGroup(string gameId) => $"game:{gameId.ToUpperInvariant()}";
+
+    /// <summary>
+    /// The caller's stable identity: their account if signed in, otherwise their guest ID, otherwise their connection.
+    /// </summary>
+    public static string GetUserKey(ClaimsPrincipal? user, string? guestId, string connectionId)
+    {
+        var account = user?.Identity?.IsAuthenticated == true ? user.FindFirst(ClaimTypes.NameIdentifier) : null;
+        if (account is not null)
+        {
+            return $"user:{account.Issuer}:{account.Value}";
+        }
+
+        return IsValidGuestId(guestId) ? $"guest:{guestId}" : $"connection:{connectionId}";
+    }
+
+    private static bool IsValidGuestId(string? guestId) =>
+        guestId is { Length: >= 16 and <= 64 } && guestId.All(char.IsAsciiLetterOrDigit);
+
+    private string UserKey => GetUserKey(
+        Context.User,
+        Context.GetHttpContext()?.Request.Query["guestId"],
+        Context.ConnectionId);
+
+    /// <summary>
+    /// Opens a game page: subscribes to updates and, if the caller already holds a seat, reconnects them to it.
+    /// </summary>
+    public async Task<GameEntry> EnterGame(string gameId)
+    {
+        var session = GetSession(gameId);
+        await Groups.AddToGroupAsync(Context.ConnectionId, GameGroup(session.Id));
+
+        if (!session.TryRejoin(UserKey, Context.ConnectionId, out var player))
+        {
+            return new GameEntry(session.GetPublicState(), null);
+        }
+
+        await BroadcastState(session);
+        return new GameEntry(session.GetPublicState(), new PlayerInfo(player.Id, player.Seat, session.Type));
+    }
+
+    public override async Task OnDisconnectedAsync(Exception? exception)
+    {
+        foreach (var session in store.All)
+        {
+            if (session.Disconnect(Context.ConnectionId))
+            {
+                await BroadcastState(session);
+            }
+        }
+
+        await base.OnDisconnectedAsync(exception);
+    }
 
     public string CreateGame(GameType gameType)
     {
@@ -35,7 +90,7 @@ public class GameHub(GameSessionStore store) : Hub
     public async Task<PlayerInfo> JoinAsPlayer(string gameId, string playerName)
     {
         var session = GetSession(gameId);
-        if (!session.TryAddPlayer(playerName, Context.ConnectionId, out var player, out var error))
+        if (!session.TryAddPlayer(playerName, Context.ConnectionId, out var player, out var error, UserKey))
         {
             throw new HubException(error);
         }

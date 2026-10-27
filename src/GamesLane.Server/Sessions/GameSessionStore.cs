@@ -34,4 +34,16 @@ public class GameSessionStore
 
     public GameSession? Get(string gameId) =>
         _sessions.TryGetValue(gameId, out var session) ? session : null;
+
+    public IEnumerable<GameSession> All => _sessions.Values;
+
+    /// <summary>
+    /// The web page that plays the given game type.
+    /// </summary>
+    public static string PageFor(GameType type) => type switch
+    {
+        GameType.TicTacToe => "/tictactoe.html",
+        GameType.RockPaperScissors => "/rock-paper-scissors.html",
+        _ => throw new ArgumentOutOfRangeException(nameof(type), type, "Unknown game type."),
+    };
 }

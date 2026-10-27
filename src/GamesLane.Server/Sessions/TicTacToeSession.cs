@@ -3,7 +3,7 @@ using GamesLane.Server.Games.TicTacToe;
 
 namespace GamesLane.Server.Sessions;
 
-public record TicTacToePlayer(string Name, Mark Mark);
+public record TicTacToePlayer(string Name, Mark Mark, bool IsConnected);
 
 /// <summary>
 /// Public tic-tac-toe state. Players are listed in seat order.
@@ -60,7 +60,7 @@ public class TicTacToeSession(string id) : GameSession(id)
                 _game.CurrentTurn,
                 _game.Winner,
                 _game.IsDraw,
-                Players.Select(p => new TicTacToePlayer(p.Name, MarkFor(p.Seat))).ToArray());
+                Players.Select(p => new TicTacToePlayer(p.Name, MarkFor(p.Seat), p.IsConnected)).ToArray());
         }
     }
 

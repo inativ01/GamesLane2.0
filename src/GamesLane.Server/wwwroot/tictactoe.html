@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Tic-tac-toe - GamesLane</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<main>
+    <header class="top">
+        <a href="/" class="brand">GamesLane</a>
+        <div id="account" class="account"></div>
+    </header>
+
+    <section id="game">
+        <h2>Tic-tac-toe</h2>
+        <p class="code">Game code: <strong id="game-code"></strong></p>
+        <div id="invite" class="invite" hidden>
+            <p class="hint">Invite players with this link:</p>
+            <a id="join-url" class="join-url"></a>
+            <div class="actions center">
+                <button id="copy-link" type="button" class="secondary" hidden>Copy link</button>
+                <button id="share-link" type="button" class="secondary" hidden>Share…</button>
+            </div>
+        </div>
+        <form id="join-panel" class="panel" hidden>
+            <label>Your name <input id="join-name" maxlength="30" autocomplete="nickname"></label>
+            <button type="submit">Join as player</button>
+        </form>
+        <p id="status" class="status"></p>
+        <div id="board" class="board"></div>
+        <ul id="players" class="players"></ul>
+    </section>
+
+    <p id="error" class="error" role="alert"></p>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/@microsoft/signalr@10.0.11/dist/browser/signalr.min.js"></script>
+<script src="common.js"></script>
+<script src="tictactoe.js"></script>
+</body>
+</html>

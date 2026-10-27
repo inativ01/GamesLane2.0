@@ -8,6 +8,7 @@ RUN dotnet publish src/GamesLane.Server/GamesLane.Server.csproj -c Release -o /a
 FROM mcr.microsoft.com/dotnet/aspnet:10.0
 WORKDIR /app
 COPY --from=build /app/publish .
+ENV ASPNETCORE_FORWARDEDHEADERS_ENABLED=true
 USER $APP_UID
 EXPOSE 8080
 ENTRYPOINT ["dotnet", "GamesLane.Server.dll"]
