@@ -24,7 +24,7 @@ public record RockPaperScissorsState(
 /// <summary>
 /// A rock-paper-scissors match that continues round after round, keeping score.
 /// </summary>
-public class RockPaperScissorsSession(string id) : GameSession(id)
+public class RockPaperScissorsSession(string id) : GameSession(id), IRockPaperScissorsSession
 {
     private readonly RockPaperScissorsGame _game = new();
 

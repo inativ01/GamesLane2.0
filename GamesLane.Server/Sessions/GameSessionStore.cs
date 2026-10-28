@@ -6,19 +6,19 @@ namespace GamesLane.Server.Sessions;
 /// <summary>
 /// In-memory store of active games. Games are lost when the server restarts.
 /// </summary>
-public class GameSessionStore
+public class GameSessionStore : IGameSessionStore
 {
     private const string CodeChars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
     private const int CodeLength = 6;
 
-    private readonly ConcurrentDictionary<string, GameSession> _sessions = new(StringComparer.OrdinalIgnoreCase);
+    private readonly ConcurrentDictionary<string, IGameSession> _sessions = new(StringComparer.OrdinalIgnoreCase);
 
-    public GameSession Create(GameType type)
+    public IGameSession Create(GameType type)
     {
         while (true)
         {
             var id = RandomNumberGenerator.GetString(CodeChars, CodeLength);
-            GameSession session = type switch
+            IGameSession session = type switch
             {
                 GameType.TicTacToe => new TicTacToeSession(id),
                 GameType.RockPaperScissors => new RockPaperScissorsSession(id),
@@ -32,10 +32,10 @@ public class GameSessionStore
         }
     }
 
-    public GameSession? Get(string gameId) =>
+    public IGameSession? Get(string gameId) =>
         _sessions.TryGetValue(gameId, out var session) ? session : null;
 
-    public IEnumerable<GameSession> All => _sessions.Values;
+    public IEnumerable<IGameSession> All => _sessions.Values;
 
     /// <summary>
     /// The web page that plays the given game type.

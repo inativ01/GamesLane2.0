@@ -10,7 +10,7 @@ public enum Mark
 /// <summary>
 /// Tic-tac-toe rules. Cells are numbered 0-8, left to right, top to bottom. X always moves first.
 /// </summary>
-public class TicTacToeGame
+public class TicTacToeGame : ITicTacToeGame
 {
     public const int CellCount = 9;
 

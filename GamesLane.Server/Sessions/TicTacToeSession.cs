@@ -22,7 +22,7 @@ public record TicTacToeState(
 /// <summary>
 /// A tic-tac-toe game. Seat 0 plays X, seat 1 plays O. After a game ends, the same players can play again.
 /// </summary>
-public class TicTacToeSession(string id) : GameSession(id)
+public class TicTacToeSession(string id) : GameSession(id), ITicTacToeSession
 {
     private TicTacToeGame _game = new();
     private int _gameNumber = 1;

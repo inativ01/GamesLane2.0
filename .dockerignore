@@ -3,5 +3,5 @@
 .git/
 .vs/
 .vscode/
-tests/
+GamesLane.Server.Tests/
 *.md

@@ -12,7 +12,7 @@ if (builder.Configuration["PORT"] is { Length: > 0 } port)
 }
 
 builder.AddGamesLaneAuth();
-builder.Services.AddSingleton<GameSessionStore>();
+builder.Services.AddSingleton<IGameSessionStore, GameSessionStore>();
 builder.Services.ConfigureHttpJsonOptions(options => options.SerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 builder.Services.AddSignalR()
     .AddJsonProtocol(options => options.PayloadSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
@@ -26,10 +26,10 @@ app.UseAuthentication();
 app.MapGet("/health", () => Results.Ok("Healthy"));
 app.MapAuthEndpoints();
 
-app.MapGet("/api/games/{code}", (string code, GameSessionStore store) =>
+app.MapGet("/api/games/{code}", (string code, IGameSessionStore store) =>
     store.Get(code) is { } session ? Results.Ok(GameInfo(session)) : Results.NotFound());
 
-app.MapGet("/join/{code}", (string code, GameSessionStore store) =>
+app.MapGet("/join/{code}", (string code, IGameSessionStore store) =>
     store.Get(code) is { } session
         ? Results.Redirect($"{GameSessionStore.PageFor(session.Type)}?game={session.Id}")
         : Results.Redirect($"/?game={Uri.EscapeDataString(code.ToUpperInvariant())}&notfound=1"));
@@ -38,5 +38,5 @@ app.MapHub<GameHub>("/hubs/game");
 
 app.Run();
 
-static object GameInfo(GameSession session) =>
+static object GameInfo(IGameSession session) =>
     new { gameId = session.Id, gameType = session.Type, page = GameSessionStore.PageFor(session.Type) };

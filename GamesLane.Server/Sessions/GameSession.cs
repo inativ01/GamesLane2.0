@@ -46,7 +46,7 @@ public record GameEntry(object State, PlayerInfo? Player);
 /// A single two-player game. Actions are authorized by the player's current SignalR connection, so a client can only act for itself.
 /// All public members are thread-safe; derived classes must lock <see cref="Sync"/> when accessing state.
 /// </summary>
-public abstract class GameSession(string id)
+public abstract class GameSession(string id) : IGameSession
 {
     public const int MaxPlayers = 2;
 

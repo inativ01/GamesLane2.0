@@ -31,7 +31,7 @@ A typical setup is a shared screen (such as a TV or laptop) connected as a spect
 
 ```
 GamesLane.slnx                 Solution file
-src/GamesLane.Server/          ASP.NET Core backend
+GamesLane.Server/              ASP.NET Core backend
   Auth/AuthSetup.cs            Sign-in with Google and Microsoft accounts
   Hubs/GameHub.cs              SignalR hub for creating, joining and playing games
   Sessions/                    Game sessions (players, status) and the in-memory session store
@@ -42,7 +42,7 @@ src/GamesLane.Server/          ASP.NET Core backend
     common.js                  Shared: hub connection, sign-in bar, game page framework
     tictactoe.html/.js         Tic-tac-toe page
     rock-paper-scissors.html/.js  Rock-paper-scissors page
-tests/GamesLane.Server.Tests/  Unit tests
+GamesLane.Server.Tests/        Unit tests
 ```
 
 ## Games
@@ -92,14 +92,14 @@ Sign-in is optional; guests can always play. Each provider appears on the site o
 | Google | `Authentication__Google__ClientId`, `Authentication__Google__ClientSecret` | [Google Cloud Console](https://console.cloud.google.com/apis/credentials) → Create credentials → OAuth client ID → Web application | `https://<your-site>/signin-google` |
 | Microsoft | `Authentication__Microsoft__ClientId`, `Authentication__Microsoft__ClientSecret` | [Microsoft Entra admin center](https://entra.microsoft.com/) → App registrations → New registration, choosing "personal Microsoft accounts" plus work/school accounts; then Certificates & secrets → New client secret | `https://<your-site>/signin-microsoft` |
 
-For local testing, use `dotnet user-secrets` in `src/GamesLane.Server` and register `https://localhost:<port>/signin-google` (or `-microsoft`) as an extra redirect URI.
+For local testing, use `dotnet user-secrets` in `GamesLane.Server` and register `https://localhost:<port>/signin-google` (or `-microsoft`) as an extra redirect URI.
 
 ## Running Locally
 
 Requires the [.NET 10 SDK](https://dotnet.microsoft.com/download).
 
 ```
-dotnet run --project src/GamesLane.Server
+dotnet run --project GamesLane.Server
 ```
 
 - Web page: `/` (the address is shown in the console, e.g. `http://localhost:5xxx`)

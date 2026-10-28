@@ -1,8 +1,4 @@
 <Solution>
-  <Folder Name="/src/">
-    <Project Path="src/GamesLane.Server/GamesLane.Server.csproj" />
-  </Folder>
-  <Folder Name="/tests/">
-    <Project Path="tests/GamesLane.Server.Tests/GamesLane.Server.Tests.csproj" />
-  </Folder>
+  <Project Path="GamesLane.Server/GamesLane.Server.csproj" />
+  <Project Path="GamesLane.Server.Tests/GamesLane.Server.Tests.csproj" />
 </Solution>

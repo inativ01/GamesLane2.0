@@ -12,7 +12,7 @@ public enum Choice
 /// Rock-paper-scissors rules for two players (seats 0 and 1), played over any number of rounds.
 /// Each player picks once per round. The round is decided when both have picked.
 /// </summary>
-public class RockPaperScissorsGame
+public class RockPaperScissorsGame : IRockPaperScissorsGame
 {
     public const int PlayerCount = 2;
 

@@ -12,7 +12,7 @@ namespace GamesLane.Server.Hubs;
 /// Players are identified by their signed-in account or, for guests, by a random guest ID the browser keeps
 /// (sent as the <c>guestId</c> query parameter), so they can rejoin their seat after a refresh or reconnect.
 /// </summary>
-public class GameHub(GameSessionStore store) : Hub
+public class GameHub(IGameSessionStore store) : Hub, IGameHub
 {
     public const string StateUpdated = "StateUpdated";
 
@@ -102,7 +102,7 @@ public class GameHub(GameSessionStore store) : Hub
 
     public async Task MakeMove(string gameId, int cell)
     {
-        var session = GetSession<TicTacToeSession>(gameId);
+        var session = GetSession<ITicTacToeSession>(gameId);
         if (!session.TryMove(Context.ConnectionId, cell, out var error))
         {
             throw new HubException(error);
@@ -113,7 +113,7 @@ public class GameHub(GameSessionStore store) : Hub
 
     public async Task PlayAgain(string gameId, int gameNumber)
     {
-        var session = GetSession<TicTacToeSession>(gameId);
+        var session = GetSession<ITicTacToeSession>(gameId);
         if (!session.TryPlayAgain(Context.ConnectionId, gameNumber, out var error))
         {
             throw new HubException(error);
@@ -124,7 +124,7 @@ public class GameHub(GameSessionStore store) : Hub
 
     public async Task Pick(string gameId, Choice choice)
     {
-        var session = GetSession<RockPaperScissorsSession>(gameId);
+        var session = GetSession<IRockPaperScissorsSession>(gameId);
         if (!session.TryPick(Context.ConnectionId, choice, out var error))
         {
             throw new HubException(error);
@@ -135,7 +135,7 @@ public class GameHub(GameSessionStore store) : Hub
 
     public async Task NextRound(string gameId, int round)
     {
-        var session = GetSession<RockPaperScissorsSession>(gameId);
+        var session = GetSession<IRockPaperScissorsSession>(gameId);
         if (!session.TryNextRound(Context.ConnectionId, round, out var error))
         {
             throw new HubException(error);
@@ -149,12 +149,12 @@ public class GameHub(GameSessionStore store) : Hub
         await Groups.RemoveFromGroupAsync(Context.ConnectionId, GameGroup(gameId));
     }
 
-    private GameSession GetSession(string gameId) =>
+    private IGameSession GetSession(string gameId) =>
         store.Get(gameId) ?? throw new HubException($"Game '{gameId}' was not found.");
 
-    private T GetSession<T>(string gameId) where T : GameSession =>
+    private T GetSession<T>(string gameId) where T : class, IGameSession =>
         GetSession(gameId) as T ?? throw new HubException("That action is not available in this game.");
 
-    private Task BroadcastState(GameSession session) =>
+    private Task BroadcastState(IGameSession session) =>
         Clients.Group(GameGroup(session.Id)).SendAsync(StateUpdated, session.GetPublicState());
 }
