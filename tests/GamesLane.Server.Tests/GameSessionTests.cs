@@ -137,6 +137,67 @@ public class GameSessionTests
         Assert.Equal(Mark.X, session.GetState().Board[0]);
     }
 
+    [Fact]
+    public void Play_again_is_refused_during_the_game()
+    {
+        var session = StartedSession();
+        session.TryMove("conn-a", 0, out _);
+
+        Assert.False(session.TryPlayAgain("conn-a", 1, out var error));
+        Assert.Equal("The game is not over yet.", error);
+        Assert.Equal(Mark.X, session.GetState().Board[0]);
+    }
+
+    [Fact]
+    public void Play_again_starts_a_fresh_game_with_the_same_players()
+    {
+        var session = FinishedSession();
+
+        Assert.True(session.TryPlayAgain("conn-b", 1, out _));
+
+        var state = session.GetState();
+        Assert.Equal(2, state.GameNumber);
+        Assert.Equal(GameStatus.InProgress, state.Status);
+        Assert.All(state.Board, cell => Assert.Equal(Mark.None, cell));
+        Assert.Equal(Mark.None, state.Winner);
+        Assert.Equal(["Alice", "Bob"], state.Players.Select(p => p.Name));
+        Assert.True(session.TryMove("conn-a", 4, out var moveError), moveError);
+    }
+
+    [Fact]
+    public void Play_again_pressed_by_both_players_starts_only_one_new_game()
+    {
+        var session = FinishedSession();
+
+        Assert.True(session.TryPlayAgain("conn-a", 1, out _));
+        session.TryMove("conn-a", 4, out _);
+        Assert.True(session.TryPlayAgain("conn-b", 1, out _));
+
+        var state = session.GetState();
+        Assert.Equal(2, state.GameNumber);
+        Assert.Equal(Mark.X, state.Board[4]);
+    }
+
+    [Fact]
+    public void Spectators_cannot_start_a_new_game()
+    {
+        var session = FinishedSession();
+
+        Assert.False(session.TryPlayAgain("spectator", 1, out var error));
+        Assert.Equal("Only players in this game can make moves.", error);
+        Assert.Equal(1, session.GetState().GameNumber);
+    }
+
+    private static TicTacToeSession FinishedSession()
+    {
+        var session = StartedSession();
+        foreach (var (connection, cell) in new[] { ("conn-a", 0), ("conn-b", 3), ("conn-a", 1), ("conn-b", 4), ("conn-a", 2) })
+        {
+            session.TryMove(connection, cell, out _);
+        }
+        return session;
+    }
+
     private static TicTacToeSession StartedSession() => Started(new TicTacToeSession("ABC123"));
 
     // Rejoining

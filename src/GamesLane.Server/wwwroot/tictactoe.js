@@ -32,8 +32,13 @@ const cells = Array.from({ length: 9 }, (_, i) => {
     return cell;
 });
 
+let gameNumber = 1;
+
 const ticTacToe = startGamePage("TicTacToe", (state, view) => {
+    gameNumber = state.gameNumber;
     const myMark = view.isPlayer ? state.players[view.player.seat]?.mark : null;
+    // Only players see "Play again", and only once the game is over.
+    $("play-again").hidden = !(view.isPlayer && state.status === "Finished");
     const myTurn = Boolean(myMark) && state.status === "InProgress" && state.currentTurn === myMark;
 
     state.board.forEach((mark, i) => {
@@ -44,4 +49,8 @@ const ticTacToe = startGamePage("TicTacToe", (state, view) => {
 
     $("status").textContent = ticTacToeStatus(state, view, myMark);
     $("players").replaceChildren(...state.players.map((p, seat) => listItem(`${p.mark}: ${playerLabel(p, seat, view)}`)));
+});
+
+$("play-again").addEventListener("click", () => {
+    call("PlayAgain", ticTacToe.gameId, gameNumber).catch(() => {});
 });

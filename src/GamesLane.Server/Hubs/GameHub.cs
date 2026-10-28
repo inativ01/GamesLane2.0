@@ -111,6 +111,17 @@ public class GameHub(GameSessionStore store) : Hub
         await BroadcastState(session);
     }
 
+    public async Task PlayAgain(string gameId, int gameNumber)
+    {
+        var session = GetSession<TicTacToeSession>(gameId);
+        if (!session.TryPlayAgain(Context.ConnectionId, gameNumber, out var error))
+        {
+            throw new HubException(error);
+        }
+
+        await BroadcastState(session);
+    }
+
     public async Task Pick(string gameId, Choice choice)
     {
         var session = GetSession<RockPaperScissorsSession>(gameId);

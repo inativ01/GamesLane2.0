@@ -255,6 +255,16 @@ input {
     padding: 0;
 }
 
+.back {
+    margin: 0.25rem 0 0.75rem;
+    text-align: left;
+    font-size: 1rem;
+}
+
+#play-again {
+    margin-top: 0.5rem;
+}
+
 .policy {
     text-align: left;
 }

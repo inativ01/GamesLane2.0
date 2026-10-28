@@ -12,6 +12,7 @@ public record TicTacToeState(
     string GameId,
     GameType GameType,
     GameStatus Status,
+    int GameNumber,
     IReadOnlyList<Mark> Board,
     Mark CurrentTurn,
     Mark Winner,
@@ -19,11 +20,12 @@ public record TicTacToeState(
     IReadOnlyList<TicTacToePlayer> Players);
 
 /// <summary>
-/// A tic-tac-toe game. Seat 0 plays X, seat 1 plays O.
+/// A tic-tac-toe game. Seat 0 plays X, seat 1 plays O. After a game ends, the same players can play again.
 /// </summary>
 public class TicTacToeSession(string id) : GameSession(id)
 {
-    private readonly TicTacToeGame _game = new();
+    private TicTacToeGame _game = new();
+    private int _gameNumber = 1;
 
     public override GameType Type => GameType.TicTacToe;
 
@@ -48,6 +50,36 @@ public class TicTacToeSession(string id) : GameSession(id)
         }
     }
 
+    /// <summary>
+    /// Starts a new game after game <paramref name="gameNumber"/> has ended. If that game has already been
+    /// replaced (for example, both players pressed "Play again"), nothing changes.
+    /// </summary>
+    public bool TryPlayAgain(string connectionId, int gameNumber, [NotNullWhen(false)] out string? error)
+    {
+        lock (Sync)
+        {
+            if (!TryGetPlayer(connectionId, out _, out error))
+            {
+                return false;
+            }
+
+            if (gameNumber != _gameNumber)
+            {
+                return true;
+            }
+
+            if (!_game.IsOver)
+            {
+                error = "The game is not over yet.";
+                return false;
+            }
+
+            _game = new TicTacToeGame();
+            _gameNumber++;
+            return true;
+        }
+    }
+
     public TicTacToeState GetState()
     {
         lock (Sync)
@@ -56,6 +88,7 @@ public class TicTacToeSession(string id) : GameSession(id)
                 Id,
                 Type,
                 GetStatus(),
+                _gameNumber,
                 _game.Board.ToArray(),
                 _game.CurrentTurn,
                 _game.Winner,

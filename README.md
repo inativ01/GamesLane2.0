@@ -61,6 +61,7 @@ Clients connect to the SignalR hub at `/hubs/game` and call these methods:
 | `JoinAsPlayer(gameId, playerName)` | `{ playerId, seat, gameType }` | Joins as a player. Seats are 0 and 1 in join order (in tic-tac-toe, seat 0 is X). The game starts when both have joined. |
 | `JoinAsSpectator(gameId)` | game state | Joins as a spectator and returns the current state. |
 | `MakeMove(gameId, cell)` | — | Tic-tac-toe: places the caller's mark. Cells are numbered 0–8, left to right, top to bottom. |
+| `PlayAgain(gameId, gameNumber)` | — | Tic-tac-toe: after game `gameNumber` has ended, starts a new game with the same players. Refused while the game is in progress. If the new game has already started, nothing changes. |
 | `Pick(gameId, choice)` | — | Rock-paper-scissors: picks `"Rock"`, `"Paper"` or `"Scissors"` for the current round. |
 | `NextRound(gameId, round)` | — | Rock-paper-scissors: starts the round after `round`. If it has already started, nothing changes. |
 | `Leave(gameId)` | — | Stops receiving updates for the game. |
