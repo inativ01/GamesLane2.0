@@ -94,6 +94,55 @@ Sign-in is optional; guests can always play. Each provider appears on the site o
 
 For local testing, use `dotnet user-secrets` in `GamesLane.Server` and register `https://localhost:<port>/signin-google` (or `-microsoft`) as an extra redirect URI.
 
+## Project Status and External Services
+
+_Last updated: 2026-10-28. Keep this section current; it is the hand-off point between work sessions._
+
+### Local machine
+- Repo folder: `C:\Users\inati\OneDrive\Doc_Isaac\Programming\GamesLane2.0` (inside OneDrive; OneDrive sync can lock files during moves).
+- Installed: Git (user Isaac Nativ), GitHub CLI (`gh`, signed in), .NET 10 SDK. Not installed: Docker, Node.js.
+- The original JavaScript/Firebase app is in the sibling folder `GamesLane` (github.com/inativ01/GamesLane). It is separate; do not modify it.
+
+### GitHub
+- Repo: https://github.com/inativ01/GamesLane2.0 (public), branch `main`.
+- Every push to `main` triggers a Render deploy.
+
+### Render (hosting)
+- Live site: https://gameslane.onrender.com
+- Free web service, built from the `Dockerfile` at the repo root; auto-deploys from `main`.
+- Server reads the `PORT` setting; health check at `/health`.
+- Free tier: sleeps after 15 min idle (~1 min to wake). Every restart/deploy ends live games and signs users out.
+- Environment variables (values only in Render, never in the repo):
+  - `ConnectionStrings__GamesLane`: Neon database (set, **not yet used by the code**)
+  - `Authentication__Google__ClientId` / `__ClientSecret`: set, working
+  - `Authentication__Microsoft__ClientId` / `__ClientSecret`: not set yet
+
+### Neon (PostgreSQL database)
+- Project `GamesLane` (ID `gentle-cherry-51286211`), region AWS US East 2 (Ohio), branch `production`.
+- Free plan: 1 GB, sleeps after 5 min idle and wakes automatically, 6-hour restore window.
+- No database code exists yet (see Next steps).
+
+### Sign-in providers
+- **Google:** working on the live site. OAuth client in Google Cloud Console (project "GamesLane"); redirect URI `https://gameslane.onrender.com/signin-google`; privacy policy at `/privacy.html`.
+- **Microsoft:** code ready; app registration in the Entra admin center not done yet (redirect URI `https://gameslane.onrender.com/signin-microsoft`).
+- **Apple:** deferred (needs a paid Apple Developer membership).
+
+### Next steps
+1. Database: add EF Core + Npgsql (packages awaiting approval: `Npgsql.EntityFrameworkCore.PostgreSQL`, `Microsoft.EntityFrameworkCore.Design`, `dotnet-ef` tool, optionally `Microsoft.AspNetCore.DataProtection.EntityFrameworkCore`).
+2. `Data/` folder with a `User` table; save users on sign-in; apply migrations on startup.
+3. Game history and stats; then update the privacy policy (it currently says there is no database).
+
+### Working conventions
+- Ask before adding or upgrading packages.
+- Interfaces go in an `Interfaces/` subfolder of each folder, in the parent folder's namespace.
+- When asked to "not commit", leave changes uncommitted for review.
+- Never put secrets in the repo, chat or commands; they live only in Render's Environment tab (or `dotnet user-secrets` locally).
+
+### Known limitations
+- Games are in memory only and are lost on restart.
+- A guest's rejoin ID is per browser tab; signing in mid-game loses your seat.
+- One server instance only (no scale-out).
+
 ## Running Locally
 
 Requires the [.NET 10 SDK](https://dotnet.microsoft.com/download).
