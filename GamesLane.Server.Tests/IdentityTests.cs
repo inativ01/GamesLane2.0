@@ -6,32 +6,34 @@ namespace GamesLane.Server.Tests;
 
 public class IdentityTests
 {
-    private const string GuestId = "0123456789abcdef0123456789abcdef";
-
     [Fact]
-    public void Signed_in_users_are_identified_by_provider_and_account()
+    public void Logged_in_users_are_identified_by_their_user_id()
     {
-        var user = new ClaimsPrincipal(new ClaimsIdentity(
-            [new Claim(ClaimTypes.NameIdentifier, "12345", ClaimValueTypes.String, "Google")],
-            "Cookies"));
+        var user = AuthSetup.CreateUser("google:12345", "Ada", AuthSetup.Google);
 
-        Assert.Equal("user:Google:12345", GameHub.GetUserKey(user, GuestId, "conn"));
+        Assert.Equal("user:google:12345", GameHub.GetUserKey(user, "conn"));
+        Assert.Equal("Ada", AuthSetup.GetUserName(user));
     }
 
     [Fact]
-    public void Guests_are_identified_by_their_guest_id()
+    public void Users_who_are_not_logged_in_are_identified_by_their_connection()
     {
-        Assert.Equal($"guest:{GuestId}", GameHub.GetUserKey(new ClaimsPrincipal(), GuestId, "conn"));
+        Assert.Equal("connection:conn", GameHub.GetUserKey(new ClaimsPrincipal(new ClaimsIdentity()), "conn"));
+        Assert.Equal("connection:conn", GameHub.GetUserKey(null, "conn"));
+        Assert.Null(AuthSetup.GetUserName(new ClaimsPrincipal(new ClaimsIdentity())));
     }
 
     [Theory]
-    [InlineData(null)]
-    [InlineData("")]
-    [InlineData("short")]
-    [InlineData("not-hex-but-long-enough-with-dashes")]
-    public void Invalid_guest_ids_fall_back_to_the_connection(string? guestId)
+    [InlineData("Ada", "Ada")]
+    [InlineData("  Ada Lovelace  ", "Ada Lovelace")]
+    [InlineData("123456789012345678901234567890", "123456789012345678901234567890")]
+    [InlineData("1234567890123456789012345678901", null)]
+    [InlineData("   ", null)]
+    [InlineData("", null)]
+    [InlineData(null, null)]
+    public void Display_names_are_trimmed_and_limited_in_length(string? name, string? expected)
     {
-        Assert.Equal("connection:conn", GameHub.GetUserKey(null, guestId, "conn"));
+        Assert.Equal(expected, AuthSetup.NormalizeName(name));
     }
 
     [Theory]

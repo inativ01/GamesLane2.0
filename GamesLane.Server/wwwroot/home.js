@@ -1,16 +1,15 @@
 "use strict";
 
-// Main screen: create a game or join one by code, then go to that game's page.
+// Main screen: start a new session (logged-in users only) or join one by code, then go to that game's page.
 
-function goToGame(gameType, gameId, mode) {
-    const extra = mode === "player" ? "&autojoin=1" : mode === "spectator" ? "&role=spectator" : "";
-    location.href = `${GAME_PAGES[gameType]}?game=${gameId}${extra}`;
+function goToSession(gameType, gameId) {
+    location.href = `${GAME_PAGES[gameType]}?game=${gameId}`;
 }
 
-async function findGame(code) {
+async function findSession(code) {
     const response = await fetch(`/api/games/${encodeURIComponent(code)}`);
     if (response.status === 404) {
-        showError(`Game ${code.toUpperCase()} was not found.`);
+        showError(`Session ${code.toUpperCase()} was not found.`);
         return null;
     }
     if (!response.ok) {
@@ -22,14 +21,9 @@ async function findGame(code) {
 
 document.querySelectorAll("[data-create]").forEach((button) => {
     button.addEventListener("click", async () => {
-        const asPlayer = button.dataset.role === "player";
-        if (asPlayer && !requireName($("name"))) {
-            return;
-        }
-
         try {
             const gameId = await call("CreateGame", button.dataset.create);
-            goToGame(button.dataset.create, gameId, asPlayer ? "player" : "spectator");
+            goToSession(button.dataset.create, gameId);
         } catch {
             // Error already shown.
         }
@@ -40,42 +34,27 @@ $("join-form").addEventListener("submit", async (event) => {
     event.preventDefault();
     const code = $("code").value.trim();
     if (!code) {
-        showError("Enter a game code.");
+        showError("Enter a session code.");
         return;
     }
-    if (!requireName($("name"))) {
-        return;
-    }
-    const game = await findGame(code);
-    if (game) {
-        goToGame(game.gameType, game.gameId, "player");
+    const session = await findSession(code);
+    if (session) {
+        goToSession(session.gameType, session.gameId);
     }
 });
 
-$("watch").addEventListener("click", async () => {
-    const code = $("code").value.trim();
-    if (!code) {
-        showError("Enter a game code to watch.");
-        return;
-    }
-    const game = await findGame(code);
-    if (game) {
-        goToGame(game.gameType, game.gameId, null);
-    }
-});
-
-$("name").value = savedName();
-setUpAccount().then((account) => {
-    if (account?.signedIn && !$("name").value) {
-        $("name").value = account.name ?? "";
-    }
+accountReady.then(() => {
+    document.querySelectorAll("[data-create]").forEach((button) => {
+        button.disabled = !account.signedIn;
+    });
+    $("login-to-start").hidden = account.signedIn;
 });
 
 if (params.get("game")) {
     $("code").value = params.get("game");
 }
 if (params.get("notfound")) {
-    showError(`Game ${params.get("game") ?? ""} was not found. It may have ended when the server restarted.`);
+    showError(`Session ${params.get("game") ?? ""} was not found. It may have ended when the server restarted.`);
 }
 if (params.get("signin") === "failed") {
     showError("Sign-in did not complete. Please try again.");

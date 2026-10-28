@@ -17,7 +17,10 @@ public interface IGameHub
 
     Task<object> JoinAsSpectator(string gameId);
 
-    Task<PlayerInfo> JoinAsPlayer(string gameId, string playerName);
+    /// <summary>
+    /// Takes a seat as the logged-in user, using their display name.
+    /// </summary>
+    Task<PlayerInfo> JoinAsPlayer(string gameId);
 
     Task MakeMove(string gameId, int cell);
 

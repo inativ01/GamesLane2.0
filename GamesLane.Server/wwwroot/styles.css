@@ -2,6 +2,10 @@
     box-sizing: border-box;
 }
 
+[hidden] {
+    display: none !important;
+}
+
 body {
     margin: 0;
     font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
@@ -78,6 +82,40 @@ button:disabled {
     cursor: default;
 }
 
+button:not(.cell):disabled {
+    opacity: 0.5;
+}
+
+.dialog {
+    width: min(90vw, 360px);
+    border: none;
+    border-radius: 8px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+}
+
+.dialog::backdrop {
+    background: rgba(0, 0, 0, 0.4);
+}
+
+.dialog form {
+    margin-top: 0;
+}
+
+.dialog h2 {
+    margin: 0;
+}
+
+.login-providers {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    text-align: center;
+}
+
+.login-providers .hint {
+    margin: 0;
+}
+
 form {
     display: flex;
     flex-direction: column;
@@ -111,11 +149,6 @@ input {
 
 .actions.center {
     justify-content: center;
-}
-
-.name-field {
-    margin: 1rem 0;
-    text-align: left;
 }
 
 .panel {

@@ -14,40 +14,36 @@
     </header>
 
     <section id="home">
-        <label class="name-field">Your name <input id="name" maxlength="30" autocomplete="nickname"></label>
-
         <div class="panel">
-            <h2>Join a game</h2>
+            <h2>Join a session</h2>
             <form id="join-form">
-                <label>Game code <input id="code" maxlength="6" autocomplete="off" autocapitalize="characters"></label>
+                <label>Session code <input id="code" maxlength="6" autocomplete="off" autocapitalize="characters"></label>
                 <div class="actions">
-                    <button type="submit">Join as player</button>
-                    <button id="watch" type="button" class="secondary">Watch as spectator</button>
+                    <button type="submit">Join</button>
                 </div>
             </form>
         </div>
 
         <div class="panel">
-            <h2>Start a new game</h2>
+            <h2>Start a new session</h2>
+            <p id="login-to-start" class="hint" hidden>Log in to start a session. <button type="button" class="secondary small" data-login>Log in</button></p>
             <div class="game-list">
                 <div class="game-card">
                     <h3>Tic-tac-toe</h3>
                     <p class="hint">2 players. Get three in a row.</p>
                     <div class="actions center">
-                        <button type="button" data-create="TicTacToe" data-role="player">Play</button>
-                        <button type="button" data-create="TicTacToe" data-role="spectator" class="secondary">Show on this screen</button>
+                        <button type="button" data-create="TicTacToe" disabled>New session</button>
                     </div>
                 </div>
                 <div class="game-card">
                     <h3>Rock-paper-scissors</h3>
                     <p class="hint">2 players. Pick in secret, keep score over many rounds.</p>
                     <div class="actions center">
-                        <button type="button" data-create="RockPaperScissors" data-role="player">Play</button>
-                        <button type="button" data-create="RockPaperScissors" data-role="spectator" class="secondary">Show on this screen</button>
+                        <button type="button" data-create="RockPaperScissors" disabled>New session</button>
                     </div>
                 </div>
             </div>
-            <p class="hint"><strong>Play</strong> joins you as the first player. <strong>Show on this screen</strong> uses this screen as the shared board (e.g. a TV) and everyone joins from their phones.</p>
+            <p class="hint">Anyone with the session code or link can watch. Logged-in users can take a seat and play.</p>
         </div>
     </section>
 

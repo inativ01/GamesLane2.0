@@ -25,10 +25,10 @@
                 <button id="share-link" type="button" class="secondary" hidden>Share…</button>
             </div>
         </div>
-        <form id="join-panel" class="panel" hidden>
-            <label>Your name <input id="join-name" maxlength="30" autocomplete="nickname"></label>
-            <button type="submit">Join as player</button>
-        </form>
+        <div id="join-panel" class="panel" hidden>
+            <button id="take-seat" type="button" hidden>Take a seat</button>
+            <p id="login-to-play" class="hint" hidden>Log in to take a seat. <button type="button" class="secondary small" data-login>Log in</button></p>
+        </div>
         <p id="status" class="status"></p>
         <div id="board" class="board"></div>
         <button id="play-again" type="button" hidden>Play again</button>

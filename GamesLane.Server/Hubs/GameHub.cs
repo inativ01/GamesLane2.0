@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using GamesLane.Server.Auth;
 using GamesLane.Server.Games.RockPaperScissors;
 using GamesLane.Server.Sessions;
 using Microsoft.AspNetCore.SignalR;
@@ -9,8 +10,7 @@ namespace GamesLane.Server.Hubs;
 /// Real-time connection point for game sessions.
 /// Everyone in a game (players and spectators) joins the game's group and receives public "StateUpdated" messages.
 /// Private, per-player information is returned only to the calling connection.
-/// Players are identified by their signed-in account or, for guests, by a random guest ID the browser keeps
-/// (sent as the <c>guestId</c> query parameter), so they can rejoin their seat after a refresh or reconnect.
+/// Players are logged-in users, identified by their user ID, so they can rejoin their seat after a refresh or reconnect.
 /// </summary>
 public class GameHub(IGameSessionStore store) : Hub, IGameHub
 {
@@ -19,26 +19,14 @@ public class GameHub(IGameSessionStore store) : Hub, IGameHub
     public static string GameGroup(string gameId) => $"game:{gameId.ToUpperInvariant()}";
 
     /// <summary>
-    /// The caller's stable identity: their account if signed in, otherwise their guest ID, otherwise their connection.
+    /// The caller's stable identity: their user ID if logged in, otherwise their connection.
     /// </summary>
-    public static string GetUserKey(ClaimsPrincipal? user, string? guestId, string connectionId)
-    {
-        var account = user?.Identity?.IsAuthenticated == true ? user.FindFirst(ClaimTypes.NameIdentifier) : null;
-        if (account is not null)
-        {
-            return $"user:{account.Issuer}:{account.Value}";
-        }
+    public static string GetUserKey(ClaimsPrincipal? user, string connectionId) =>
+        AuthSetup.GetUserId(user) is { } userId ? $"user:{userId}" : $"connection:{connectionId}";
 
-        return IsValidGuestId(guestId) ? $"guest:{guestId}" : $"connection:{connectionId}";
-    }
+    private string UserKey => GetUserKey(Context.User, Context.ConnectionId);
 
-    private static bool IsValidGuestId(string? guestId) =>
-        guestId is { Length: >= 16 and <= 64 } && guestId.All(char.IsAsciiLetterOrDigit);
-
-    private string UserKey => GetUserKey(
-        Context.User,
-        Context.GetHttpContext()?.Request.Query["guestId"],
-        Context.ConnectionId);
+    private string RequireUserName(string message) => AuthSetup.GetUserName(Context.User) ?? throw new HubException(message);
 
     /// <summary>
     /// Opens a game page: subscribes to updates and, if the caller already holds a seat, reconnects them to it.
@@ -72,6 +60,7 @@ public class GameHub(IGameSessionStore store) : Hub, IGameHub
 
     public string CreateGame(GameType gameType)
     {
+        RequireUserName("Log in to start a game.");
         if (!Enum.IsDefined(gameType))
         {
             throw new HubException("Unknown game type.");
@@ -87,8 +76,9 @@ public class GameHub(IGameSessionStore store) : Hub, IGameHub
         return session.GetPublicState();
     }
 
-    public async Task<PlayerInfo> JoinAsPlayer(string gameId, string playerName)
+    public async Task<PlayerInfo> JoinAsPlayer(string gameId)
     {
+        var playerName = RequireUserName("Log in to take a seat.");
         var session = GetSession(gameId);
         if (!session.TryAddPlayer(playerName, Context.ConnectionId, out var player, out var error, UserKey))
         {
