@@ -28,7 +28,15 @@ public static class DatabaseSetup
         string npgsqlConnectionString;
         try
         {
-            npgsqlConnectionString = new NpgsqlConnectionStringBuilder(ToNpgsqlConnectionString(connectionString)).ConnectionString;
+            var npgsql = new NpgsqlConnectionStringBuilder(ToNpgsqlConnectionString(connectionString));
+
+            // Neon uses SSL, not Kerberos (GSS) encryption, and the server image does not include the Kerberos library.
+            if (!npgsql.ContainsKey("GSS Encryption Mode"))
+            {
+                npgsql.GssEncryptionMode = GssEncryptionMode.Disable;
+            }
+
+            npgsqlConnectionString = npgsql.ConnectionString;
         }
         catch (Exception ex) when (ex is ArgumentException or FormatException or UriFormatException)
         {
