@@ -9,10 +9,14 @@ It is a complete reimplementation of the original [GamesLane](https://github.com
 
 ### Users
 - A **user** is a person who is logged in. At most one user is logged in per browser tab; there may be no user logged in. Different tabs may have different users.
-- A user has a **user ID** and a **display name**. More properties (e.g. an icon) will be added later.
-- To log in, the user either enters a name, or signs in with Google (the display name defaults to the Google name). The user can change the display name; this changes only the GamesLane name, not the Google account.
-- A login lasts 30 days. Until there is a database, a name-only user exists only in the browser where they logged in.
-- Changing the display name also updates it on any seat the user holds.
+- A user has a **user ID**, a **display name** and an **icon** (a built-in emoji, or an uploaded picture).
+- There are three ways to log in:
+  - **Guest:** just a name (and a built-in icon). Guests are not saved in the database.
+  - **Registered user:** a unique username (3–20 letters, digits or `_`, any case) and a password (at least 8 characters), plus a display name and icon. Passwords cannot be reset, since no email is collected.
+  - **Google** (or Microsoft): the account is saved by provider and account ID. The display name and icon default to the Google name and picture; changing them affects only GamesLane.
+- Registered and Google users can upload a picture as their icon; the page shrinks it to 128×128 before uploading.
+- A login lasts 30 days after the last visit. Saved users who are inactive for 30 days are deleted automatically.
+- Changing the display name or icon also updates it on any seat the user holds.
 
 ### Lobby (main screen)
 - A list of games. A new session can be started only when a user is logged in.
@@ -59,7 +63,10 @@ A typical setup is a shared screen (such as a TV or laptop) connected as a spect
 ```
 GamesLane.slnx                 Solution file
 GamesLane.Server/              ASP.NET Core backend
-  Auth/AuthSetup.cs            Login by name or with Google/Microsoft accounts; per-tab login tokens
+  Auth/AuthSetup.cs            Login tokens, rate limiting, Google/Microsoft sign-in
+  Auth/AccountEndpoints.cs     Guest login, registration, login, profile and icon endpoints
+  Data/                        Database (EF Core + PostgreSQL): tables, migrations, connection setup
+  Users/                       User rules, user service, and deletion of inactive users
   Hubs/GameHub.cs              SignalR hub for creating, joining and playing sessions
   Hubs/DisconnectedSeatsMonitor.cs  Frees the seats of users disconnected for over 30 seconds
   Sessions/GameSession.cs      Seats, session lobby and game flow shared by all games
@@ -104,7 +111,7 @@ After every change, the server sends a `StateUpdated` message with the public se
 | `sessionId`, `gameType` | The session code and which game it is |
 | `phase` | `"Lobby"` (session lobby) or `"Playing"` (game screen) |
 | `minSeats`, `maxSeats` | Seats needed to start, and the number of seats |
-| `seats` | One entry per seat: `{ playerId, name, isConnected }`, or `null` when empty. A page finds its user's seats by comparing `playerId` |
+| `seats` | One entry per seat: `{ playerId, name, icon, isConnected }`, or `null` when empty. `icon` is an emoji or a picture address starting with `/`. A page finds its user's seats by comparing `playerId` |
 | `gameNumber` | 0 until the first game starts, then counts games |
 | `isGameOver` | The current game has ended |
 | `canResume` | In the lobby with an unfinished, paused game |
@@ -118,11 +125,30 @@ Players are identified by their user ID. After a refresh or dropped connection, 
 
 ### Login
 
-A logged-in user is identified by a signed **login token**. The page keeps it in the browser tab's `sessionStorage`, so each tab can have its own user; a newly opened tab starts with the most recently logged-in user. The page sends the token as an `Authorization: Bearer` header, and as the `access_token` query parameter when connecting to the hub. Logging out simply forgets the token in that tab. Tokens last 30 days.
+A logged-in user is identified by a signed **login token** holding their user ID, display name, icon and kind (`Guest`, `Registered`, or the provider, e.g. `Google`). The page keeps it in the browser tab's `sessionStorage`, so each tab can have its own user; a newly opened tab starts with the most recently logged-in user. The page sends the token as an `Authorization: Bearer` header, and as the `access_token` query parameter when connecting to the hub. Logging out simply forgets the token in that tab.
 
-User IDs are `name:<random>` for users who logged in by name, and `google:<account>` (or `microsoft:<account>`) for external accounts. For external accounts, the display name defaults to the account's name; changing it affects only GamesLane.
+Tokens last 30 days. Every page load calls `GET /auth/me`, which returns a renewed token with the saved user's current name and icon (so changes made in another tab or device show up), and records the user as active at most once a day. If the saved user was deleted, `/auth/me` reports them as logged out.
 
-External sign-in: the page sends the browser to `/auth/signin/{provider}` with a `returnUrl` containing `signin=external`. After sign-in, the provider's result is kept in a short-lived cookie; the returning page calls `POST /auth/external`, which exchanges it for a login token and clears the cookie.
+Tokens are encrypted and signed with keys stored in the `DataProtectionKeys` table, so they stay valid across restarts and deploys.
+
+User IDs are a GUID for saved users and `guest:<random>` for guests.
+
+External sign-in: the page sends the browser to `/auth/signin/{provider}` with a `returnUrl` containing `signin=external`. After sign-in, the provider's result is kept in a short-lived cookie; the returning page calls `POST /auth/external`, which finds or creates the user, exchanges the cookie for a login token and clears it. On the first sign-in, the profile dialog opens so the user can confirm their name and icon.
+
+### Database
+
+PostgreSQL on Neon, accessed with EF Core. Tables (created and updated automatically when the server starts):
+
+| Table | Contents |
+| --- | --- |
+| `Users` | `Id`, `Username` / `NormalizedUsername` (registered users; unique regardless of case), `PasswordHash`, `DisplayName`, `Icon`, `CreatedAt`, `LastActiveAt` |
+| `ExternalLogins` | `Provider` + `ProviderKey` (unique), `UserId` |
+| `UserIcons` | Uploaded pictures: `Id`, `UserId`, `ContentType`, `Data`, `CreatedAt`. Served at `/api/icons/{id}`; a new upload gets a new ID |
+| `DataProtectionKeys` | The keys that encrypt and sign login tokens |
+
+Deleting a user also deletes their external logins and icons. To change the tables, edit the classes in `Data/` and run `dotnet ef migrations add <Name> --project GamesLane.Server --output-dir Data/Migrations` (first `dotnet tool restore`, and set `$env:ASPNETCORE_ENVIRONMENT = "Development"` so the connection string is read from user secrets).
+
+To browse the database, use the Neon console's SQL Editor, pgAdmin, DBeaver, or the PostgreSQL extension for VS Code (not SSMS, which is for SQL Server only). Table and column names are case-sensitive, e.g. `select * from "Users"`.
 
 ### HTTP endpoints
 
@@ -130,16 +156,22 @@ External sign-in: the page sends the browser to `/auth/signin/{provider}` with a
 | --- | --- |
 | `GET /api/sessions/{code}` | `{ sessionId, gameType, page }` for an existing session, or 404 |
 | `GET /join/{code}` | Shareable join link; redirects to the session's page (`<page>?session=CODE`) |
-| `GET /auth/me` | `{ signedIn, userId, name, provider, providers }`; `providers` lists the external sign-in options that are configured |
-| `POST /auth/login` | Body `{ name }`. Logs in by name (1–30 characters) and returns a login token (`{ accessToken, ... }`) |
-| `POST /auth/name` | Body `{ name }`, logged-in users only. Changes the display name and returns a new login token |
+| `GET /auth/me` | `{ signedIn, kind, name, icon, uploadedIcon, accessToken, providers, icons }`. `accessToken` is a renewed login token; `providers` lists the external sign-in options that are configured; `icons` lists the built-in icons |
+| `POST /auth/guest` | Body `{ name, icon }`. Logs in as a guest |
+| `POST /auth/register` | Body `{ username, password, name, icon }`. Creates a registered user and logs in. Rate-limited |
+| `POST /auth/login` | Body `{ username, password }`. Logs in a registered user. Rate-limited (10 attempts per minute per address) |
+| `POST /auth/profile` | Body `{ name, icon }`, logged-in users only. Changes the display name and icon (a built-in icon, or the user's uploaded picture) |
+| `POST /auth/icon` | Body: a PNG, JPEG or WebP picture (up to 200 KB). Saved users only. Uploads it and makes it the icon |
+| `GET /api/icons/{id}` | An uploaded picture |
 | `GET /auth/signin/{provider}?returnUrl=/...` | Starts sign-in with `google` or `microsoft` |
-| `POST /auth/external` | Exchanges the result of an external sign-in for a login token |
+| `POST /auth/external` | Exchanges the result of an external sign-in for `{ accessToken, isNew }` |
+
+All the `POST /auth/...` endpoints return `{ accessToken }` on success, or `{ error }` (status 400) with a message to show.
 | `GET /health` | Health check |
 
 ## Sign-in Setup
 
-Logging in by name always works. Each external provider appears on the site only when its client ID and secret are configured. Set them as environment variables (on Render: **Environment** tab) — never commit them to the repo:
+Guest and username logins always work. Each external provider appears on the site only when its client ID and secret are configured. Set them as environment variables (on Render: **Environment** tab) — never commit them to the repo:
 
 | Provider | Variables | Where to get them | Redirect URI to register |
 | --- | --- | --- | --- |
@@ -165,16 +197,17 @@ _Last updated: 2026-10-29. Keep this section current; it is the hand-off point b
 - Live site: https://gameslane.onrender.com
 - Free web service, built from the `Dockerfile` at the repo root; auto-deploys from `main`.
 - Server reads the `PORT` setting; health check at `/health`.
-- Free tier: sleeps after 15 min idle (~1 min to wake). Every restart/deploy ends live games and logs users out (login tokens become invalid).
+- Free tier: sleeps after 15 min idle (~1 min to wake). Every restart/deploy ends live games; logins survive.
 - Environment variables (values only in Render, never in the repo):
-  - `ConnectionStrings__GamesLane`: Neon database (set, **not yet used by the code**)
+  - `ConnectionStrings__GamesLane`: Neon `production` branch (set; required — the server does not start without it). Either the .NET (`Host=...;`) or the URL (`postgresql://...`) format works.
   - `Authentication__Google__ClientId` / `__ClientSecret`: set, working
   - `Authentication__Microsoft__ClientId` / `__ClientSecret`: not set yet
 
 ### Neon (PostgreSQL database)
-- Project `GamesLane` (ID `gentle-cherry-51286211`), region AWS US East 2 (Ohio), branch `production`.
+- Project `GamesLane` (ID `gentle-cherry-51286211`), region AWS US East 2 (Ohio).
+- Branches: `production` (the live site) and `dev` (local development; its connection string is in `dotnet user-secrets` as `ConnectionStrings:GamesLane`).
 - Free plan: 1 GB, sleeps after 5 min idle and wakes automatically, 6-hour restore window.
-- No database code exists yet (see Next steps).
+- Tables are created by EF Core migrations when the server starts (see Database above).
 
 ### Sign-in providers
 - **Google:** working on the live site. OAuth client in Google Cloud Console (project "GamesLane"); redirect URI `https://gameslane.onrender.com/signin-google`; privacy policy at `/privacy.html`.
@@ -182,9 +215,9 @@ _Last updated: 2026-10-29. Keep this section current; it is the hand-off point b
 - **Apple:** deferred (needs a paid Apple Developer membership).
 
 ### Next steps
-1. Database: add EF Core + Npgsql (packages awaiting approval: `Npgsql.EntityFrameworkCore.PostgreSQL`, `Microsoft.EntityFrameworkCore.Design`, `dotnet-ef` tool, optionally `Microsoft.AspNetCore.DataProtection.EntityFrameworkCore`).
-2. `Data/` folder with a `User` table; save users on sign-in; apply migrations on startup.
-3. Game history and stats; then update the privacy policy (it currently says there is no database).
+1. Linking a Google account to a registered user (deferred).
+2. Microsoft sign-in: app registration in the Entra admin center and the two environment variables on Render.
+3. Game history and stats (deferred).
 
 ### Working conventions
 - Ask before adding or upgrading packages.
@@ -194,16 +227,20 @@ _Last updated: 2026-10-29. Keep this section current; it is the hand-off point b
 
 ### Known limitations
 - Games are in memory only and are lost on restart.
-- Login tokens are signed with keys held in memory, so a server restart logs everyone out.
-- Until there is a database, a user who logged in by name exists only in that browser; logging in again creates a new user.
+- A guest exists only in the browser where they logged in; logging in again as a guest creates a new user.
+- Forgotten passwords cannot be reset (no email is collected).
+- The login-token keys are stored unencrypted in the database (the server logs a warning about this at startup), so the connection string must be kept secret.
 - Logging in or out mid-game loses your seat (it is freed 30 seconds later, and the game pauses).
 - One server instance only (no scale-out).
 
 ## Running Locally
 
-Requires the [.NET 10 SDK](https://dotnet.microsoft.com/download).
+Requires the [.NET 10 SDK](https://dotnet.microsoft.com/download) and a PostgreSQL connection string (the Neon `dev` branch), set once with:
 
 ```
+cd GamesLane.Server
+dotnet user-secrets set 'ConnectionStrings:GamesLane' '<connection string>'
+cd ..
 dotnet run --project GamesLane.Server
 ```
 

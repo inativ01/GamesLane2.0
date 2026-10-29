@@ -44,23 +44,27 @@ function postJson(url, body) {
     return authFetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
 }
 
-// The current user: { signedIn, userId, name, provider, providers }, set once accountReady resolves.
+// The current user, set once accountReady resolves:
+// { signedIn, kind, name, icon, uploadedIcon, providers, icons }. kind is "Guest", "Registered" or a provider such as "Google".
 let account = null;
-let justSignedInExternally = false;
+let isNewExternalUser = false;
 
 const accountReady = (async () => {
     await completeExternalSignIn();
     try {
         account = await (await authFetch("/auth/me")).json();
     } catch {
-        account = { signedIn: false, providers: [] };
+        account = { signedIn: false, providers: [], icons: [] };
     }
-    if (token && !account.signedIn) {
+    // Every visit renews the login token, so it keeps working as long as the user comes back within 30 days.
+    if (account.signedIn && account.accessToken) {
+        saveToken(account.accessToken);
+    } else if (token && !account.signedIn) {
         saveToken("");
     }
     renderAccount();
-    if (justSignedInExternally && account.signedIn) {
-        openLoginDialog(true);
+    if (isNewExternalUser && account.signedIn) {
+        openProfileDialog();
     }
     return account;
 })();
@@ -113,8 +117,9 @@ async function completeExternalSignIn() {
 
     const response = await fetch("/auth/external", { method: "POST" }).catch(() => null);
     if (response?.ok) {
-        saveToken((await response.json()).accessToken);
-        justSignedInExternally = true;
+        const result = await response.json();
+        saveToken(result.accessToken);
+        isNewExternalUser = result.isNew;
     } else {
         showError("Sign-in did not complete. Please try again.");
     }
@@ -135,93 +140,222 @@ function smallButton(text, onClick) {
     return button;
 }
 
-// Shows the user's name with Change name and Log out, or a Log in button.
+// An icon: a built-in emoji, or an uploaded picture (its address starts with "/").
+function iconElement(icon, className = "icon") {
+    if (icon?.startsWith("/")) {
+        const img = document.createElement("img");
+        img.className = className;
+        img.src = icon;
+        img.alt = "";
+        return img;
+    }
+    const span = document.createElement("span");
+    span.className = className;
+    span.textContent = icon ?? "";
+    return span;
+}
+
+// Shows the user's icon and name with Profile and Log out, or a Log in button.
 function renderAccount() {
     const bar = $("account");
     if (account.signedIn) {
         const name = document.createElement("span");
         name.textContent = account.name;
         bar.replaceChildren(
+            iconElement(account.icon),
             name,
-            smallButton("Change name", () => openLoginDialog(true)),
+            smallButton("Profile", openProfileDialog),
             smallButton("Log out", () => {
                 saveToken("");
                 location.reload();
             }));
     } else {
-        bar.replaceChildren(smallButton("Log in", () => openLoginDialog(false)));
+        bar.replaceChildren(smallButton("Log in", openLoginDialog));
     }
 }
 
 document.querySelectorAll("[data-login]").forEach((button) => {
-    button.addEventListener("click", () => openLoginDialog(false));
+    button.addEventListener("click", openLoginDialog);
 });
+
+// A row of icon buttons to choose from. Returns { get value() } with the chosen icon.
+function iconPicker(container, icons, selected) {
+    let value = icons.includes(selected) ? selected : icons[0];
+    const buttons = icons.map((icon) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "icon-choice";
+        button.setAttribute("aria-pressed", String(icon === value));
+        button.appendChild(iconElement(icon));
+        button.addEventListener("click", () => {
+            value = icon;
+            buttons.forEach((b) => b.setAttribute("aria-pressed", String(b === button)));
+        });
+        return button;
+    });
+    container.replaceChildren(...buttons);
+    return { get value() { return value; } };
+}
+
+// Sends an account request; on success saves the new login token and reloads, otherwise shows the error in the dialog.
+async function submitAccount(url, body, errorElement) {
+    const response = await postJson(url, body).catch(() => null);
+    if (response?.ok) {
+        saveToken((await response.json()).accessToken);
+        location.reload();
+        return;
+    }
+    if (response?.status === 401) {
+        saveToken("");
+        location.reload();
+        return;
+    }
+    const result = await response?.json().catch(() => null);
+    errorElement.textContent = response?.status === 429
+        ? "Too many attempts. Wait a minute and try again."
+        : result?.error ?? "Something went wrong.";
+}
+
+function createDialog(html) {
+    const dialog = document.createElement("dialog");
+    dialog.className = "dialog";
+    dialog.innerHTML = html;
+    document.body.appendChild(dialog);
+    dialog.querySelectorAll("[data-close]").forEach((b) => b.addEventListener("click", () => dialog.close()));
+    return dialog;
+}
 
 let loginDialog = null;
 
-// Log in by name or with an external provider, or (rename = true) change the logged-in user's display name.
-function openLoginDialog(rename) {
-    if (!loginDialog) {
-        loginDialog = createLoginDialog();
-    }
-    loginDialog.rename = rename;
-    $("login-title").textContent = rename ? "Your display name" : "Log in";
-    $("login-submit").textContent = rename ? "Save" : "Log in";
-    $("login-name").value = rename ? account.name : "";
-    $("login-error").textContent = "";
-    $("login-providers").hidden = rename || account.providers.length === 0;
+// Log in as a guest (name only), as a registered user, by creating an account, or with an external provider.
+function openLoginDialog() {
+    loginDialog ??= createLoginDialog();
+    loginDialog.querySelectorAll(".error").forEach((e) => { e.textContent = ""; });
     loginDialog.showModal();
-    $("login-name").focus();
 }
 
 function createLoginDialog() {
-    const dialog = document.createElement("dialog");
-    dialog.className = "dialog";
-    dialog.innerHTML = `
-        <form id="login-form">
-            <h2 id="login-title"></h2>
-            <label>Your name <input id="login-name" maxlength="30" autocomplete="nickname"></label>
-            <p id="login-error" class="error" role="alert"></p>
-            <div class="actions">
-                <button id="login-submit" type="submit"></button>
-                <button id="login-cancel" type="button" class="secondary">Cancel</button>
-            </div>
-            <div id="login-providers" class="login-providers">
-                <p class="hint">Or</p>
-            </div>
-        </form>`;
-    document.body.appendChild(dialog);
+    const dialog = createDialog(`
+        <h2>Log in</h2>
+        <div class="tabs" role="tablist">
+            <button type="button" role="tab" data-tab="guest">Guest</button>
+            <button type="button" role="tab" data-tab="login">Log in</button>
+            <button type="button" role="tab" data-tab="register">Create account</button>
+        </div>
+        <form data-panel="guest">
+            <p class="hint">Play with just a name. Nothing is saved.</p>
+            <label>Your name <input name="name" maxlength="30" autocomplete="nickname" required></label>
+            <div class="icon-picker"></div>
+            <p class="error" role="alert"></p>
+            <div class="actions"><button type="submit">Play as guest</button><button type="button" class="secondary" data-close>Cancel</button></div>
+        </form>
+        <form data-panel="login">
+            <label>Username <input name="username" maxlength="20" autocomplete="username" required></label>
+            <label>Password <input name="password" type="password" maxlength="100" autocomplete="current-password" required></label>
+            <p class="error" role="alert"></p>
+            <div class="actions"><button type="submit">Log in</button><button type="button" class="secondary" data-close>Cancel</button></div>
+        </form>
+        <form data-panel="register">
+            <label>Username <input name="username" maxlength="20" autocomplete="username" required pattern="[A-Za-z0-9_]{3,20}"></label>
+            <p class="hint">3 to 20 letters, digits or underscores. You log in with it; others see your display name.</p>
+            <label>Password <input name="password" type="password" minlength="8" maxlength="100" autocomplete="new-password" required></label>
+            <p class="hint">At least 8 characters. It cannot be reset, so keep it safe.</p>
+            <label>Display name <input name="name" maxlength="30" autocomplete="nickname" required></label>
+            <div class="icon-picker"></div>
+            <p class="error" role="alert"></p>
+            <div class="actions"><button type="submit">Create account</button><button type="button" class="secondary" data-close>Cancel</button></div>
+        </form>
+        <div class="login-providers"><p class="hint">Or</p></div>`);
 
+    const providers = dialog.querySelector(".login-providers");
+    providers.hidden = account.providers.length === 0;
     for (const provider of account.providers) {
         const link = document.createElement("a");
         link.className = "button secondary";
         link.href = externalSignInUrl(provider);
         link.textContent = `Sign in with ${provider}`;
-        $("login-providers").appendChild(link);
+        providers.appendChild(link);
     }
 
-    $("login-cancel").addEventListener("click", () => dialog.close());
-    $("login-form").addEventListener("submit", async (event) => {
-        event.preventDefault();
-        const name = $("login-name").value.trim();
-        if (!name) {
-            $("login-error").textContent = "Enter your name.";
-            return;
-        }
+    const show = (tab) => {
+        dialog.querySelectorAll("[data-tab]").forEach((b) => b.setAttribute("aria-selected", String(b.dataset.tab === tab)));
+        dialog.querySelectorAll("[data-panel]").forEach((p) => { p.hidden = p.dataset.panel !== tab; });
+    };
+    dialog.querySelectorAll("[data-tab]").forEach((b) => b.addEventListener("click", () => show(b.dataset.tab)));
+    show("guest");
 
-        const response = await postJson(dialog.rename ? "/auth/name" : "/auth/login", { name }).catch(() => null);
-        if (response?.ok) {
-            saveToken((await response.json()).accessToken);
-            location.reload();
-        } else if (response?.status === 401) {
-            saveToken("");
-            location.reload();
-        } else {
-            const body = await response?.json().catch(() => null);
-            $("login-error").textContent = body?.error ?? "Something went wrong.";
+    const panel = (name) => dialog.querySelector(`[data-panel="${name}"]`);
+    const guestIcon = iconPicker(panel("guest").querySelector(".icon-picker"), account.icons, null);
+    const registerIcon = iconPicker(panel("register").querySelector(".icon-picker"), account.icons, null);
+    const onSubmit = (name, url, body) => panel(name).addEventListener("submit", (event) => {
+        event.preventDefault();
+        submitAccount(url, body(new FormData(event.target)), event.target.querySelector(".error"));
+    });
+    onSubmit("guest", "/auth/guest", (f) => ({ name: f.get("name"), icon: guestIcon.value }));
+    onSubmit("login", "/auth/login", (f) => ({ username: f.get("username"), password: f.get("password") }));
+    onSubmit("register", "/auth/register", (f) => ({
+        username: f.get("username"), password: f.get("password"), name: f.get("name"), icon: registerIcon.value,
+    }));
+    return dialog;
+}
+
+// Change the display name and icon. Saved users can also upload a picture as their icon.
+function openProfileDialog() {
+    const canUpload = account.kind !== "Guest";
+    const icons = account.uploadedIcon ? [account.uploadedIcon, ...account.icons] : account.icons;
+    const dialog = createDialog(`
+        <form>
+            <h2>Your profile</h2>
+            <p class="hint" data-welcome hidden>Welcome! Choose how other players see you.</p>
+            <label>Display name <input name="name" maxlength="30" autocomplete="nickname" required></label>
+            <div class="icon-picker"></div>
+            <label class="upload" ${canUpload ? "" : "hidden"}>Upload a picture <input name="picture" type="file" accept="image/*"></label>
+            <p class="error" role="alert"></p>
+            <div class="actions"><button type="submit">Save</button><button type="button" class="secondary" data-close>Cancel</button></div>
+        </form>`);
+    const form = dialog.querySelector("form");
+    const error = form.querySelector(".error");
+    form.elements.name.value = account.name;
+    form.querySelector("[data-welcome]").hidden = !isNewExternalUser;
+    const picker = iconPicker(form.querySelector(".icon-picker"), icons, account.icon);
+
+    form.elements.picture.addEventListener("change", async () => {
+        const file = form.elements.picture.files[0];
+        if (file) {
+            await uploadIcon(file, error);
         }
     });
-    return dialog;
+    form.addEventListener("submit", (event) => {
+        event.preventDefault();
+        submitAccount("/auth/profile", { name: form.elements.name.value, icon: picker.value }, error);
+    });
+    dialog.addEventListener("close", () => dialog.remove());
+    dialog.showModal();
+}
+
+// Shrinks a picture to a 128×128 square in the browser and uploads it as the user's icon.
+async function uploadIcon(file, errorElement) {
+    let blob;
+    try {
+        const image = await createImageBitmap(file);
+        const size = Math.min(image.width, image.height);
+        const canvas = document.createElement("canvas");
+        canvas.width = canvas.height = 128;
+        canvas.getContext("2d").drawImage(image, (image.width - size) / 2, (image.height - size) / 2, size, size, 0, 0, 128, 128);
+        blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/webp", 0.85));
+    } catch {
+        errorElement.textContent = "That file could not be read as a picture.";
+        return;
+    }
+
+    const response = await authFetch("/auth/icon", { method: "POST", headers: { "Content-Type": blob.type }, body: blob }).catch(() => null);
+    if (response?.ok) {
+        saveToken((await response.json()).accessToken);
+        location.reload();
+    } else {
+        const result = await response?.json().catch(() => null);
+        errorElement.textContent = result?.error ?? "The picture could not be uploaded.";
+    }
 }
 
 function setUpInviteButtons(joinUrl) {
@@ -246,9 +380,10 @@ function setUpInviteButtons(joinUrl) {
     }
 }
 
-function listItem(text) {
+// A list item showing text, or other elements (e.g. from seatLabel).
+function listItem(...content) {
     const item = document.createElement("li");
-    item.textContent = text;
+    item.append(...content);
     return item;
 }
 
@@ -259,6 +394,19 @@ function seatName(state, seat, view) {
         return "Empty seat";
     }
     return info.name + (view.isMe(seat) ? " (you)" : "") + (info.isConnected ? "" : " (disconnected)");
+}
+
+// A seat's icon and name, optionally after a prefix such as "X: ".
+function seatLabel(state, seat, view, prefix = "") {
+    const label = document.createElement("span");
+    label.className = "seat-label";
+    const info = state.seats[seat];
+    label.append(prefix);
+    if (info) {
+        label.append(iconElement(info.icon));
+    }
+    label.append(seatName(state, seat, view));
+    return label;
 }
 
 /**
@@ -296,8 +444,10 @@ function startSessionPage(gameType, render) {
         const info = state.seats[seat];
         const item = document.createElement("li");
         item.className = "seat";
-        const label = document.createElement("span");
-        label.textContent = `Seat ${seat + 1}: ${info ? seatName(state, seat, view) : "empty"}`;
+        const label = info ? seatLabel(state, seat, view, `Seat ${seat + 1}: `) : document.createElement("span");
+        if (!info) {
+            label.textContent = `Seat ${seat + 1}: empty`;
+        }
         item.appendChild(label);
 
         if (view.isMe(seat)) {

@@ -31,16 +31,16 @@ public class GameHub(IGameSessionStore store, TimeProvider timeProvider) : Hub, 
     private string UserKey => GetUserKey(Context.User, Context.ConnectionId);
 
     /// <summary>
-    /// The caller's display name; throws <paramref name="message"/> to the caller if they are not logged in.
+    /// The caller's display name and icon; throws <paramref name="message"/> to the caller if they are not logged in.
     /// </summary>
-    private string RequireUserName(string message) => AuthSetup.GetUserName(Context.User) ?? throw new HubException(message);
+    private PlayerProfile RequireProfile(string message) => AuthSetup.GetProfile(Context.User) ?? throw new HubException(message);
 
     /// <inheritdoc />
     public async Task<SessionEntry> EnterSession(string sessionId)
     {
         var session = GetSession(sessionId);
         await Groups.AddToGroupAsync(Context.ConnectionId, SessionGroup(session.Id));
-        var playerId = session.Enter(UserKey, AuthSetup.GetUserName(Context.User), Context.ConnectionId);
+        var playerId = session.Enter(UserKey, AuthSetup.GetProfile(Context.User), Context.ConnectionId);
         if (playerId is not null)
         {
             await BroadcastState(session);
@@ -69,7 +69,7 @@ public class GameHub(IGameSessionStore store, TimeProvider timeProvider) : Hub, 
     /// <inheritdoc />
     public string CreateSession(GameType gameType)
     {
-        RequireUserName("Log in to start a session.");
+        RequireProfile("Log in to start a session.");
         if (!Enum.IsDefined(gameType))
         {
             throw new HubException("Unknown game type.");
@@ -81,8 +81,8 @@ public class GameHub(IGameSessionStore store, TimeProvider timeProvider) : Hub, 
     /// <inheritdoc />
     public Task TakeSeat(string sessionId, int seat)
     {
-        var name = RequireUserName("Log in to take a seat.");
-        return Act(sessionId, (IGameSession s, out string? error) => s.TryTakeSeat(UserKey, name, Context.ConnectionId, seat, out error));
+        var profile = RequireProfile("Log in to take a seat.");
+        return Act(sessionId, (IGameSession s, out string? error) => s.TryTakeSeat(UserKey, profile, Context.ConnectionId, seat, out error));
     }
 
     /// <inheritdoc />

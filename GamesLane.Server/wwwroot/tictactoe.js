@@ -48,5 +48,5 @@ const ticTacToe = startSessionPage("TicTacToe", (game, state, view) => {
     });
 
     $("status").textContent = ticTacToeStatus(game, state, view);
-    $("players").replaceChildren(...MARKS.map((mark, seat) => listItem(`${mark}: ${seatName(state, seat, view)}`)));
+    $("players").replaceChildren(...MARKS.map((mark, seat) => listItem(seatLabel(state, seat, view, `${mark}: `))));
 });

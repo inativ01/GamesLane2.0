@@ -46,7 +46,7 @@ function handCard(game, state, seat, view) {
     card.className = "hand";
     card.classList.toggle("winner", game.isRoundComplete && game.roundWinner === seat);
     const name = document.createElement("div");
-    name.textContent = seatName(state, seat, view);
+    name.appendChild(seatLabel(state, seat, view));
     const symbolEl = document.createElement("div");
     symbolEl.className = "hand-symbol";
     symbolEl.textContent = symbol;
@@ -72,7 +72,7 @@ const rps = startSessionPage("RockPaperScissors", (game, state, view) => {
     $("status").textContent = rpsStatus(game, state, view);
     $("hands").replaceChildren(...game.hands.map((_, seat) => handCard(game, state, seat, view)));
     $("players").replaceChildren(
-        ...game.hands.map((hand, seat) => listItem(`${seatName(state, seat, view)}: ${hand.score}`)),
+        ...game.hands.map((hand, seat) => listItem(seatLabel(state, seat, view), `: ${hand.score}`)),
         listItem(`Draws: ${game.draws}`));
 });
 

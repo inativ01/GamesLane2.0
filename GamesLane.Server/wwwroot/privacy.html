@@ -20,24 +20,28 @@
 
     <h3>Information we use</h3>
     <ul>
-        <li><strong>Your display name</strong>, which you type in when you log in. It is shown to the other people in your game.</li>
-        <li><strong>If you sign in with Google or Microsoft:</strong> your account ID, name and email address, as provided by that service. They are used only to recognise you, so you can rejoin your games, and to fill in your display name. GamesLane never sees your Google or Microsoft password.</li>
+        <li><strong>Your display name and icon</strong>, which you choose. They are shown to the other people in your game.</li>
+        <li><strong>If you create an account:</strong> your username and a password. The password is stored only in scrambled form (a salted hash), so nobody, including GamesLane, can read it.</li>
+        <li><strong>If you sign in with Google or Microsoft:</strong> your account ID at that service, used only to recognise you next time, and your name and profile picture, used once as your default display name and icon. GamesLane never sees your Google or Microsoft password, and does not keep your email address.</li>
+        <li><strong>If you upload a picture</strong> as your icon: a small copy of it (128×128 pixels).</li>
         <li><strong>Game information:</strong> the games you create or join, and the moves you make.</li>
     </ul>
 
     <h3>How it is stored</h3>
     <ul>
-        <li>Games are kept only in the server's memory and are deleted when the server restarts. No database is used.</li>
-        <li>When you log in, your browser stores a login token that keeps you logged in for up to 30 days, or until you log out. You can clear it by clearing your browser's site data.</li>
+        <li>Guests (who log in with just a name) are not saved at all.</li>
+        <li>Accounts (username or Google/Microsoft) are saved in a database: the information above, plus when the account was created and last used. <strong>An account that is not used for 30 days is deleted automatically</strong>, together with its picture.</li>
+        <li>Games are kept only in the server's memory and are deleted when the server restarts.</li>
+        <li>When you log in, your browser stores a login token that keeps you logged in for up to 30 days after your last visit, or until you log out. You can clear it by clearing your browser's site data.</li>
         <li>While you sign in with Google or Microsoft, a cookie is used for a few moments to complete the sign-in, and is then removed.</li>
     </ul>
 
     <h3>Sharing</h3>
     <p>Your information is not sold or shared with anyone, and is not used for advertising. There are no analytics or tracking tools.</p>
-    <p>The site is hosted by <a href="https://render.com">Render</a>, and the page loads a script from the <a href="https://www.jsdelivr.com">jsDelivr</a> content network. Like any web service, these providers may process your IP address to deliver the site.</p>
+    <p>The site is hosted by <a href="https://render.com">Render</a>, the database by <a href="https://neon.tech">Neon</a>, and the page loads a script from the <a href="https://www.jsdelivr.com">jsDelivr</a> content network. Like any web service, these providers may process your IP address to deliver the site.</p>
 
     <h3>Children</h3>
-    <p>GamesLane is meant for family use. Signing in with Google or Microsoft is optional; children can log in with just a name, without providing any account information, and anyone can watch a game without logging in.</p>
+    <p>GamesLane is meant for family use. Accounts are optional; children can play as guests with just a name, without providing any account information, and anyone can watch a game without logging in.</p>
 
     <h3>Contact</h3>
     <p>For questions or requests about your information, open an issue at <a href="https://github.com/inativ01/GamesLane2.0/issues">github.com/inativ01/GamesLane2.0</a>.</p>

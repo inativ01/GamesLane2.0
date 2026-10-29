@@ -24,10 +24,16 @@ public enum SessionPhase
 }
 
 /// <summary>
+/// How a user appears to other players: their display name, and an icon that is either a built-in emoji or the
+/// address of an uploaded picture (starting with <c>/</c>).
+/// </summary>
+public record PlayerProfile(string Name, string Icon);
+
+/// <summary>
 /// A taken seat, as everyone sees it. <see cref="PlayerId"/> is a random ID for the user within this session,
 /// so pages can recognise their own seats without revealing user IDs.
 /// </summary>
-public record SeatInfo(string PlayerId, string Name, bool IsConnected);
+public record SeatInfo(string PlayerId, string Name, string Icon, bool IsConnected);
 
 /// <summary>
 /// Public session state, safe to send to everyone in the session. <see cref="Seats"/> has one entry per seat (null when empty).
@@ -144,23 +150,23 @@ public abstract class GameSession : IGameSession
     private bool HasUnfinishedGame => GameNumber > 0 && !IsGameOver;
 
     /// <summary>
-    /// Registers a connection that opened the session page. If <paramref name="name"/> is given (the user is logged in),
-    /// updates the name on the user's seats and returns the user's player ID.
+    /// Registers a connection that opened the session page. If <paramref name="profile"/> is given (the user is logged in),
+    /// updates the name and icon on the user's seats and returns the user's player ID.
     /// </summary>
-    public string? Enter(string userKey, string? name, string connectionId)
+    public string? Enter(string userKey, PlayerProfile? profile, string connectionId)
     {
         lock (Sync)
         {
             _connections[connectionId] = userKey;
             _disconnectedSince.Remove(userKey);
-            if (name is null)
+            if (profile is null)
             {
                 return null;
             }
 
             foreach (var seat in _seats.Where(s => s?.UserKey == userKey))
             {
-                seat!.Name = name;
+                seat!.Profile = profile;
             }
 
             return PlayerIdFor(userKey);
@@ -205,7 +211,7 @@ public abstract class GameSession : IGameSession
     /// <summary>
     /// Takes an empty seat, or the seat of a user who is disconnected. Only in the lobby, unless the game allows seating during a game.
     /// </summary>
-    public bool TryTakeSeat(string userKey, string name, string connectionId, int seat, [NotNullWhen(false)] out string? error)
+    public bool TryTakeSeat(string userKey, PlayerProfile profile, string connectionId, int seat, [NotNullWhen(false)] out string? error)
     {
         lock (Sync)
         {
@@ -234,7 +240,7 @@ public abstract class GameSession : IGameSession
                 return false;
             }
 
-            _seats[seat] = new Seat(userKey, name);
+            _seats[seat] = new Seat(userKey, profile);
             _connections[connectionId] = userKey;
             _disconnectedSince.Remove(userKey);
             if (current is not null && !HoldsSeat(current.UserKey))
@@ -382,7 +388,9 @@ public abstract class GameSession : IGameSession
                 Phase,
                 MinSeats,
                 MaxSeats,
-                _seats.Select(s => s is null ? null : new SeatInfo(PlayerIdFor(s.UserKey), s.Name, IsConnected(s.UserKey))).ToArray(),
+                _seats.Select(s => s is null
+                    ? null
+                    : new SeatInfo(PlayerIdFor(s.UserKey), s.Profile.Name, s.Profile.Icon, IsConnected(s.UserKey))).ToArray(),
                 GameNumber,
                 GameNumber > 0 && IsGameOver,
                 Phase == SessionPhase.Lobby && HasUnfinishedGame,
@@ -511,9 +519,9 @@ public abstract class GameSession : IGameSession
     }
 
     /// <summary>
-    /// A taken seat: who holds it, and the name shown on it.
+    /// A taken seat: who holds it, and the name and icon shown on it.
     /// </summary>
-    private sealed class Seat(string userKey, string name)
+    private sealed class Seat(string userKey, PlayerProfile profile)
     {
         /// <summary>
         /// The user holding the seat.
@@ -521,8 +529,8 @@ public abstract class GameSession : IGameSession
         public string UserKey { get; } = userKey;
 
         /// <summary>
-        /// The user's display name, updated when they rename and re-enter the session.
+        /// The user's display name and icon, updated when they change them and re-enter the session.
         /// </summary>
-        public string Name { get; set; } = name;
+        public PlayerProfile Profile { get; set; } = profile;
     }
 }

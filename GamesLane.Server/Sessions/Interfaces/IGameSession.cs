@@ -19,10 +19,10 @@ public interface IGameSession
     GameType Type { get; }
 
     /// <summary>
-    /// Registers a connection that opened the session page. If <paramref name="name"/> is given (the user is logged in),
-    /// updates the name on the user's seats and returns the user's player ID.
+    /// Registers a connection that opened the session page. If <paramref name="profile"/> is given (the user is logged in),
+    /// updates the name and icon on the user's seats and returns the user's player ID.
     /// </summary>
-    string? Enter(string userKey, string? name, string connectionId);
+    string? Enter(string userKey, PlayerProfile? profile, string connectionId);
 
     /// <summary>
     /// Forgets a closed connection. Returns true if this leaves a seated user with no connection.
@@ -35,9 +35,9 @@ public interface IGameSession
     bool ReleaseDisconnectedSeats(DateTimeOffset cutoff);
 
     /// <summary>
-    /// Takes an empty seat, or the seat of a user who is disconnected.
+    /// Takes an empty seat, or the seat of a user who is disconnected, showing the user's name and icon on it.
     /// </summary>
-    bool TryTakeSeat(string userKey, string name, string connectionId, int seat, [NotNullWhen(false)] out string? error);
+    bool TryTakeSeat(string userKey, PlayerProfile profile, string connectionId, int seat, [NotNullWhen(false)] out string? error);
 
     /// <summary>
     /// Gives up one of the user's seats. An unfinished game pauses if too few of its players remain.

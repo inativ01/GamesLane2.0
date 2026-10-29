@@ -116,6 +116,71 @@ button:not(.cell):disabled {
     margin: 0;
 }
 
+.dialog > form,
+.dialog > .tabs {
+    margin-bottom: 0.75rem;
+}
+
+.tabs {
+    display: flex;
+    gap: 0.25rem;
+    margin-top: 0.75rem;
+    border-bottom: 1px solid #dde2e8;
+}
+
+.tabs button {
+    flex: 1;
+    padding: 0.5rem;
+    border-radius: 6px 6px 0 0;
+    background: transparent;
+    color: #52606d;
+}
+
+.tabs button[aria-selected="true"] {
+    background: #3b6ea5;
+    color: #fff;
+}
+
+.icon {
+    display: inline-block;
+    width: 1.5em;
+    height: 1.5em;
+    line-height: 1.5em;
+    text-align: center;
+    vertical-align: middle;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.seat-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.icon-picker {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(2.5rem, 1fr));
+    gap: 0.25rem;
+}
+
+.icon-choice {
+    padding: 0.25rem;
+    border: 2px solid transparent;
+    background: #f4f5f7;
+    color: inherit;
+    font-size: 1.2rem;
+}
+
+.icon-choice[aria-pressed="true"] {
+    border-color: #3b6ea5;
+    background: #e6eef7;
+}
+
+.upload input {
+    font-size: 0.9rem;
+}
+
 form {
     display: flex;
     flex-direction: column;
