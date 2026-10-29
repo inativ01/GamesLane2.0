@@ -43,10 +43,15 @@ document.querySelectorAll("[data-create]").forEach((button) => {
         }
 
         // Remember the game while the login dialog is open; closing it without logging in forgets it.
-        // Logging in reloads the page (or leaves it for Google sign-in), so the dialog's close event does not fire then.
+        // Logging in reloads the page, so the dialog's close event does not fire then. Leaving for Google sign-in
+        // closes the dialog with the return value "provider", which keeps the game.
         sessionStorage.setItem(PENDING_GAME_KEY, button.dataset.create);
         openLoginDialog();
-        loginDialog.addEventListener("close", () => sessionStorage.removeItem(PENDING_GAME_KEY), { once: true });
+        loginDialog.addEventListener("close", () => {
+            if (loginDialog.returnValue !== "provider") {
+                sessionStorage.removeItem(PENDING_GAME_KEY);
+            }
+        }, { once: true });
     });
 });
 

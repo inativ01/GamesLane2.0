@@ -301,6 +301,7 @@ let loginDialog = null;
 function openLoginDialog() {
     loginDialog ??= createLoginDialog();
     loginDialog.querySelectorAll(".error").forEach((e) => { e.textContent = ""; });
+    loginDialog.returnValue = "";
     loginDialog.showModal();
 }
 
@@ -346,7 +347,7 @@ function createLoginDialog() {
         link.textContent = `Sign in with ${provider}`;
         // The dialog would sit above the overlay, so close it, then show that we are on our way to the provider.
         link.addEventListener("click", () => {
-            dialog.close();
+            dialog.close("provider");
             showBusy(`Connecting to ${provider}…`, 0);
         });
         providers.appendChild(link);
