@@ -708,14 +708,14 @@ public class GameSessionTests
 
         var revealed = Assert.Single(Gang(session).Revealed);
         Assert.Equal(0, revealed.Seat);
-        Assert.Equal("High card, king (J 9 7 4)", revealed.Name);
+        Assert.Equal("High card, king", revealed.Name);
 
         session.TryRevealNext(Alice, 1, out _);
         session.TryRevealNext(Alice, 2, out _);
         var state = Gang(session);
         Assert.Equal(TheGangPhase.HeistOver, state.Phase);
         Assert.Equal(1, state.Vaults);
-        Assert.Equal(["Pair of nines (K J 7)", "Three kings (J 9)"], state.Revealed.Skip(1).Select(h => h.Name));
+        Assert.Equal(["Pair of nines", "Three kings"], state.Revealed.Skip(1).Select(h => h.Name));
         Assert.True(session.TryNextHeist(Carol, 1, out error), error);
         Assert.Equal(2, Gang(session).Heist);
     }

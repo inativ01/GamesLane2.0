@@ -66,32 +66,24 @@ public sealed record HandValue(HandCategory Category, IReadOnlyList<int> Ranks) 
     public override int GetHashCode() => Ranks.Aggregate((int)Category, HashCode.Combine);
 
     /// <summary>
-    /// A description such as "Two pair, kings and sevens (Q)" or "Straight, nine high". The ranks in brackets are the
-    /// other cards (kickers) that decide between hands of the same kind, so it is clear why one is stronger.
+    /// A description such as "Two pair, kings and sevens" or "Straight, nine high". The other cards (kickers) that
+    /// decide between hands of the same kind are not named.
     /// </summary>
     public string Name => Category switch
     {
-        HandCategory.HighCard => $"High card, {Singular(Ranks[0])}{Kickers(1)}",
-        HandCategory.OnePair => $"Pair of {Plural(Ranks[0])}{Kickers(1)}",
-        HandCategory.TwoPair => $"Two pair, {Plural(Ranks[0])} and {Plural(Ranks[1])}{Kickers(2)}",
-        HandCategory.ThreeOfAKind => $"Three {Plural(Ranks[0])}{Kickers(1)}",
+        HandCategory.HighCard => $"High card, {Singular(Ranks[0])}",
+        HandCategory.OnePair => $"Pair of {Plural(Ranks[0])}",
+        HandCategory.TwoPair => $"Two pair, {Plural(Ranks[0])} and {Plural(Ranks[1])}",
+        HandCategory.ThreeOfAKind => $"Three {Plural(Ranks[0])}",
         HandCategory.Straight => $"Straight, {Singular(Ranks[0])} high",
-        HandCategory.Flush => $"Flush, {Singular(Ranks[0])} high{Kickers(1)}",
+        HandCategory.Flush => $"Flush, {Singular(Ranks[0])} high",
         HandCategory.FullHouse => $"Full house, {Plural(Ranks[0])} over {Plural(Ranks[1])}",
-        HandCategory.FourOfAKind => $"Four {Plural(Ranks[0])}{Kickers(1)}",
+        HandCategory.FourOfAKind => $"Four {Plural(Ranks[0])}",
         _ => Ranks[0] == Card.Ace ? "Royal flush" : $"Straight flush, {Singular(Ranks[0])} high",
     };
 
     private static readonly string[] RankNames =
         ["", "", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "jack", "queen", "king", "ace"];
-
-    private static readonly string[] RankSymbols = ["", "", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A"];
-
-    /// <summary>
-    /// The ranks from position <paramref name="from"/> on, e.g. " (A 9 5)", or nothing if there are none.
-    /// </summary>
-    private string Kickers(int from) =>
-        Ranks.Count > from ? $" ({string.Join(' ', Ranks.Skip(from).Select(r => RankSymbols[r]))})" : "";
 
     /// <summary>
     /// "two", "king", "ace", ...

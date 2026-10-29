@@ -519,14 +519,22 @@ function startSessionPage(gameType, render) {
 
     const act = (method, ...args) => call(method, sessionId, ...args).catch(() => {});
 
-    // A seat tile: a big icon, the name, and a note such as "Seat 2 · You".
+    // A seat tile: a big icon, the name, and a note such as "Seat 2 · You". If the user can sit down or leave,
+    // the whole tile is a button, labelled with what tapping it does.
     function seatItem(state, seat) {
         const info = state.seats[seat];
-        const item = document.createElement("li");
-        item.className = "seat";
-        item.classList.toggle("empty", !info);
-        item.classList.toggle("mine", view.isMe(seat));
-        item.classList.toggle("away", Boolean(info && !info.isConnected));
+        let action = null;
+        if (view.isMe(seat)) {
+            action = { text: "Leave seat", run: () => act("LeaveSeat", seat) };
+        } else if (account?.signedIn && (!info || !info.isConnected)) {
+            action = { text: info ? "Take this seat" : "Sit here", run: () => act("TakeSeat", seat) };
+        }
+
+        const tile = document.createElement(action ? "button" : "div");
+        tile.className = "seat";
+        tile.classList.toggle("empty", !info);
+        tile.classList.toggle("mine", view.isMe(seat));
+        tile.classList.toggle("away", Boolean(info && !info.isConnected));
 
         const avatar = iconElement(info ? info.icon : "+", "seat-avatar");
         const name = document.createElement("span");
@@ -537,13 +545,19 @@ function startSessionPage(gameType, render) {
         note.textContent = [`Seat ${seat + 1}`, view.isMe(seat) && "You", info && !info.isConnected && "Disconnected"]
             .filter(Boolean)
             .join(" · ");
-        item.append(avatar, name, note);
+        tile.append(avatar, name, note);
 
-        if (view.isMe(seat)) {
-            item.appendChild(smallButton("Leave seat", () => act("LeaveSeat", seat)));
-        } else if (account?.signedIn && (!info || !info.isConnected)) {
-            item.appendChild(smallButton(info ? "Take this seat" : "Sit here", () => act("TakeSeat", seat)));
+        if (action) {
+            tile.type = "button";
+            const label = document.createElement("span");
+            label.className = "seat-action";
+            label.textContent = action.text;
+            tile.append(label);
+            tile.addEventListener("click", action.run);
         }
+
+        const item = document.createElement("li");
+        item.append(tile);
         return item;
     }
 

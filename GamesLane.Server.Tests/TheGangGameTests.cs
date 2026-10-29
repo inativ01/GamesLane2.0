@@ -9,15 +9,15 @@ public class TheGangGameTests
     [Theory]
     [InlineData("AS KS QS JS 10S", HandCategory.StraightFlush, "Royal flush")]
     [InlineData("9H 8H 7H 6H 5H", HandCategory.StraightFlush, "Straight flush, nine high")]
-    [InlineData("QC QD QH QS 2C", HandCategory.FourOfAKind, "Four queens (2)")]
+    [InlineData("QC QD QH QS 2C", HandCategory.FourOfAKind, "Four queens")]
     [InlineData("6C 6D 6H 4S 4C", HandCategory.FullHouse, "Full house, sixes over fours")]
-    [InlineData("AD JD 9D 6D 2D", HandCategory.Flush, "Flush, ace high (J 9 6 2)")]
+    [InlineData("AD JD 9D 6D 2D", HandCategory.Flush, "Flush, ace high")]
     [InlineData("10C 9D 8H 7S 6C", HandCategory.Straight, "Straight, ten high")]
     [InlineData("AC 2D 3H 4S 5C", HandCategory.Straight, "Straight, five high")]
-    [InlineData("7C 7D 7H KS 2C", HandCategory.ThreeOfAKind, "Three sevens (K 2)")]
-    [InlineData("KC KD 7H 7S 2C", HandCategory.TwoPair, "Two pair, kings and sevens (2)")]
-    [InlineData("JC JD 9H 5S 2C", HandCategory.OnePair, "Pair of jacks (9 5 2)")]
-    [InlineData("AC QD 9H 5S 2C", HandCategory.HighCard, "High card, ace (Q 9 5 2)")]
+    [InlineData("7C 7D 7H KS 2C", HandCategory.ThreeOfAKind, "Three sevens")]
+    [InlineData("KC KD 7H 7S 2C", HandCategory.TwoPair, "Two pair, kings and sevens")]
+    [InlineData("JC JD 9H 5S 2C", HandCategory.OnePair, "Pair of jacks")]
+    [InlineData("AC QD 9H 5S 2C", HandCategory.HighCard, "High card, ace")]
     public void Recognises_each_hand(string cards, HandCategory category, string name)
     {
         var hand = HandEvaluator.Evaluate(Cards(cards));
@@ -59,14 +59,14 @@ public class TheGangGameTests
     }
 
     [Fact]
-    public void Names_show_the_kickers_that_decide_between_equal_kinds()
+    public void Kickers_decide_between_hands_with_the_same_name()
     {
         var weaker = HandEvaluator.Best(Cards("2C 4D JH JS 9C 7D 5H"));
         var stronger = HandEvaluator.Best(Cards("AC 3D JH JS 9C 7D 5H"));
 
         Assert.True(weaker.IsWeakerThan(stronger));
-        Assert.Equal("Pair of jacks (9 7 5)", weaker.Name);
-        Assert.Equal("Pair of jacks (A 9 7)", stronger.Name);
+        Assert.Equal("Pair of jacks", weaker.Name);
+        Assert.Equal("Pair of jacks", stronger.Name);
     }
 
     [Fact]

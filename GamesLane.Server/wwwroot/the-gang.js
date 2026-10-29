@@ -18,11 +18,63 @@ function el(tag, className, ...content) {
     return element;
 }
 
-// A card such as "10♥"; hearts and diamonds are red. Without text, a face-down placeholder.
+// Where the suit symbols go on number cards, as [x%, y%] on the card face, as on classic playing cards.
+// Symbols in the lower half are drawn upside down.
+const PIP_LAYOUTS = (() => {
+    const L = 28, C = 50, R = 72;
+    const six = [[L, 16], [R, 16], [L, 50], [R, 50], [L, 84], [R, 84]];
+    const fourRows = [16, 39, 61, 84].flatMap((y) => [[L, y], [R, y]]);
+    return {
+        2: [[C, 16], [C, 84]],
+        3: [[C, 16], [C, 50], [C, 84]],
+        4: [[L, 16], [R, 16], [L, 84], [R, 84]],
+        5: [[L, 16], [R, 16], [C, 50], [L, 84], [R, 84]],
+        6: six,
+        7: [...six, [C, 33]],
+        8: [...six, [C, 33], [C, 67]],
+        9: [...fourRows, [C, 50]],
+        10: [...fourRows, [C, 27], [C, 73]],
+    };
+})();
+
+// The figures on jacks, queens and kings (\uFE0E asks for the plain symbol rather than an emoji).
+const COURT_FIGURES = { J: "♞\uFE0E", Q: "♛\uFE0E", K: "♚\uFE0E" };
+
+// The middle of a card: suit symbols for 2 to 10, one big symbol for an ace, a framed figure for J, Q and K.
+function cardFace(rank, suit) {
+    if (COURT_FIGURES[rank]) {
+        return el("span", "card-face court",
+            el("span", "court-frame", el("span", "court-suit", suit), el("span", "court-figure", COURT_FIGURES[rank]),
+                el("span", "court-suit bottom", suit)));
+    }
+    if (rank === "A") {
+        return el("span", "card-face ace", el("span", "ace-pip", suit));
+    }
+    return el("span", "card-face", ...PIP_LAYOUTS[rank].map(([x, y]) => {
+        const pip = el("span", y > 50 ? "pip flipped" : "pip", suit);
+        pip.style.left = `${x}%`;
+        pip.style.top = `${y}%`;
+        return pip;
+    }));
+}
+
+// A card such as "10♥", drawn like a playing card: rank and suit in two corners and a classic face in the middle.
+// Hearts and diamonds are red. Without text, a face-down card.
 function cardElement(text) {
-    const card = el("span", "card", text ?? "");
-    card.classList.toggle("red", /[♥♦]$/.test(text ?? ""));
-    card.classList.toggle("empty", !text);
+    const card = el("span", "card");
+    if (!text) {
+        card.classList.add("empty");
+        return card;
+    }
+    const rank = text.slice(0, -1);
+    const suit = text.slice(-1);
+    card.classList.toggle("red", suit === "♥" || suit === "♦");
+    card.setAttribute("role", "img");
+    card.setAttribute("aria-label", text);
+    card.append(
+        el("span", "card-corner", el("span", "card-rank", rank), el("span", "card-suit", suit)),
+        cardFace(rank, suit),
+        el("span", "card-corner bottom", el("span", "card-rank", rank), el("span", "card-suit", suit)));
     return card;
 }
 
