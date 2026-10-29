@@ -9,26 +9,58 @@ namespace GamesLane.Server.Hubs;
 public interface IGameHub
 {
     /// <summary>
-    /// Opens a game page: subscribes to updates and, if the caller already holds a seat, reconnects them to it.
+    /// Opens a session page: subscribes to updates and, for a logged-in user, reconnects them to their seats.
     /// </summary>
-    Task<GameEntry> EnterGame(string gameId);
+    Task<SessionEntry> EnterSession(string sessionId);
 
-    string CreateGame(GameType gameType);
-
-    Task<object> JoinAsSpectator(string gameId);
+    /// <summary>
+    /// Logged-in users only. Creates a session and returns its code. The creator is not seated.
+    /// </summary>
+    string CreateSession(GameType gameType);
 
     /// <summary>
     /// Takes a seat as the logged-in user, using their display name.
     /// </summary>
-    Task<PlayerInfo> JoinAsPlayer(string gameId);
+    Task TakeSeat(string sessionId, int seat);
 
-    Task MakeMove(string gameId, int cell);
+    /// <summary>
+    /// Gives up one of the caller's seats (used for Leave seat and Stand up).
+    /// </summary>
+    Task LeaveSeat(string sessionId, int seat);
 
-    Task PlayAgain(string gameId, int gameNumber);
+    /// <summary>
+    /// Stops receiving updates and gives up all the caller's seats (used when going back to the main screen).
+    /// </summary>
+    Task LeaveSession(string sessionId);
 
-    Task Pick(string gameId, Choice choice);
+    /// <summary>
+    /// Seated users only. Starts a new game for everyone seated, replacing game <paramref name="gameNumber"/>
+    /// (0 before the first game). If that game has already been replaced, nothing changes.
+    /// </summary>
+    Task NewGame(string sessionId, int gameNumber);
 
-    Task NextRound(string gameId, int round);
+    /// <summary>
+    /// Seated users only. Continues the paused game; whoever now holds each of its seats plays that seat.
+    /// </summary>
+    Task ResumeGame(string sessionId);
 
-    Task Leave(string gameId);
+    /// <summary>
+    /// Seated users only. After a game has ended, takes everyone back to the session lobby.
+    /// </summary>
+    Task ReturnToLobby(string sessionId);
+
+    /// <summary>
+    /// Tic-tac-toe: places the mark of <paramref name="seat"/>, which the caller must hold, in <paramref name="cell"/> (0-8).
+    /// </summary>
+    Task MakeMove(string sessionId, int seat, int cell);
+
+    /// <summary>
+    /// Rock-paper-scissors: picks for <paramref name="seat"/>, which the caller must hold.
+    /// </summary>
+    Task Pick(string sessionId, int seat, Choice choice);
+
+    /// <summary>
+    /// Rock-paper-scissors: starts the round after <paramref name="round"/>. If it has already started, nothing changes.
+    /// </summary>
+    Task NextRound(string sessionId, int round);
 }

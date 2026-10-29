@@ -288,14 +288,29 @@ input {
     padding: 0;
 }
 
+.seats {
+    list-style: none;
+    padding: 0;
+    text-align: left;
+}
+
+.seat {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #dde2e8;
+}
+
+#game-over-actions {
+    margin-top: 0.5rem;
+}
+
 .back {
     margin: 0.25rem 0 0.75rem;
     text-align: left;
     font-size: 1rem;
-}
-
-#play-again {
-    margin-top: 0.5rem;
 }
 
 .policy {

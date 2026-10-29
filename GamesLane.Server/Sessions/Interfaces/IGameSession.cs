@@ -3,36 +3,70 @@ using System.Diagnostics.CodeAnalysis;
 namespace GamesLane.Server.Sessions;
 
 /// <summary>
-/// A single two-player game. Actions are authorized by the player's current SignalR connection.
+/// One session of a game: its seats, and the game played by the seated users.
+/// Users are identified by a user key (their user ID when logged in). A user may hold several seats.
 /// </summary>
 public interface IGameSession
 {
+    /// <summary>
+    /// The session code, e.g. <c>"K7M2QX"</c>.
+    /// </summary>
     string Id { get; }
 
+    /// <summary>
+    /// The game played in this session.
+    /// </summary>
     GameType Type { get; }
 
     /// <summary>
-    /// Adds a player. <paramref name="userKey"/> identifies the player for rejoining; it defaults to the connection ID.
+    /// Registers a connection that opened the session page. If <paramref name="name"/> is given (the user is logged in),
+    /// updates the name on the user's seats and returns the user's player ID.
     /// </summary>
-    bool TryAddPlayer(
-        string name,
-        string connectionId,
-        [NotNullWhen(true)] out Player? player,
-        [NotNullWhen(false)] out string? error,
-        string? userKey = null);
+    string? Enter(string userKey, string? name, string connectionId);
 
     /// <summary>
-    /// If <paramref name="userKey"/> holds a seat, moves that seat to <paramref name="connectionId"/> and marks the player connected.
+    /// Forgets a closed connection. Returns true if this leaves a seated user with no connection.
     /// </summary>
-    bool TryRejoin(string userKey, string connectionId, [NotNullWhen(true)] out Player? player);
+    bool Disconnect(string connectionId, DateTimeOffset now);
 
     /// <summary>
-    /// Marks the player using <paramref name="connectionId"/> as disconnected. Returns true if a player was affected.
+    /// Frees the seats of users who have been disconnected since <paramref name="cutoff"/> or earlier. Returns true if any seat was freed.
     /// </summary>
-    bool Disconnect(string connectionId);
+    bool ReleaseDisconnectedSeats(DateTimeOffset cutoff);
 
     /// <summary>
-    /// Public game state, safe to send to everyone in the game (players and spectators).
+    /// Takes an empty seat, or the seat of a user who is disconnected.
     /// </summary>
-    object GetPublicState();
+    bool TryTakeSeat(string userKey, string name, string connectionId, int seat, [NotNullWhen(false)] out string? error);
+
+    /// <summary>
+    /// Gives up one of the user's seats. An unfinished game pauses if too few of its players remain.
+    /// </summary>
+    bool TryLeaveSeat(string userKey, int seat, [NotNullWhen(false)] out string? error);
+
+    /// <summary>
+    /// Frees all the user's seats. Returns true if they held any.
+    /// </summary>
+    bool LeaveAllSeats(string userKey);
+
+    /// <summary>
+    /// Starts a new game for everyone seated, replacing game <paramref name="gameNumber"/> (0 if there was none).
+    /// If that game has already been replaced, nothing changes.
+    /// </summary>
+    bool TryNewGame(string userKey, int gameNumber, [NotNullWhen(false)] out string? error);
+
+    /// <summary>
+    /// Continues the paused game. Whoever now holds each of its seats plays that seat.
+    /// </summary>
+    bool TryResume(string userKey, [NotNullWhen(false)] out string? error);
+
+    /// <summary>
+    /// After a game has ended, takes everyone back to the session lobby.
+    /// </summary>
+    bool TryReturnToLobby(string userKey, [NotNullWhen(false)] out string? error);
+
+    /// <summary>
+    /// Public session state, safe to send to everyone in the session (players and spectators).
+    /// </summary>
+    SessionState GetPublicState();
 }

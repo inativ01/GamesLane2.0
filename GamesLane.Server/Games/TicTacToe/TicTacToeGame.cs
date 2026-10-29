@@ -1,5 +1,8 @@
 namespace GamesLane.Server.Games.TicTacToe;
 
+/// <summary>
+/// A tic-tac-toe mark, or <see cref="None"/> for an empty cell.
+/// </summary>
 public enum Mark
 {
     None,
@@ -12,7 +15,7 @@ public enum Mark
 /// </summary>
 public class TicTacToeGame : ITicTacToeGame
 {
-    public const int CellCount = 9;
+    private const int CellCount = 9;
 
     private static readonly int[][] Lines =
     [
@@ -23,16 +26,22 @@ public class TicTacToeGame : ITicTacToeGame
 
     private readonly Mark[] _board = new Mark[CellCount];
 
+    /// <inheritdoc />
     public IReadOnlyList<Mark> Board => _board;
 
+    /// <inheritdoc />
     public Mark CurrentTurn { get; private set; } = Mark.X;
 
+    /// <inheritdoc />
     public Mark Winner { get; private set; } = Mark.None;
 
+    /// <inheritdoc />
     public bool IsDraw { get; private set; }
 
+    /// <inheritdoc />
     public bool IsOver => Winner != Mark.None || IsDraw;
 
+    /// <inheritdoc />
     public bool TryMove(Mark mark, int cell, out string? error)
     {
         if (IsOver)

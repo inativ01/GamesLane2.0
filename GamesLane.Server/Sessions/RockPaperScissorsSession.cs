@@ -4,88 +4,88 @@ using GamesLane.Server.Games.RockPaperScissors;
 namespace GamesLane.Server.Sessions;
 
 /// <summary>
-/// A player's public rock-paper-scissors info. <see cref="Pick"/> is <see cref="Choice.None"/> until both players have picked.
+/// A seat's public rock-paper-scissors info. <see cref="Pick"/> is <see cref="Choice.None"/> until both players have picked.
 /// </summary>
-public record RockPaperScissorsPlayer(string Name, int Score, bool HasPicked, Choice Pick, bool IsConnected);
+public record RockPaperScissorsHand(int Score, bool HasPicked, Choice Pick);
 
 /// <summary>
-/// Public rock-paper-scissors state. Players are listed in seat order.
+/// Public rock-paper-scissors state. <see cref="Hands"/> are in seat order.
 /// </summary>
 public record RockPaperScissorsState(
-    string GameId,
-    GameType GameType,
-    GameStatus Status,
     int Round,
     bool IsRoundComplete,
     int? RoundWinner,
     int Draws,
-    IReadOnlyList<RockPaperScissorsPlayer> Players);
+    IReadOnlyList<RockPaperScissorsHand> Hands);
 
 /// <summary>
-/// A rock-paper-scissors match that continues round after round, keeping score.
+/// A rock-paper-scissors match for two seats that continues round after round, keeping score. It never ends by itself.
 /// </summary>
 public class RockPaperScissorsSession(string id) : GameSession(id), IRockPaperScissorsSession
 {
-    private readonly RockPaperScissorsGame _game = new();
+    private RockPaperScissorsGame _game = new();
 
+    /// <inheritdoc />
     public override GameType Type => GameType.RockPaperScissors;
 
-    public bool TryPick(string connectionId, Choice choice, [NotNullWhen(false)] out string? error)
+    /// <inheritdoc />
+    protected override int MinSeats => 2;
+
+    /// <inheritdoc />
+    protected override int MaxSeats => 2;
+
+    /// <inheritdoc />
+    protected override bool IsGameOver => false;
+
+    /// <inheritdoc />
+    public bool TryPick(string userKey, int seat, Choice choice, [NotNullWhen(false)] out string? error)
     {
         lock (Sync)
         {
-            if (!TryGetPlayer(connectionId, out var player, out error))
+            if (!TryGetPlayingSeat(userKey, seat, out error))
             {
                 return false;
             }
 
-            if (GetStatus() != GameStatus.InProgress)
-            {
-                error = "The game is not in progress.";
-                return false;
-            }
-
-            return _game.TryPick(player.Seat, choice, out error);
+            var picked = _game.TryPick(seat, choice, out var pickError);
+            error = pickError ?? (picked ? null : "That pick is not allowed.");
+            return picked;
         }
     }
 
-    public bool TryNextRound(string connectionId, int round, [NotNullWhen(false)] out string? error)
+    /// <inheritdoc />
+    public bool TryNextRound(string userKey, int round, [NotNullWhen(false)] out string? error)
     {
         lock (Sync)
         {
-            if (!TryGetPlayer(connectionId, out _, out error))
+            if (!IsInGame(userKey, out error))
             {
                 return false;
             }
 
-            return _game.TryNextRound(round, out error);
+            var started = _game.TryNextRound(round, out var roundError);
+            error = roundError ?? (started ? null : "The next round cannot start yet.");
+            return started;
         }
     }
 
-    public RockPaperScissorsState GetState()
+    /// <inheritdoc />
+    protected override void StartNewGame(IReadOnlyList<int> seats) => _game = new RockPaperScissorsGame();
+
+    /// <summary>
+    /// The public <see cref="RockPaperScissorsState"/>. Picks are hidden until both seats have picked.
+    /// </summary>
+    protected override object GetGameState()
     {
-        lock (Sync)
-        {
-            var reveal = _game.IsRoundComplete;
-            return new RockPaperScissorsState(
-                Id,
-                Type,
-                GetStatus(),
-                _game.Round,
-                reveal,
-                _game.RoundWinner,
-                _game.Draws,
-                Players.Select(p => new RockPaperScissorsPlayer(
-                    p.Name,
-                    _game.Scores[p.Seat],
-                    _game.Picks[p.Seat] != Choice.None,
-                    reveal ? _game.Picks[p.Seat] : Choice.None,
-                    p.IsConnected)).ToArray());
-        }
+        var reveal = _game.IsRoundComplete;
+        return new RockPaperScissorsState(
+            _game.Round,
+            reveal,
+            _game.RoundWinner,
+            _game.Draws,
+            Enumerable.Range(0, RockPaperScissorsGame.PlayerCount).Select(seat => new RockPaperScissorsHand(
+                _game.Scores[seat],
+                _game.Picks[seat] != Choice.None,
+                reveal ? _game.Picks[seat] : Choice.None)).ToArray());
     }
-
-    public override object GetPublicState() => GetState();
-
-    private GameStatus GetStatus() =>
-        Players.Count < MaxPlayers ? GameStatus.WaitingForPlayers : GameStatus.InProgress;
 }

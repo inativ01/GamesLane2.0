@@ -13,6 +13,8 @@ if (builder.Configuration["PORT"] is { Length: > 0 } port)
 
 builder.AddGamesLaneAuth();
 builder.Services.AddSingleton<IGameSessionStore, GameSessionStore>();
+builder.Services.AddSingleton(TimeProvider.System);
+builder.Services.AddHostedService<DisconnectedSeatsMonitor>();
 builder.Services.ConfigureHttpJsonOptions(options => options.SerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 builder.Services.AddSignalR()
     .AddJsonProtocol(options => options.PayloadSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
@@ -26,17 +28,18 @@ app.UseAuthentication();
 app.MapGet("/health", () => Results.Ok("Healthy"));
 app.MapAuthEndpoints();
 
-app.MapGet("/api/games/{code}", (string code, IGameSessionStore store) =>
-    store.Get(code) is { } session ? Results.Ok(GameInfo(session)) : Results.NotFound());
+app.MapGet("/api/sessions/{code}", (string code, IGameSessionStore store) =>
+    store.Get(code) is { } session ? Results.Ok(SessionInfo(session)) : Results.NotFound());
 
 app.MapGet("/join/{code}", (string code, IGameSessionStore store) =>
     store.Get(code) is { } session
-        ? Results.Redirect($"{GameSessionStore.PageFor(session.Type)}?game={session.Id}")
-        : Results.Redirect($"/?game={Uri.EscapeDataString(code.ToUpperInvariant())}&notfound=1"));
+        ? Results.Redirect($"{GameSessionStore.PageFor(session.Type)}?session={session.Id}")
+        : Results.Redirect($"/?session={Uri.EscapeDataString(code.ToUpperInvariant())}&notfound=1"));
 
 app.MapHub<GameHub>("/hubs/game");
 
 app.Run();
 
-static object GameInfo(IGameSession session) =>
-    new { gameId = session.Id, gameType = session.Type, page = GameSessionStore.PageFor(session.Type) };
+// The response of GET /api/sessions/{code}: the session code, its game, and the page that plays it.
+static object SessionInfo(IGameSession session) =>
+    new { sessionId = session.Id, gameType = session.Type, page = GameSessionStore.PageFor(session.Type) };

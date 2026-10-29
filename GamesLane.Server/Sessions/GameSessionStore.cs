@@ -4,7 +4,8 @@ using System.Security.Cryptography;
 namespace GamesLane.Server.Sessions;
 
 /// <summary>
-/// In-memory store of active games. Games are lost when the server restarts.
+/// In-memory store of active sessions. Sessions are lost when the server restarts.
+/// Codes are 6 characters, without easily confused characters such as 0/O and 1/I.
 /// </summary>
 public class GameSessionStore : IGameSessionStore
 {
@@ -13,6 +14,7 @@ public class GameSessionStore : IGameSessionStore
 
     private readonly ConcurrentDictionary<string, IGameSession> _sessions = new(StringComparer.OrdinalIgnoreCase);
 
+    /// <inheritdoc />
     public IGameSession Create(GameType type)
     {
         while (true)
@@ -32,9 +34,11 @@ public class GameSessionStore : IGameSessionStore
         }
     }
 
-    public IGameSession? Get(string gameId) =>
-        _sessions.TryGetValue(gameId, out var session) ? session : null;
+    /// <inheritdoc />
+    public IGameSession? Get(string sessionId) =>
+        _sessions.TryGetValue(sessionId, out var session) ? session : null;
 
+    /// <inheritdoc />
     public IEnumerable<IGameSession> All => _sessions.Values;
 
     /// <summary>

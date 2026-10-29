@@ -2,52 +2,51 @@
 
 const SYMBOLS = { Rock: "✊", Paper: "✋", Scissors: "✌️" };
 
-let myPick = null; // { round, choice }: this player's pick, shown on their own screen before the reveal
+// This tab's picks, shown on its own screen before the reveal: seat -> { round, choice }.
+let myPicks = {};
 let currentRound = 1;
+let pickSeat = null; // the seat the pick buttons pick for
 
-function rpsStatus(state, view) {
-    if (state.status === "WaitingForPlayers") {
-        return `Waiting for players (${state.players.length}/2)…`;
-    }
+const pickedLocally = (seat) => myPicks[seat]?.round === currentRound;
 
-    const round = `Round ${state.round}`;
-    if (!state.isRoundComplete) {
-        if (view.isPlayer) {
-            const other = state.players[1 - view.player.seat];
-            return state.players[view.player.seat].hasPicked ? `Waiting for ${other.name}…` : `${round}: make your pick`;
+function rpsStatus(game, state, view) {
+    const round = `Round ${game.round}`;
+    if (!game.isRoundComplete) {
+        if (pickSeat !== null) {
+            return `${round}: make your pick`;
         }
-        return `${round}: waiting for picks…`;
+        return view.isPlayer ? "Waiting for the other player…" : `${round}: waiting for picks…`;
     }
 
-    if (state.roundWinner === null) {
+    if (game.roundWinner === null) {
         return `${round}: it's a draw!`;
     }
-    const winner = state.players[state.roundWinner].name;
-    if (view.isPlayer) {
-        return view.isMe(state.roundWinner) ? "You win this round!" : `${winner} wins this round.`;
+    if (view.isMe(game.roundWinner) && !view.isMe(1 - game.roundWinner)) {
+        return "You win this round!";
     }
-    return `${winner} wins ${round.toLowerCase()}!`;
+    return `${state.seats[game.roundWinner]?.name ?? "Empty seat"} wins ${round.toLowerCase()}!`;
 }
 
-function handCard(state, player, seat, view) {
+function handCard(game, state, seat, view) {
+    const hand = game.hands[seat];
     let symbol;
     let label;
-    if (state.isRoundComplete) {
-        symbol = SYMBOLS[player.pick];
-        label = player.pick;
-    } else if (view.isMe(seat) && myPick) {
-        symbol = SYMBOLS[myPick.choice];
-        label = `You picked ${myPick.choice}`;
+    if (game.isRoundComplete) {
+        symbol = SYMBOLS[hand.pick];
+        label = hand.pick;
+    } else if (view.isMe(seat) && pickedLocally(seat)) {
+        symbol = SYMBOLS[myPicks[seat].choice];
+        label = `You picked ${myPicks[seat].choice}`;
     } else {
-        symbol = player.hasPicked ? "✔️" : "…";
-        label = player.hasPicked ? "Picked" : "Choosing";
+        symbol = hand.hasPicked ? "✔️" : "…";
+        label = hand.hasPicked ? "Picked" : "Choosing";
     }
 
     const card = document.createElement("div");
     card.className = "hand";
-    card.classList.toggle("winner", state.isRoundComplete && state.roundWinner === seat);
+    card.classList.toggle("winner", game.isRoundComplete && game.roundWinner === seat);
     const name = document.createElement("div");
-    name.textContent = playerLabel(player, seat, view);
+    name.textContent = seatName(state, seat, view);
     const symbolEl = document.createElement("div");
     symbolEl.className = "hand-symbol";
     symbolEl.textContent = symbol;
@@ -58,35 +57,40 @@ function handCard(state, player, seat, view) {
     return card;
 }
 
-const rps = startGamePage("RockPaperScissors", (state, view) => {
-    currentRound = state.round;
-    if (myPick && myPick.round !== state.round) {
-        myPick = null;
-    }
+const rps = startSessionPage("RockPaperScissors", (game, state, view) => {
+    currentRound = game.round;
 
-    // Only players see the pick and next-round buttons, and only when they can use them.
-    const me = view.isPlayer ? state.players[view.player.seat] : null;
-    $("picks").hidden = !(me && state.status === "InProgress" && !state.isRoundComplete && !me.hasPicked && !myPick);
-    $("next-round").hidden = !(me && state.isRoundComplete);
+    // A user holding both seats picks for one seat, then the other.
+    pickSeat = game.isRoundComplete
+        ? null
+        : view.mySeats.find((seat) => !game.hands[seat].hasPicked && !pickedLocally(seat)) ?? null;
+    $("picks").hidden = pickSeat === null;
+    $("pick-for").hidden = !(pickSeat !== null && view.mySeats.length > 1);
+    $("pick-for").textContent = `Picking for seat ${pickSeat + 1}`;
+    $("next-round").hidden = !(view.isPlayer && game.isRoundComplete);
 
-    $("status").textContent = rpsStatus(state, view);
-    $("hands").replaceChildren(...state.players.map((p, seat) => handCard(state, p, seat, view)));
+    $("status").textContent = rpsStatus(game, state, view);
+    $("hands").replaceChildren(...game.hands.map((_, seat) => handCard(game, state, seat, view)));
     $("players").replaceChildren(
-        ...state.players.map((p, seat) => listItem(`${playerLabel(p, seat, view)}: ${p.score}`)),
-        listItem(`Draws: ${state.draws}`));
+        ...game.hands.map((hand, seat) => listItem(`${seatName(state, seat, view)}: ${hand.score}`)),
+        listItem(`Draws: ${game.draws}`));
 });
 
 document.querySelectorAll(".pick").forEach((button) => {
     button.addEventListener("click", () => {
-        myPick = { round: currentRound, choice: button.dataset.choice };
+        const seat = pickSeat;
+        if (seat === null) {
+            return;
+        }
+        myPicks[seat] = { round: currentRound, choice: button.dataset.choice };
         rps.refresh();
-        call("Pick", rps.gameId, button.dataset.choice).catch(() => {
-            myPick = null;
+        call("Pick", rps.sessionId, seat, button.dataset.choice).catch(() => {
+            delete myPicks[seat];
             rps.refresh();
         });
     });
 });
 
 $("next-round").addEventListener("click", () => {
-    call("NextRound", rps.gameId, currentRound).catch(() => {});
+    call("NextRound", rps.sessionId, currentRound).catch(() => {});
 });

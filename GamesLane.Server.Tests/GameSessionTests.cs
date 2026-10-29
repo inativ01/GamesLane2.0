@@ -6,103 +6,335 @@ namespace GamesLane.Server.Tests;
 
 public class GameSessionTests
 {
+    private const string Alice = "user:alice";
+    private const string Bob = "user:bob";
+    private const string Carol = "user:carol";
+
+    private static readonly DateTimeOffset Now = new(2026, 10, 29, 12, 0, 0, TimeSpan.Zero);
+
+    // Seats
+
     [Fact]
-    public void First_player_is_X_and_second_is_O()
+    public void A_new_session_is_in_the_lobby_with_empty_seats()
     {
-        var session = new TicTacToeSession("ABC123");
+        var state = new TicTacToeSession("ABC123").GetPublicState();
 
-        Assert.True(session.TryAddPlayer("Alice", "conn-a", out var alice, out _));
-        Assert.True(session.TryAddPlayer("Bob", "conn-b", out var bob, out _));
-
-        Assert.Equal(0, alice.Seat);
-        Assert.Equal(1, bob.Seat);
-        Assert.NotEqual(alice.Id, bob.Id);
-        Assert.Equal([Mark.X, Mark.O], session.GetState().Players.Select(p => p.Mark));
+        Assert.Equal(SessionPhase.Lobby, state.Phase);
+        Assert.Equal((2, 2), (state.MinSeats, state.MaxSeats));
+        Assert.All(state.Seats, Assert.Null);
+        Assert.Equal(0, state.GameNumber);
+        Assert.Null(state.Game);
+        Assert.False(state.CanResume);
     }
 
     [Fact]
-    public void Game_starts_when_both_players_have_joined()
+    public void Taking_all_seats_does_not_start_the_game()
     {
-        var session = new TicTacToeSession("ABC123");
-        Assert.Equal(GameStatus.WaitingForPlayers, session.GetState().Status);
+        var session = Seated(new TicTacToeSession("ABC123"));
 
-        session.TryAddPlayer("Alice", "conn-a", out _, out _);
-        Assert.Equal(GameStatus.WaitingForPlayers, session.GetState().Status);
-
-        session.TryAddPlayer("Bob", "conn-b", out _, out _);
-        Assert.Equal(GameStatus.InProgress, session.GetState().Status);
+        var state = session.GetPublicState();
+        Assert.Equal(SessionPhase.Lobby, state.Phase);
+        Assert.Equal(["Alice", "Bob"], state.Seats.Select(s => s!.Name));
+        Assert.All(state.Seats, s => Assert.True(s!.IsConnected));
     }
 
     [Fact]
-    public void Rejects_a_third_player()
+    public void Seats_show_a_player_id_per_user()
     {
-        var session = StartedSession();
+        var session = new TicTacToeSession("ABC123");
+        var alicePlayerId = session.Enter(Alice, "Alice", "conn-a");
+        session.TryTakeSeat(Alice, "Alice", "conn-a", 0, out _);
+        session.TryTakeSeat(Bob, "Bob", "conn-b", 1, out _);
 
-        Assert.False(session.TryAddPlayer("Carol", "conn-c", out _, out var error));
-        Assert.Equal("The game is full.", error);
+        var seats = session.GetPublicState().Seats;
+        Assert.Equal(alicePlayerId, seats[0]!.PlayerId);
+        Assert.NotEqual(seats[0]!.PlayerId, seats[1]!.PlayerId);
+        Assert.Equal(alicePlayerId, session.Enter(Alice, "Alice", "conn-a2"));
+        Assert.Null(session.Enter("connection:x", null, "x"));
     }
 
     [Fact]
-    public void Rejects_the_same_connection_joining_twice()
+    public void A_user_can_take_several_seats_and_play_them_all()
     {
         var session = new TicTacToeSession("ABC123");
-        session.TryAddPlayer("Alice", "conn-a", out _, out _);
+        Assert.True(session.TryTakeSeat(Alice, "Alice", "conn-a", 0, out _));
+        Assert.True(session.TryTakeSeat(Alice, "Alice", "conn-a", 1, out _));
+        Assert.True(session.TryNewGame(Alice, 0, out _));
 
-        Assert.False(session.TryAddPlayer("Alice again", "conn-a", out _, out var error));
-        Assert.Equal("You have already joined this game.", error);
+        Assert.True(session.TryMove(Alice, 0, 0, out var error), error);
+        Assert.True(session.TryMove(Alice, 1, 4, out error), error);
+        Assert.Equal([Mark.X, Mark.O], new[] { session.GetState().Board[0], session.GetState().Board[4] });
     }
 
     [Theory]
-    [InlineData("")]
-    [InlineData("   ")]
-    public void Requires_a_player_name(string name)
+    [InlineData(-1)]
+    [InlineData(2)]
+    public void Rejects_seats_that_do_not_exist(int seat)
     {
         var session = new TicTacToeSession("ABC123");
 
-        Assert.False(session.TryAddPlayer(name, "conn-a", out _, out var error));
-        Assert.Equal("Player name is required.", error);
+        Assert.False(session.TryTakeSeat(Alice, "Alice", "conn-a", seat, out var error));
+        Assert.Equal("There is no such seat.", error);
     }
 
     [Fact]
-    public void Trims_player_names()
+    public void Cannot_take_the_seat_of_a_connected_user()
     {
-        var session = new TicTacToeSession("ABC123");
+        var session = Seated(new TicTacToeSession("ABC123"));
 
-        session.TryAddPlayer("  Alice  ", "conn-a", out var player, out _);
-
-        Assert.Equal("Alice", player!.Name);
-        Assert.Equal("Alice", session.GetState().Players[0].Name);
+        Assert.False(session.TryTakeSeat(Carol, "Carol", "conn-c", 0, out var error));
+        Assert.Equal("That seat is taken.", error);
+        Assert.False(session.TryTakeSeat(Alice, "Alice", "conn-a", 0, out error));
+        Assert.Equal("You are already in this seat.", error);
     }
 
     [Fact]
-    public void No_moves_before_both_players_join()
+    public void Can_take_the_seat_of_a_disconnected_user()
+    {
+        var session = Seated(new TicTacToeSession("ABC123"));
+        Assert.True(session.Disconnect("conn-a", Now));
+
+        Assert.True(session.TryTakeSeat(Carol, "Carol", "conn-c", 0, out var error), error);
+        Assert.Equal("Carol", session.GetPublicState().Seats[0]!.Name);
+    }
+
+    [Fact]
+    public void Leaving_a_seat_empties_it()
+    {
+        var session = Seated(new TicTacToeSession("ABC123"));
+
+        Assert.False(session.TryLeaveSeat(Bob, 0, out var error));
+        Assert.Equal("That is not your seat.", error);
+        Assert.True(session.TryLeaveSeat(Alice, 0, out _));
+        Assert.Null(session.GetPublicState().Seats[0]);
+    }
+
+    [Fact]
+    public void Entering_again_updates_the_name_on_the_users_seats()
+    {
+        var session = Seated(new TicTacToeSession("ABC123"));
+
+        session.Enter(Alice, "Ada", "conn-a2");
+
+        Assert.Equal(["Ada", "Bob"], session.GetPublicState().Seats.Select(s => s!.Name));
+    }
+
+    // Starting
+
+    [Fact]
+    public void Starting_needs_the_minimum_number_of_seated_players()
     {
         var session = new TicTacToeSession("ABC123");
-        session.TryAddPlayer("Alice", "conn-a", out _, out _);
+        session.TryTakeSeat(Alice, "Alice", "conn-a", 0, out _);
 
-        Assert.False(session.TryMove("conn-a", 0, out var error));
+        Assert.False(session.TryNewGame(Alice, 0, out var error));
+        Assert.Equal("At least 2 players must be seated.", error);
+    }
+
+    [Fact]
+    public void Only_seated_users_can_start()
+    {
+        var session = Seated(new TicTacToeSession("ABC123"));
+
+        Assert.False(session.TryNewGame(Carol, 0, out var error));
+        Assert.Equal("Only seated players can do that.", error);
+        Assert.Equal(SessionPhase.Lobby, session.GetPublicState().Phase);
+    }
+
+    [Fact]
+    public void Any_seated_user_can_start_and_a_second_press_changes_nothing()
+    {
+        var session = Seated(new TicTacToeSession("ABC123"));
+
+        Assert.True(session.TryNewGame(Bob, 0, out _));
+        session.TryMove(Alice, 0, 4, out _);
+        Assert.True(session.TryNewGame(Alice, 0, out _));
+
+        var state = session.GetPublicState();
+        Assert.Equal(SessionPhase.Playing, state.Phase);
+        Assert.Equal(1, state.GameNumber);
+        Assert.Equal(Mark.X, session.GetState().Board[4]);
+    }
+
+    [Fact]
+    public void Seats_cannot_be_taken_during_a_game()
+    {
+        var session = Started(new TicTacToeSession("ABC123"));
+        session.Disconnect("conn-b", Now);
+
+        Assert.False(session.TryTakeSeat(Carol, "Carol", "conn-c", 1, out var error));
+        Assert.Equal("The game has already started. You can watch it.", error);
+    }
+
+    // Pausing and resuming
+
+    [Fact]
+    public void Leaving_an_unfinished_game_pauses_it_in_the_lobby()
+    {
+        var session = Started(new TicTacToeSession("ABC123"));
+        session.TryMove(Alice, 0, 0, out _);
+
+        Assert.True(session.TryLeaveSeat(Bob, 1, out _));
+
+        var state = session.GetPublicState();
+        Assert.Equal(SessionPhase.Lobby, state.Phase);
+        Assert.True(state.CanResume);
+        Assert.False(session.TryMove(Alice, 0, 1, out var error));
         Assert.Equal("The game is not in progress.", error);
     }
 
     [Fact]
-    public void Only_players_can_move()
+    public void A_new_user_in_the_empty_seat_continues_the_paused_game()
     {
-        var session = StartedSession();
+        var session = Started(new TicTacToeSession("ABC123"));
+        session.TryMove(Alice, 0, 0, out _);
+        session.TryLeaveSeat(Bob, 1, out _);
 
-        Assert.False(session.TryMove("spectator", 0, out var error));
-        Assert.Equal("Only players in this game can make moves.", error);
+        Assert.False(session.TryResume(Alice, out var error));
+        Assert.Equal("Every player's seat must be taken to resume.", error);
+
+        session.TryTakeSeat(Carol, "Carol", "conn-c", 1, out _);
+        Assert.True(session.TryResume(Carol, out error), error);
+
+        Assert.Equal(SessionPhase.Playing, session.GetPublicState().Phase);
+        Assert.False(session.TryMove(Bob, 1, 4, out _));
+        Assert.True(session.TryMove(Carol, 1, 4, out error), error);
+        Assert.Equal(Mark.X, session.GetState().Board[0]);
     }
 
     [Fact]
-    public void Players_move_with_their_own_mark()
+    public void A_new_game_can_replace_the_paused_game()
     {
-        var session = StartedSession();
+        var session = Started(new TicTacToeSession("ABC123"));
+        session.TryMove(Alice, 0, 0, out _);
+        session.TryLeaveSeat(Bob, 1, out _);
+        session.TryTakeSeat(Bob, "Bob", "conn-b", 1, out _);
 
-        Assert.False(session.TryMove("conn-b", 0, out var error));
+        Assert.True(session.TryNewGame(Bob, 1, out _));
+
+        var state = session.GetPublicState();
+        Assert.Equal(2, state.GameNumber);
+        Assert.False(state.CanResume);
+        Assert.Equal(Mark.None, session.GetState().Board[0]);
+    }
+
+    [Fact]
+    public void Leaving_all_seats_frees_them_and_pauses_the_game()
+    {
+        var session = new TicTacToeSession("ABC123");
+        session.TryTakeSeat(Alice, "Alice", "conn-a", 0, out _);
+        session.TryTakeSeat(Alice, "Alice", "conn-a", 1, out _);
+        session.TryNewGame(Alice, 0, out _);
+
+        Assert.True(session.LeaveAllSeats(Alice));
+        Assert.False(session.LeaveAllSeats(Alice));
+
+        var state = session.GetPublicState();
+        Assert.All(state.Seats, Assert.Null);
+        Assert.Equal(SessionPhase.Lobby, state.Phase);
+    }
+
+    // After a game ends
+
+    [Fact]
+    public void A_new_game_can_start_while_the_game_is_in_progress_only_after_it_ends()
+    {
+        var session = Started(new TicTacToeSession("ABC123"));
+
+        Assert.False(session.TryNewGame(Alice, 1, out var error));
+        Assert.Equal("The game is not over yet.", error);
+
+        Finish(session);
+        Assert.True(session.GetPublicState().IsGameOver);
+        Assert.True(session.TryNewGame(Bob, 1, out _));
+
+        var state = session.GetPublicState();
+        Assert.Equal(SessionPhase.Playing, state.Phase);
+        Assert.Equal(2, state.GameNumber);
+        Assert.False(state.IsGameOver);
+        Assert.True(session.TryMove(Alice, 0, 4, out error), error);
+    }
+
+    [Fact]
+    public void Standing_up_after_the_game_ends_returns_to_the_lobby_when_too_few_remain()
+    {
+        var session = Finish(Started(new TicTacToeSession("ABC123")));
+
+        session.TryLeaveSeat(Bob, 1, out _);
+
+        var state = session.GetPublicState();
+        Assert.Equal(SessionPhase.Lobby, state.Phase);
+        Assert.False(state.CanResume);
+    }
+
+    [Fact]
+    public void Players_can_return_to_the_lobby_only_after_the_game_ends()
+    {
+        var session = Started(new TicTacToeSession("ABC123"));
+
+        Assert.False(session.TryReturnToLobby(Alice, out var error));
+        Assert.Equal("The game is not over yet.", error);
+
+        Finish(session);
+        Assert.True(session.TryReturnToLobby(Bob, out _));
+        Assert.Equal(SessionPhase.Lobby, session.GetPublicState().Phase);
+        Assert.Equal(["Alice", "Bob"], session.GetPublicState().Seats.Select(s => s!.Name));
+    }
+
+    // Disconnecting
+
+    [Fact]
+    public void A_disconnected_player_keeps_their_seat_until_released()
+    {
+        var session = Started(new TicTacToeSession("ABC123"));
+
+        Assert.True(session.Disconnect("conn-a", Now));
+        Assert.False(session.GetPublicState().Seats[0]!.IsConnected);
+        Assert.False(session.ReleaseDisconnectedSeats(Now.AddSeconds(-1)));
+        Assert.Equal(SessionPhase.Playing, session.GetPublicState().Phase);
+
+        Assert.True(session.ReleaseDisconnectedSeats(Now));
+        var state = session.GetPublicState();
+        Assert.Null(state.Seats[0]);
+        Assert.Equal(SessionPhase.Lobby, state.Phase);
+        Assert.True(state.CanResume);
+    }
+
+    [Fact]
+    public void Reconnecting_in_time_keeps_the_seat()
+    {
+        var session = Started(new TicTacToeSession("ABC123"));
+        session.Disconnect("conn-a", Now);
+
+        session.Enter(Alice, "Alice", "conn-a2");
+
+        Assert.True(session.GetPublicState().Seats[0]!.IsConnected);
+        Assert.False(session.ReleaseDisconnectedSeats(Now.AddMinutes(1)));
+        Assert.True(session.TryMove(Alice, 0, 0, out var error), error);
+    }
+
+    [Fact]
+    public void A_user_stays_connected_while_any_of_their_connections_is_open()
+    {
+        var session = Started(new TicTacToeSession("ABC123"));
+        session.Enter(Alice, "Alice", "conn-a2");
+
+        Assert.False(session.Disconnect("conn-a", Now));
+        Assert.True(session.GetPublicState().Seats[0]!.IsConnected);
+        Assert.False(session.Disconnect("spectator", Now));
+    }
+
+    // Tic-tac-toe
+
+    [Fact]
+    public void Players_move_with_their_seats_mark()
+    {
+        var session = Started(new TicTacToeSession("ABC123"));
+
+        Assert.False(session.TryMove(Bob, 1, 0, out var error));
         Assert.Equal("It is not your turn.", error);
-
-        Assert.True(session.TryMove("conn-a", 0, out _));
-        Assert.True(session.TryMove("conn-b", 4, out _));
+        Assert.True(session.TryMove(Alice, 0, 0, out _));
+        Assert.True(session.TryMove(Bob, 1, 4, out _));
 
         var board = session.GetState().Board;
         Assert.Equal(Mark.X, board[0]);
@@ -110,178 +342,85 @@ public class GameSessionTests
     }
 
     [Fact]
-    public void Game_is_finished_after_a_win()
+    public void Players_cannot_move_for_a_seat_they_do_not_hold()
     {
-        var session = StartedSession();
-        foreach (var (connection, cell) in new[] { ("conn-a", 0), ("conn-b", 3), ("conn-a", 1), ("conn-b", 4), ("conn-a", 2) })
-        {
-            Assert.True(session.TryMove(connection, cell, out var moveError), moveError);
-        }
+        var session = Started(new TicTacToeSession("ABC123"));
 
-        var state = session.GetState();
-        Assert.Equal(GameStatus.Finished, state.Status);
-        Assert.Equal(Mark.X, state.Winner);
-        Assert.False(session.TryMove("conn-b", 5, out var error));
+        Assert.False(session.TryMove(Bob, 0, 0, out var error));
+        Assert.Equal("Only players in this game can make moves.", error);
+        Assert.False(session.TryMove(Carol, 0, 0, out error));
+        Assert.Equal("Only players in this game can make moves.", error);
+    }
+
+    [Fact]
+    public void No_moves_after_a_win()
+    {
+        var session = Finish(Started(new TicTacToeSession("ABC123")));
+
+        Assert.Equal(Mark.X, session.GetState().Winner);
+        Assert.False(session.TryMove(Bob, 1, 5, out var error));
         Assert.Equal("The game is not in progress.", error);
     }
 
     [Fact]
     public void State_is_a_snapshot()
     {
-        var session = StartedSession();
+        var session = Started(new TicTacToeSession("ABC123"));
         var before = session.GetState();
 
-        session.TryMove("conn-a", 0, out _);
+        session.TryMove(Alice, 0, 0, out _);
 
         Assert.Equal(Mark.None, before.Board[0]);
         Assert.Equal(Mark.X, session.GetState().Board[0]);
     }
 
-    [Fact]
-    public void Play_again_is_refused_during_the_game()
-    {
-        var session = StartedSession();
-        session.TryMove("conn-a", 0, out _);
-
-        Assert.False(session.TryPlayAgain("conn-a", 1, out var error));
-        Assert.Equal("The game is not over yet.", error);
-        Assert.Equal(Mark.X, session.GetState().Board[0]);
-    }
-
-    [Fact]
-    public void Play_again_starts_a_fresh_game_with_the_same_players()
-    {
-        var session = FinishedSession();
-
-        Assert.True(session.TryPlayAgain("conn-b", 1, out _));
-
-        var state = session.GetState();
-        Assert.Equal(2, state.GameNumber);
-        Assert.Equal(GameStatus.InProgress, state.Status);
-        Assert.All(state.Board, cell => Assert.Equal(Mark.None, cell));
-        Assert.Equal(Mark.None, state.Winner);
-        Assert.Equal(["Alice", "Bob"], state.Players.Select(p => p.Name));
-        Assert.True(session.TryMove("conn-a", 4, out var moveError), moveError);
-    }
-
-    [Fact]
-    public void Play_again_pressed_by_both_players_starts_only_one_new_game()
-    {
-        var session = FinishedSession();
-
-        Assert.True(session.TryPlayAgain("conn-a", 1, out _));
-        session.TryMove("conn-a", 4, out _);
-        Assert.True(session.TryPlayAgain("conn-b", 1, out _));
-
-        var state = session.GetState();
-        Assert.Equal(2, state.GameNumber);
-        Assert.Equal(Mark.X, state.Board[4]);
-    }
-
-    [Fact]
-    public void Spectators_cannot_start_a_new_game()
-    {
-        var session = FinishedSession();
-
-        Assert.False(session.TryPlayAgain("spectator", 1, out var error));
-        Assert.Equal("Only players in this game can make moves.", error);
-        Assert.Equal(1, session.GetState().GameNumber);
-    }
-
-    private static TicTacToeSession FinishedSession()
-    {
-        var session = StartedSession();
-        foreach (var (connection, cell) in new[] { ("conn-a", 0), ("conn-b", 3), ("conn-a", 1), ("conn-b", 4), ("conn-a", 2) })
-        {
-            session.TryMove(connection, cell, out _);
-        }
-        return session;
-    }
-
-    private static TicTacToeSession StartedSession() => Started(new TicTacToeSession("ABC123"));
-
-    // Rejoining
-
-    [Fact]
-    public void Player_rejoins_their_seat_from_a_new_connection()
-    {
-        var session = new TicTacToeSession("ABC123");
-        session.TryAddPlayer("Alice", "conn-a", out _, out _, "guest:alice");
-        session.TryAddPlayer("Bob", "conn-b", out _, out _, "guest:bob");
-
-        Assert.True(session.Disconnect("conn-a"));
-        Assert.False(session.GetState().Players[0].IsConnected);
-
-        Assert.True(session.TryRejoin("guest:alice", "conn-a2", out var player));
-        Assert.Equal(0, player.Seat);
-        Assert.True(session.GetState().Players[0].IsConnected);
-
-        Assert.False(session.TryMove("conn-a", 0, out _));
-        Assert.True(session.TryMove("conn-a2", 0, out var error), error);
-    }
-
-    [Fact]
-    public void Unknown_user_cannot_rejoin()
-    {
-        var session = StartedSession();
-
-        Assert.False(session.TryRejoin("guest:stranger", "conn-x", out _));
-    }
-
-    [Fact]
-    public void Same_user_cannot_take_two_seats()
-    {
-        var session = new TicTacToeSession("ABC123");
-        session.TryAddPlayer("Alice", "conn-a", out _, out _, "user:alice");
-
-        Assert.False(session.TryAddPlayer("Alice", "conn-a2", out _, out var error, "user:alice"));
-        Assert.Equal("You have already joined this game.", error);
-    }
-
-    [Fact]
-    public void Disconnect_ignores_unknown_and_already_disconnected_connections()
-    {
-        var session = StartedSession();
-
-        Assert.False(session.Disconnect("spectator"));
-        Assert.True(session.Disconnect("conn-a"));
-        Assert.False(session.Disconnect("conn-a"));
-    }
+    // Rock-paper-scissors
 
     [Fact]
     public void Rock_paper_scissors_pick_survives_a_reconnect()
     {
-        var session = new RockPaperScissorsSession("ABC123");
-        session.TryAddPlayer("Alice", "conn-a", out _, out _, "guest:alice");
-        session.TryAddPlayer("Bob", "conn-b", out _, out _, "guest:bob");
-        session.TryPick("conn-a", Choice.Rock, out _);
+        var session = Started(new RockPaperScissorsSession("ABC123"));
+        session.TryPick(Alice, 0, Choice.Rock, out _);
 
-        session.Disconnect("conn-a");
-        session.TryRejoin("guest:alice", "conn-a2", out _);
+        session.Disconnect("conn-a", Now);
+        session.Enter(Alice, "Alice", "conn-a2");
 
-        Assert.True(session.GetState().Players[0].HasPicked);
-        Assert.False(session.TryPick("conn-a2", Choice.Paper, out var error));
+        Assert.True(session.GetState().Hands[0].HasPicked);
+        Assert.False(session.TryPick(Alice, 0, Choice.Paper, out var error));
         Assert.Equal("You have already picked this round.", error);
     }
 
-    // Rock-paper-scissors
+    [Fact]
+    public void Rock_paper_scissors_scores_survive_a_pause()
+    {
+        var session = Started(new RockPaperScissorsSession("ABC123"));
+        session.TryPick(Alice, 0, Choice.Rock, out _);
+        session.TryPick(Bob, 1, Choice.Scissors, out _);
+
+        session.TryLeaveSeat(Bob, 1, out _);
+        session.TryTakeSeat(Carol, "Carol", "conn-c", 1, out _);
+        session.TryResume(Alice, out _);
+
+        Assert.Equal([1, 0], session.GetState().Hands.Select(h => h.Score));
+        Assert.True(session.TryNextRound(Carol, 1, out var error), error);
+    }
 
     [Fact]
     public void Picks_are_hidden_until_both_players_have_picked()
     {
         var session = StartedRpsSession();
 
-        Assert.True(session.TryPick("conn-a", Choice.Rock, out _));
+        Assert.True(session.TryPick(Alice, 0, Choice.Rock, out _));
         var hidden = session.GetState();
         Assert.False(hidden.IsRoundComplete);
-        Assert.True(hidden.Players[0].HasPicked);
-        Assert.False(hidden.Players[1].HasPicked);
-        Assert.All(hidden.Players, p => Assert.Equal(Choice.None, p.Pick));
+        Assert.True(hidden.Hands[0].HasPicked);
+        Assert.False(hidden.Hands[1].HasPicked);
+        Assert.All(hidden.Hands, h => Assert.Equal(Choice.None, h.Pick));
 
-        Assert.True(session.TryPick("conn-b", Choice.Paper, out _));
+        Assert.True(session.TryPick(Bob, 1, Choice.Paper, out _));
         var revealed = session.GetState();
         Assert.True(revealed.IsRoundComplete);
-        Assert.Equal([Choice.Rock, Choice.Paper], revealed.Players.Select(p => p.Pick));
+        Assert.Equal([Choice.Rock, Choice.Paper], revealed.Hands.Select(h => h.Pick));
     }
 
     [Theory]
@@ -298,13 +437,13 @@ public class GameSessionTests
     {
         var session = StartedRpsSession();
 
-        session.TryPick("conn-a", first, out _);
-        session.TryPick("conn-b", second, out _);
+        session.TryPick(Alice, 0, first, out _);
+        session.TryPick(Bob, 1, second, out _);
 
         var state = session.GetState();
         Assert.Equal(winner, state.RoundWinner);
-        Assert.Equal(winner == 0 ? 1 : 0, state.Players[0].Score);
-        Assert.Equal(winner == 1 ? 1 : 0, state.Players[1].Score);
+        Assert.Equal(winner == 0 ? 1 : 0, state.Hands[0].Score);
+        Assert.Equal(winner == 1 ? 1 : 0, state.Hands[1].Score);
         Assert.Equal(winner is null ? 1 : 0, state.Draws);
     }
 
@@ -312,9 +451,9 @@ public class GameSessionTests
     public void Cannot_pick_twice_in_a_round()
     {
         var session = StartedRpsSession();
-        session.TryPick("conn-a", Choice.Rock, out _);
+        session.TryPick(Alice, 0, Choice.Rock, out _);
 
-        Assert.False(session.TryPick("conn-a", Choice.Paper, out var error));
+        Assert.False(session.TryPick(Alice, 0, Choice.Paper, out var error));
         Assert.Equal("You have already picked this round.", error);
     }
 
@@ -322,10 +461,10 @@ public class GameSessionTests
     public void Cannot_pick_after_the_round_is_decided()
     {
         var session = StartedRpsSession();
-        session.TryPick("conn-a", Choice.Rock, out _);
-        session.TryPick("conn-b", Choice.Rock, out _);
+        session.TryPick(Alice, 0, Choice.Rock, out _);
+        session.TryPick(Bob, 1, Choice.Rock, out _);
 
-        Assert.False(session.TryPick("conn-a", Choice.Paper, out var error));
+        Assert.False(session.TryPick(Alice, 0, Choice.Paper, out var error));
         Assert.Equal("This round is over. Start the next round.", error);
     }
 
@@ -336,48 +475,60 @@ public class GameSessionTests
     {
         var session = StartedRpsSession();
 
-        Assert.False(session.TryPick("conn-a", choice, out var error));
+        Assert.False(session.TryPick(Alice, 0, choice, out var error));
         Assert.Equal("Pick rock, paper or scissors.", error);
     }
 
     [Fact]
-    public void Only_players_can_pick_and_only_once_both_have_joined()
+    public void Only_players_can_pick_and_only_once_the_game_has_started()
     {
-        var session = new RockPaperScissorsSession("ABC123");
-        session.TryAddPlayer("Alice", "conn-a", out _, out _);
+        var session = Seated(new RockPaperScissorsSession("ABC123"));
 
-        Assert.False(session.TryPick("conn-a", Choice.Rock, out var error));
+        Assert.False(session.TryPick(Alice, 0, Choice.Rock, out var error));
         Assert.Equal("The game is not in progress.", error);
 
-        session.TryAddPlayer("Bob", "conn-b", out _, out _);
-        Assert.False(session.TryPick("spectator", Choice.Rock, out error));
+        session.TryNewGame(Alice, 0, out _);
+        Assert.False(session.TryPick(Carol, 0, Choice.Rock, out error));
         Assert.Equal("Only players in this game can make moves.", error);
+    }
+
+    [Fact]
+    public void A_user_with_both_seats_picks_for_each()
+    {
+        var session = new RockPaperScissorsSession("ABC123");
+        session.TryTakeSeat(Alice, "Alice", "conn-a", 0, out _);
+        session.TryTakeSeat(Alice, "Alice", "conn-a", 1, out _);
+        session.TryNewGame(Alice, 0, out _);
+
+        Assert.True(session.TryPick(Alice, 0, Choice.Rock, out _));
+        Assert.True(session.TryPick(Alice, 1, Choice.Paper, out _));
+        Assert.Equal(1, session.GetState().RoundWinner);
     }
 
     [Fact]
     public void Next_round_clears_picks_and_keeps_scores()
     {
         var session = StartedRpsSession();
-        session.TryPick("conn-a", Choice.Rock, out _);
-        session.TryPick("conn-b", Choice.Scissors, out _);
+        session.TryPick(Alice, 0, Choice.Rock, out _);
+        session.TryPick(Bob, 1, Choice.Scissors, out _);
 
-        Assert.True(session.TryNextRound("conn-b", 1, out _));
+        Assert.True(session.TryNextRound(Bob, 1, out _));
 
         var state = session.GetState();
         Assert.Equal(2, state.Round);
         Assert.False(state.IsRoundComplete);
         Assert.Null(state.RoundWinner);
-        Assert.All(state.Players, p => Assert.False(p.HasPicked));
-        Assert.Equal([1, 0], state.Players.Select(p => p.Score));
+        Assert.All(state.Hands, h => Assert.False(h.HasPicked));
+        Assert.Equal([1, 0], state.Hands.Select(h => h.Score));
     }
 
     [Fact]
     public void Next_round_requires_both_picks()
     {
         var session = StartedRpsSession();
-        session.TryPick("conn-a", Choice.Rock, out _);
+        session.TryPick(Alice, 0, Choice.Rock, out _);
 
-        Assert.False(session.TryNextRound("conn-a", 1, out var error));
+        Assert.False(session.TryNextRound(Alice, 1, out var error));
         Assert.Equal("This round is not finished yet.", error);
     }
 
@@ -385,11 +536,11 @@ public class GameSessionTests
     public void Next_round_pressed_by_both_players_advances_once()
     {
         var session = StartedRpsSession();
-        session.TryPick("conn-a", Choice.Rock, out _);
-        session.TryPick("conn-b", Choice.Rock, out _);
+        session.TryPick(Alice, 0, Choice.Rock, out _);
+        session.TryPick(Bob, 1, Choice.Rock, out _);
 
-        Assert.True(session.TryNextRound("conn-a", 1, out _));
-        Assert.True(session.TryNextRound("conn-b", 1, out _));
+        Assert.True(session.TryNextRound(Alice, 1, out _));
+        Assert.True(session.TryNextRound(Bob, 1, out _));
 
         Assert.Equal(2, session.GetState().Round);
     }
@@ -398,19 +549,47 @@ public class GameSessionTests
     public void Spectators_cannot_start_the_next_round()
     {
         var session = StartedRpsSession();
-        session.TryPick("conn-a", Choice.Rock, out _);
-        session.TryPick("conn-b", Choice.Rock, out _);
+        session.TryPick(Alice, 0, Choice.Rock, out _);
+        session.TryPick(Bob, 1, Choice.Rock, out _);
 
-        Assert.False(session.TryNextRound("spectator", 1, out _));
+        Assert.False(session.TryNextRound(Carol, 1, out _));
         Assert.Equal(1, session.GetState().Round);
     }
 
     private static RockPaperScissorsSession StartedRpsSession() => Started(new RockPaperScissorsSession("ABC123"));
 
-    private static T Started<T>(T session) where T : GameSession
+    private static T Seated<T>(T session) where T : GameSession
     {
-        session.TryAddPlayer("Alice", "conn-a", out _, out _);
-        session.TryAddPlayer("Bob", "conn-b", out _, out _);
+        session.TryTakeSeat(Alice, "Alice", "conn-a", 0, out _);
+        session.TryTakeSeat(Bob, "Bob", "conn-b", 1, out _);
         return session;
     }
+
+    private static T Started<T>(T session) where T : GameSession
+    {
+        Seated(session).TryNewGame(Alice, 0, out _);
+        return session;
+    }
+
+    private static TicTacToeSession Finish(TicTacToeSession session)
+    {
+        foreach (var (user, seat, cell) in new[] { (Alice, 0, 0), (Bob, 1, 3), (Alice, 0, 1), (Bob, 1, 4), (Alice, 0, 2) })
+        {
+            Assert.True(session.TryMove(user, seat, cell, out var error), error);
+        }
+
+        return session;
+    }
+}
+
+/// <summary>
+/// Reads the game-specific state the way clients receive it, from <see cref="SessionState.Game"/>.
+/// </summary>
+internal static class GameStateExtensions
+{
+    public static TicTacToeState GetState(this TicTacToeSession session) =>
+        Assert.IsType<TicTacToeState>(session.GetPublicState().Game);
+
+    public static RockPaperScissorsState GetState(this RockPaperScissorsSession session) =>
+        Assert.IsType<RockPaperScissorsState>(session.GetPublicState().Game);
 }

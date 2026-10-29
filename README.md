@@ -6,7 +6,6 @@ It is a complete reimplementation of the original [GamesLane](https://github.com
 
 ## How It Works
 
-_This section describes the intended behaviour. Parts of it are not implemented yet._
 
 ### Users
 - A **user** is a person who is logged in. At most one user is logged in per browser tab; there may be no user logged in. Different tabs may have different users.
@@ -23,12 +22,13 @@ _This section describes the intended behaviour. Parts of it are not implemented 
 ### Sessions
 - A **session** is one instance of a specific game, identified by a unique code.
 - A session can be created from the lobby, joined by entering its code, or opened directly from its URL. Joining does not require a logged-in user.
-- A session is either **inactive** or **active**.
+- A session is either **inactive** (showing the session lobby) or **active** (showing the game screen).
 
 ### Session lobby (inactive session)
 - A screen shared by all games, showing the game's **seats**.
 - Only a logged-in user can take a seat. A user may take more than one seat (and then sees the private information of all of them).
 - A user can leave a seat. A seat whose user has disconnected can be taken by another user.
+- A user who loses their connection (closed tab, phone asleep, network lost) keeps their seats for 30 seconds and gets them back if they return in time. After that, the seats are freed.
 - Creating a session does not seat the creator; they join the session and can then take a seat.
 - Each game defines its maximum number of seats (up to 12) and the minimum needed to start (which may equal the maximum). Current games have 2 seats, both required.
 - When the minimum number of seats is taken, a **Start** button appears. Any seated user can start the game.
@@ -42,7 +42,8 @@ _This section describes the intended behaviour. Parts of it are not implemented 
 - A seated user can **stand up** (become a spectator) or **leave** (go back to the main lobby, giving up their seats).
 - If players leave during a game and at least the minimum number remain, the game may continue (a per-game option). Otherwise the game pauses and the session goes back to the session lobby.
 - When a game is resumed, anyone who took a seat in the meantime continues the game in place of the previous user.
-- When a game ends, anyone seated can **Restart** it while at least the minimum number of players are seated. A new game is played by whoever is seated (any number between the minimum and the maximum). If fewer than the minimum remain, the session goes back to the session lobby automatically.
+- When a game ends, anyone seated can choose **Play again** while at least the minimum number of players are seated, or go **Back to session lobby** (for everyone). A new game is played by whoever is seated (any number between the minimum and the maximum). If fewer than the minimum remain, the session goes back to the session lobby automatically.
+- Rock-paper-scissors never ends by itself; players stand up or leave when they are done.
 
 A typical setup is a shared screen (such as a TV or laptop) connected as a spectator to show the board, while each player uses their own phone to view their hand and play.
 
@@ -59,13 +60,15 @@ A typical setup is a shared screen (such as a TV or laptop) connected as a spect
 GamesLane.slnx                 Solution file
 GamesLane.Server/              ASP.NET Core backend
   Auth/AuthSetup.cs            Login by name or with Google/Microsoft accounts; per-tab login tokens
-  Hubs/GameHub.cs              SignalR hub for creating, joining and playing games
-  Sessions/                    Game sessions (players, status) and the in-memory session store
+  Hubs/GameHub.cs              SignalR hub for creating, joining and playing sessions
+  Hubs/DisconnectedSeatsMonitor.cs  Frees the seats of users disconnected for over 30 seconds
+  Sessions/GameSession.cs      Seats, session lobby and game flow shared by all games
+  Sessions/                    Game-specific sessions and the in-memory session store
   Games/TicTacToe/             Tic-tac-toe rules
   Games/RockPaperScissors/     Rock-paper-scissors rules
   wwwroot/                     Web pages
     index.html, home.js        Main screen: start a session or join one by code
-    common.js                  Shared: login dialog and account bar, hub connection, game page framework
+    common.js                  Shared: login dialog and account bar, hub connection, session lobby and page framework
     tictactoe.html/.js         Tic-tac-toe page
     rock-paper-scissors.html/.js  Rock-paper-scissors page
 GamesLane.Server.Tests/        Unit tests
@@ -82,21 +85,36 @@ Clients connect to the SignalR hub at `/hubs/game` and call these methods:
 
 | Method | Returns | Description |
 | --- | --- | --- |
-| `CreateGame(gameType)` | game code | Logged-in users only. Creates a game (`"TicTacToe"` or `"RockPaperScissors"`) and returns its 6-character code. |
-| `EnterGame(gameId)` | `{ state, player }` | Subscribes to the game's updates. If the caller already holds a seat, reconnects them to it and returns `player` (`{ playerId, seat, gameType }`); otherwise `player` is `null`. Game pages call this when they open and after reconnecting. |
-| `JoinAsPlayer(gameId)` | `{ playerId, seat, gameType }` | Logged-in users only. Joins as a player under the user's display name. Seats are 0 and 1 in join order (in tic-tac-toe, seat 0 is X). The game starts when both have joined. |
-| `JoinAsSpectator(gameId)` | game state | Joins as a spectator and returns the current state. |
-| `MakeMove(gameId, cell)` | — | Tic-tac-toe: places the caller's mark. Cells are numbered 0–8, left to right, top to bottom. |
-| `PlayAgain(gameId, gameNumber)` | — | Tic-tac-toe: after game `gameNumber` has ended, starts a new game with the same players. Refused while the game is in progress. If the new game has already started, nothing changes. |
-| `Pick(gameId, choice)` | — | Rock-paper-scissors: picks `"Rock"`, `"Paper"` or `"Scissors"` for the current round. |
-| `NextRound(gameId, round)` | — | Rock-paper-scissors: starts the round after `round`. If it has already started, nothing changes. |
-| `Leave(gameId)` | — | Stops receiving updates for the game. |
+| `CreateSession(gameType)` | session code | Logged-in users only. Creates a session (`"TicTacToe"` or `"RockPaperScissors"`) and returns its 6-character code. The creator is not seated. |
+| `EnterSession(sessionId)` | `{ state, playerId }` | Subscribes to the session's updates. For a logged-in user, reconnects them to their seats, updates their name on them, and returns their `playerId`; otherwise `playerId` is `null`. Pages call this when they open and after reconnecting. |
+| `TakeSeat(sessionId, seat)` | — | Logged-in users only. Takes an empty seat, or the seat of a disconnected user, under the user's display name. Only in the session lobby. |
+| `LeaveSeat(sessionId, seat)` | — | Gives up one of the caller's seats (used for **Leave seat** and **Stand up**). |
+| `LeaveSession(sessionId)` | — | Stops receiving updates and gives up all the caller's seats (used when going back to the main screen). |
+| `NewGame(sessionId, gameNumber)` | — | Seated users only. Starts a new game for everyone seated, replacing game `gameNumber` (0 before the first game). Refused while a game is in progress. If that game was already replaced, nothing changes. |
+| `ResumeGame(sessionId)` | — | Seated users only. Continues the paused game; whoever now holds each of its seats plays that seat. |
+| `ReturnToLobby(sessionId)` | — | Seated users only. After a game has ended, takes everyone back to the session lobby. |
+| `MakeMove(sessionId, seat, cell)` | — | Tic-tac-toe: places the mark of `seat` (0 is X, 1 is O), which the caller must hold. Cells are numbered 0–8, left to right, top to bottom. |
+| `Pick(sessionId, seat, choice)` | — | Rock-paper-scissors: picks `"Rock"`, `"Paper"` or `"Scissors"` for `seat`, which the caller must hold. |
+| `NextRound(sessionId, round)` | — | Rock-paper-scissors: starts the round after `round`. If it has already started, nothing changes. |
 
-After every change, the server sends a `StateUpdated` message with the public game state to everyone in the game. The state's `gameType` field tells clients which game it is, and each player's `isConnected` shows whether they are currently online. In rock-paper-scissors, the public state only shows whether each player has picked; the picks themselves are revealed once both players have picked. Errors (e.g. "It is not your turn.") are returned as hub errors to the caller.
+After every change, the server sends a `StateUpdated` message with the public session state to everyone in the session:
+
+| Field | Description |
+| --- | --- |
+| `sessionId`, `gameType` | The session code and which game it is |
+| `phase` | `"Lobby"` (session lobby) or `"Playing"` (game screen) |
+| `minSeats`, `maxSeats` | Seats needed to start, and the number of seats |
+| `seats` | One entry per seat: `{ playerId, name, isConnected }`, or `null` when empty. A page finds its user's seats by comparing `playerId` |
+| `gameNumber` | 0 until the first game starts, then counts games |
+| `isGameOver` | The current game has ended |
+| `canResume` | In the lobby with an unfinished, paused game |
+| `game` | Game-specific state, or `null` before the first game |
+
+In rock-paper-scissors, the game state only shows whether each seat has picked; the picks themselves are revealed once both have picked. Errors (e.g. "It is not your turn.") are returned as hub errors to the caller.
 
 ### Rejoining
 
-Players are identified by their user ID. After a refresh or dropped connection, the game page reconnects and calls `EnterGame`, and the player gets their seat back.
+Players are identified by their user ID. After a refresh or dropped connection, the page reconnects and calls `EnterSession`, and the player keeps their seats, as long as they return within 30 seconds.
 
 ### Login
 
@@ -110,8 +128,8 @@ External sign-in: the page sends the browser to `/auth/signin/{provider}` with a
 
 | Endpoint | Description |
 | --- | --- |
-| `GET /api/games/{code}` | `{ gameId, gameType, page }` for an existing game, or 404 |
-| `GET /join/{code}` | Shareable join link; redirects to the game's page |
+| `GET /api/sessions/{code}` | `{ sessionId, gameType, page }` for an existing session, or 404 |
+| `GET /join/{code}` | Shareable join link; redirects to the session's page (`<page>?session=CODE`) |
 | `GET /auth/me` | `{ signedIn, userId, name, provider, providers }`; `providers` lists the external sign-in options that are configured |
 | `POST /auth/login` | Body `{ name }`. Logs in by name (1–30 characters) and returns a login token (`{ accessToken, ... }`) |
 | `POST /auth/name` | Body `{ name }`, logged-in users only. Changes the display name and returns a new login token |
@@ -132,11 +150,11 @@ For local testing, use `dotnet user-secrets` in `GamesLane.Server` and register 
 
 ## Project Status and External Services
 
-_Last updated: 2026-10-28. Keep this section current; it is the hand-off point between work sessions._
+_Last updated: 2026-10-29. Keep this section current; it is the hand-off point between work sessions._
 
 ### Local machine
-- Repo folder: `C:\Users\inati\OneDrive\Doc_Isaac\Programming\GamesLane2.0` (inside OneDrive; OneDrive sync can lock files during moves).
-- Installed: Git (user Isaac Nativ), GitHub CLI (`gh`, signed in), .NET 10 SDK. Not installed: Docker, Node.js.
+- Repo folder: `C:\Users\inati\iCloudDrive\Programming\GamesLane2.0` (inside iCloud Drive; sync can lock files during moves).
+- Installed: Git (user Isaac Nativ), GitHub CLI (`gh`, signed in), .NET 10 SDK, Node.js (useful for `node --check` on the scripts in `wwwroot`). Not installed: Docker.
 - The original JavaScript/Firebase app is in the sibling folder `GamesLane` (github.com/inativ01/GamesLane). It is separate; do not modify it.
 
 ### GitHub
@@ -178,7 +196,7 @@ _Last updated: 2026-10-28. Keep this section current; it is the hand-off point b
 - Games are in memory only and are lost on restart.
 - Login tokens are signed with keys held in memory, so a server restart logs everyone out.
 - Until there is a database, a user who logged in by name exists only in that browser; logging in again creates a new user.
-- Logging in or out mid-game loses your seat. Changing your display name does not yet update a seat you hold.
+- Logging in or out mid-game loses your seat (it is freed 30 seconds later, and the game pauses).
 - One server instance only (no scale-out).
 
 ## Running Locally
@@ -190,11 +208,11 @@ dotnet run --project GamesLane.Server
 ```
 
 - Web page: `/` (the address is shown in the console, e.g. `http://localhost:5xxx`)
-- Join link: `/join/{code}` opens the game's page
+- Join link: `/join/{code}` opens the session's page
 - Health check: `GET /health`
 - SignalR hub: `/hubs/game`
 
-To play: on the main screen, log in and choose **New session** for a game. The game's page shows the code and a join link (`/join/{code}`) to send to the others. Anyone who opens the link can watch; logged-in users choose **Take a seat** to play. To use a shared screen (e.g. a TV), open the session there without taking a seat. To try several players on one computer, use a separate tab for each user. To play from phones on the same Wi-Fi, run the server with `--urls http://0.0.0.0:5000` and open `http://<computer's IP address>:5000`.
+To play: on the main screen, log in and choose **New session** for a game. The session lobby shows the code, a join link (`/join/{code}`) to send to the others, and the seats. Anyone who opens the link can watch; logged-in users choose **Sit here**, and once enough seats are taken, any seated user presses **Start**. To use a shared screen (e.g. a TV), open the session there without taking a seat. To try several players on one computer, use a separate tab for each user. To play from phones on the same Wi-Fi, run the server with `--urls http://0.0.0.0:5000` and open `http://<computer's IP address>:5000`.
 
 ## Running Tests
 

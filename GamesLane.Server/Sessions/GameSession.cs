@@ -2,150 +2,527 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace GamesLane.Server.Sessions;
 
+/// <summary>
+/// The games that can be played.
+/// </summary>
 public enum GameType
 {
     TicTacToe,
     RockPaperScissors,
 }
 
-public enum GameStatus
+/// <summary>
+/// Which screen a session shows.
+/// </summary>
+public enum SessionPhase
 {
-    WaitingForPlayers,
-    InProgress,
-    Finished,
+    /// <summary>The session lobby: users take seats. No game has started yet, or the game is paused.</summary>
+    Lobby,
+
+    /// <summary>The game screen: a game is in progress or has just ended.</summary>
+    Playing,
 }
 
 /// <summary>
-/// A player in a game. Seats are assigned in join order, starting at 0.
-/// <see cref="UserKey"/> is the player's stable identity (signed-in account or guest ID), used to rejoin after reconnecting.
-/// <see cref="ConnectionId"/> is the player's current SignalR connection.
+/// A taken seat, as everyone sees it. <see cref="PlayerId"/> is a random ID for the user within this session,
+/// so pages can recognise their own seats without revealing user IDs.
 /// </summary>
-public class Player(string id, string name, string userKey, string connectionId, int seat)
-{
-    public string Id { get; } = id;
-
-    public string Name { get; } = name;
-
-    public string UserKey { get; } = userKey;
-
-    public int Seat { get; } = seat;
-
-    public string ConnectionId { get; internal set; } = connectionId;
-
-    public bool IsConnected { get; internal set; } = true;
-}
-
-public record PlayerInfo(string PlayerId, int Seat, GameType GameType);
+public record SeatInfo(string PlayerId, string Name, bool IsConnected);
 
 /// <summary>
-/// Returned when a connection enters a game page: the public state, plus the caller's seat if they are a player.
+/// Public session state, safe to send to everyone in the session. <see cref="Seats"/> has one entry per seat (null when empty).
+/// <see cref="GameNumber"/> is 0 until the first game starts; <see cref="Game"/> is the game-specific state, or null before then.
 /// </summary>
-public record GameEntry(object State, PlayerInfo? Player);
+public record SessionState(
+    string SessionId,
+    GameType GameType,
+    SessionPhase Phase,
+    int MinSeats,
+    int MaxSeats,
+    IReadOnlyList<SeatInfo?> Seats,
+    int GameNumber,
+    bool IsGameOver,
+    bool CanResume,
+    object? Game);
 
 /// <summary>
-/// A single two-player game. Actions are authorized by the player's current SignalR connection, so a client can only act for itself.
+/// Returned when a page enters a session: the public state, plus the caller's player ID if they are logged in.
+/// </summary>
+public record SessionEntry(SessionState State, string? PlayerId);
+
+/// <summary>
+/// One session of a game: its seats, and the game played by the seated users.
+/// Users are identified by a user key; a user may hold several seats. Each game type sets its number of seats.
+/// When fewer players remain than the game needs, an unfinished game pauses and the session returns to the lobby,
+/// where it can be resumed (by whoever then holds the seats) or replaced by a new game.
 /// All public members are thread-safe; derived classes must lock <see cref="Sync"/> when accessing state.
 /// </summary>
-public abstract class GameSession(string id) : IGameSession
+public abstract class GameSession : IGameSession
 {
-    public const int MaxPlayers = 2;
+    private const int MaxSeatLimit = 12;
 
+    /// <summary>
+    /// Lock that protects all session and game state.
+    /// </summary>
     protected readonly object Sync = new();
-    protected readonly List<Player> Players = [];
 
-    public string Id { get; } = id;
+    private readonly Seat?[] _seats;
+    private readonly Dictionary<string, string> _connections = [];
+    private readonly Dictionary<string, DateTimeOffset> _disconnectedSince = [];
+    private readonly Dictionary<string, string> _playerIds = [];
+    private int[] _gameSeats = [];
 
+    /// <summary>
+    /// Creates an empty session in the lobby. Throws if the game's seat counts are invalid.
+    /// </summary>
+    protected GameSession(string id)
+    {
+        Id = id;
+        if (MinSeats < 1 || MinSeats > MaxSeats || MaxSeats > MaxSeatLimit)
+        {
+            throw new InvalidOperationException($"A game needs between 1 and {MaxSeatLimit} seats.");
+        }
+
+        _seats = new Seat?[MaxSeats];
+    }
+
+    /// <inheritdoc />
+    public string Id { get; }
+
+    /// <inheritdoc />
     public abstract GameType Type { get; }
 
     /// <summary>
-    /// Adds a player. <paramref name="userKey"/> identifies the player for rejoining; it defaults to the connection ID.
+    /// The number of seated players needed to start a game.
     /// </summary>
-    public bool TryAddPlayer(
-        string name,
-        string connectionId,
-        [NotNullWhen(true)] out Player? player,
-        [NotNullWhen(false)] out string? error,
-        string? userKey = null)
+    protected abstract int MinSeats { get; }
+
+    /// <summary>
+    /// The number of seats (at most 12).
+    /// </summary>
+    protected abstract int MaxSeats { get; }
+
+    /// <summary>
+    /// Whether an unfinished game continues when players leave, as long as at least <see cref="MinSeats"/> of its players remain.
+    /// The game must then handle the empty seats itself.
+    /// </summary>
+    protected virtual bool ContinuesWithFewerPlayers => false;
+
+    /// <summary>
+    /// Whether users can take a seat while a game is being played.
+    /// </summary>
+    protected virtual bool AllowsSeatingDuringGame => false;
+
+    /// <summary>
+    /// Whether the current game has ended.
+    /// </summary>
+    protected abstract bool IsGameOver { get; }
+
+    /// <summary>
+    /// Replaces the current game with a new one for the given seats.
+    /// </summary>
+    protected abstract void StartNewGame(IReadOnlyList<int> seats);
+
+    /// <summary>
+    /// The game-specific public state, sent as <see cref="SessionState.Game"/>. Called while holding <see cref="Sync"/>.
+    /// </summary>
+    protected abstract object GetGameState();
+
+    /// <summary>
+    /// Whether the session shows the session lobby or the game screen.
+    /// </summary>
+    private SessionPhase Phase { get; set; }
+
+    /// <summary>
+    /// The number of games started in this session; 0 before the first.
+    /// </summary>
+    private int GameNumber { get; set; }
+
+    /// <summary>
+    /// Whether a game has started and not ended (it may be paused).
+    /// </summary>
+    private bool HasUnfinishedGame => GameNumber > 0 && !IsGameOver;
+
+    /// <summary>
+    /// Registers a connection that opened the session page. If <paramref name="name"/> is given (the user is logged in),
+    /// updates the name on the user's seats and returns the user's player ID.
+    /// </summary>
+    public string? Enter(string userKey, string? name, string connectionId)
     {
-        userKey ??= connectionId;
         lock (Sync)
         {
-            player = null;
-
-            if (string.IsNullOrWhiteSpace(name))
+            _connections[connectionId] = userKey;
+            _disconnectedSince.Remove(userKey);
+            if (name is null)
             {
-                error = "Player name is required.";
+                return null;
+            }
+
+            foreach (var seat in _seats.Where(s => s?.UserKey == userKey))
+            {
+                seat!.Name = name;
+            }
+
+            return PlayerIdFor(userKey);
+        }
+    }
+
+    /// <summary>
+    /// Forgets a closed connection. Returns true if this leaves a seated user with no connection.
+    /// </summary>
+    public bool Disconnect(string connectionId, DateTimeOffset now)
+    {
+        lock (Sync)
+        {
+            if (!_connections.Remove(connectionId, out var userKey) || IsConnected(userKey) || !HoldsSeat(userKey))
+            {
                 return false;
             }
 
-            if (Players.Any(p => p.UserKey == userKey || p.ConnectionId == connectionId))
+            _disconnectedSince[userKey] = now;
+            return true;
+        }
+    }
+
+    /// <summary>
+    /// Frees the seats of users who have been disconnected since <paramref name="cutoff"/> or earlier. Returns true if any seat was freed.
+    /// </summary>
+    public bool ReleaseDisconnectedSeats(DateTimeOffset cutoff)
+    {
+        lock (Sync)
+        {
+            var expired = _disconnectedSince.Where(d => d.Value <= cutoff).Select(d => d.Key).ToList();
+            var freed = 0;
+            foreach (var userKey in expired)
             {
-                error = "You have already joined this game.";
+                freed += FreeSeats(userKey);
+            }
+
+            return freed > 0;
+        }
+    }
+
+    /// <summary>
+    /// Takes an empty seat, or the seat of a user who is disconnected. Only in the lobby, unless the game allows seating during a game.
+    /// </summary>
+    public bool TryTakeSeat(string userKey, string name, string connectionId, int seat, [NotNullWhen(false)] out string? error)
+    {
+        lock (Sync)
+        {
+            if (seat < 0 || seat >= MaxSeats)
+            {
+                error = "There is no such seat.";
                 return false;
             }
 
-            if (Players.Count >= MaxPlayers)
+            if (Phase == SessionPhase.Playing && !AllowsSeatingDuringGame)
             {
-                error = "The game is full.";
+                error = "The game has already started. You can watch it.";
                 return false;
             }
 
-            player = new Player(Guid.NewGuid().ToString("N"), name.Trim(), userKey, connectionId, Players.Count);
-            Players.Add(player);
+            var current = _seats[seat];
+            if (current?.UserKey == userKey)
+            {
+                error = "You are already in this seat.";
+                return false;
+            }
+
+            if (current is not null && IsConnected(current.UserKey))
+            {
+                error = "That seat is taken.";
+                return false;
+            }
+
+            _seats[seat] = new Seat(userKey, name);
+            _connections[connectionId] = userKey;
+            _disconnectedSince.Remove(userKey);
+            if (current is not null && !HoldsSeat(current.UserKey))
+            {
+                _disconnectedSince.Remove(current.UserKey);
+            }
+
             error = null;
             return true;
         }
     }
 
     /// <summary>
-    /// If <paramref name="userKey"/> holds a seat, moves that seat to <paramref name="connectionId"/> and marks the player connected.
+    /// Gives up one of the user's seats. An unfinished game pauses if too few of its players remain.
     /// </summary>
-    public bool TryRejoin(string userKey, string connectionId, [NotNullWhen(true)] out Player? player)
+    public bool TryLeaveSeat(string userKey, int seat, [NotNullWhen(false)] out string? error)
     {
         lock (Sync)
         {
-            player = Players.FirstOrDefault(p => p.UserKey == userKey);
-            if (player is null)
+            if (seat < 0 || seat >= MaxSeats || _seats[seat]?.UserKey != userKey)
             {
+                error = "That is not your seat.";
                 return false;
             }
 
-            player.ConnectionId = connectionId;
-            player.IsConnected = true;
+            _seats[seat] = null;
+            if (!HoldsSeat(userKey))
+            {
+                _disconnectedSince.Remove(userKey);
+            }
+
+            AfterSeatsChanged();
+            error = null;
             return true;
         }
     }
 
     /// <summary>
-    /// Marks the player using <paramref name="connectionId"/> as disconnected. Returns true if a player was affected.
+    /// Frees all the user's seats. Returns true if they held any.
     /// </summary>
-    public bool Disconnect(string connectionId)
+    public bool LeaveAllSeats(string userKey)
     {
         lock (Sync)
         {
-            var player = Players.FirstOrDefault(p => p.ConnectionId == connectionId && p.IsConnected);
-            if (player is null)
+            return FreeSeats(userKey) > 0;
+        }
+    }
+
+    /// <summary>
+    /// Starts a new game for everyone seated, replacing game <paramref name="gameNumber"/> (0 if there was none).
+    /// If that game has already been replaced (for example, two players pressed Start), nothing changes.
+    /// </summary>
+    public bool TryNewGame(string userKey, int gameNumber, [NotNullWhen(false)] out string? error)
+    {
+        lock (Sync)
+        {
+            if (!TryRequireSeated(userKey, out error) || gameNumber != GameNumber)
             {
+                return error is null;
+            }
+
+            if (Phase == SessionPhase.Playing && !IsGameOver)
+            {
+                error = "The game is not over yet.";
                 return false;
             }
 
-            player.IsConnected = false;
+            var seats = OccupiedSeats().ToArray();
+            if (seats.Length < MinSeats)
+            {
+                error = $"At least {MinSeats} players must be seated.";
+                return false;
+            }
+
+            _gameSeats = seats;
+            GameNumber++;
+            StartNewGame(seats);
+            Phase = SessionPhase.Playing;
             return true;
         }
     }
 
     /// <summary>
-    /// Public game state, safe to send to everyone in the game (players and spectators).
+    /// Continues the paused game. Whoever now holds each of its seats plays that seat.
     /// </summary>
-    public abstract object GetPublicState();
-
-    protected bool TryGetPlayer(
-        string connectionId,
-        [NotNullWhen(true)] out Player? player,
-        [NotNullWhen(false)] out string? error)
+    public bool TryResume(string userKey, [NotNullWhen(false)] out string? error)
     {
-        player = Players.FirstOrDefault(p => p.ConnectionId == connectionId);
-        error = player is null ? "Only players in this game can make moves." : null;
-        return player is not null;
+        lock (Sync)
+        {
+            if (!TryRequireSeated(userKey, out error) || Phase == SessionPhase.Playing)
+            {
+                return error is null;
+            }
+
+            if (!HasUnfinishedGame)
+            {
+                error = "There is no game to resume.";
+                return false;
+            }
+
+            if (!GameSeatsReady())
+            {
+                error = "Every player's seat must be taken to resume.";
+                return false;
+            }
+
+            Phase = SessionPhase.Playing;
+            return true;
+        }
+    }
+
+    /// <summary>
+    /// After a game has ended, takes everyone back to the session lobby.
+    /// </summary>
+    public bool TryReturnToLobby(string userKey, [NotNullWhen(false)] out string? error)
+    {
+        lock (Sync)
+        {
+            if (!TryRequireSeated(userKey, out error) || Phase == SessionPhase.Lobby)
+            {
+                return error is null;
+            }
+
+            if (!IsGameOver)
+            {
+                error = "The game is not over yet.";
+                return false;
+            }
+
+            Phase = SessionPhase.Lobby;
+            return true;
+        }
+    }
+
+    /// <summary>
+    /// Public session state, safe to send to everyone in the session (players and spectators).
+    /// </summary>
+    public SessionState GetPublicState()
+    {
+        lock (Sync)
+        {
+            return new SessionState(
+                Id,
+                Type,
+                Phase,
+                MinSeats,
+                MaxSeats,
+                _seats.Select(s => s is null ? null : new SeatInfo(PlayerIdFor(s.UserKey), s.Name, IsConnected(s.UserKey))).ToArray(),
+                GameNumber,
+                GameNumber > 0 && IsGameOver,
+                Phase == SessionPhase.Lobby && HasUnfinishedGame,
+                GameNumber > 0 ? GetGameState() : null);
+        }
+    }
+
+    /// <summary>
+    /// Checks that a game is in progress and that <paramref name="userKey"/> holds <paramref name="seat"/> in it.
+    /// </summary>
+    protected bool TryGetPlayingSeat(string userKey, int seat, [NotNullWhen(false)] out string? error)
+    {
+        if (Phase != SessionPhase.Playing || !HasUnfinishedGame)
+        {
+            error = "The game is not in progress.";
+            return false;
+        }
+
+        if (seat < 0 || seat >= MaxSeats || _seats[seat]?.UserKey != userKey || !_gameSeats.Contains(seat))
+        {
+            error = "Only players in this game can make moves.";
+            return false;
+        }
+
+        error = null;
+        return true;
+    }
+
+    /// <summary>
+    /// Checks that <paramref name="userKey"/> holds a seat in the game being played.
+    /// </summary>
+    protected bool IsInGame(string userKey, [NotNullWhen(false)] out string? error)
+    {
+        var inGame = Phase == SessionPhase.Playing && _gameSeats.Any(s => _seats[s]?.UserKey == userKey);
+        error = inGame ? null : "Only players in this game can do that.";
+        return inGame;
+    }
+
+    /// <summary>
+    /// Checks that <paramref name="userKey"/> holds at least one seat.
+    /// </summary>
+    private bool TryRequireSeated(string userKey, out string? error)
+    {
+        error = HoldsSeat(userKey) ? null : "Only seated players can do that.";
+        return error is null;
+    }
+
+    /// <summary>
+    /// Empties all the user's seats and returns how many were freed.
+    /// </summary>
+    private int FreeSeats(string userKey)
+    {
+        var freed = 0;
+        for (var i = 0; i < _seats.Length; i++)
+        {
+            if (_seats[i]?.UserKey == userKey)
+            {
+                _seats[i] = null;
+                freed++;
+            }
+        }
+
+        _disconnectedSince.Remove(userKey);
+        if (freed > 0)
+        {
+            AfterSeatsChanged();
+        }
+
+        return freed;
+    }
+
+    /// <summary>
+    /// Goes back to the lobby when too few players remain: an unfinished game pauses, and after a game has ended,
+    /// there are not enough players for a new one.
+    /// </summary>
+    private void AfterSeatsChanged()
+    {
+        if (Phase != SessionPhase.Playing)
+        {
+            return;
+        }
+
+        var enough = IsGameOver ? OccupiedSeats().Count() >= MinSeats : GameSeatsReady();
+        if (!enough)
+        {
+            Phase = SessionPhase.Lobby;
+        }
+    }
+
+    /// <summary>
+    /// Whether enough of the current game's seats are taken for it to be played.
+    /// </summary>
+    private bool GameSeatsReady()
+    {
+        var taken = _gameSeats.Count(s => _seats[s] is not null);
+        return taken == _gameSeats.Length || (ContinuesWithFewerPlayers && taken >= MinSeats);
+    }
+
+    /// <summary>
+    /// The numbers of the taken seats, in order.
+    /// </summary>
+    private IEnumerable<int> OccupiedSeats() => Enumerable.Range(0, MaxSeats).Where(i => _seats[i] is not null);
+
+    /// <summary>
+    /// Whether <paramref name="userKey"/> holds any seat.
+    /// </summary>
+    private bool HoldsSeat(string userKey) => _seats.Any(s => s?.UserKey == userKey);
+
+    /// <summary>
+    /// Whether <paramref name="userKey"/> has at least one open connection to this session.
+    /// </summary>
+    private bool IsConnected(string userKey) => _connections.ContainsValue(userKey);
+
+    /// <summary>
+    /// The user's random player ID in this session, created on first use.
+    /// </summary>
+    private string PlayerIdFor(string userKey)
+    {
+        if (!_playerIds.TryGetValue(userKey, out var playerId))
+        {
+            playerId = Guid.NewGuid().ToString("N");
+            _playerIds[userKey] = playerId;
+        }
+
+        return playerId;
+    }
+
+    /// <summary>
+    /// A taken seat: who holds it, and the name shown on it.
+    /// </summary>
+    private sealed class Seat(string userKey, string name)
+    {
+        /// <summary>
+        /// The user holding the seat.
+        /// </summary>
+        public string UserKey { get; } = userKey;
+
+        /// <summary>
+        /// The user's display name, updated when they rename and re-enter the session.
+        /// </summary>
+        public string Name { get; set; } = name;
     }
 }

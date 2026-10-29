@@ -9,14 +9,14 @@
 <body>
 <main>
     <header class="top">
-        <a href="/" class="brand">GamesLane</a>
+        <a href="/" class="brand" data-leave>GamesLane</a>
         <div id="account" class="account"></div>
     </header>
-    <nav class="back"><a href="/">← Back to main screen</a></nav>
+    <nav class="back"><a href="/" data-leave>← Back to main screen</a></nav>
 
-    <section id="game">
+    <section id="session">
         <h2>Tic-tac-toe</h2>
-        <p class="code">Game code: <strong id="game-code"></strong></p>
+        <p class="code">Session code: <strong id="session-code"></strong></p>
         <div id="invite" class="invite" hidden>
             <p class="hint">Invite players with this link:</p>
             <a id="join-url" class="join-url"></a>
@@ -25,14 +25,27 @@
                 <button id="share-link" type="button" class="secondary" hidden>Share…</button>
             </div>
         </div>
-        <div id="join-panel" class="panel" hidden>
-            <button id="take-seat" type="button" hidden>Take a seat</button>
+
+        <div id="session-lobby" class="panel" hidden>
+            <p id="lobby-status" class="status"></p>
+            <ul id="seats" class="seats"></ul>
             <p id="login-to-play" class="hint" hidden>Log in to take a seat. <button type="button" class="secondary small" data-login>Log in</button></p>
+            <div class="actions center">
+                <button id="resume-game" type="button" hidden>Resume game</button>
+                <button id="start-game" type="button" hidden>Start</button>
+            </div>
         </div>
-        <p id="status" class="status"></p>
-        <div id="board" class="board"></div>
-        <button id="play-again" type="button" hidden>Play again</button>
-        <ul id="players" class="players"></ul>
+
+        <div id="game-screen" hidden>
+            <p id="status" class="status"></p>
+            <div id="board" class="board"></div>
+            <div id="game-over-actions" class="actions center" hidden>
+                <button id="play-again" type="button">Play again</button>
+                <button id="to-lobby" type="button" class="secondary">Back to session lobby</button>
+            </div>
+            <ul id="players" class="players"></ul>
+            <button id="stand-up" type="button" class="secondary small" hidden>Stand up</button>
+        </div>
     </section>
 
     <p id="error" class="error" role="alert"></p>

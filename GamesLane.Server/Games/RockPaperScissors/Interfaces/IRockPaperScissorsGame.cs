@@ -5,14 +5,29 @@ namespace GamesLane.Server.Games.RockPaperScissors;
 /// </summary>
 public interface IRockPaperScissorsGame
 {
+    /// <summary>
+    /// The current round, starting at 1.
+    /// </summary>
     int Round { get; }
 
+    /// <summary>
+    /// Each seat's pick in the current round, or <see cref="Choice.None"/> if it has not picked yet.
+    /// </summary>
     IReadOnlyList<Choice> Picks { get; }
 
+    /// <summary>
+    /// The number of rounds each seat has won.
+    /// </summary>
     IReadOnlyList<int> Scores { get; }
 
+    /// <summary>
+    /// The number of drawn rounds.
+    /// </summary>
     int Draws { get; }
 
+    /// <summary>
+    /// Whether both seats have picked in the current round.
+    /// </summary>
     bool IsRoundComplete { get; }
 
     /// <summary>
@@ -20,6 +35,10 @@ public interface IRockPaperScissorsGame
     /// </summary>
     int? RoundWinner { get; }
 
+    /// <summary>
+    /// Picks for <paramref name="seat"/> in the current round. Fails if the choice is invalid, the seat has already
+    /// picked, or the round is over. The round is decided when both seats have picked.
+    /// </summary>
     bool TryPick(int seat, Choice choice, out string? error);
 
     /// <summary>

@@ -3,104 +3,59 @@ using GamesLane.Server.Games.TicTacToe;
 
 namespace GamesLane.Server.Sessions;
 
-public record TicTacToePlayer(string Name, Mark Mark, bool IsConnected);
-
 /// <summary>
-/// Public tic-tac-toe state. Players are listed in seat order.
+/// Public tic-tac-toe state. Seat 0 plays X, seat 1 plays O.
 /// </summary>
 public record TicTacToeState(
-    string GameId,
-    GameType GameType,
-    GameStatus Status,
-    int GameNumber,
     IReadOnlyList<Mark> Board,
     Mark CurrentTurn,
     Mark Winner,
-    bool IsDraw,
-    IReadOnlyList<TicTacToePlayer> Players);
+    bool IsDraw);
 
 /// <summary>
-/// A tic-tac-toe game. Seat 0 plays X, seat 1 plays O. After a game ends, the same players can play again.
+/// A tic-tac-toe session for two seats. Seat 0 plays X, seat 1 plays O.
 /// </summary>
 public class TicTacToeSession(string id) : GameSession(id), ITicTacToeSession
 {
     private TicTacToeGame _game = new();
-    private int _gameNumber = 1;
 
+    /// <inheritdoc />
     public override GameType Type => GameType.TicTacToe;
 
-    public static Mark MarkFor(int seat) => seat == 0 ? Mark.X : Mark.O;
+    /// <inheritdoc />
+    protected override int MinSeats => 2;
 
-    public bool TryMove(string connectionId, int cell, [NotNullWhen(false)] out string? error)
+    /// <inheritdoc />
+    protected override int MaxSeats => 2;
+
+    /// <inheritdoc />
+    protected override bool IsGameOver => _game.IsOver;
+
+    /// <inheritdoc />
+    public bool TryMove(string userKey, int seat, int cell, [NotNullWhen(false)] out string? error)
     {
         lock (Sync)
         {
-            if (!TryGetPlayer(connectionId, out var player, out error))
+            if (!TryGetPlayingSeat(userKey, seat, out error))
             {
                 return false;
             }
 
-            if (GetStatus() != GameStatus.InProgress)
-            {
-                error = "The game is not in progress.";
-                return false;
-            }
-
-            return _game.TryMove(MarkFor(player.Seat), cell, out error);
+            var moved = _game.TryMove(MarkFor(seat), cell, out var moveError);
+            error = moveError ?? (moved ? null : "That move is not allowed.");
+            return moved;
         }
     }
+
+    /// <inheritdoc />
+    protected override void StartNewGame(IReadOnlyList<int> seats) => _game = new TicTacToeGame();
+
+    /// <inheritdoc />
+    protected override object GetGameState() =>
+        new TicTacToeState(_game.Board.ToArray(), _game.CurrentTurn, _game.Winner, _game.IsDraw);
 
     /// <summary>
-    /// Starts a new game after game <paramref name="gameNumber"/> has ended. If that game has already been
-    /// replaced (for example, both players pressed "Play again"), nothing changes.
+    /// The mark played by <paramref name="seat"/>: X for seat 0, O for seat 1.
     /// </summary>
-    public bool TryPlayAgain(string connectionId, int gameNumber, [NotNullWhen(false)] out string? error)
-    {
-        lock (Sync)
-        {
-            if (!TryGetPlayer(connectionId, out _, out error))
-            {
-                return false;
-            }
-
-            if (gameNumber != _gameNumber)
-            {
-                return true;
-            }
-
-            if (!_game.IsOver)
-            {
-                error = "The game is not over yet.";
-                return false;
-            }
-
-            _game = new TicTacToeGame();
-            _gameNumber++;
-            return true;
-        }
-    }
-
-    public TicTacToeState GetState()
-    {
-        lock (Sync)
-        {
-            return new TicTacToeState(
-                Id,
-                Type,
-                GetStatus(),
-                _gameNumber,
-                _game.Board.ToArray(),
-                _game.CurrentTurn,
-                _game.Winner,
-                _game.IsDraw,
-                Players.Select(p => new TicTacToePlayer(p.Name, MarkFor(p.Seat), p.IsConnected)).ToArray());
-        }
-    }
-
-    public override object GetPublicState() => GetState();
-
-    private GameStatus GetStatus() =>
-        _game.IsOver ? GameStatus.Finished
-        : Players.Count < MaxPlayers ? GameStatus.WaitingForPlayers
-        : GameStatus.InProgress;
+    private static Mark MarkFor(int seat) => seat == 0 ? Mark.X : Mark.O;
 }

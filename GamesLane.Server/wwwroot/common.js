@@ -252,61 +252,103 @@ function listItem(text) {
     return item;
 }
 
-function playerLabel(player, seat, view) {
-    return player.name + (view.isMe(seat) ? " (you)" : "") + (player.isConnected ? "" : " (disconnected)");
+// A seat's name as shown on the game screen.
+function seatName(state, seat, view) {
+    const info = state.seats[seat];
+    if (!info) {
+        return "Empty seat";
+    }
+    return info.name + (view.isMe(seat) ? " (you)" : "") + (info.isConnected ? "" : " (disconnected)");
 }
 
 /**
- * Runs a game page. The page URL is <page>?game=CODE. Anyone can watch; logged-in users can take a seat.
- * Calls render(state, view) on every update. view.player is { seat, ... } when this tab's user holds a seat.
+ * Runs a session page. The page URL is <page>?session=CODE. Anyone can watch; logged-in users can take seats.
+ * While the session is in its lobby, the shared session lobby (#session-lobby) is shown; while a game is being
+ * played, the game screen (#game-screen) is shown and render(game, state, view) is called on every update.
+ * view.mySeats lists the seats this tab's user holds; view.isMe(seat) tells whether they hold a seat.
  */
-function startGamePage(gameType, render) {
-    const gameId = (params.get("game") ?? "").toUpperCase();
+function startSessionPage(gameType, render) {
+    const sessionId = (params.get("session") ?? "").toUpperCase();
     let lastState = null;
 
     const view = {
-        gameId,
-        player: null,
-        get isPlayer() { return this.player !== null; },
-        isMe(seat) { return this.player?.seat === seat; },
+        sessionId,
+        playerId: null,
+        mySeats: [],
+        get isPlayer() { return this.mySeats.length > 0; },
+        isMe(seat) { return this.mySeats.includes(seat); },
         refresh() { if (lastState) update(lastState); },
     };
 
-    if (!gameId) {
+    if (!sessionId) {
         location.replace("/");
         return view;
     }
 
-    const joinUrl = `${location.origin}/join/${gameId}`;
-    $("game-code").textContent = gameId;
+    const joinUrl = `${location.origin}/join/${sessionId}`;
+    $("session-code").textContent = sessionId;
     $("join-url").href = joinUrl;
     $("join-url").textContent = joinUrl;
 
-    function update(state) {
-        lastState = state;
-        const waiting = state.status === "WaitingForPlayers";
-        $("join-panel").hidden = view.isPlayer || !waiting;
-        $("take-seat").hidden = !account?.signedIn;
-        $("login-to-play").hidden = Boolean(account?.signedIn);
-        $("invite").hidden = !waiting;
-        render(state, view);
+    const act = (method, ...args) => call(method, sessionId, ...args).catch(() => {});
+
+    function seatItem(state, seat) {
+        const info = state.seats[seat];
+        const item = document.createElement("li");
+        item.className = "seat";
+        const label = document.createElement("span");
+        label.textContent = `Seat ${seat + 1}: ${info ? seatName(state, seat, view) : "empty"}`;
+        item.appendChild(label);
+
+        if (view.isMe(seat)) {
+            item.appendChild(smallButton("Leave seat", () => act("LeaveSeat", seat)));
+        } else if (account?.signedIn && (!info || !info.isConnected)) {
+            item.appendChild(smallButton(info ? "Take this seat" : "Sit here", () => act("TakeSeat", seat)));
+        }
+        return item;
     }
 
-    async function join() {
-        try {
-            view.player = await call("JoinAsPlayer", gameId);
-            view.refresh();
-        } catch {
-            // Error already shown.
+    function lobbyStatus(state, taken) {
+        if (state.canResume) {
+            return "The game is paused. Resume it, or start a new game.";
         }
+        if (taken < state.minSeats) {
+            return `Waiting for players (${taken}/${state.minSeats} needed)…`;
+        }
+        return "Ready to start.";
+    }
+
+    function update(state) {
+        lastState = state;
+        view.mySeats = state.seats.flatMap((s, i) => (s && s.playerId === view.playerId ? [i] : []));
+        const inLobby = state.phase === "Lobby";
+        const taken = state.seats.filter(Boolean).length;
+
+        $("session-lobby").hidden = !inLobby;
+        $("game-screen").hidden = inLobby;
+        $("invite").hidden = !inLobby;
+
+        if (inLobby) {
+            $("lobby-status").textContent = lobbyStatus(state, taken);
+            $("seats").replaceChildren(...state.seats.map((_, seat) => seatItem(state, seat)));
+            $("login-to-play").hidden = Boolean(account?.signedIn);
+            $("resume-game").hidden = !(view.isPlayer && state.canResume);
+            $("start-game").hidden = !(view.isPlayer && taken >= state.minSeats);
+            $("start-game").textContent = state.gameNumber > 0 ? "New game" : "Start";
+            return;
+        }
+
+        $("game-over-actions").hidden = !(view.isPlayer && state.isGameOver);
+        $("stand-up").hidden = !view.isPlayer;
+        render(state.game, state, view);
     }
 
     async function enter() {
         let entry;
         try {
-            entry = await call("EnterGame", gameId);
+            entry = await call("EnterSession", sessionId);
         } catch {
-            $("game").hidden = true;
+            $("session").hidden = true;
             return;
         }
 
@@ -315,7 +357,7 @@ function startGamePage(gameType, render) {
             return;
         }
 
-        view.player = entry.player ?? null;
+        view.playerId = entry.playerId ?? null;
         update(entry.state);
     }
 
@@ -325,7 +367,22 @@ function startGamePage(gameType, render) {
         enter();
     });
 
-    $("take-seat").addEventListener("click", join);
+    $("start-game").addEventListener("click", () => act("NewGame", lastState?.gameNumber ?? 0));
+    $("resume-game").addEventListener("click", () => act("ResumeGame"));
+    $("play-again").addEventListener("click", () => act("NewGame", lastState?.gameNumber ?? 0));
+    $("to-lobby").addEventListener("click", () => act("ReturnToLobby"));
+    $("stand-up").addEventListener("click", () => {
+        view.mySeats.forEach((seat) => act("LeaveSeat", seat));
+    });
+
+    // Going back to the main screen gives up this user's seats.
+    document.querySelectorAll("[data-leave]").forEach((link) => {
+        link.addEventListener("click", async (event) => {
+            event.preventDefault();
+            await call("LeaveSession", sessionId).catch(() => {});
+            location.href = link.href;
+        });
+    });
 
     setUpInviteButtons(joinUrl);
     ready.then((ok) => ok && enter());

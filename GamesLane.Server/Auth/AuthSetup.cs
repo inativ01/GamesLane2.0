@@ -10,6 +10,9 @@ namespace GamesLane.Server.Auth;
 /// </summary>
 public record AuthProviders(IReadOnlyList<string> Names);
 
+/// <summary>
+/// The body of <c>POST /auth/login</c> and <c>POST /auth/name</c>.
+/// </summary>
 public record NameRequest(string? Name);
 
 /// <summary>
@@ -22,15 +25,25 @@ public record NameRequest(string? Name);
 /// </summary>
 public static class AuthSetup
 {
+    /// <summary>
+    /// The Google sign-in provider and its configuration section.
+    /// </summary>
     public const string Google = "Google";
-    public const string Microsoft = "Microsoft";
-    public const string NameProvider = "Name";
-    public const string ProviderClaim = "provider";
-    public const int MaxNameLength = 30;
 
+    /// <summary>
+    /// The Microsoft sign-in provider and its configuration section.
+    /// </summary>
+    public const string Microsoft = "Microsoft";
+
+    private const string NameProvider = "Name";
+    private const string ProviderClaim = "provider";
+    private const int MaxNameLength = 30;
     private const string TokenScheme = BearerTokenDefaults.AuthenticationScheme;
     private const string ExternalScheme = CookieAuthenticationDefaults.AuthenticationScheme;
 
+    /// <summary>
+    /// Registers login tokens, the short-lived external sign-in cookie, and each external provider that is configured.
+    /// </summary>
     public static void AddGamesLaneAuth(this WebApplicationBuilder builder)
     {
         var enabled = new List<string>();
@@ -88,6 +101,9 @@ public static class AuthSetup
         builder.Services.AddSingleton(new AuthProviders(enabled));
     }
 
+    /// <summary>
+    /// Maps the <c>/auth/...</c> endpoints: who is logged in, log in by name, change name, and external sign-in.
+    /// </summary>
     public static void MapAuthEndpoints(this WebApplication app)
     {
         app.MapGet("/auth/me", (ClaimsPrincipal user, AuthProviders providers) =>
@@ -144,18 +160,27 @@ public static class AuthSetup
         });
     }
 
+    /// <summary>
+    /// The logged-in user's ID (e.g. <c>name:...</c> or <c>google:...</c>), or null if no one is logged in.
+    /// </summary>
     public static string? GetUserId(ClaimsPrincipal? user) =>
         user?.Identity?.IsAuthenticated == true ? user.FindFirstValue(ClaimTypes.NameIdentifier) : null;
 
+    /// <summary>
+    /// The logged-in user's display name, or null if no one is logged in.
+    /// </summary>
     public static string? GetUserName(ClaimsPrincipal? user) =>
         GetUserId(user) is null ? null : user!.FindFirstValue(ClaimTypes.Name);
 
     /// <summary>
-    /// Returns the trimmed display name, or null if it is empty or longer than <see cref="MaxNameLength"/>.
+    /// Returns the trimmed display name, or null if it is empty or longer than 30 characters.
     /// </summary>
     public static string? NormalizeName(string? name) =>
         name?.Trim() is { Length: > 0 and <= MaxNameLength } trimmed ? trimmed : null;
 
+    /// <summary>
+    /// The logged-in user stored in a login token: their user ID, display name and how they logged in.
+    /// </summary>
     public static ClaimsPrincipal CreateUser(string userId, string name, string provider) =>
         new(new ClaimsIdentity(
             [
@@ -171,6 +196,9 @@ public static class AuthSetup
     private static IResult SignInUser(string userId, string name, string provider) =>
         Results.SignIn(CreateUser(userId, name, provider), authenticationScheme: TokenScheme);
 
+    /// <summary>
+    /// Responds with a 400 error explaining the allowed name length.
+    /// </summary>
     private static IResult InvalidName() =>
         Results.BadRequest(new { error = $"Enter a name of 1 to {MaxNameLength} characters." });
 
@@ -182,6 +210,9 @@ public static class AuthSetup
             ? returnUrl
             : "/";
 
+    /// <summary>
+    /// Reads a provider's client ID and secret from configuration. Returns false if either is missing.
+    /// </summary>
     private static bool TryGetCredentials(IConfiguration configuration, string provider, out string clientId, out string clientSecret)
     {
         var section = configuration.GetSection($"Authentication:{provider}");
@@ -190,6 +221,9 @@ public static class AuthSetup
         return clientId.Length > 0 && clientSecret.Length > 0;
     }
 
+    /// <summary>
+    /// When an external sign-in fails or is cancelled, returns to the main screen with an error.
+    /// </summary>
     private static Task HandleRemoteFailure(RemoteFailureContext context)
     {
         context.Response.Redirect("/?signin=failed");
