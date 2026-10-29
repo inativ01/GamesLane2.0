@@ -16,6 +16,11 @@ public interface IGameSessionStore
     IGameSession? Get(string sessionId);
 
     /// <summary>
+    /// Deletes the session with the given code. Its code then no longer opens it.
+    /// </summary>
+    void Remove(string sessionId);
+
+    /// <summary>
     /// All active sessions.
     /// </summary>
     IEnumerable<IGameSession> All { get; }

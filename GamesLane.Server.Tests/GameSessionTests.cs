@@ -331,6 +331,57 @@ public class GameSessionTests
         Assert.False(session.Disconnect("spectator", Now));
     }
 
+    // Abandoned sessions
+
+    private static readonly TimeSpan Grace = TimeSpan.FromSeconds(30);
+
+    [Fact]
+    public void A_session_nobody_opens_is_abandoned_after_the_grace_period()
+    {
+        var session = new TicTacToeSession("ABC123");
+
+        Assert.False(session.IsAbandoned(Now, Grace));
+        Assert.False(session.IsAbandoned(Now.AddSeconds(29), Grace));
+        Assert.True(session.IsAbandoned(Now.AddSeconds(30), Grace));
+    }
+
+    [Fact]
+    public void A_session_with_a_spectator_is_not_abandoned()
+    {
+        var session = new TicTacToeSession("ABC123");
+        session.Enter("connection:tv", null, "tv");
+
+        Assert.False(session.IsAbandoned(Now, Grace));
+        Assert.False(session.IsAbandoned(Now.AddMinutes(5), Grace));
+    }
+
+    [Fact]
+    public void A_disconnected_player_keeps_the_session_until_their_seat_is_freed()
+    {
+        var session = Started(new TicTacToeSession("ABC123"));
+        session.Disconnect("conn-a", Now);
+        session.Disconnect("conn-b", Now);
+
+        Assert.False(session.IsAbandoned(Now.AddMinutes(5), Grace));
+
+        session.ReleaseDisconnectedSeats(Now);
+        Assert.False(session.IsAbandoned(Now.AddMinutes(5), Grace));
+        Assert.True(session.IsAbandoned(Now.AddMinutes(5).AddSeconds(30), Grace));
+    }
+
+    [Fact]
+    public void Coming_back_restarts_the_wait()
+    {
+        var session = new TicTacToeSession("ABC123");
+        session.IsAbandoned(Now, Grace);
+        session.Enter("connection:x", null, "x");
+        Assert.False(session.IsAbandoned(Now.AddSeconds(20), Grace));
+        session.Disconnect("x", Now.AddSeconds(20));
+
+        Assert.False(session.IsAbandoned(Now.AddSeconds(40), Grace));
+        Assert.True(session.IsAbandoned(Now.AddSeconds(70), Grace));
+    }
+
     // Tic-tac-toe
 
     [Fact]

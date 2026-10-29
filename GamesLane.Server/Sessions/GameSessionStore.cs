@@ -39,6 +39,9 @@ public class GameSessionStore : IGameSessionStore
         _sessions.TryGetValue(sessionId, out var session) ? session : null;
 
     /// <inheritdoc />
+    public void Remove(string sessionId) => _sessions.TryRemove(sessionId, out _);
+
+    /// <inheritdoc />
     public IEnumerable<IGameSession> All => _sessions.Values;
 
     /// <summary>

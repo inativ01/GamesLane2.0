@@ -77,6 +77,7 @@ public abstract class GameSession : IGameSession
     private readonly Dictionary<string, DateTimeOffset> _disconnectedSince = [];
     private readonly Dictionary<string, string> _playerIds = [];
     private int[] _gameSeats = [];
+    private DateTimeOffset? _emptySince;
 
     /// <summary>
     /// Creates an empty session in the lobby. Throws if the game's seat counts are invalid.
@@ -205,6 +206,25 @@ public abstract class GameSession : IGameSession
             }
 
             return freed > 0;
+        }
+    }
+
+    /// <summary>
+    /// Whether nobody has had the session open, and no seat has been taken, for at least <paramref name="gracePeriod"/>.
+    /// The time is measured from the first call that finds the session empty, so call this regularly.
+    /// </summary>
+    public bool IsAbandoned(DateTimeOffset now, TimeSpan gracePeriod)
+    {
+        lock (Sync)
+        {
+            if (_connections.Count > 0 || _seats.Any(s => s is not null))
+            {
+                _emptySince = null;
+                return false;
+            }
+
+            _emptySince ??= now;
+            return now - _emptySince >= gracePeriod;
         }
     }
 

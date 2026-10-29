@@ -27,6 +27,7 @@ It is a complete reimplementation of the original [GamesLane](https://github.com
 - A **session** is one instance of a specific game, identified by a unique code.
 - A session can be created from the lobby, joined by entering its code, or opened directly from its URL. Joining does not require a logged-in user.
 - A session is either **inactive** (showing the session lobby) or **active** (showing the game screen).
+- Once nobody has the session open (players or spectators) and no seat is taken, the session is deleted after 30 seconds. Its code then no longer works.
 
 ### Session lobby (inactive session)
 - A screen shared by all games, showing the game's **seats**.
@@ -68,7 +69,7 @@ GamesLane.Server/              ASP.NET Core backend
   Data/                        Database (EF Core + PostgreSQL): tables, migrations, connection setup
   Users/                       User rules, user service, and deletion of inactive users
   Hubs/GameHub.cs              SignalR hub for creating, joining and playing sessions
-  Hubs/DisconnectedSeatsMonitor.cs  Frees the seats of users disconnected for over 30 seconds
+  Hubs/DisconnectedSeatsMonitor.cs  Frees the seats of users disconnected for over 30 seconds; deletes abandoned sessions
   Sessions/GameSession.cs      Seats, session lobby and game flow shared by all games
   Sessions/                    Game-specific sessions and the in-memory session store
   Games/TicTacToe/             Tic-tac-toe rules

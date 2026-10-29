@@ -35,6 +35,12 @@ public interface IGameSession
     bool ReleaseDisconnectedSeats(DateTimeOffset cutoff);
 
     /// <summary>
+    /// Whether nobody has had the session open, and no seat has been taken, for at least <paramref name="gracePeriod"/>.
+    /// The time is measured from the first call that finds the session empty, so call this regularly.
+    /// </summary>
+    bool IsAbandoned(DateTimeOffset now, TimeSpan gracePeriod);
+
+    /// <summary>
     /// Takes an empty seat, or the seat of a user who is disconnected, showing the user's name and icon on it.
     /// </summary>
     bool TryTakeSeat(string userKey, PlayerProfile profile, string connectionId, int seat, [NotNullWhen(false)] out string? error);

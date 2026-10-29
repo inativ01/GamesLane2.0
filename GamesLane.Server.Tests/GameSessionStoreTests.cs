@@ -50,4 +50,16 @@ public class GameSessionStoreTests
 
         Assert.Null(store.Get("NOPE00"));
     }
+
+    [Fact]
+    public void Removed_sessions_can_no_longer_be_found()
+    {
+        var store = new GameSessionStore();
+        var session = store.Create(GameType.TicTacToe);
+
+        store.Remove(session.Id);
+
+        Assert.Null(store.Get(session.Id));
+        Assert.DoesNotContain(session, store.All);
+    }
 }
