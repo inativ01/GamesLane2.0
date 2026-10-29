@@ -81,6 +81,7 @@ GamesLane.Server/              ASP.NET Core backend
     tictactoe.html/.js         Tic-tac-toe page
     rock-paper-scissors.html/.js  Rock-paper-scissors page
     the-gang.html/.js          The Gang page
+    images/                    Logo and main-screen background (small copies of the originals), game pictures (SVG)
 GamesLane.Server.Tests/        Unit tests
 ```
 

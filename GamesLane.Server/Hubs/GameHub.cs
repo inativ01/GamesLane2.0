@@ -74,7 +74,7 @@ public class GameHub(IGameSessionStore store, TimeProvider timeProvider) : Hub, 
     /// <inheritdoc />
     public string CreateSession(GameType gameType)
     {
-        RequireProfile("Log in to start a session.");
+        RequireProfile("Log in to start a game.");
         if (!Enum.IsDefined(gameType))
         {
             throw new HubException("Unknown game type.");
@@ -190,7 +190,7 @@ public class GameHub(IGameSessionStore store, TimeProvider timeProvider) : Hub, 
     /// The session with the given code; throws an error to the caller if there is none.
     /// </summary>
     private IGameSession GetSession(string sessionId) =>
-        store.Get(sessionId) ?? throw new HubException($"Session '{sessionId}' was not found.");
+        store.Get(sessionId) ?? throw new HubException($"No game with code {sessionId.ToUpperInvariant()} was found. It may have ended.");
 
     /// <summary>
     /// Sends the session's public state to everyone in the session.

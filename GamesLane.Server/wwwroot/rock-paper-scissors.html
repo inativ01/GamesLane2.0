@@ -4,19 +4,24 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Rock-paper-scissors - GamesLane</title>
+    <link rel="icon" href="images/logo-32.png">
+    <link rel="apple-touch-icon" href="images/logo-180.png">
+    <meta name="theme-color" content="#0d0c0b">
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+<header class="top">
+    <a href="/" class="brand" data-leave><img class="brand-logo" src="images/logo-180.png" alt=""><span class="brand-name">Games<span>Lane</span></span></a>
+    <div id="account" class="account"></div>
+</header>
 <main>
-    <header class="top">
-        <a href="/" class="brand" data-leave>GamesLane</a>
-        <div id="account" class="account"></div>
-    </header>
-    <nav class="back"><a href="/" data-leave>← Back to main screen</a></nav>
+    <nav class="back"><a href="/" data-leave>← Main screen</a></nav>
 
     <section id="session">
-        <h2>Rock-paper-scissors</h2>
-        <p class="code">Session code: <strong id="session-code"></strong></p>
+        <div class="session-head">
+            <h2><img class="game-icon" src="images/games/rock-paper-scissors.svg" alt=""> Rock-paper-scissors</h2>
+            <p class="code">Code <strong id="session-code"></strong></p>
+        </div>
         <div id="invite" class="invite" hidden>
             <p class="hint">Invite players with this link:</p>
             <a id="join-url" class="join-url"></a>
@@ -48,7 +53,7 @@
             <button id="next-round" type="button" hidden>Next round</button>
             <div id="game-over-actions" class="actions center" hidden>
                 <button id="play-again" type="button">Play again</button>
-                <button id="to-lobby" type="button" class="secondary">Back to session lobby</button>
+                <button id="to-lobby" type="button" class="secondary">Back to the lobby</button>
             </div>
             <ul id="players" class="players"></ul>
             <button id="stand-up" type="button" class="secondary small" hidden>Stand up</button>

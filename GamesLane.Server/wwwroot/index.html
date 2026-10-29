@@ -4,53 +4,64 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>GamesLane</title>
+    <link rel="icon" href="images/logo-32.png">
+    <link rel="apple-touch-icon" href="images/logo-180.png">
+    <meta name="theme-color" content="#0d0c0b">
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+<header class="top">
+    <a href="/" class="brand"><img class="brand-logo" src="images/logo-180.png" alt=""><span class="brand-name">Games<span>Lane</span></span></a>
+    <div id="account" class="account"></div>
+</header>
 <main>
-    <header class="top">
-        <h1 class="brand">GamesLane</h1>
-        <div id="account" class="account"></div>
-    </header>
-
     <section id="home">
+        <img class="banner" src="images/background-768.jpg"
+             srcset="images/background-768.jpg 768w, images/background-1536.jpg 1536w"
+             sizes="(max-width: 680px) 100vw, 680px" width="1536" height="1024" alt="GamesLane">
+
         <div class="panel">
-            <h2>Join a session</h2>
-            <form id="join-form">
-                <label>Session code <input id="code" maxlength="6" autocomplete="off" autocapitalize="characters"></label>
-                <div class="actions">
-                    <button type="submit">Join</button>
-                </div>
-            </form>
+            <h2>Start a new game</h2>
+            <div class="game-list">
+                <button type="button" class="game-tile" data-create="TheGang">
+                    <img src="images/games/the-gang.svg" alt="">
+                    <span class="game-text">
+                        <span class="game-title">The Gang</span>
+                        <span class="game-desc">A team poker heist. Rank your hands in secret.</span>
+                        <span class="game-players">3–6 players</span>
+                    </span>
+                    <span class="game-go" aria-hidden="true">›</span>
+                </button>
+                <button type="button" class="game-tile" data-create="RockPaperScissors">
+                    <img src="images/games/rock-paper-scissors.svg" alt="">
+                    <span class="game-text">
+                        <span class="game-title">Rock-paper-scissors</span>
+                        <span class="game-desc">Pick in secret, keep score round after round.</span>
+                        <span class="game-players">2 players</span>
+                    </span>
+                    <span class="game-go" aria-hidden="true">›</span>
+                </button>
+                <button type="button" class="game-tile" data-create="TicTacToe">
+                    <img src="images/games/tictactoe.svg" alt="">
+                    <span class="game-text">
+                        <span class="game-title">Tic-tac-toe</span>
+                        <span class="game-desc">The classic. Be first to get three in a row.</span>
+                        <span class="game-players">2 players</span>
+                    </span>
+                    <span class="game-go" aria-hidden="true">›</span>
+                </button>
+            </div>
         </div>
 
         <div class="panel">
-            <h2>Start a new session</h2>
-            <p id="login-to-start" class="hint" hidden>Log in to start a session. <button type="button" class="secondary small" data-login>Log in</button></p>
-            <div class="game-list">
-                <div class="game-card">
-                    <h3>Tic-tac-toe</h3>
-                    <p class="hint">2 players. Get three in a row.</p>
-                    <div class="actions center">
-                        <button type="button" data-create="TicTacToe" disabled>New session</button>
-                    </div>
+            <h2>Join a game</h2>
+            <p class="hint">Got a code from a friend? Anyone can join to watch; log in to take a seat.</p>
+            <form id="join-form">
+                <div class="join-row">
+                    <input id="code" maxlength="6" autocomplete="off" autocapitalize="characters" placeholder="CODE" aria-label="Game code">
+                    <button type="submit">Join</button>
                 </div>
-                <div class="game-card">
-                    <h3>Rock-paper-scissors</h3>
-                    <p class="hint">2 players. Pick in secret, keep score over many rounds.</p>
-                    <div class="actions center">
-                        <button type="button" data-create="RockPaperScissors" disabled>New session</button>
-                    </div>
-                </div>
-                <div class="game-card">
-                    <h3>The Gang</h3>
-                    <p class="hint">3–6 players. A cooperative poker heist: rank your hands without showing your cards.</p>
-                    <div class="actions center">
-                        <button type="button" data-create="TheGang" disabled>New session</button>
-                    </div>
-                </div>
-            </div>
-            <p class="hint">Anyone with the session code or link can watch. Logged-in users can take a seat and play.</p>
+            </form>
         </div>
     </section>
 

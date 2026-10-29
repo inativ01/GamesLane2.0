@@ -2,9 +2,12 @@
 
 // The Gang: players rank their hands by taking numbered chips over four stages (white, yellow, orange, red).
 // Each player's own two cards come in view.private; the shared screen never sees them before the reveal.
+// The page shows the player's own hand on top, and the table (everything observers see) below. Players can hide
+// the table, e.g. when a second device shows it; the choice is remembered on this device.
 
 const STAGES = ["White", "Yellow", "Orange", "Red"];
 const TO_FINISH = 3;
+const TABLE_HIDDEN_KEY = "theGang.tableHidden";
 
 function el(tag, className, ...content) {
     const element = document.createElement(tag);
@@ -29,15 +32,21 @@ function chipElement(stage, number, content = number) {
     return chip;
 }
 
+function button(text, className, onClick) {
+    const b = el("button", className, text);
+    b.type = "button";
+    b.addEventListener("click", onClick);
+    return b;
+}
+
 function gangStatus(game, state, view) {
-    const n = game.playingSeats.length;
     switch (game.phase) {
         case "Betting":
             return view.isPlayer
-                ? `${STAGES[game.stage]} chips: take a chip (1 = weakest hand, ${n} = strongest), then press Ready.`
+                ? `${STAGES[game.stage]} chips`
                 : `Players are taking ${STAGES[game.stage].toLowerCase()} chips…`;
         case "Reveal":
-            return "Revealing hands, from the lowest red chip to the highest…";
+            return "Revealing hands, lowest red chip first…";
         default:
             if (game.vaults >= TO_FINISH) {
                 return "🎉 Three vaults cracked: the gang wins!";
@@ -49,50 +58,60 @@ function gangStatus(game, state, view) {
     }
 }
 
-// This user's hands, with chip buttons for the current stage.
+// One of this user's hands: two big cards with the hand name, then the chip buttons and Ready.
 function myHand(game, state, view, hand) {
     const seat = hand.seat;
-    const myChip = game.chips[game.stage][seat];
+    const stage = game.stage;
+    const myChip = game.chips[stage][seat];
     const isReady = game.readySeats.includes(seat);
-    const box = el("div", "my-hand panel");
-    const title = view.mySeats.length > 1 ? `Seat ${seat + 1}: ${state.seats[seat]?.name ?? ""}` : "Your cards";
-    box.append(el("h3", null, title), el("div", "card-row", ...hand.cards.map(cardElement)));
-    if (hand.bestHand) {
-        box.append(el("p", "hint", hand.bestHand));
+    const betting = game.phase === "Betting";
+
+    const title = view.mySeats.length > 1 ? `Seat ${seat + 1} · ${state.seats[seat]?.name ?? ""}` : "Your hand";
+    const info = el("div", "my-hand-info", el("span", "my-hand-title", title));
+    info.append(el("span", "best-hand", hand.bestHand ?? "No shared cards yet"));
+    if (myChip !== null) {
+        info.append(el("span", "stage-pill", chipElement(stage, myChip), `Your ${STAGES[stage].toLowerCase()} chip`));
+    } else if (betting) {
+        info.append(el("span", "stage-pill", `Take a ${STAGES[stage].toLowerCase()} chip`));
     }
 
-    if (game.phase === "Betting") {
-        const chips = el("div", "chip-row");
-        for (let number = 1; number <= game.playingSeats.length; number++) {
-            const holder = game.playingSeats.find((s) => game.chips[game.stage][s] === number);
-            const button = el("button", "chip-button");
-            button.type = "button";
-            button.append(chipElement(game.stage, number));
-            button.disabled = holder === seat;
-            button.title = holder === undefined ? "In the middle" : holder === seat ? "Yours" : `Take from ${state.seats[holder]?.name}`;
-            button.addEventListener("click", () => call("TakeChip", view.sessionId, seat, number).catch(() => {}));
-            chips.append(button);
-        }
-        box.append(chips);
+    const box = el("div", "my-hand", el("div", "my-hand-top", el("div", "card-row", ...hand.cards.map((c) => {
+        const card = cardElement(c);
+        card.classList.add("big");
+        return card;
+    })), info));
 
-        const actions = el("div", "actions center");
-        const ready = el("button", isReady ? "secondary" : "", isReady ? "Not ready" : "Ready");
-        ready.type = "button";
-        ready.disabled = myChip === null;
-        ready.addEventListener("click", () => call("SetReady", view.sessionId, seat, !isReady).catch(() => {}));
-        actions.append(ready);
-        if (myChip !== null) {
-            const back = el("button", "secondary", "Return chip");
-            back.type = "button";
-            back.addEventListener("click", () => call("ReturnChip", view.sessionId, seat).catch(() => {}));
-            actions.append(back);
-        }
-        box.append(actions);
+    if (!betting) {
+        return box;
     }
+
+    // One button per chip: 1 = weakest hand, N = strongest. The label below shows who holds it.
+    const chips = el("div", "my-chips");
+    for (let number = 1; number <= game.playingSeats.length; number++) {
+        const holder = game.playingSeats.find((s) => game.chips[stage][s] === number);
+        const mine = holder === seat;
+        const label = holder === undefined ? "" : mine ? "You" : state.seats[holder]?.name ?? "";
+        const chip = el("button", mine ? "chip-button mine" : "chip-button", chipElement(stage, number), el("span", "holder", label));
+        chip.type = "button";
+        chip.disabled = mine;
+        chip.title = holder === undefined ? `Take chip ${number}` : mine ? "Your chip" : `Take chip ${number} from ${label}`;
+        chip.addEventListener("click", () => call("TakeChip", view.sessionId, seat, number).catch(() => {}));
+        chips.append(chip);
+    }
+
+    const ready = button(isReady ? "✓ Ready (tap to undo)" : "Ready", isReady ? "is-ready" : "",
+        () => call("SetReady", view.sessionId, seat, !isReady).catch(() => {}));
+    ready.disabled = myChip === null;
+    const actions = el("div", "my-hand-actions", ready);
+    if (myChip !== null) {
+        actions.append(button("Return", "secondary", () => call("ReturnChip", view.sessionId, seat).catch(() => {})));
+    }
+
+    box.append(chips, el("p", "hint", `1 = weakest hand, ${game.playingSeats.length} = strongest.`), actions);
     return box;
 }
 
-// Every playing seat's chips from all stages, and whether they are ready.
+// Every playing seat's chips from all stages, with ✓ for players who are ready.
 function chipTable(game, state, view) {
     const header = el("tr", null, el("th", null, "Player"), ...STAGES.map((s) => el("th", null, s)));
     const rows = game.playingSeats.map((seat) => el("tr", null,
@@ -101,48 +120,55 @@ function chipTable(game, state, view) {
             const chip = game.chips[stage][seat];
             const cell = el("td", null, chip === null ? (stage <= game.stage ? "–" : "") : chipElement(stage, chip));
             if (stage === game.stage && game.phase === "Betting" && game.readySeats.includes(seat)) {
-                cell.append(" ✓");
+                cell.append(el("span", "ready", " ✓"));
             }
             return cell;
         })));
     return [el("thead", null, header), el("tbody", null, ...rows)];
 }
 
-function revealedHand(game, state, view, hand, index) {
-    const redChip = game.chips[3][hand.seat];
-    const item = el("li", hand.inOrder ? "revealed-hand" : "revealed-hand wrong",
-        chipElement(3, redChip),
+function revealedHand(game, state, view, hand) {
+    return el("li", hand.inOrder ? "revealed-hand" : "revealed-hand wrong",
+        chipElement(3, game.chips[3][hand.seat]),
         seatLabel(state, hand.seat, view),
         el("span", "card-row", ...hand.cards.map(cardElement)),
         el("span", "hand-name", hand.name + (hand.inOrder ? "" : " ✗ weaker than the hand before")));
-    item.dataset.index = String(index);
-    return item;
 }
 
 let gangState = null;
+let tableHidden = localStorage.getItem(TABLE_HIDDEN_KEY) === "1";
 
 const gang = startSessionPage("TheGang", (game, state, view) => {
     gangState = game;
-    $("heist").textContent = String(game.heist);
-    $("vaults").textContent = `${game.vaults}/${TO_FINISH}`;
-    $("alarms").textContent = `${game.alarms}/${TO_FINISH}`;
     $("status").textContent = gangStatus(game, state, view);
-
-    $("community").replaceChildren(...Array.from({ length: 5 }, (_, i) => cardElement(game.communityCards[i])));
 
     const hands = view.private?.hands ?? [];
     $("my-hands").replaceChildren(...hands.map((hand) => myHand(game, state, view, hand)));
-
-    const betting = game.phase === "Betting";
-    $("middle").hidden = !betting;
-    $("middle").replaceChildren(el("span", "hint", "Middle: "), ...game.middleChips.map((n) => chipElement(game.stage, n)));
-    $("chip-table").replaceChildren(...chipTable(game, state, view));
-
     $("reveal-next").hidden = !(view.isPlayer && game.phase === "Reveal");
     $("next-heist").hidden = !(view.isPlayer && game.phase === "HeistOver" && !state.isGameOver);
-    $("revealed").replaceChildren(...game.revealed.map((hand, i) => revealedHand(game, state, view, hand, i)));
+
+    // The table. Observers always see it; players may hide it.
+    $("heist").textContent = String(game.heist);
+    $("vaults").textContent = `${game.vaults}/${TO_FINISH}`;
+    $("alarms").textContent = `${game.alarms}/${TO_FINISH}`;
+    $("toggle-table").hidden = !view.isPlayer;
+    $("toggle-table").textContent = tableHidden ? "Show table" : "Hide table";
+    $("table-body").hidden = view.isPlayer && tableHidden;
+
+    $("community").replaceChildren(...Array.from({ length: 5 }, (_, i) => cardElement(game.communityCards[i])));
+    $("middle").hidden = game.phase !== "Betting";
+    $("middle").replaceChildren(
+        "Middle:",
+        ...(game.middleChips.length ? game.middleChips.map((n) => chipElement(game.stage, n)) : [" none"]));
+    $("chip-table").replaceChildren(...chipTable(game, state, view));
+    $("revealed").replaceChildren(...game.revealed.map((hand) => revealedHand(game, state, view, hand)));
 });
 
+$("toggle-table").addEventListener("click", () => {
+    tableHidden = !tableHidden;
+    localStorage.setItem(TABLE_HIDDEN_KEY, tableHidden ? "1" : "0");
+    gang.refresh();
+});
 $("reveal-next").addEventListener("click", () => {
     call("RevealNext", gang.sessionId, gangState?.revealed.length ?? 0).catch(() => {});
 });

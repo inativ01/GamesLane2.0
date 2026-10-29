@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" role="img" aria-label="The Gang">
+  <defs>
+    <radialGradient id="felt" cx="50%" cy="35%" r="75%">
+      <stop offset="0" stop-color="#3a7d52"/>
+      <stop offset="1" stop-color="#173f27"/>
+    </radialGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f6cf6b"/>
+      <stop offset="1" stop-color="#c98a1e"/>
+    </linearGradient>
+  </defs>
+  <rect width="120" height="120" rx="26" fill="url(#felt)"/>
+  <!-- Two hole cards, fanned -->
+  <g transform="rotate(-14 46 58)">
+    <rect x="24" y="26" width="42" height="60" rx="6" fill="#fff" stroke="#d8d2c8" stroke-width="1.5"/>
+    <text x="31" y="44" font-family="Arial, sans-serif" font-size="15" font-weight="700" fill="#1f1a15">A</text>
+    <text x="45" y="72" font-family="Arial, sans-serif" font-size="22" text-anchor="middle" fill="#1f1a15">♠</text>
+  </g>
+  <g transform="rotate(10 70 56)">
+    <rect x="48" y="24" width="42" height="60" rx="6" fill="#fff" stroke="#d8d2c8" stroke-width="1.5"/>
+    <text x="55" y="42" font-family="Arial, sans-serif" font-size="15" font-weight="700" fill="#c0281b">K</text>
+    <text x="69" y="70" font-family="Arial, sans-serif" font-size="22" text-anchor="middle" fill="#c0281b">♥</text>
+  </g>
+  <!-- Red stage chip -->
+  <circle cx="86" cy="88" r="18" fill="#b3261e"/>
+  <circle cx="86" cy="88" r="15" fill="none" stroke="#fff" stroke-width="4" stroke-dasharray="5.2 4.2"/>
+  <circle cx="86" cy="88" r="9.5" fill="#b3261e" stroke="#fff" stroke-width="1.5"/>
+  <text x="86" y="93" font-family="Arial, sans-serif" font-size="13" font-weight="700" text-anchor="middle" fill="#fff">3</text>
+  <!-- Gold coin -->
+  <circle cx="28" cy="92" r="11" fill="url(#gold)" stroke="#9c6a12" stroke-width="1.5"/>
+  <text x="28" y="97" font-family="Arial, sans-serif" font-size="13" font-weight="700" text-anchor="middle" fill="#7a4f0a">$</text>
+</svg>

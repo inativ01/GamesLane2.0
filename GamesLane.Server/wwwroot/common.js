@@ -155,22 +155,26 @@ function iconElement(icon, className = "icon") {
     return span;
 }
 
-// Shows the user's icon and name with Profile and Log out, or a Log in button.
+// Shows the user's icon and name (which open their profile) and Log out, or a Log in button.
 function renderAccount() {
     const bar = $("account");
     if (account.signedIn) {
         const name = document.createElement("span");
         name.textContent = account.name;
+        const profile = smallButton("", openProfileDialog);
+        profile.classList.add("account-name");
+        profile.title = "Your profile";
+        profile.replaceChildren(iconElement(account.icon), name);
         bar.replaceChildren(
-            iconElement(account.icon),
-            name,
-            smallButton("Profile", openProfileDialog),
+            profile,
             smallButton("Log out", () => {
                 saveToken("");
                 location.reload();
             }));
     } else {
-        bar.replaceChildren(smallButton("Log in", openLoginDialog));
+        const login = smallButton("Log in", openLoginDialog);
+        login.classList.remove("secondary");
+        bar.replaceChildren(login);
     }
 }
 

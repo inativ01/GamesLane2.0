@@ -4,19 +4,24 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>The Gang - GamesLane</title>
+    <link rel="icon" href="images/logo-32.png">
+    <link rel="apple-touch-icon" href="images/logo-180.png">
+    <meta name="theme-color" content="#0d0c0b">
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+<header class="top">
+    <a href="/" class="brand" data-leave><img class="brand-logo" src="images/logo-180.png" alt=""><span class="brand-name">Games<span>Lane</span></span></a>
+    <div id="account" class="account"></div>
+</header>
 <main>
-    <header class="top">
-        <a href="/" class="brand" data-leave>GamesLane</a>
-        <div id="account" class="account"></div>
-    </header>
-    <nav class="back"><a href="/" data-leave>← Back to main screen</a></nav>
+    <nav class="back"><a href="/" data-leave>← Main screen</a></nav>
 
     <section id="session">
-        <h2>The Gang</h2>
-        <p class="code">Session code: <strong id="session-code"></strong></p>
+        <div class="session-head">
+            <h2><img class="game-icon" src="images/games/the-gang.svg" alt=""> The Gang</h2>
+            <p class="code">Code <strong id="session-code"></strong></p>
+        </div>
         <div id="invite" class="invite" hidden>
             <p class="hint">Invite players with this link:</p>
             <a id="join-url" class="join-url"></a>
@@ -37,25 +42,37 @@
         </div>
 
         <div id="game-screen" hidden>
-            <div class="gang-score">
-                <span>Heist <strong id="heist"></strong></span>
-                <span>Vaults <strong id="vaults"></strong></span>
-                <span>Alarms <strong id="alarms"></strong></span>
-            </div>
             <p id="status" class="status"></p>
-            <div id="community" class="card-row"></div>
+
+            <!-- This user's own cards and controls. -->
             <div id="my-hands"></div>
-            <div id="middle" class="chip-row"></div>
-            <table id="chip-table" class="chip-table"></table>
-            <div class="actions center">
+            <div class="actions center gang-controls">
                 <button id="reveal-next" type="button" hidden>Reveal next hand</button>
                 <button id="next-heist" type="button" hidden>Next heist</button>
             </div>
-            <ol id="revealed" class="revealed"></ol>
             <div id="game-over-actions" class="actions center" hidden>
                 <button id="play-again" type="button">Play again</button>
-                <button id="to-lobby" type="button" class="secondary">Back to session lobby</button>
+                <button id="to-lobby" type="button" class="secondary">Back to the lobby</button>
             </div>
+
+            <!-- Everything observers see. Players can hide it, e.g. when a TV shows it. -->
+            <section class="table-view" aria-label="Table">
+                <div class="table-head">
+                    <div class="gang-score">
+                        <span>Heist <strong id="heist"></strong></span>
+                        <span>💰 <strong id="vaults"></strong></span>
+                        <span>🚨 <strong id="alarms"></strong></span>
+                    </div>
+                    <button id="toggle-table" type="button" class="secondary small" hidden>Hide table</button>
+                </div>
+                <div id="table-body" class="table-body">
+                    <div id="community" class="card-row"></div>
+                    <div id="middle"></div>
+                    <table id="chip-table" class="chip-table"></table>
+                    <ol id="revealed" class="revealed"></ol>
+                </div>
+            </section>
+
             <button id="stand-up" type="button" class="secondary small" hidden>Stand up</button>
         </div>
     </section>
