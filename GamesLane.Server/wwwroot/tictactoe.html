@@ -19,11 +19,16 @@
 
     <section id="session">
         <div class="session-head">
-            <h2><img class="game-icon" src="images/games/tictactoe.svg" alt=""> Tic-tac-toe</h2>
-            <p class="code">Code <strong id="session-code"></strong></p>
+            <img class="session-art" src="images/games/tictactoe.svg" alt="">
+            <div class="session-title">
+                <h2>Tic-tac-toe</h2>
+                <p>2 players</p>
+            </div>
+            <p class="code"><span>Game code</span> <strong id="session-code"></strong></p>
         </div>
         <div id="invite" class="invite" hidden>
-            <p class="hint">Invite players with this link:</p>
+            <h3>Invite friends</h3>
+            <p class="hint">Send them this link, or tell them the game code.</p>
             <a id="join-url" class="join-url"></a>
             <div class="actions center">
                 <button id="copy-link" type="button" class="secondary" hidden>Copy link</button>
@@ -31,13 +36,17 @@
             </div>
         </div>
 
-        <div id="session-lobby" class="panel" hidden>
+        <div id="session-lobby" class="panel lobby" hidden>
+            <div class="lobby-head">
+                <h3>Players</h3>
+                <span id="seat-count" class="seat-count"></span>
+            </div>
             <p id="lobby-status" class="status"></p>
             <ul id="seats" class="seats"></ul>
             <p id="login-to-play" class="hint" hidden>Log in to take a seat. <button type="button" class="secondary small" data-login>Log in</button></p>
             <div class="actions center">
-                <button id="resume-game" type="button" hidden>Resume game</button>
-                <button id="start-game" type="button" hidden>Start</button>
+                <button id="resume-game" type="button" class="big" hidden>Resume game</button>
+                <button id="start-game" type="button" class="big" hidden>Start</button>
             </div>
         </div>
 

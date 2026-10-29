@@ -518,15 +518,25 @@ function startSessionPage(gameType, render) {
 
     const act = (method, ...args) => call(method, sessionId, ...args).catch(() => {});
 
+    // A seat tile: a big icon, the name, and a note such as "Seat 2 · You".
     function seatItem(state, seat) {
         const info = state.seats[seat];
         const item = document.createElement("li");
         item.className = "seat";
-        const label = info ? seatLabel(state, seat, view, `Seat ${seat + 1}: `) : document.createElement("span");
-        if (!info) {
-            label.textContent = `Seat ${seat + 1}: empty`;
-        }
-        item.appendChild(label);
+        item.classList.toggle("empty", !info);
+        item.classList.toggle("mine", view.isMe(seat));
+        item.classList.toggle("away", Boolean(info && !info.isConnected));
+
+        const avatar = iconElement(info ? info.icon : "+", "seat-avatar");
+        const name = document.createElement("span");
+        name.className = "seat-name";
+        name.textContent = info ? info.name : "Empty seat";
+        const note = document.createElement("span");
+        note.className = "seat-note";
+        note.textContent = [`Seat ${seat + 1}`, view.isMe(seat) && "You", info && !info.isConnected && "Disconnected"]
+            .filter(Boolean)
+            .join(" · ");
+        item.append(avatar, name, note);
 
         if (view.isMe(seat)) {
             item.appendChild(smallButton("Leave seat", () => act("LeaveSeat", seat)));
@@ -558,6 +568,7 @@ function startSessionPage(gameType, render) {
 
         if (inLobby) {
             $("lobby-status").textContent = lobbyStatus(state, taken);
+            $("seat-count").textContent = `${taken} / ${state.seats.length}`;
             $("seats").replaceChildren(...state.seats.map((_, seat) => seatItem(state, seat)));
             $("login-to-play").hidden = Boolean(account?.signedIn);
             $("resume-game").hidden = !(view.isPlayer && state.canResume);
