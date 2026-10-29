@@ -75,4 +75,15 @@ public interface IGameSession
     /// Public session state, safe to send to everyone in the session (players and spectators).
     /// </summary>
     SessionState GetPublicState();
+
+    /// <summary>
+    /// The private game information for <paramref name="userKey"/> (e.g. the cards of their seats), or null if they hold
+    /// no seat in the current game or the game has no private information.
+    /// </summary>
+    object? GetPrivateState(string userKey);
+
+    /// <summary>
+    /// The private game information for every open connection whose user has any.
+    /// </summary>
+    IReadOnlyList<PrivateUpdate> GetPrivateUpdates();
 }

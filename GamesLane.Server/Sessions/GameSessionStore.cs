@@ -24,6 +24,7 @@ public class GameSessionStore : IGameSessionStore
             {
                 GameType.TicTacToe => new TicTacToeSession(id),
                 GameType.RockPaperScissors => new RockPaperScissorsSession(id),
+                GameType.TheGang => new TheGangSession(id),
                 _ => throw new ArgumentOutOfRangeException(nameof(type), type, "Unknown game type."),
             };
 
@@ -51,6 +52,7 @@ public class GameSessionStore : IGameSessionStore
     {
         GameType.TicTacToe => "/tictactoe.html",
         GameType.RockPaperScissors => "/rock-paper-scissors.html",
+        GameType.TheGang => "/the-gang.html",
         _ => throw new ArgumentOutOfRangeException(nameof(type), type, "Unknown game type."),
     };
 }

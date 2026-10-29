@@ -5,7 +5,7 @@
 const $ = (id) => document.getElementById(id);
 const params = new URLSearchParams(location.search);
 
-const GAME_PAGES = { TicTacToe: "/tictactoe.html", RockPaperScissors: "/rock-paper-scissors.html" };
+const GAME_PAGES = { TicTacToe: "/tictactoe.html", RockPaperScissors: "/rock-paper-scissors.html", TheGang: "/the-gang.html" };
 
 // The login token is kept per browser tab, so each tab can have its own user.
 // A new tab starts with the most recently logged-in user.
@@ -414,6 +414,7 @@ function seatLabel(state, seat, view, prefix = "") {
  * While the session is in its lobby, the shared session lobby (#session-lobby) is shown; while a game is being
  * played, the game screen (#game-screen) is shown and render(game, state, view) is called on every update.
  * view.mySeats lists the seats this tab's user holds; view.isMe(seat) tells whether they hold a seat.
+ * view.private is this user's private game information (e.g. their cards), for games that have it, or null.
  */
 function startSessionPage(gameType, render) {
     const sessionId = (params.get("session") ?? "").toUpperCase();
@@ -422,6 +423,7 @@ function startSessionPage(gameType, render) {
     const view = {
         sessionId,
         playerId: null,
+        private: null,
         mySeats: [],
         get isPlayer() { return this.mySeats.length > 0; },
         isMe(seat) { return this.mySeats.includes(seat); },
@@ -508,10 +510,23 @@ function startSessionPage(gameType, render) {
         }
 
         view.playerId = entry.playerId ?? null;
+        view.private = entry.private ?? null;
         update(entry.state);
     }
 
-    connection.on("StateUpdated", update);
+    // The server sends the public state to everyone, then each player's private state to them only.
+    // Private state that no longer matches the user's seats is dropped.
+    connection.on("StateUpdated", (state) => {
+        const seats = state.seats.flatMap((s, i) => (s && s.playerId === view.playerId ? [i] : []));
+        if (seats.length === 0) {
+            view.private = null;
+        }
+        update(state);
+    });
+    connection.on("PrivateStateUpdated", (privateState) => {
+        view.private = privateState;
+        view.refresh();
+    });
     connection.onreconnected(() => {
         showError("");
         enter();

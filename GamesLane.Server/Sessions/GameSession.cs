@@ -9,6 +9,7 @@ public enum GameType
 {
     TicTacToe,
     RockPaperScissors,
+    TheGang,
 }
 
 /// <summary>
@@ -52,9 +53,15 @@ public record SessionState(
     object? Game);
 
 /// <summary>
-/// Returned when a page enters a session: the public state, plus the caller's player ID if they are logged in.
+/// Returned when a page enters a session: the public state, plus the caller's player ID if they are logged in, and
+/// their private game information (e.g. their cards) if they hold seats in a game that has any.
 /// </summary>
-public record SessionEntry(SessionState State, string? PlayerId);
+public record SessionEntry(SessionState State, string? PlayerId, object? Private);
+
+/// <summary>
+/// Private game information to send to one connection only.
+/// </summary>
+public record PrivateUpdate(string ConnectionId, object State);
 
 /// <summary>
 /// One session of a game: its seats, and the game played by the seated users.
@@ -134,6 +141,17 @@ public abstract class GameSession : IGameSession
     /// The game-specific public state, sent as <see cref="SessionState.Game"/>. Called while holding <see cref="Sync"/>.
     /// </summary>
     protected abstract object GetGameState();
+
+    /// <summary>
+    /// The private information for a user holding <paramref name="seats"/> (seats of the current game), or null if the
+    /// game has none. Sent only to that user's connections. Called while holding <see cref="Sync"/>.
+    /// </summary>
+    protected virtual object? GetPrivateGameState(IReadOnlyList<int> seats) => null;
+
+    /// <summary>
+    /// Seats playing the current game, in seat order. A game numbers its players in this order.
+    /// </summary>
+    protected IReadOnlyList<int> GameSeats => _gameSeats;
 
     /// <summary>
     /// Whether the session shows the session lobby or the game screen.
@@ -419,6 +437,33 @@ public abstract class GameSession : IGameSession
     }
 
     /// <summary>
+    /// The private game information for <paramref name="userKey"/> (e.g. the cards of their seats), or null if they hold
+    /// no seat in the current game or the game has no private information.
+    /// </summary>
+    public object? GetPrivateState(string userKey)
+    {
+        lock (Sync)
+        {
+            return PrivateStateFor(userKey);
+        }
+    }
+
+    /// <summary>
+    /// The private game information for every open connection whose user has any.
+    /// </summary>
+    public IReadOnlyList<PrivateUpdate> GetPrivateUpdates()
+    {
+        lock (Sync)
+        {
+            var byUser = _connections.Values.Distinct().ToDictionary(userKey => userKey, PrivateStateFor);
+            return _connections
+                .Where(c => byUser[c.Value] is not null)
+                .Select(c => new PrivateUpdate(c.Key, byUser[c.Value]!))
+                .ToArray();
+        }
+    }
+
+    /// <summary>
     /// Checks that a game is in progress and that <paramref name="userKey"/> holds <paramref name="seat"/> in it.
     /// </summary>
     protected bool TryGetPlayingSeat(string userKey, int seat, [NotNullWhen(false)] out string? error)
@@ -447,6 +492,20 @@ public abstract class GameSession : IGameSession
         var inGame = Phase == SessionPhase.Playing && _gameSeats.Any(s => _seats[s]?.UserKey == userKey);
         error = inGame ? null : "Only players in this game can do that.";
         return inGame;
+    }
+
+    /// <summary>
+    /// The private game information for the seats <paramref name="userKey"/> holds in the current game, or null.
+    /// </summary>
+    private object? PrivateStateFor(string userKey)
+    {
+        if (GameNumber == 0)
+        {
+            return null;
+        }
+
+        var seats = _gameSeats.Where(s => _seats[s]?.UserKey == userKey).ToArray();
+        return seats.Length == 0 ? null : GetPrivateGameState(seats);
     }
 
     /// <summary>

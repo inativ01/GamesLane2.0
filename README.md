@@ -74,11 +74,13 @@ GamesLane.Server/              ASP.NET Core backend
   Sessions/                    Game-specific sessions and the in-memory session store
   Games/TicTacToe/             Tic-tac-toe rules
   Games/RockPaperScissors/     Rock-paper-scissors rules
+  Games/TheGang/               The Gang rules: cards, poker hand ranking, heists
   wwwroot/                     Web pages
     index.html, home.js        Main screen: start a session or join one by code
     common.js                  Shared: login dialog and account bar, hub connection, session lobby and page framework
     tictactoe.html/.js         Tic-tac-toe page
     rock-paper-scissors.html/.js  Rock-paper-scissors page
+    the-gang.html/.js          The Gang page
 GamesLane.Server.Tests/        Unit tests
 ```
 
@@ -86,6 +88,13 @@ GamesLane.Server.Tests/        Unit tests
 
 - **Tic-tac-toe** (2 players)
 - **Rock-paper-scissors** (2 players): both players pick secretly. When both have picked, the picks are revealed and the winner scores a point. Play continues for as many rounds as you like.
+- **The Gang** (3–6 players), the cooperative poker game by John Cooper and Kory Heath. Each heist:
+  - Every player gets 2 private cards, shown only on their own screen. Five shared cards are dealt: none at first, then 3, 4 and 5 as the stages go on.
+  - Four betting stages (white, yellow, orange, red). In each, every player takes a numbered chip, from 1 (weakest hand) up to the number of players (strongest), from the middle or from another player. A player may also return their chip. The stage ends when every player holds a chip and has pressed **Ready**; any chip change clears everyone's Ready.
+  - Players see the name of their current best hand once there are shared cards.
+  - Hands are then revealed one at a time, from the lowest red chip to the highest, with each hand's name and the cards (kickers) that decide between hands of the same kind. If any hand is weaker than the one before it, the alarm goes off; otherwise the vault opens. Equal hands may be in either order.
+  - 3 vaults win the game; 3 alarms lose it.
+  - Not yet included: the challenge and specialist cards, and in-game chat.
 
 ## Game Hub API
 
@@ -104,8 +113,13 @@ Clients connect to the SignalR hub at `/hubs/game` and call these methods:
 | `MakeMove(sessionId, seat, cell)` | — | Tic-tac-toe: places the mark of `seat` (0 is X, 1 is O), which the caller must hold. Cells are numbered 0–8, left to right, top to bottom. |
 | `Pick(sessionId, seat, choice)` | — | Rock-paper-scissors: picks `"Rock"`, `"Paper"` or `"Scissors"` for `seat`, which the caller must hold. |
 | `NextRound(sessionId, round)` | — | Rock-paper-scissors: starts the round after `round`. If it has already started, nothing changes. |
+| `TakeChip(sessionId, seat, chip)` | — | The Gang: `seat`, which the caller must hold, takes a chip of the current stage, from the middle or from another player. |
+| `ReturnChip(sessionId, seat)` | — | The Gang: puts `seat`'s chip back in the middle. |
+| `SetReady(sessionId, seat, ready)` | — | The Gang: marks `seat` ready (or not) to end the stage. |
+| `RevealNext(sessionId, revealed)` | — | The Gang: any player reveals the next hand, if `revealed` hands are revealed so far. |
+| `NextHeist(sessionId, heist)` | — | The Gang: any player deals the heist after `heist`, once its hands are revealed. |
 
-After every change, the server sends a `StateUpdated` message with the public session state to everyone in the session:
+After every change, the server sends a `StateUpdated` message with the public session state to everyone in the session. In games with private information (The Gang), each player's connections then also receive a `PrivateStateUpdated` message with that user's own cards; nobody else receives it. `EnterSession` returns the same private information as `private`. The public session state has these fields:
 
 | Field | Description |
 | --- | --- |

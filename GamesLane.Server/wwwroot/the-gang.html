@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>The Gang - GamesLane</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<main>
+    <header class="top">
+        <a href="/" class="brand" data-leave>GamesLane</a>
+        <div id="account" class="account"></div>
+    </header>
+    <nav class="back"><a href="/" data-leave>← Back to main screen</a></nav>
+
+    <section id="session">
+        <h2>The Gang</h2>
+        <p class="code">Session code: <strong id="session-code"></strong></p>
+        <div id="invite" class="invite" hidden>
+            <p class="hint">Invite players with this link:</p>
+            <a id="join-url" class="join-url"></a>
+            <div class="actions center">
+                <button id="copy-link" type="button" class="secondary" hidden>Copy link</button>
+                <button id="share-link" type="button" class="secondary" hidden>Share…</button>
+            </div>
+        </div>
+
+        <div id="session-lobby" class="panel" hidden>
+            <p id="lobby-status" class="status"></p>
+            <ul id="seats" class="seats"></ul>
+            <p id="login-to-play" class="hint" hidden>Log in to take a seat. <button type="button" class="secondary small" data-login>Log in</button></p>
+            <div class="actions center">
+                <button id="resume-game" type="button" hidden>Resume game</button>
+                <button id="start-game" type="button" hidden>Start</button>
+            </div>
+        </div>
+
+        <div id="game-screen" hidden>
+            <div class="gang-score">
+                <span>Heist <strong id="heist"></strong></span>
+                <span>Vaults <strong id="vaults"></strong></span>
+                <span>Alarms <strong id="alarms"></strong></span>
+            </div>
+            <p id="status" class="status"></p>
+            <div id="community" class="card-row"></div>
+            <div id="my-hands"></div>
+            <div id="middle" class="chip-row"></div>
+            <table id="chip-table" class="chip-table"></table>
+            <div class="actions center">
+                <button id="reveal-next" type="button" hidden>Reveal next hand</button>
+                <button id="next-heist" type="button" hidden>Next heist</button>
+            </div>
+            <ol id="revealed" class="revealed"></ol>
+            <div id="game-over-actions" class="actions center" hidden>
+                <button id="play-again" type="button">Play again</button>
+                <button id="to-lobby" type="button" class="secondary">Back to session lobby</button>
+            </div>
+            <button id="stand-up" type="button" class="secondary small" hidden>Stand up</button>
+        </div>
+    </section>
+
+    <p id="error" class="error" role="alert"></p>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/@microsoft/signalr@10.0.11/dist/browser/signalr.min.js"></script>
+<script src="common.js"></script>
+<script src="the-gang.js"></script>
+</body>
+</html>

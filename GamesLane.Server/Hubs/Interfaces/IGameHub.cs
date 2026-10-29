@@ -63,4 +63,29 @@ public interface IGameHub
     /// Rock-paper-scissors: starts the round after <paramref name="round"/>. If it has already started, nothing changes.
     /// </summary>
     Task NextRound(string sessionId, int round);
+
+    /// <summary>
+    /// The Gang: <paramref name="seat"/> takes a chip of the current stage, from the middle or from another player.
+    /// </summary>
+    Task TakeChip(string sessionId, int seat, int chip);
+
+    /// <summary>
+    /// The Gang: <paramref name="seat"/> puts its chip of the current stage back in the middle.
+    /// </summary>
+    Task ReturnChip(string sessionId, int seat);
+
+    /// <summary>
+    /// The Gang: marks <paramref name="seat"/> ready (or not) to end the current stage.
+    /// </summary>
+    Task SetReady(string sessionId, int seat, bool ready);
+
+    /// <summary>
+    /// The Gang: reveals the next hand, if <paramref name="revealed"/> hands have been revealed so far.
+    /// </summary>
+    Task RevealNext(string sessionId, int revealed);
+
+    /// <summary>
+    /// The Gang: deals the heist after <paramref name="heist"/>, once its hands are revealed.
+    /// </summary>
+    Task NextHeist(string sessionId, int heist);
 }

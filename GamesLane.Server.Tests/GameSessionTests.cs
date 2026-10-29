@@ -1,4 +1,5 @@
 using GamesLane.Server.Games.RockPaperScissors;
+using GamesLane.Server.Games.TheGang;
 using GamesLane.Server.Games.TicTacToe;
 using GamesLane.Server.Sessions;
 
@@ -612,6 +613,128 @@ public class GameSessionTests
 
         Assert.False(session.TryNextRound(Carol, 1, out _));
         Assert.Equal(1, session.GetState().Round);
+    }
+
+    // The Gang
+
+    // Seat 0: high card king; seat 1: pair of nines; seat 2: three kings.
+    private static TheGangSession TheGang() =>
+        new("ABC123", () => "3D 4H 9C 5S KD KH 2C 7D 9H JS KC".Split(' ').Select(Card.Parse).ToArray());
+
+    private static TheGangSession StartedTheGang()
+    {
+        var session = TheGang();
+        session.Enter(Alice, AliceProfile, "conn-a");
+        session.Enter(Bob, BobProfile, "conn-b");
+        session.Enter(Carol, CarolProfile, "conn-c");
+        session.Enter("connection:tv", null, "tv");
+        session.TryTakeSeat(Alice, AliceProfile, "conn-a", 0, out _);
+        session.TryTakeSeat(Bob, BobProfile, "conn-b", 1, out _);
+        session.TryTakeSeat(Carol, CarolProfile, "conn-c", 2, out _);
+        Assert.True(session.TryNewGame(Alice, 0, out var error), error);
+        return session;
+    }
+
+    private static TheGangState Gang(TheGangSession session) => Assert.IsType<TheGangState>(session.GetPublicState().Game);
+
+    [Fact]
+    public void The_gang_needs_at_least_3_of_its_6_seats()
+    {
+        var session = TheGang();
+        session.TryTakeSeat(Alice, AliceProfile, "conn-a", 0, out _);
+        session.TryTakeSeat(Bob, BobProfile, "conn-b", 4, out _);
+
+        var state = session.GetPublicState();
+        Assert.Equal((3, 6), (state.MinSeats, state.MaxSeats));
+        Assert.False(session.TryNewGame(Alice, 0, out var error));
+        Assert.Equal("At least 3 players must be seated.", error);
+    }
+
+    [Fact]
+    public void Each_player_sees_only_their_own_cards()
+    {
+        var session = StartedTheGang();
+
+        var updates = session.GetPrivateUpdates().ToDictionary(u => u.ConnectionId, u => Assert.IsType<TheGangPrivateState>(u.State));
+        Assert.Equal(["conn-a", "conn-b", "conn-c"], updates.Keys.Order());
+        Assert.Equal(["3♦", "4♥"], updates["conn-a"].Hands.Single().Cards);
+        Assert.Equal(["K♦", "K♥"], updates["conn-c"].Hands.Single().Cards);
+        Assert.Null(session.GetPrivateState("connection:tv"));
+        Assert.Empty(Gang(session).Revealed);
+    }
+
+    [Fact]
+    public void A_user_with_two_seats_sees_both_hands()
+    {
+        var session = TheGang();
+        session.TryTakeSeat(Alice, AliceProfile, "conn-a", 0, out _);
+        session.TryTakeSeat(Alice, AliceProfile, "conn-a", 3, out _);
+        session.TryTakeSeat(Bob, BobProfile, "conn-b", 5, out _);
+        session.TryNewGame(Alice, 0, out _);
+
+        var hands = Assert.IsType<TheGangPrivateState>(session.GetPrivateState(Alice)).Hands;
+        Assert.Equal([0, 3], hands.Select(h => h.Seat));
+        Assert.Equal([0, 3, 5], Gang(session).PlayingSeats);
+    }
+
+    [Fact]
+    public void Players_only_take_chips_for_their_own_seats()
+    {
+        var session = StartedTheGang();
+
+        Assert.False(session.TryTakeChip(Bob, 0, 1, out var error));
+        Assert.Equal("Only players in this game can make moves.", error);
+        Assert.True(session.TryTakeChip(Alice, 0, 1, out error), error);
+        Assert.Equal(1, Gang(session).Chips[0][0]);
+    }
+
+    [Fact]
+    public void A_full_heist_reveals_hands_to_everyone_one_at_a_time()
+    {
+        var session = StartedTheGang();
+        for (var stage = 0; stage < TheGangGame.StageCount; stage++)
+        {
+            session.TryTakeChip(Alice, 0, 1, out _);
+            session.TryTakeChip(Bob, 1, 2, out _);
+            session.TryTakeChip(Carol, 2, 3, out _);
+            session.TrySetReady(Alice, 0, true, out _);
+            session.TrySetReady(Bob, 1, true, out _);
+            session.TrySetReady(Carol, 2, true, out _);
+        }
+
+        Assert.Equal(TheGangPhase.Reveal, Gang(session).Phase);
+        Assert.False(session.TryRevealNext("connection:tv", 0, out _));
+        Assert.True(session.TryRevealNext(Bob, 0, out var error), error);
+
+        var revealed = Assert.Single(Gang(session).Revealed);
+        Assert.Equal(0, revealed.Seat);
+        Assert.Equal("High card, king (J 9 7 4)", revealed.Name);
+
+        session.TryRevealNext(Alice, 1, out _);
+        session.TryRevealNext(Alice, 2, out _);
+        var state = Gang(session);
+        Assert.Equal(TheGangPhase.HeistOver, state.Phase);
+        Assert.Equal(1, state.Vaults);
+        Assert.Equal(["Pair of nines (K J 7)", "Three kings (J 9)"], state.Revealed.Skip(1).Select(h => h.Name));
+        Assert.True(session.TryNextHeist(Carol, 1, out error), error);
+        Assert.Equal(2, Gang(session).Heist);
+    }
+
+    [Fact]
+    public void Leaving_during_a_heist_pauses_the_game_and_a_new_player_continues_that_hand()
+    {
+        var session = StartedTheGang();
+        session.TryTakeChip(Alice, 0, 2, out _);
+        session.TryLeaveSeat(Alice, 0, out _);
+
+        Assert.Equal(SessionPhase.Lobby, session.GetPublicState().Phase);
+        session.TryTakeSeat("user:dan", new PlayerProfile("Dan", "🐢"), "conn-d", 0, out _);
+        Assert.True(session.TryResume(Bob, out var error), error);
+
+        Assert.Equal(2, Gang(session).Chips[0][0]);
+        var dan = Assert.IsType<TheGangPrivateState>(session.GetPrivateState("user:dan")).Hands.Single();
+        Assert.Equal(["3♦", "4♥"], dan.Cards);
+        Assert.Null(session.GetPrivateState(Alice));
     }
 
     private static RockPaperScissorsSession StartedRpsSession() => Started(new RockPaperScissorsSession("ABC123"));

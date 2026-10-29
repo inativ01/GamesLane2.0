@@ -20,6 +20,11 @@ public class GameHub(IGameSessionStore store, TimeProvider timeProvider) : Hub, 
     public const string StateUpdated = "StateUpdated";
 
     /// <summary>
+    /// The message a player's connections receive with their private game information (e.g. their cards) after every change.
+    /// </summary>
+    public const string PrivateStateUpdated = "PrivateStateUpdated";
+
+    /// <summary>
     /// The caller's stable identity: their user ID if logged in, otherwise their connection.
     /// </summary>
     public static string GetUserKey(ClaimsPrincipal? user, string connectionId) =>
@@ -46,7 +51,7 @@ public class GameHub(IGameSessionStore store, TimeProvider timeProvider) : Hub, 
             await BroadcastState(session);
         }
 
-        return new SessionEntry(session.GetPublicState(), playerId);
+        return new SessionEntry(session.GetPublicState(), playerId, session.GetPrivateState(UserKey));
     }
 
     /// <summary>
@@ -124,11 +129,38 @@ public class GameHub(IGameSessionStore store, TimeProvider timeProvider) : Hub, 
     public Task NextRound(string sessionId, int round) =>
         Act(sessionId, (IRockPaperScissorsSession s, out string? error) => s.TryNextRound(UserKey, round, out error));
 
+    /// <inheritdoc />
+    public Task TakeChip(string sessionId, int seat, int chip) =>
+        Act(sessionId, (ITheGangSession s, out string? error) => s.TryTakeChip(UserKey, seat, chip, out error));
+
+    /// <inheritdoc />
+    public Task ReturnChip(string sessionId, int seat) =>
+        Act(sessionId, (ITheGangSession s, out string? error) => s.TryReturnChip(UserKey, seat, out error));
+
+    /// <inheritdoc />
+    public Task SetReady(string sessionId, int seat, bool ready) =>
+        Act(sessionId, (ITheGangSession s, out string? error) => s.TrySetReady(UserKey, seat, ready, out error));
+
+    /// <inheritdoc />
+    public Task RevealNext(string sessionId, int revealed) =>
+        Act(sessionId, (ITheGangSession s, out string? error) => s.TryRevealNext(UserKey, revealed, out error));
+
+    /// <inheritdoc />
+    public Task NextHeist(string sessionId, int heist) =>
+        Act(sessionId, (ITheGangSession s, out string? error) => s.TryNextHeist(UserKey, heist, out error));
+
     /// <summary>
-    /// Sends the session's public state to everyone in the session. Also used outside the hub, by <see cref="DisconnectedSeatsMonitor"/>.
+    /// Sends the session's public state to everyone in the session, and each player's private information to their
+    /// own connections only. Also used outside the hub, by <see cref="DisconnectedSeatsMonitor"/>.
     /// </summary>
-    internal static Task BroadcastState(IHubClients<IClientProxy> clients, IGameSession session) =>
-        clients.Group(SessionGroup(session.Id)).SendAsync(StateUpdated, session.GetPublicState());
+    internal static async Task BroadcastState(IHubClients<IClientProxy> clients, IGameSession session)
+    {
+        await clients.Group(SessionGroup(session.Id)).SendAsync(StateUpdated, session.GetPublicState());
+        foreach (var update in session.GetPrivateUpdates())
+        {
+            await clients.Client(update.ConnectionId).SendAsync(PrivateStateUpdated, update.State);
+        }
+    }
 
     /// <summary>
     /// The SignalR group of everyone who has the session's page open.
