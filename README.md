@@ -87,13 +87,13 @@ GamesLane.Server.Tests/        Unit tests
 
 ## Games
 
-- **Tic-tac-toe** (2 players)
+- **Tic-tac-toe** (2 players): after each board, the wins and draws are kept and players start the next round. The starting player alternates: X starts the odd rounds, O the even ones.
 - **Rock-paper-scissors** (2 players): both players pick secretly. When both have picked, the picks are revealed and the winner scores a point. Play continues for as many rounds as you like.
 - **The Gang** (3–6 players), the cooperative poker game by John Cooper and Kory Heath. Each heist:
   - Every player gets 2 private cards, shown only on their own screen. Five shared cards are dealt: none at first, then 3, 4 and 5 as the stages go on.
   - Four betting stages (white, yellow, orange, red). In each, every player takes a numbered chip, from 1 (weakest hand) up to the number of players (strongest), from the middle or from another player. A player may also return their chip. The stage ends when every player holds a chip and has pressed **Ready**; any chip change clears everyone's Ready.
   - Players see the name of their current best hand once there are shared cards.
-  - Hands are then revealed one at a time, from the lowest red chip to the highest, with each hand's name and the cards (kickers) that decide between hands of the same kind. If any hand is weaker than the one before it, the alarm goes off; otherwise the vault opens. Equal hands may be in either order.
+  - Hands are then revealed one at a time, from the lowest red chip to the highest, with each hand's name. If any hand is weaker than the one before it, the alarm goes off; otherwise the vault opens. Equal hands may be in either order.
   - 3 vaults win the game; 3 alarms lose it.
   - Not yet included: the challenge and specialist cards, and in-game chat.
 
@@ -113,7 +113,7 @@ Clients connect to the SignalR hub at `/hubs/game` and call these methods:
 | `ReturnToLobby(sessionId)` | — | Seated users only. After a game has ended, takes everyone back to the session lobby. |
 | `MakeMove(sessionId, seat, cell)` | — | Tic-tac-toe: places the mark of `seat` (0 is X, 1 is O), which the caller must hold. Cells are numbered 0–8, left to right, top to bottom. |
 | `Pick(sessionId, seat, choice)` | — | Rock-paper-scissors: picks `"Rock"`, `"Paper"` or `"Scissors"` for `seat`, which the caller must hold. |
-| `NextRound(sessionId, round)` | — | Rock-paper-scissors: starts the round after `round`. If it has already started, nothing changes. |
+| `NextRound(sessionId, round)` | — | Rock-paper-scissors and tic-tac-toe: starts the round after `round`. If it has already started, nothing changes. |
 | `TakeChip(sessionId, seat, chip)` | — | The Gang: `seat`, which the caller must hold, takes a chip of the current stage, from the middle or from another player. |
 | `ReturnChip(sessionId, seat)` | — | The Gang: puts `seat`'s chip back in the middle. |
 | `SetReady(sessionId, seat, ready)` | — | The Gang: marks `seat` ready (or not) to end the stage. |

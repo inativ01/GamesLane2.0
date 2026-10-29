@@ -247,12 +247,12 @@ public class GameSessionTests
     [Fact]
     public void A_new_game_can_start_while_the_game_is_in_progress_only_after_it_ends()
     {
-        var session = Started(new TicTacToeSession("ABC123"));
+        var session = Started(new EndableSession("ABC123"));
 
         Assert.False(session.TryNewGame(Alice, 1, out var error));
         Assert.Equal("The game is not over yet.", error);
 
-        Finish(session);
+        session.End();
         Assert.True(session.GetPublicState().IsGameOver);
         Assert.True(session.TryNewGame(Bob, 1, out _));
 
@@ -260,13 +260,13 @@ public class GameSessionTests
         Assert.Equal(SessionPhase.Playing, state.Phase);
         Assert.Equal(2, state.GameNumber);
         Assert.False(state.IsGameOver);
-        Assert.True(session.TryMove(Alice, 0, 4, out error), error);
     }
 
     [Fact]
     public void Standing_up_after_the_game_ends_returns_to_the_lobby_when_too_few_remain()
     {
-        var session = Finish(Started(new TicTacToeSession("ABC123")));
+        var session = Started(new EndableSession("ABC123"));
+        session.End();
 
         session.TryLeaveSeat(Bob, 1, out _);
 
@@ -278,12 +278,12 @@ public class GameSessionTests
     [Fact]
     public void Players_can_return_to_the_lobby_only_after_the_game_ends()
     {
-        var session = Started(new TicTacToeSession("ABC123"));
+        var session = Started(new EndableSession("ABC123"));
 
         Assert.False(session.TryReturnToLobby(Alice, out var error));
         Assert.Equal("The game is not over yet.", error);
 
-        Finish(session);
+        session.End();
         Assert.True(session.TryReturnToLobby(Bob, out _));
         Assert.Equal(SessionPhase.Lobby, session.GetPublicState().Phase);
         Assert.Equal(["Alice", "Bob"], session.GetPublicState().Seats.Select(s => s!.Name));
@@ -412,13 +412,86 @@ public class GameSessionTests
     }
 
     [Fact]
-    public void No_moves_after_a_win()
+    public void No_moves_after_a_win_until_the_next_round()
     {
         var session = Finish(Started(new TicTacToeSession("ABC123")));
 
         Assert.Equal(Mark.X, session.GetState().Winner);
         Assert.False(session.TryMove(Bob, 1, 5, out var error));
-        Assert.Equal("The game is not in progress.", error);
+        Assert.Equal("The game is over.", error);
+    }
+
+    [Fact]
+    public void Tic_tac_toe_keeps_score_and_alternates_the_starting_player()
+    {
+        var session = Finish(Started(new TicTacToeSession("ABC123")));
+        Assert.Equal([1, 0], session.GetState().Scores);
+        Assert.False(session.GetPublicState().IsGameOver);
+
+        Assert.True(session.TryNextRound(Bob, 1, out var error), error);
+        Assert.True(session.TryNextRound(Alice, 1, out error), error);
+
+        var state = session.GetState();
+        Assert.Equal(2, state.Round);
+        Assert.All(state.Board, cell => Assert.Equal(Mark.None, cell));
+        Assert.Equal(Mark.O, state.CurrentTurn);
+        Assert.Equal([1, 0], state.Scores);
+        Assert.False(session.TryMove(Alice, 0, 0, out error));
+        Assert.Equal("It is not your turn.", error);
+        Assert.True(session.TryMove(Bob, 1, 0, out error), error);
+    }
+
+    [Fact]
+    public void Tic_tac_toe_counts_draws_and_x_starts_again_in_round_three()
+    {
+        var session = Finish(Started(new TicTacToeSession("ABC123")));
+        session.TryNextRound(Alice, 1, out _);
+
+        // O X O
+        // O X X
+        // X O O
+        var players = new[] { (Bob, 1), (Alice, 0) };
+        int[] cells = [0, 1, 2, 4, 3, 5, 7, 6, 8];
+        for (var i = 0; i < cells.Length; i++)
+        {
+            var (user, seat) = players[i % 2];
+            Assert.True(session.TryMove(user, seat, cells[i], out var error), error);
+        }
+
+        Assert.True(session.GetState().IsDraw);
+        Assert.Equal(1, session.GetState().Draws);
+        Assert.Equal([1, 0], session.GetState().Scores);
+
+        session.TryNextRound(Bob, 2, out _);
+        Assert.Equal(3, session.GetState().Round);
+        Assert.Equal(Mark.X, session.GetState().CurrentTurn);
+    }
+
+    [Fact]
+    public void Tic_tac_toe_next_round_requires_a_finished_board_and_a_player()
+    {
+        var session = Started(new TicTacToeSession("ABC123"));
+        session.TryMove(Alice, 0, 0, out _);
+
+        Assert.False(session.TryNextRound(Alice, 1, out var error));
+        Assert.Equal("This round is not finished yet.", error);
+        Assert.False(session.TryNextRound(Carol, 1, out _));
+        Assert.Equal(1, session.GetState().Round);
+    }
+
+    [Fact]
+    public void A_new_tic_tac_toe_game_resets_the_score()
+    {
+        var session = Finish(Started(new TicTacToeSession("ABC123")));
+        session.TryLeaveSeat(Bob, 1, out _);
+        session.TryTakeSeat(Bob, BobProfile, "conn-b", 1, out _);
+
+        Assert.True(session.TryNewGame(Alice, 1, out var error), error);
+
+        var state = session.GetState();
+        Assert.Equal((1, 0), (state.Round, state.Draws));
+        Assert.Equal([0, 0], state.Scores);
+        Assert.Equal(Mark.X, state.CurrentTurn);
     }
 
     [Fact]
@@ -760,6 +833,34 @@ public class GameSessionTests
         }
 
         return session;
+    }
+
+    /// <summary>
+    /// A two-seat game that ends only when the test calls <see cref="End"/>, for testing what happens after a game ends.
+    /// </summary>
+    private sealed class EndableSession(string id) : GameSession(id)
+    {
+        private bool _isOver;
+
+        public override GameType Type => GameType.TicTacToe;
+
+        protected override int MinSeats => 2;
+
+        protected override int MaxSeats => 2;
+
+        protected override bool IsGameOver => _isOver;
+
+        public void End()
+        {
+            lock (Sync)
+            {
+                _isOver = true;
+            }
+        }
+
+        protected override void StartNewGame(IReadOnlyList<int> seats) => _isOver = false;
+
+        protected override object GetGameState() => new { IsOver = _isOver };
     }
 }
 

@@ -11,9 +11,10 @@ public enum Mark
 }
 
 /// <summary>
-/// Tic-tac-toe rules. Cells are numbered 0-8, left to right, top to bottom. X always moves first.
+/// Tic-tac-toe rules for one board. Cells are numbered 0-8, left to right, top to bottom.
+/// <paramref name="firstTurn"/> (X unless given) moves first.
 /// </summary>
-public class TicTacToeGame : ITicTacToeGame
+public class TicTacToeGame(Mark firstTurn = Mark.X) : ITicTacToeGame
 {
     private const int CellCount = 9;
 
@@ -30,7 +31,9 @@ public class TicTacToeGame : ITicTacToeGame
     public IReadOnlyList<Mark> Board => _board;
 
     /// <inheritdoc />
-    public Mark CurrentTurn { get; private set; } = Mark.X;
+    public Mark CurrentTurn { get; private set; } = firstTurn == Mark.None
+        ? throw new ArgumentException("The first turn must be X or O.", nameof(firstTurn))
+        : firstTurn;
 
     /// <inheritdoc />
     public Mark Winner { get; private set; } = Mark.None;

@@ -15,6 +15,17 @@ public class TicTacToeGameTests
     }
 
     [Fact]
+    public void O_moves_first_when_given()
+    {
+        var game = new TicTacToeGame(Mark.O);
+
+        Assert.Equal(Mark.O, game.CurrentTurn);
+        Assert.False(game.TryMove(Mark.X, 0, out var error));
+        Assert.Equal("It is not your turn.", error);
+        Assert.True(game.TryMove(Mark.O, 0, out _));
+    }
+
+    [Fact]
     public void Turns_alternate()
     {
         var game = new TicTacToeGame();

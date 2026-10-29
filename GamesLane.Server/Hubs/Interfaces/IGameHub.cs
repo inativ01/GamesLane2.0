@@ -60,7 +60,8 @@ public interface IGameHub
     Task Pick(string sessionId, int seat, Choice choice);
 
     /// <summary>
-    /// Rock-paper-scissors: starts the round after <paramref name="round"/>. If it has already started, nothing changes.
+    /// Rock-paper-scissors and tic-tac-toe: starts the round after <paramref name="round"/>. If it has already started,
+    /// nothing changes.
     /// </summary>
     Task NextRound(string sessionId, int round);
 

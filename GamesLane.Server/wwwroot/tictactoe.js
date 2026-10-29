@@ -1,30 +1,33 @@
 "use strict";
 
-// Seat 0 plays X, seat 1 plays O.
+// Seat 0 plays X, seat 1 plays O. The match goes on round after round, keeping score; the starting player alternates.
 const MARKS = ["X", "O"];
 const seatOf = (mark) => MARKS.indexOf(mark);
+const isRoundOver = (game) => game.isDraw || game.winner !== "None";
 
 function ticTacToeStatus(game, state, view) {
     const nameOf = (mark) => state.seats[seatOf(mark)]?.name ?? mark;
     const both = view.isMe(0) && view.isMe(1);
-    if (!state.isGameOver) {
+    const round = `Round ${game.round}`;
+    if (!isRoundOver(game)) {
         if (view.isMe(seatOf(game.currentTurn))) {
-            return both ? `Your turn (${game.currentTurn})` : "Your turn";
+            return both ? `${round}: your turn (${game.currentTurn})` : `${round}: your turn`;
         }
         return view.isPlayer
-            ? `Waiting for ${nameOf(game.currentTurn)}…`
-            : `${nameOf(game.currentTurn)} (${game.currentTurn}) to move`;
+            ? `${round}: waiting for ${nameOf(game.currentTurn)}…`
+            : `${round}: ${nameOf(game.currentTurn)} (${game.currentTurn}) to move`;
     }
     if (game.isDraw) {
-        return "It's a draw!";
+        return `${round}: it's a draw!`;
     }
     if (view.isMe(seatOf(game.winner)) && !both) {
-        return "You win!";
+        return "You win this round!";
     }
-    return `${nameOf(game.winner)} (${game.winner}) wins!`;
+    return `${nameOf(game.winner)} (${game.winner}) wins ${round.toLowerCase()}!`;
 }
 
 let turnSeat = 0;
+let currentRound = 1;
 
 const cells = Array.from({ length: 9 }, (_, i) => {
     const cell = document.createElement("button");
@@ -38,8 +41,9 @@ const cells = Array.from({ length: 9 }, (_, i) => {
 });
 
 const ticTacToe = startSessionPage("TicTacToe", (game, state, view) => {
+    currentRound = game.round;
     turnSeat = seatOf(game.currentTurn);
-    const myTurn = !state.isGameOver && view.isMe(turnSeat);
+    const myTurn = !isRoundOver(game) && view.isMe(turnSeat);
 
     game.board.forEach((mark, i) => {
         cells[i].textContent = mark === "None" ? "" : mark;
@@ -48,5 +52,12 @@ const ticTacToe = startSessionPage("TicTacToe", (game, state, view) => {
     });
 
     $("status").textContent = ticTacToeStatus(game, state, view);
-    $("players").replaceChildren(...MARKS.map((mark, seat) => listItem(seatLabel(state, seat, view, `${mark}: `))));
+    $("next-round").hidden = !(view.isPlayer && isRoundOver(game));
+    $("players").replaceChildren(
+        ...MARKS.map((mark, seat) => listItem(seatLabel(state, seat, view, `${mark} · `), `: ${game.scores[seat]}`)),
+        listItem(`Draws: ${game.draws}`));
+});
+
+$("next-round").addEventListener("click", () => {
+    call("NextRound", ticTacToe.sessionId, currentRound).catch(() => {});
 });

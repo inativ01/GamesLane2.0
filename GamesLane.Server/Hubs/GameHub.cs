@@ -127,7 +127,7 @@ public class GameHub(IGameSessionStore store, TimeProvider timeProvider) : Hub, 
 
     /// <inheritdoc />
     public Task NextRound(string sessionId, int round) =>
-        Act(sessionId, (IRockPaperScissorsSession s, out string? error) => s.TryNextRound(UserKey, round, out error));
+        Act(sessionId, (IRoundBasedSession s, out string? error) => s.TryNextRound(UserKey, round, out error));
 
     /// <inheritdoc />
     public Task TakeChip(string sessionId, int seat, int chip) =>

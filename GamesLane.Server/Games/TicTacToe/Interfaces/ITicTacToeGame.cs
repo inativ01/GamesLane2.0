@@ -1,7 +1,7 @@
 namespace GamesLane.Server.Games.TicTacToe;
 
 /// <summary>
-/// Tic-tac-toe rules. Cells are numbered 0-8, left to right, top to bottom. X always moves first.
+/// Tic-tac-toe rules for one board. Cells are numbered 0-8, left to right, top to bottom.
 /// </summary>
 public interface ITicTacToeGame
 {
