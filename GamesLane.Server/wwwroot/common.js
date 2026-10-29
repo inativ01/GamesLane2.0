@@ -77,12 +77,23 @@ const connection = new signalR.HubConnectionBuilder()
 connection.onreconnecting(() => showError("Connection lost. Reconnecting…"));
 connection.onclose(() => showError("Connection lost. Reload the page to reconnect."));
 
-const ready = accountReady.then(() => connection.start()).then(
-    () => true,
-    () => {
-        showError("Could not connect to the server. Reload the page to try again.");
-        return false;
-    });
+// Connects to the server. A failed attempt is retried a few times over about 10 seconds, since the server may be
+// waking up or a new version going live; only then is the error shown.
+async function connect() {
+    for (const delay of [0, 1000, 2000, 3000, 4000]) {
+        await new Promise((resolve) => setTimeout(resolve, delay));
+        try {
+            await connection.start();
+            return true;
+        } catch (err) {
+            console.warn("Could not connect to the server; retrying.", err);
+        }
+    }
+    showError("Could not connect to the server. Reload the page to try again.");
+    return false;
+}
+
+const ready = accountReady.then(connect);
 
 function showError(message) {
     $("error").textContent = message;
@@ -301,7 +312,6 @@ let loginDialog = null;
 function openLoginDialog() {
     loginDialog ??= createLoginDialog();
     loginDialog.querySelectorAll(".error").forEach((e) => { e.textContent = ""; });
-    loginDialog.returnValue = "";
     loginDialog.showModal();
 }
 
@@ -345,10 +355,21 @@ function createLoginDialog() {
         link.className = "button secondary";
         link.href = externalSignInUrl(provider);
         link.textContent = `Sign in with ${provider}`;
-        // The dialog would sit above the overlay, so close it, then show that we are on our way to the provider.
-        link.addEventListener("click", () => {
-            dialog.close("provider");
-            showBusy(`Connecting to ${provider}…`, 0);
+        // The dialog stays open while the browser goes to the provider; the link shows a spinner meanwhile.
+        link.addEventListener("click", (event) => {
+            if (link.classList.contains("is-busy")) {
+                event.preventDefault();
+                return;
+            }
+            link.classList.add("is-busy");
+            link.setAttribute("aria-disabled", "true");
+            link.textContent = `Connecting to ${provider}…`;
+        });
+        // Coming back with the browser's Back button can restore the page with the spinner still showing.
+        window.addEventListener("pageshow", () => {
+            link.classList.remove("is-busy");
+            link.removeAttribute("aria-disabled");
+            link.textContent = `Sign in with ${provider}`;
         });
         providers.appendChild(link);
     }

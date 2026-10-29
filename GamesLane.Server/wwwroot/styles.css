@@ -1292,7 +1292,8 @@ main > .error {
     animation: spin 0.8s linear infinite;
 }
 
-button.is-busy::before {
+button.is-busy::before,
+a.button.is-busy::before {
     content: "";
     display: inline-block;
     width: 0.9em;
@@ -1305,8 +1306,18 @@ button.is-busy::before {
     animation: spin 0.8s linear infinite;
 }
 
+button.secondary.is-busy::before,
+a.button.secondary.is-busy::before {
+    border-color: rgba(0, 0, 0, 0.15);
+    border-top-color: var(--primary);
+}
+
 button.is-busy:disabled {
     opacity: 0.85;
+}
+
+a.button.is-busy {
+    cursor: default;
 }
 
 @keyframes spin {
@@ -1323,7 +1334,8 @@ button.is-busy:disabled {
 
 @media (prefers-reduced-motion: reduce) {
     .spinner,
-    button.is-busy::before {
+    button.is-busy::before,
+    a.button.is-busy::before {
         animation-duration: 2.4s;
     }
 }
