@@ -22,7 +22,11 @@ builder.Services.AddSignalR()
 var app = builder.Build();
 
 app.UseDefaultFiles();
-app.UseStaticFiles();
+// Browsers must check for a newer version before reusing a saved page or script, so a deploy takes effect immediately.
+app.UseStaticFiles(new StaticFileOptions
+{
+    OnPrepareResponse = context => context.Context.Response.Headers.CacheControl = "no-cache",
+});
 app.UseAuthentication();
 
 app.MapGet("/health", () => Results.Ok("Healthy"));
