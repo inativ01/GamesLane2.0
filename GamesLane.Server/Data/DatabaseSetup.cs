@@ -25,8 +25,21 @@ public static class DatabaseSetup
                 "Locally, set it with 'dotnet user-secrets'; on Render, set the environment variable 'ConnectionStrings__GamesLane'.");
         }
 
+        string npgsqlConnectionString;
+        try
+        {
+            npgsqlConnectionString = new NpgsqlConnectionStringBuilder(ToNpgsqlConnectionString(connectionString)).ConnectionString;
+        }
+        catch (Exception ex) when (ex is ArgumentException or FormatException or UriFormatException)
+        {
+            // The message never includes the value, which contains the password.
+            throw new InvalidOperationException(
+                $"The database connection string 'ConnectionStrings:{ConnectionStringName}' could not be read ({ex.Message}). " +
+                "Use the .NET format from Neon's Connect dialog (Host=...;Database=...;Username=...;Password=...).");
+        }
+
         builder.Services.AddDbContext<GamesLaneDbContext>(options =>
-            options.UseNpgsql(ToNpgsqlConnectionString(connectionString), npgsql => npgsql.EnableRetryOnFailure()));
+            options.UseNpgsql(npgsqlConnectionString, npgsql => npgsql.EnableRetryOnFailure()));
 
         builder.Services.AddDataProtection()
             .SetApplicationName("GamesLane")
@@ -45,9 +58,21 @@ public static class DatabaseSetup
     /// <summary>
     /// Accepts either the .NET format (<c>Host=...;Database=...</c>) or the URL format
     /// (<c>postgresql://user:password@host/database?sslmode=require</c>) and returns the .NET format.
+    /// Also removes common copy mistakes: surrounding spaces or quotes, and a leading <c>psql</c> command.
     /// </summary>
     public static string ToNpgsqlConnectionString(string connectionString)
     {
+        connectionString = connectionString.Trim();
+        if (connectionString.StartsWith("psql ", StringComparison.OrdinalIgnoreCase))
+        {
+            connectionString = connectionString[5..].Trim();
+        }
+
+        while (connectionString.Length >= 2 && connectionString[0] is '"' or '\'' && connectionString[^1] == connectionString[0])
+        {
+            connectionString = connectionString[1..^1].Trim();
+        }
+
         if (!connectionString.StartsWith("postgres://", StringComparison.OrdinalIgnoreCase) &&
             !connectionString.StartsWith("postgresql://", StringComparison.OrdinalIgnoreCase))
         {

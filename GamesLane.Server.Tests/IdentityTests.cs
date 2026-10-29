@@ -142,6 +142,21 @@ public class IdentityTests
     }
 
     [Theory]
+    [InlineData("  Host=localhost;Database=neondb;Username=ada;Password=secret  \n")]
+    [InlineData("\"Host=localhost;Database=neondb;Username=ada;Password=secret\"")]
+    [InlineData("'Host=localhost;Database=neondb;Username=ada;Password=secret'")]
+    [InlineData("psql 'postgresql://ada:secret@localhost/neondb'")]
+    public void Common_copy_mistakes_in_connection_strings_are_removed(string connectionString)
+    {
+        var builder = new NpgsqlConnectionStringBuilder(DatabaseSetup.ToNpgsqlConnectionString(connectionString));
+
+        Assert.Equal("localhost", builder.Host);
+        Assert.Equal("neondb", builder.Database);
+        Assert.Equal("ada", builder.Username);
+        Assert.Equal("secret", builder.Password);
+    }
+
+    [Theory]
     [InlineData("/tictactoe.html?game=ABC123", "/tictactoe.html?game=ABC123")]
     [InlineData("/", "/")]
     [InlineData(null, "/")]
