@@ -11,24 +11,26 @@ function goToSession(gameType, sessionId) {
 }
 
 async function findSession(code) {
-    const response = await fetch(`/api/sessions/${encodeURIComponent(code)}`);
-    if (response.status === 404) {
+    const response = await fetch(`/api/sessions/${encodeURIComponent(code)}`).catch(() => null);
+    if (response?.status === 404) {
         showError(`No game with code ${code.toUpperCase()} was found.`);
         return null;
     }
-    if (!response.ok) {
-        showError("Something went wrong.");
+    if (!response?.ok) {
+        showError(response ? "Something went wrong." : "Could not reach the server. Check your connection and try again.");
         return null;
     }
     return response.json();
 }
 
+// Creates a game and opens its page. The overlay stays up until the game's page has loaded.
 async function startGame(gameType) {
+    showBusy("Starting your game…", 0);
     try {
         const sessionId = await call("CreateSession", gameType);
         goToSession(gameType, sessionId);
     } catch {
-        // Error already shown.
+        hideBusy();
     }
 }
 
@@ -49,9 +51,15 @@ document.querySelectorAll("[data-create]").forEach((button) => {
 });
 
 // After logging in, start the game the user clicked. A new Google user first sees the profile dialog.
+// Until we know whether the user is logged in (the server may be waking up), show that the game is on its way.
+if (sessionStorage.getItem(PENDING_GAME_KEY)) {
+    showBusy("Starting your game…", 0);
+}
+
 accountReady.then(() => {
     const pending = sessionStorage.getItem(PENDING_GAME_KEY);
     sessionStorage.removeItem(PENDING_GAME_KEY);
+    hideBusy();
     if (!pending || !account.signedIn) {
         return;
     }
@@ -76,9 +84,12 @@ $("join-form").addEventListener("submit", async (event) => {
         showError("Enter a game code.");
         return;
     }
+    showBusy("Finding the game…");
     const session = await findSession(code);
     if (session) {
         goToSession(session.gameType, session.sessionId);
+    } else {
+        hideBusy();
     }
 });
 

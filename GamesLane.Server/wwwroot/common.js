@@ -88,6 +88,61 @@ function showError(message) {
     $("error").textContent = message;
 }
 
+// A full-screen "please wait" overlay with a spinner, for waits on the server (which may need a few seconds to wake up)
+// or on Google. It appears only if the wait lasts longer than `delay` milliseconds, so quick actions do not flash.
+let busyElement = null;
+let busyTimer = null;
+
+function showBusy(message, delay = 300) {
+    clearTimeout(busyTimer);
+    busyTimer = setTimeout(() => {
+        if (!busyElement) {
+            busyElement = document.createElement("div");
+            busyElement.className = "busy";
+            busyElement.setAttribute("role", "status");
+            busyElement.setAttribute("aria-live", "polite");
+            busyElement.innerHTML = `<div class="busy-box"><span class="spinner" aria-hidden="true"></span><p></p></div>`;
+            document.body.appendChild(busyElement);
+        }
+        busyElement.querySelector("p").textContent = message;
+        busyElement.hidden = false;
+    }, delay);
+}
+
+function hideBusy() {
+    clearTimeout(busyTimer);
+    if (busyElement) {
+        busyElement.hidden = true;
+    }
+}
+
+// Coming back with the browser's Back button can restore a page that was still showing the overlay.
+window.addEventListener("pageshow", (event) => {
+    if (event.persisted) {
+        hideBusy();
+    }
+});
+
+// Shows a spinner and `text` on a button while `action` runs (for buttons inside dialogs, which sit above the overlay).
+// Returns the action's result. The button is restored unless the action returns true (meaning the page is reloading).
+async function withBusyButton(button, text, action) {
+    const label = button.textContent;
+    button.disabled = true;
+    button.classList.add("is-busy");
+    button.textContent = text;
+    let reloading = false;
+    try {
+        reloading = await action();
+        return reloading;
+    } finally {
+        if (!reloading) {
+            button.disabled = false;
+            button.classList.remove("is-busy");
+            button.textContent = label;
+        }
+    }
+}
+
 // HubException messages arrive as "An unexpected error occurred invoking '...' on the server. HubException: <message>"
 function errorText(err) {
     const match = /HubException: (.*)$/.exec(err?.message ?? "");
@@ -115,7 +170,9 @@ async function completeExternalSignIn() {
     url.searchParams.delete("signin");
     history.replaceState(null, "", url.pathname + url.search);
 
+    showBusy("Signing you in…", 0);
     const response = await fetch("/auth/external", { method: "POST" }).catch(() => null);
+    hideBusy();
     if (response?.ok) {
         const result = await response.json();
         saveToken(result.accessToken);
@@ -202,22 +259,31 @@ function iconPicker(container, icons, selected) {
 }
 
 // Sends an account request; on success saves the new login token and reloads, otherwise shows the error in the dialog.
+// Returns true if the page is reloading.
 async function submitAccount(url, body, errorElement) {
+    errorElement.textContent = "";
     const response = await postJson(url, body).catch(() => null);
     if (response?.ok) {
         saveToken((await response.json()).accessToken);
         location.reload();
-        return;
+        return true;
     }
     if (response?.status === 401) {
         saveToken("");
         location.reload();
-        return;
+        return true;
     }
     const result = await response?.json().catch(() => null);
     errorElement.textContent = response?.status === 429
         ? "Too many attempts. Wait a minute and try again."
-        : result?.error ?? "Something went wrong.";
+        : result?.error ?? (response ? "Something went wrong." : "Could not reach the server. Check your connection and try again.");
+    return false;
+}
+
+// Submits a dialog form's account request, showing `busyText` on its submit button meanwhile.
+function submitAccountForm(form, busyText, url, body) {
+    const button = form.querySelector('[type="submit"]');
+    return withBusyButton(button, busyText, () => submitAccount(url, body, form.querySelector(".error")));
 }
 
 function createDialog(html) {
@@ -278,6 +344,11 @@ function createLoginDialog() {
         link.className = "button secondary";
         link.href = externalSignInUrl(provider);
         link.textContent = `Sign in with ${provider}`;
+        // The dialog would sit above the overlay, so close it, then show that we are on our way to the provider.
+        link.addEventListener("click", () => {
+            dialog.close();
+            showBusy(`Connecting to ${provider}…`, 0);
+        });
         providers.appendChild(link);
     }
 
@@ -291,13 +362,13 @@ function createLoginDialog() {
     const panel = (name) => dialog.querySelector(`[data-panel="${name}"]`);
     const guestIcon = iconPicker(panel("guest").querySelector(".icon-picker"), account.icons, null);
     const registerIcon = iconPicker(panel("register").querySelector(".icon-picker"), account.icons, null);
-    const onSubmit = (name, url, body) => panel(name).addEventListener("submit", (event) => {
+    const onSubmit = (name, busyText, url, body) => panel(name).addEventListener("submit", (event) => {
         event.preventDefault();
-        submitAccount(url, body(new FormData(event.target)), event.target.querySelector(".error"));
+        submitAccountForm(event.target, busyText, url, body(new FormData(event.target)));
     });
-    onSubmit("guest", "/auth/guest", (f) => ({ name: f.get("name"), icon: guestIcon.value }));
-    onSubmit("login", "/auth/login", (f) => ({ username: f.get("username"), password: f.get("password") }));
-    onSubmit("register", "/auth/register", (f) => ({
+    onSubmit("guest", "Logging in…", "/auth/guest", (f) => ({ name: f.get("name"), icon: guestIcon.value }));
+    onSubmit("login", "Logging in…", "/auth/login", (f) => ({ username: f.get("username"), password: f.get("password") }));
+    onSubmit("register", "Creating account…", "/auth/register", (f) => ({
         username: f.get("username"), password: f.get("password"), name: f.get("name"), icon: registerIcon.value,
     }));
     return dialog;
@@ -326,12 +397,12 @@ function openProfileDialog() {
     form.elements.picture.addEventListener("change", async () => {
         const file = form.elements.picture.files[0];
         if (file) {
-            await uploadIcon(file, error);
+            await withBusyButton(form.querySelector('[type="submit"]'), "Uploading…", () => uploadIcon(file, error));
         }
     });
     form.addEventListener("submit", (event) => {
         event.preventDefault();
-        submitAccount("/auth/profile", { name: form.elements.name.value, icon: picker.value }, error);
+        submitAccountForm(form, "Saving…", "/auth/profile", { name: form.elements.name.value, icon: picker.value });
     });
     dialog.addEventListener("close", () => dialog.remove());
     dialog.showModal();
@@ -349,17 +420,18 @@ async function uploadIcon(file, errorElement) {
         blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/webp", 0.85));
     } catch {
         errorElement.textContent = "That file could not be read as a picture.";
-        return;
+        return false;
     }
 
     const response = await authFetch("/auth/icon", { method: "POST", headers: { "Content-Type": blob.type }, body: blob }).catch(() => null);
     if (response?.ok) {
         saveToken((await response.json()).accessToken);
         location.reload();
-    } else {
-        const result = await response?.json().catch(() => null);
-        errorElement.textContent = result?.error ?? "The picture could not be uploaded.";
+        return true;
     }
+    const result = await response?.json().catch(() => null);
+    errorElement.textContent = result?.error ?? "The picture could not be uploaded.";
+    return false;
 }
 
 function setUpInviteButtons(joinUrl) {
@@ -501,11 +573,14 @@ function startSessionPage(gameType, render) {
 
     async function enter() {
         let entry;
+        showBusy("Opening the game…");
         try {
             entry = await call("EnterSession", sessionId);
         } catch {
             $("session").hidden = true;
             return;
+        } finally {
+            hideBusy();
         }
 
         if (entry.state.gameType !== gameType) {
@@ -554,6 +629,7 @@ function startSessionPage(gameType, render) {
     });
 
     setUpInviteButtons(joinUrl);
-    ready.then((ok) => ok && enter());
+    showBusy("Opening the game…");
+    ready.then((ok) => (ok ? enter() : hideBusy()));
     return view;
 }
