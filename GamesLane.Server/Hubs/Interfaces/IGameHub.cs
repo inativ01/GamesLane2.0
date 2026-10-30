@@ -14,9 +14,10 @@ public interface IGameHub
     Task<SessionEntry> EnterSession(string sessionId);
 
     /// <summary>
-    /// Logged-in users only. Creates a session and returns its code. The creator is not seated.
+    /// Logged-in users only. Creates a session and returns its code. The creator is not seated. The session starts
+    /// with the creator's saved options for the game, if they have any.
     /// </summary>
-    string CreateSession(GameType gameType);
+    Task<string> CreateSession(GameType gameType);
 
     /// <summary>
     /// Takes a seat as the logged-in user, using their display name.
@@ -38,6 +39,11 @@ public interface IGameHub
     /// (0 before the first game). If that game has already been replaced, nothing changes.
     /// </summary>
     Task NewGame(string sessionId, int gameNumber);
+
+    /// <summary>
+    /// Seated users only, in the lobby. Sets the game's options for the next new game; options left out get their default.
+    /// </summary>
+    Task SetOptions(string sessionId, Dictionary<string, string>? options);
 
     /// <summary>
     /// Seated users only. Continues the paused game; whoever now holds each of its seats plays that seat.

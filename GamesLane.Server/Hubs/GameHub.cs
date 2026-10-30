@@ -2,6 +2,7 @@ using System.Security.Claims;
 using GamesLane.Server.Auth;
 using GamesLane.Server.Games.RockPaperScissors;
 using GamesLane.Server.Sessions;
+using GamesLane.Server.Users;
 using Microsoft.AspNetCore.SignalR;
 
 namespace GamesLane.Server.Hubs;
@@ -12,7 +13,11 @@ namespace GamesLane.Server.Hubs;
 /// <see cref="StateUpdated"/> messages. Private, per-player information is returned only to the calling connection.
 /// Players are logged-in users, identified by their user ID, so they keep their seats after a refresh or reconnect.
 /// </summary>
-public class GameHub(IGameSessionStore store, TimeProvider timeProvider) : Hub, IGameHub
+public class GameHub(
+    IGameSessionStore store,
+    TimeProvider timeProvider,
+    IGameOptionsService savedOptions,
+    ILogger<GameHub> logger) : Hub, IGameHub
 {
     /// <summary>
     /// The message clients receive with the new <see cref="SessionState"/> after every change.
@@ -72,7 +77,7 @@ public class GameHub(IGameSessionStore store, TimeProvider timeProvider) : Hub, 
     }
 
     /// <inheritdoc />
-    public string CreateSession(GameType gameType)
+    public async Task<string> CreateSession(GameType gameType)
     {
         RequireProfile("Log in to start a game.");
         if (!Enum.IsDefined(gameType))
@@ -80,7 +85,21 @@ public class GameHub(IGameSessionStore store, TimeProvider timeProvider) : Hub, 
             throw new HubException("Unknown game type.");
         }
 
-        return store.Create(gameType).Id;
+        var session = store.Create(gameType);
+        if (AuthSetup.GetSavedUserId(Context.User) is { } userId)
+        {
+            try
+            {
+                session.UseSavedOptions(await savedOptions.GetAsync(userId, gameType));
+            }
+            catch (Exception ex)
+            {
+                // The game still starts, with the default options.
+                logger.LogWarning(ex, "Could not load the saved options for {GameType}.", gameType);
+            }
+        }
+
+        return session.Id;
     }
 
     /// <inheritdoc />
@@ -108,6 +127,10 @@ public class GameHub(IGameSessionStore store, TimeProvider timeProvider) : Hub, 
     /// <inheritdoc />
     public Task NewGame(string sessionId, int gameNumber) =>
         Act(sessionId, (IGameSession s, out string? error) => s.TryNewGame(UserKey, gameNumber, out error));
+
+    /// <inheritdoc />
+    public Task SetOptions(string sessionId, Dictionary<string, string>? options) =>
+        Act(sessionId, (IGameSession s, out string? error) => s.TrySetOptions(UserKey, options, out error));
 
     /// <inheritdoc />
     public Task ResumeGame(string sessionId) =>

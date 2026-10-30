@@ -16,8 +16,8 @@ public enum TheGangPhase
 }
 
 /// <summary>
-/// The Gang rules, without challenge or specialist cards. <paramref name="newDeck"/> supplies a shuffled deck for each heist.
-/// Player <c>i</c> gets the deck's cards <c>2i</c> and <c>2i+1</c>; the five shared cards follow.
+/// The Gang rules, without challenge or specialist cards (Advanced mode plays like Basic for now). <c>newDeck</c> supplies
+/// a shuffled deck for each heist. Player <c>i</c> gets the deck's cards <c>2i</c> and <c>2i+1</c>; the five shared cards follow.
 /// </summary>
 public class TheGangGame : ITheGangGame
 {
@@ -51,11 +51,12 @@ public class TheGangGame : ITheGangGame
     /// <summary>
     /// Starts the first heist.
     /// </summary>
-    public TheGangGame(int playerCount, Func<IReadOnlyList<Card>> newDeck)
+    public TheGangGame(int playerCount, Func<IReadOnlyList<Card>> newDeck, TheGangMode mode = TheGangMode.Basic)
     {
         ArgumentOutOfRangeException.ThrowIfLessThan(playerCount, MinPlayers);
         ArgumentOutOfRangeException.ThrowIfGreaterThan(playerCount, MaxPlayers);
         PlayerCount = playerCount;
+        Mode = mode;
         _newDeck = newDeck;
         _chips = new int?[StageCount, playerCount];
         _ready = new bool[playerCount];
@@ -64,6 +65,9 @@ public class TheGangGame : ITheGangGame
 
     /// <inheritdoc />
     public int PlayerCount { get; }
+
+    /// <inheritdoc />
+    public TheGangMode Mode { get; }
 
     /// <inheritdoc />
     public int Heist { get; private set; } = 1;

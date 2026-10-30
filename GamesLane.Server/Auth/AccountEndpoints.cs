@@ -1,5 +1,7 @@
 using System.Security.Claims;
 using GamesLane.Server.Data;
+using GamesLane.Server.Games;
+using GamesLane.Server.Sessions;
 using GamesLane.Server.Users;
 
 namespace GamesLane.Server.Auth;
@@ -20,14 +22,15 @@ public record RegisterRequest(string? Username, string? Password, string? Name, 
 public record LoginRequest(string? Username, string? Password);
 
 /// <summary>
-/// The account endpoints: who is logged in, logging in as a guest or registered user, registering, and the profile
-/// (display name and icon). Every successful call returns a fresh login token, which the page keeps for this tab.
+/// The account endpoints: who is logged in, logging in as a guest or registered user, registering, the profile
+/// (display name and icon), and saved game options. Every successful login or profile call returns a fresh login token,
+/// which the page keeps for this tab.
 /// </summary>
 public static class AccountEndpoints
 {
     /// <summary>
     /// Maps <c>/auth/me</c>, <c>/auth/guest</c>, <c>/auth/register</c>, <c>/auth/login</c>, <c>/auth/profile</c>,
-    /// <c>/auth/icon</c> and <c>/api/icons/{id}</c>.
+    /// <c>/auth/icon</c>, <c>/api/icons/{id}</c> and <c>/api/options/{gameType}</c>.
     /// </summary>
     public static void MapAccountEndpoints(this WebApplication app)
     {
@@ -126,7 +129,47 @@ public static class AccountEndpoints
             context.Response.Headers.XContentTypeOptions = "nosniff";
             return Results.File(icon.Data, icon.ContentType);
         });
+
+        // Saved users' preferred options per game: { saved, options }, with the game's defaults if none are saved.
+        app.MapGet("/api/options/{gameType}", async (string gameType, HttpContext context, IGameOptionsService options) =>
+        {
+            if (AuthSetup.GetSavedUserId(context.User) is not { } id)
+            {
+                return Results.Unauthorized();
+            }
+
+            if (ParseGameType(gameType) is not { } type)
+            {
+                return Results.NotFound();
+            }
+
+            var saved = await options.GetAsync(id, type);
+            return Results.Ok(new { saved = saved is not null, options = saved ?? GameOptions.Defaults(type) });
+        });
+
+        app.MapPut("/api/options/{gameType}", async (string gameType, Dictionary<string, string>? body, HttpContext context, IGameOptionsService options) =>
+        {
+            if (AuthSetup.GetSavedUserId(context.User) is not { } id)
+            {
+                return Results.Unauthorized();
+            }
+
+            if (ParseGameType(gameType) is not { } type)
+            {
+                return Results.NotFound();
+            }
+
+            return await options.SaveAsync(id, type, body) is { } error ? Error(error) : Results.NoContent();
+        });
     }
+
+    /// <summary>
+    /// The game type named in an address, e.g. <c>TheGang</c> (any case), or null if there is no such game.
+    /// </summary>
+    private static GameType? ParseGameType(string name) =>
+        Enum.TryParse<GameType>(name, ignoreCase: true, out var type) && Enum.IsDefined(type) && !int.TryParse(name, out _)
+            ? type
+            : null;
 
     /// <summary>
     /// The logged-in user with their current saved name and icon, or null if no one is logged in or the saved user

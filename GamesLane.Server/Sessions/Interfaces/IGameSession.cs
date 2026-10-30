@@ -62,6 +62,18 @@ public interface IGameSession
     bool TryNewGame(string userKey, int gameNumber, [NotNullWhen(false)] out string? error);
 
     /// <summary>
+    /// Changes the game's options, for the next new game. Only seated players, and only in the lobby. Options left out
+    /// get their default; unknown options and values are refused.
+    /// </summary>
+    bool TrySetOptions(string userKey, IReadOnlyDictionary<string, string>? options, [NotNullWhen(false)] out string? error);
+
+    /// <summary>
+    /// Uses saved preferences as the options, e.g. the creator's when the session is created. Values that are no
+    /// longer valid get their default.
+    /// </summary>
+    void UseSavedOptions(IReadOnlyDictionary<string, string>? options);
+
+    /// <summary>
     /// Continues the paused game. Whoever now holds each of its seats plays that seat.
     /// </summary>
     bool TryResume(string userKey, [NotNullWhen(false)] out string? error);

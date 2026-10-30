@@ -74,6 +74,32 @@ public class ExternalLogin
 }
 
 /// <summary>
+/// A saved user's preferred options for one game, applied when they create a session of it.
+/// </summary>
+public class UserGameOptions
+{
+    /// <summary>
+    /// The user the preferences belong to.
+    /// </summary>
+    public Guid UserId { get; set; }
+
+    /// <summary>
+    /// The game, e.g. <c>TheGang</c>.
+    /// </summary>
+    public required string GameType { get; set; }
+
+    /// <summary>
+    /// The chosen options as JSON, e.g. <c>{"mode":"Advanced"}</c>.
+    /// </summary>
+    public required string Options { get; set; }
+
+    /// <summary>
+    /// When the preferences were last saved.
+    /// </summary>
+    public DateTimeOffset UpdatedAt { get; set; }
+}
+
+/// <summary>
 /// An icon uploaded by a user (or copied from their Google picture). A new upload replaces it with a new ID,
 /// so its address never changes content and browsers can keep it.
 /// </summary>

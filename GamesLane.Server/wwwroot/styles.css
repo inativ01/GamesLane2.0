@@ -1081,6 +1081,70 @@ footer {
     font-weight: 700;
 }
 
+/* The chosen game options, with a button that opens the options dialog. */
+.lobby-options {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-top: 0.6rem;
+    padding: 0.5rem 0.75rem;
+    border-radius: 10px;
+    background: var(--surface-soft);
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-align: left;
+}
+
+.option {
+    margin: 0 0 0.5rem;
+    padding: 0;
+    border: none;
+}
+
+.option legend {
+    margin-bottom: 0.35rem;
+    font-weight: 700;
+}
+
+.option-choice {
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 0.6rem;
+    margin-bottom: 0.4rem;
+    padding: 0.6rem 0.75rem;
+    border-radius: 10px;
+    font-weight: 400;
+    box-shadow: inset 0 0 0 1px var(--line);
+    cursor: pointer;
+}
+
+.option-choice:has(input:checked) {
+    background: #fbe9d8;
+    box-shadow: inset 0 0 0 2px var(--primary);
+}
+
+.option-choice input {
+    margin: 0.2rem 0 0;
+    padding: 0;
+    accent-color: var(--primary);
+}
+
+.option-text {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+}
+
+.option-text small {
+    color: var(--muted);
+}
+
+.option-prefs {
+    justify-content: center;
+}
+
 .lobby .status {
     color: var(--muted);
     font-size: 1rem;

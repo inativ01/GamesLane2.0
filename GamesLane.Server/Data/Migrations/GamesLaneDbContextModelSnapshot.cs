@@ -85,6 +85,28 @@ namespace GamesLane.Server.Data.Migrations
                     b.ToTable("Users");
                 });
 
+            modelBuilder.Entity("GamesLane.Server.Data.UserGameOptions", b =>
+                {
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("GameType")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<string>("Options")
+                        .IsRequired()
+                        .HasMaxLength(4000)
+                        .HasColumnType("character varying(4000)");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("UserId", "GameType");
+
+                    b.ToTable("UserGameOptions");
+                });
+
             modelBuilder.Entity("GamesLane.Server.Data.UserIcon", b =>
                 {
                     b.Property<Guid>("Id")
@@ -136,6 +158,15 @@ namespace GamesLane.Server.Data.Migrations
                 {
                     b.HasOne("GamesLane.Server.Data.User", null)
                         .WithMany("ExternalLogins")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("GamesLane.Server.Data.UserGameOptions", b =>
+                {
+                    b.HasOne("GamesLane.Server.Data.User", null)
+                        .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();

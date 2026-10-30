@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 namespace GamesLane.Server.Data;
 
 /// <summary>
-/// The GamesLane database: saved users, their external accounts and icons, and the keys that sign login tokens.
+/// The GamesLane database: saved users, their external accounts, icons and game options, and the keys that sign login tokens.
 /// </summary>
 public class GamesLaneDbContext(DbContextOptions<GamesLaneDbContext> options) : DbContext(options), IDataProtectionKeyContext
 {
@@ -24,12 +24,17 @@ public class GamesLaneDbContext(DbContextOptions<GamesLaneDbContext> options) : 
     public DbSet<UserIcon> UserIcons => Set<UserIcon>();
 
     /// <summary>
+    /// Users' preferred options per game.
+    /// </summary>
+    public DbSet<UserGameOptions> UserGameOptions => Set<UserGameOptions>();
+
+    /// <summary>
     /// The keys ASP.NET Core uses to encrypt and sign login tokens, so tokens stay valid after a restart.
     /// </summary>
     public DbSet<DataProtectionKey> DataProtectionKeys => Set<DataProtectionKey>();
 
     /// <summary>
-    /// Sets keys, unique indexes, lengths, and deletes a user's external accounts and icons with the user.
+    /// Sets keys, unique indexes, lengths, and deletes a user's external accounts, icons and game options with the user.
     /// </summary>
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -55,6 +60,14 @@ public class GamesLaneDbContext(DbContextOptions<GamesLaneDbContext> options) : 
         {
             icon.Property(i => i.ContentType).HasMaxLength(50);
             icon.HasOne<User>().WithMany().HasForeignKey(i => i.UserId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<UserGameOptions>(options =>
+        {
+            options.HasKey(o => new { o.UserId, o.GameType });
+            options.Property(o => o.GameType).HasMaxLength(50);
+            options.Property(o => o.Options).HasMaxLength(4000);
+            options.HasOne<User>().WithMany().HasForeignKey(o => o.UserId).OnDelete(DeleteBehavior.Cascade);
         });
     }
 }

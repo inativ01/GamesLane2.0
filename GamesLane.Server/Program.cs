@@ -17,6 +17,7 @@ builder.AddGamesLaneDatabase();
 builder.AddGamesLaneAuth();
 builder.Services.AddHttpClient();
 builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IGameOptionsService, GameOptionsService>();
 builder.Services.AddHostedService<InactiveUserCleanup>();
 builder.Services.AddSingleton<IGameSessionStore, GameSessionStore>();
 builder.Services.AddSingleton(TimeProvider.System);

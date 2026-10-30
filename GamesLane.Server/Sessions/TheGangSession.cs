@@ -11,9 +11,10 @@ public record TheGangRevealedHand(int Seat, IReadOnlyList<string> Cards, string 
 /// <summary>
 /// Public state of The Gang. <see cref="Chips"/> has one list per stage (white, yellow, orange, red), each with one
 /// entry per seat (null if the seat holds no chip in that stage, or does not play). Cards are short text such as "10♥".
-/// Private cards are not included until revealed.
+/// Private cards are not included until revealed. <see cref="Mode"/> is the mode this game is played in.
 /// </summary>
 public record TheGangState(
+    TheGangMode Mode,
     int Heist,
     int Stage,
     TheGangPhase Phase,
@@ -79,7 +80,8 @@ public class TheGangSession(string id, Func<IReadOnlyList<Card>>? newDeck = null
         WithGame(userKey, game => (game.TryNextHeist(heist, out var e), e), out error);
 
     /// <inheritdoc />
-    protected override void StartNewGame(IReadOnlyList<int> seats) => _game = new TheGangGame(seats.Count, _newDeck);
+    protected override void StartNewGame(IReadOnlyList<int> seats) =>
+        _game = new TheGangGame(seats.Count, _newDeck, TheGangOptions.ModeOf(Options));
 
     /// <inheritdoc />
     protected override object GetGameState()
@@ -88,6 +90,7 @@ public class TheGangSession(string id, Func<IReadOnlyList<Card>>? newDeck = null
         var bySeat = SeatOfPlayer();
         var showsAllCards = game.Phase != TheGangPhase.Betting;
         return new TheGangState(
+            game.Mode,
             game.Heist,
             game.Stage,
             game.Phase,

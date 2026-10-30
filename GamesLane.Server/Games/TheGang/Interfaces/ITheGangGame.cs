@@ -13,6 +13,11 @@ public interface ITheGangGame
     int PlayerCount { get; }
 
     /// <summary>
+    /// Basic or Advanced. Advanced plays like Basic until challenge cards are added.
+    /// </summary>
+    TheGangMode Mode { get; }
+
+    /// <summary>
     /// The current heist, starting at 1.
     /// </summary>
     int Heist { get; }

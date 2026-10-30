@@ -583,6 +583,107 @@ function startSessionPage(gameType, render) {
         return item;
     }
 
+    // The chosen options in a few words, e.g. "Mode: Advanced".
+    function optionsSummary(state) {
+        return state.optionList
+            .map((option) => `${option.label}: ${option.choices.find((c) => c.value === state.options[option.key])?.label ?? ""}`)
+            .join(" · ");
+    }
+
+    // Seated players choose the options for the next game. Saved users can also save them as their preferences
+    // (used automatically when they create a game) and load them back.
+    function openOptionsDialog() {
+        const state = lastState;
+        const canSave = account?.signedIn && account.kind !== "Guest";
+        const dialog = createDialog(`
+            <form>
+                <h2>Game options</h2>
+                <div class="option-list"></div>
+                <div class="actions option-prefs" ${canSave ? "" : "hidden"}>
+                    <button type="button" class="secondary small" data-save>Save as my preferences</button>
+                    <button type="button" class="secondary small" data-load>Load my preferences</button>
+                </div>
+                <p class="hint" data-note role="status"></p>
+                <p class="error" role="alert"></p>
+                <div class="actions"><button type="submit">Apply</button><button type="button" class="secondary" data-close>Cancel</button></div>
+            </form>`);
+        const form = dialog.querySelector("form");
+        const note = form.querySelector("[data-note]");
+        const error = form.querySelector(".error");
+
+        form.querySelector(".option-list").replaceChildren(...state.optionList.map((option) => {
+            const fieldset = document.createElement("fieldset");
+            fieldset.className = "option";
+            const legend = document.createElement("legend");
+            legend.textContent = option.label;
+            fieldset.append(legend, ...option.choices.map((choice) => {
+                const label = document.createElement("label");
+                label.className = "option-choice";
+                const input = document.createElement("input");
+                input.type = "radio";
+                input.name = option.key;
+                input.value = choice.value;
+                const text = document.createElement("span");
+                text.className = "option-text";
+                text.append(Object.assign(document.createElement("strong"), { textContent: choice.label }));
+                if (choice.hint) {
+                    text.append(Object.assign(document.createElement("small"), { textContent: choice.hint }));
+                }
+                label.append(input, text);
+                return label;
+            }));
+            return fieldset;
+        }));
+
+        const fill = (values) => state.optionList.forEach((option) => {
+            const input = form.querySelector(`input[name="${option.key}"][value="${values[option.key] ?? option.default}"]`);
+            if (input) {
+                input.checked = true;
+            }
+        });
+        const chosen = () => Object.fromEntries(state.optionList.map((o) => [o.key, new FormData(form).get(o.key) ?? o.default]));
+        const url = `/api/options/${state.gameType}`;
+        const unreachable = "Could not reach the server. Check your connection and try again.";
+        fill(state.options);
+
+        form.querySelector("[data-save]").addEventListener("click", (event) => withBusyButton(event.currentTarget, "Saving…", async () => {
+            note.textContent = error.textContent = "";
+            const response = await authFetch(url, {
+                method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(chosen()),
+            }).catch(() => null);
+            if (response?.ok) {
+                note.textContent = "Saved. New games you start will use these options.";
+            } else {
+                error.textContent = (await response?.json().catch(() => null))?.error ?? (response ? "Something went wrong." : unreachable);
+            }
+        }));
+        form.querySelector("[data-load]").addEventListener("click", (event) => withBusyButton(event.currentTarget, "Loading…", async () => {
+            note.textContent = error.textContent = "";
+            const response = await authFetch(url).catch(() => null);
+            if (!response?.ok) {
+                error.textContent = response ? "Something went wrong." : unreachable;
+                return;
+            }
+            const result = await response.json();
+            fill(result.options);
+            note.textContent = result.saved ? "Your preferences are loaded. Press Apply to use them." : "You have no saved preferences yet.";
+        }));
+        form.addEventListener("submit", (event) => {
+            event.preventDefault();
+            withBusyButton(form.querySelector('[type="submit"]'), "Applying…", async () => {
+                error.textContent = "";
+                try {
+                    await connection.invoke("SetOptions", sessionId, chosen());
+                    dialog.close();
+                } catch (err) {
+                    error.textContent = errorText(err);
+                }
+            });
+        });
+        dialog.addEventListener("close", () => dialog.remove());
+        dialog.showModal();
+    }
+
     function lobbyStatus(state, taken) {
         if (state.canResume) {
             return "The game is paused. Resume it, or start a new game.";
@@ -607,6 +708,9 @@ function startSessionPage(gameType, render) {
             $("lobby-status").textContent = lobbyStatus(state, taken);
             $("seat-count").textContent = `${taken} / ${state.seats.length}`;
             $("seats").replaceChildren(...state.seats.map((_, seat) => seatItem(state, seat)));
+            $("lobby-options").hidden = state.optionList.length === 0;
+            $("options-summary").textContent = optionsSummary(state);
+            $("edit-options").hidden = !view.isPlayer;
             $("login-to-play").hidden = Boolean(account?.signedIn);
             $("resume-game").hidden = !(view.isPlayer && state.canResume);
             $("start-game").hidden = !(view.isPlayer && taken >= state.minSeats);
@@ -661,6 +765,7 @@ function startSessionPage(gameType, render) {
 
     $("start-game").addEventListener("click", () => act("NewGame", lastState?.gameNumber ?? 0));
     $("resume-game").addEventListener("click", () => act("ResumeGame"));
+    $("edit-options").addEventListener("click", openOptionsDialog);
     $("play-again").addEventListener("click", () => act("NewGame", lastState?.gameNumber ?? 0));
     $("to-lobby").addEventListener("click", () => act("ReturnToLobby"));
     $("stand-up").addEventListener("click", () => {

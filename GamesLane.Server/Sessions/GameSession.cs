@@ -1,4 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
+using GamesLane.Server.Games;
 
 namespace GamesLane.Server.Sessions;
 
@@ -39,6 +40,7 @@ public record SeatInfo(string PlayerId, string Name, string Icon, bool IsConnect
 /// <summary>
 /// Public session state, safe to send to everyone in the session. <see cref="Seats"/> has one entry per seat (null when empty).
 /// <see cref="GameNumber"/> is 0 until the first game starts; <see cref="Game"/> is the game-specific state, or null before then.
+/// <see cref="Options"/> are the chosen values of the game's options (<see cref="OptionList"/>), used by the next new game.
 /// </summary>
 public record SessionState(
     string SessionId,
@@ -50,7 +52,9 @@ public record SessionState(
     int GameNumber,
     bool IsGameOver,
     bool CanResume,
-    object? Game);
+    object? Game,
+    IReadOnlyList<GameOption> OptionList,
+    IReadOnlyDictionary<string, string> Options);
 
 /// <summary>
 /// Returned when a page enters a session: the public state, plus the caller's player ID if they are logged in, and
@@ -85,9 +89,10 @@ public abstract class GameSession : IGameSession
     private readonly Dictionary<string, string> _playerIds = [];
     private int[] _gameSeats = [];
     private DateTimeOffset? _emptySince;
+    private IReadOnlyDictionary<string, string> _options;
 
     /// <summary>
-    /// Creates an empty session in the lobby. Throws if the game's seat counts are invalid.
+    /// Creates an empty session in the lobby, with the game's default options. Throws if the game's seat counts are invalid.
     /// </summary>
     protected GameSession(string id)
     {
@@ -98,6 +103,7 @@ public abstract class GameSession : IGameSession
         }
 
         _seats = new Seat?[MaxSeats];
+        _options = GameOptions.Defaults(Type);
     }
 
     /// <inheritdoc />
@@ -152,6 +158,11 @@ public abstract class GameSession : IGameSession
     /// Seats playing the current game, in seat order. A game numbers its players in this order.
     /// </summary>
     protected IReadOnlyList<int> GameSeats => _gameSeats;
+
+    /// <summary>
+    /// The chosen value of every option of the game (see <see cref="GameOptions"/>). Read it in <see cref="StartNewGame"/>.
+    /// </summary>
+    protected IReadOnlyDictionary<string, string> Options => _options;
 
     /// <summary>
     /// Whether the session shows the session lobby or the game screen.
@@ -362,6 +373,48 @@ public abstract class GameSession : IGameSession
     }
 
     /// <summary>
+    /// Changes the game's options, for the next new game. Only seated players, and only in the lobby. Options left out
+    /// get their default; unknown options and values are refused.
+    /// </summary>
+    public bool TrySetOptions(string userKey, IReadOnlyDictionary<string, string>? options, [NotNullWhen(false)] out string? error)
+    {
+        lock (Sync)
+        {
+            if (!TryRequireSeated(userKey, out var seatError))
+            {
+                error = seatError!;
+                return false;
+            }
+
+            if (Phase != SessionPhase.Lobby)
+            {
+                error = "Options can only be changed in the lobby.";
+                return false;
+            }
+
+            if (!GameOptions.TryValidate(Type, options, out var normalized, out error))
+            {
+                return false;
+            }
+
+            _options = normalized;
+            return true;
+        }
+    }
+
+    /// <summary>
+    /// Uses saved preferences as the options, e.g. the creator's when the session is created. Values that are no
+    /// longer valid get their default.
+    /// </summary>
+    public void UseSavedOptions(IReadOnlyDictionary<string, string>? options)
+    {
+        lock (Sync)
+        {
+            _options = GameOptions.Normalize(Type, options);
+        }
+    }
+
+    /// <summary>
     /// Continues the paused game. Whoever now holds each of its seats plays that seat.
     /// </summary>
     public bool TryResume(string userKey, [NotNullWhen(false)] out string? error)
@@ -432,7 +485,9 @@ public abstract class GameSession : IGameSession
                 GameNumber,
                 GameNumber > 0 && IsGameOver,
                 Phase == SessionPhase.Lobby && HasUnfinishedGame,
-                GameNumber > 0 ? GetGameState() : null);
+                GameNumber > 0 ? GetGameState() : null,
+                GameOptions.For(Type),
+                _options);
         }
     }
 

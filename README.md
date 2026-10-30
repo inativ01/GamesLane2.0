@@ -65,13 +65,14 @@ A typical setup is a shared screen (such as a TV or laptop) connected as a spect
 GamesLane.slnx                 Solution file
 GamesLane.Server/              ASP.NET Core backend
   Auth/AuthSetup.cs            Login tokens, rate limiting, Google/Microsoft sign-in
-  Auth/AccountEndpoints.cs     Guest login, registration, login, profile and icon endpoints
+  Auth/AccountEndpoints.cs     Guest login, registration, login, profile, icon and saved game options endpoints
   Data/                        Database (EF Core + PostgreSQL): tables, migrations, connection setup
-  Users/                       User rules, user service, and deletion of inactive users
+  Users/                       User rules, user service, saved game options, and deletion of inactive users
   Hubs/GameHub.cs              SignalR hub for creating, joining and playing sessions
   Hubs/DisconnectedSeatsMonitor.cs  Frees the seats of users disconnected for over 30 seconds; deletes abandoned sessions
   Sessions/GameSession.cs      Seats, session lobby and game flow shared by all games
   Sessions/                    Game-specific sessions and the in-memory session store
+  Games/GameOptions.cs         Game options (rule variants): each game's options, and checking chosen values
   Games/TicTacToe/             Tic-tac-toe rules
   Games/RockPaperScissors/     Rock-paper-scissors rules
   Games/TheGang/               The Gang rules: cards, poker hand ranking, heists
@@ -95,7 +96,16 @@ GamesLane.Server.Tests/        Unit tests
   - Players see the name of their current best hand once there are shared cards.
   - Hands are then revealed one at a time, from the lowest red chip to the highest, with each hand's name. If any hand is weaker than the one before it, the alarm goes off; otherwise the vault opens. Equal hands may be in either order.
   - 3 vaults win the game; 3 alarms lose it.
+  - Option **Mode**: Basic (the default) or Advanced. Advanced is meant for challenge cards; until they are added, it plays like Basic.
   - Not yet included: the challenge and specialist cards, and in-game chat.
+
+### Game options
+
+A game can offer **options**, i.e. rule variants (so far only The Gang's Mode). Each option has a key, a label and a list of choices, one of which is the default; `Games/GameOptions.cs` lists them per game.
+
+- In the session lobby, everyone sees the chosen options; seated players can change them with **Game options**. They apply to the next new game; a paused game keeps the options it started with.
+- Saved users (registered or Google, not guests) can **save** the options as their preferences for that game, and **load** them back in the dialog. A session starts with its creator's saved preferences.
+- Chosen values are checked against the game's options: unknown options or values are refused, and options left out get their default. Saved preferences that no longer match (e.g. after an option was removed) fall back to the defaults.
 
 ## Game Hub API
 
@@ -103,12 +113,13 @@ Clients connect to the SignalR hub at `/hubs/game` and call these methods:
 
 | Method | Returns | Description |
 | --- | --- | --- |
-| `CreateSession(gameType)` | session code | Logged-in users only. Creates a session (`"TicTacToe"` or `"RockPaperScissors"`) and returns its 6-character code. The creator is not seated. |
+| `CreateSession(gameType)` | session code | Logged-in users only. Creates a session (`"TicTacToe"`, `"RockPaperScissors"` or `"TheGang"`) and returns its 6-character code. The creator is not seated. The session starts with the creator's saved options for the game, if any. |
 | `EnterSession(sessionId)` | `{ state, playerId }` | Subscribes to the session's updates. For a logged-in user, reconnects them to their seats, updates their name on them, and returns their `playerId`; otherwise `playerId` is `null`. Pages call this when they open and after reconnecting. |
 | `TakeSeat(sessionId, seat)` | — | Logged-in users only. Takes an empty seat, or the seat of a disconnected user, under the user's display name. Only in the session lobby. |
 | `LeaveSeat(sessionId, seat)` | — | Gives up one of the caller's seats (used for **Leave seat** and **Stand up**). |
 | `LeaveSession(sessionId)` | — | Stops receiving updates and gives up all the caller's seats (used when going back to the main screen). |
 | `NewGame(sessionId, gameNumber)` | — | Seated users only. Starts a new game for everyone seated, replacing game `gameNumber` (0 before the first game). Refused while a game is in progress. If that game was already replaced, nothing changes. |
+| `SetOptions(sessionId, options)` | — | Seated users only, in the session lobby. Sets the options for the next new game, e.g. `{ "mode": "Advanced" }`. Options left out get their default. |
 | `ResumeGame(sessionId)` | — | Seated users only. Continues the paused game; whoever now holds each of its seats plays that seat. |
 | `ReturnToLobby(sessionId)` | — | Seated users only. After a game has ended, takes everyone back to the session lobby. |
 | `MakeMove(sessionId, seat, cell)` | — | Tic-tac-toe: places the mark of `seat` (0 is X, 1 is O), which the caller must hold. Cells are numbered 0–8, left to right, top to bottom. |
@@ -132,6 +143,8 @@ After every change, the server sends a `StateUpdated` message with the public se
 | `isGameOver` | The current game has ended |
 | `canResume` | In the lobby with an unfinished, paused game |
 | `game` | Game-specific state, or `null` before the first game |
+| `optionList` | The game's options: `{ key, label, choices: [{ value, label, hint }], default }` (empty for games without options) |
+| `options` | The chosen value of each option, e.g. `{ "mode": "Basic" }`, used by the next new game |
 
 In rock-paper-scissors, the game state only shows whether each seat has picked; the picks themselves are revealed once both have picked. Errors (e.g. "It is not your turn.") are returned as hub errors to the caller.
 
@@ -160,9 +173,10 @@ PostgreSQL on Neon, accessed with EF Core. Tables (created and updated automatic
 | `Users` | `Id`, `Username` / `NormalizedUsername` (registered users; unique regardless of case), `PasswordHash`, `DisplayName`, `Icon`, `CreatedAt`, `LastActiveAt` |
 | `ExternalLogins` | `Provider` + `ProviderKey` (unique), `UserId` |
 | `UserIcons` | Uploaded pictures: `Id`, `UserId`, `ContentType`, `Data`, `CreatedAt`. Served at `/api/icons/{id}`; a new upload gets a new ID |
+| `UserGameOptions` | Saved game options: `UserId` + `GameType` (key), `Options` (JSON, e.g. `{"mode":"Advanced"}`), `UpdatedAt` |
 | `DataProtectionKeys` | The keys that encrypt and sign login tokens |
 
-Deleting a user also deletes their external logins and icons. To change the tables, edit the classes in `Data/` and run `dotnet ef migrations add <Name> --project GamesLane.Server --output-dir Data/Migrations` (first `dotnet tool restore`, and set `$env:ASPNETCORE_ENVIRONMENT = "Development"` so the connection string is read from user secrets).
+Deleting a user also deletes their external logins, icons and saved game options. To change the tables, edit the classes in `Data/` and run `dotnet ef migrations add <Name> --project GamesLane.Server --output-dir Data/Migrations` (first `dotnet tool restore`, and set `$env:ASPNETCORE_ENVIRONMENT = "Development"` so the connection string is read from user secrets).
 
 To browse the database, use the Neon console's SQL Editor, pgAdmin, DBeaver, or the PostgreSQL extension for VS Code (not SSMS, which is for SQL Server only). Table and column names are case-sensitive, e.g. `select * from "Users"`.
 
@@ -181,6 +195,8 @@ To browse the database, use the Neon console's SQL Editor, pgAdmin, DBeaver, or 
 | `GET /api/icons/{id}` | An uploaded picture |
 | `GET /auth/signin/{provider}?returnUrl=/...` | Starts sign-in with `google` or `microsoft` |
 | `POST /auth/external` | Exchanges the result of an external sign-in for `{ accessToken, isNew }` |
+| `GET /api/options/{gameType}` | Saved users only. `{ saved, options }`: the user's saved options for the game, or its defaults (`saved: false`) |
+| `PUT /api/options/{gameType}` | Saved users only. Body: the options, e.g. `{ "mode": "Advanced" }`. Saves them as the user's preferences (204), or `{ error }` (400) |
 
 All the `POST /auth/...` endpoints return `{ accessToken }` on success, or `{ error }` (status 400) with a message to show.
 | `GET /health` | Health check |
