@@ -18,9 +18,20 @@ public interface ITheGangGame
     TheGangMode Mode { get; }
 
     /// <summary>
-    /// The challenge or specialist cards of the current heist (none in Basic mode).
+    /// The challenge and specialist cards in play, in the order they were added (none in Basic mode). Cards stay in play
+    /// for the rest of the game.
     /// </summary>
     IReadOnlyList<TheGangCard> Cards { get; }
+
+    /// <summary>
+    /// The keys of the cards added for the current heist.
+    /// </summary>
+    IReadOnlyList<string> NewCards { get; }
+
+    /// <summary>
+    /// The specialist card whose step comes before the betting now (Coordinator, then Con Artist), or null.
+    /// </summary>
+    string? PreparingCard { get; }
 
     /// <summary>
     /// The player who got new private cards in this heist (Motion Detector, Laser Tripwires), or null.

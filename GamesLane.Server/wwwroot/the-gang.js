@@ -99,7 +99,7 @@ function gangStatus(game, state, view) {
     switch (game.phase) {
         case "Preparing": {
             const waiting = game.playingSeats.filter((s) => !game.preparedSeats.includes(s)).map((s) => state.seats[s]?.name ?? "");
-            const step = hasCard(game, "coordinator") ? "Pick a card to pass on" : "Look at your cards";
+            const step = game.preparingCard === "coordinator" ? "Pick a card to pass on" : "Look at your cards";
             return `${step}. Waiting for: ${waiting.join(", ")}`;
         }
         case "Betting":
@@ -121,12 +121,15 @@ function gangStatus(game, state, view) {
     }
 }
 
-// The heist's challenge and specialist cards, drawn as small cards on the table: kind, name, what they do, and what
-// they showed everyone. Open group decisions are shown to players next to their hand instead (see myDecisions).
+// The challenge and specialist cards in play, drawn as small cards on the table: kind, name, what they do, and what
+// they showed everyone. Cards added for this heist are marked "New". Open group decisions are shown to players next to
+// their hand instead (see myDecisions).
 function heistCards(game, state, view) {
     return game.cards.map((card) => {
-        const item = el("li", `heist-card ${card.kind.toLowerCase()}`,
-            el("span", "heist-card-kind", card.kind === "Challenge" ? "Challenge" : "Specialist"),
+        const isNew = game.newCards.includes(card.key);
+        const kind = el("span", "heist-card-kind", card.kind === "Challenge" ? "Challenge" : "Specialist");
+        const item = el("li", `heist-card ${card.kind.toLowerCase()}${isNew ? " new" : ""}`,
+            isNew ? el("span", "heist-card-top", kind, el("span", "heist-card-new", "New")) : kind,
             el("strong", "heist-card-name", card.name),
             el("span", "heist-card-text", card.text));
         if (card.key === "motion-detector" || card.key === "laser-tripwires") {
@@ -260,7 +263,6 @@ function myHand(game, state, view, hand) {
 
     const title = view.mySeats.length > 1 ? `Seat ${seat + 1} · ${state.seats[seat]?.name ?? ""}` : "Your hand";
     const info = el("div", "my-hand-info", el("span", "my-hand-title", title));
-    info.append(el("span", "best-hand", hand.bestHand ?? "No shared cards yet"));
     if (myChip !== null) {
         info.append(el("span", "stage-pill", chipElement(stage, myChip), `Your ${STAGES[stage].toLowerCase()} chip`));
     } else if (betting) {
@@ -274,7 +276,7 @@ function myHand(game, state, view, hand) {
 
     // Tapping a card: Coordinator picks it to pass on (it can be changed until everyone has picked); Informant shows it;
     // Hacker and Jack discard it.
-    const passing = game.phase === "Preparing" && hasCard(game, "coordinator");
+    const passing = game.phase === "Preparing" && game.preparingCard === "coordinator";
     const step = game.pendingSeat === seat ? game.pendingStep : "None";
     const others = game.playingSeats.filter((s) => s !== seat);
     if (step === "ShowCard" && !others.includes(showTo[seat])) {

@@ -24,9 +24,10 @@ public enum TheGangPhase
 /// <summary>
 /// The Gang rules. <c>newDeck</c> supplies a shuffled deck for each heist. With <c>n</c> private cards each (2, or 3 with
 /// Security Cameras), player <c>i</c> gets the deck's cards <c>n·i</c> to <c>n·i+n-1</c>; the five shared cards follow.
-/// In Advanced mode, the first heist gets the chosen number of challenge cards; each later heist gets one challenge card
-/// after a successful heist, or one specialist card after a failed one. A card is used at most once per game. Cards that
-/// cancel each other may be drawn together (the cancelled card has no effect) unless the rules avoid clashes.
+/// In Advanced mode, the first heist gets the chosen number of challenge cards; after a successful heist, one challenge
+/// card is added, and after a failed one, one specialist card. Cards stay in play for the rest of the game; each card is
+/// drawn at most once. Cards that cancel each other may be in play together (the cancelled card has no effect) unless
+/// the rules avoid clashes.
 /// </summary>
 public partial class TheGangGame : ITheGangGame
 {
@@ -64,6 +65,8 @@ public partial class TheGangGame : ITheGangGame
     private int _nextCard;
     private Card?[] _passing = [];
     private bool[] _prepared = [];
+    private Queue<string> _preparingSteps = new();
+    private string[] _newCards = [];
 
     /// <summary>
     /// Starts the first heist. <paramref name="rules"/> defaults to the basic game; <paramref name="random"/> draws the cards.
@@ -87,6 +90,12 @@ public partial class TheGangGame : ITheGangGame
 
     /// <inheritdoc />
     public TheGangMode Mode => _rules.Mode;
+
+    /// <inheritdoc />
+    public IReadOnlyList<string> NewCards => _newCards;
+
+    /// <inheritdoc />
+    public string? PreparingCard { get; private set; }
 
     /// <inheritdoc />
     public IReadOnlyList<TheGangCard> Cards => _cards;
@@ -156,18 +165,19 @@ public partial class TheGangGame : ITheGangGame
     public string? Announcement(int player)
     {
         var cards = _holeCards[player];
+        var facts = new List<string>();
         if (Has(TheGangCards.Investor))
         {
             var faces = cards.Count(c => c.Rank is >= 11 and <= 13);
-            return faces == 1 ? "1 face card" : $"{faces} face cards";
+            facts.Add(faces == 1 ? "1 face card" : $"{faces} face cards");
         }
 
         if (Has(TheGangCards.MathWhiz))
         {
-            return $"{cards.Sum(c => c.Rank == Card.Ace ? 11 : Math.Min(c.Rank, 10))} total";
+            facts.Add($"{cards.Sum(c => c.Rank == Card.Ace ? 11 : Math.Min(c.Rank, 10))} total");
         }
 
-        return null;
+        return facts.Count == 0 ? null : string.Join(" · ", facts);
     }
 
     /// <inheritdoc />
@@ -297,7 +307,7 @@ public partial class TheGangGame : ITheGangGame
                 _holeCards[p] = [.. _holeCards[p].Where(c => c != passed[p]), passed[(p + PlayerCount - 1) % PlayerCount]];
             }
 
-            Phase = TheGangPhase.Betting;
+            NextPreparingStep();
         }
 
         return true;
@@ -319,7 +329,7 @@ public partial class TheGangGame : ITheGangGame
             _random.Shuffle(gathered);
             var perPlayer = _holeCards[0].Length;
             _holeCards = [.. Enumerable.Range(0, PlayerCount).Select(p => gathered.Skip(perPlayer * p).Take(perPlayer).ToArray())];
-            Phase = TheGangPhase.Betting;
+            NextPreparingStep();
         }
 
         return true;
@@ -428,8 +438,9 @@ public partial class TheGangGame : ITheGangGame
         ((Has(TheGangCards.NoiseSensors) && chip == 1) || (Has(TheGangCards.VentilationShaft) && chip == PlayerCount));
 
     /// <summary>
-    /// Replaces the heist's cards with up to <paramref name="count"/> random cards of a kind (only in Advanced mode):
-    /// enabled, not used before in this game, and if the rules say so, not cancelling each other.
+    /// Adds up to <paramref name="count"/> random cards of a kind to the cards in play (only in Advanced mode): enabled,
+    /// not used before in this game, and if the rules say so, not cancelling a card in play. Cards stay in play for the
+    /// rest of the game.
     /// </summary>
     private void DrawCards(TheGangCardKind kind, int count)
     {
@@ -438,7 +449,8 @@ public partial class TheGangGame : ITheGangGame
         while (Mode == TheGangMode.Advanced && drawn.Count < count)
         {
             var candidates = enabled
-                .Where(key => !_usedCards.Contains(key) && !(_rules.AvoidClashes && drawn.Any(d => TheGangCards.Clash(d.Key, key))))
+                .Where(key => !_usedCards.Contains(key)
+                    && !(_rules.AvoidClashes && _cards.Concat(drawn).Any(d => TheGangCards.Clash(d.Key, key))))
                 .Select(TheGangCards.Find)
                 .OfType<TheGangCard>()
                 .Where(card => card.Kind == kind)
@@ -453,7 +465,8 @@ public partial class TheGangGame : ITheGangGame
             _usedCards.Add(card.Key);
         }
 
-        _cards = [.. drawn];
+        _cards = [.. _cards, .. drawn];
+        _newCards = [.. drawn.Select(c => c.Key)];
     }
 
     /// <summary>
@@ -479,7 +492,7 @@ public partial class TheGangGame : ITheGangGame
     {
         ArgumentOutOfRangeException.ThrowIfNegative(player);
         ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(player, PlayerCount);
-        error = Phase == TheGangPhase.Preparing && Has(card) ? null : "That is not possible now.";
+        error = Phase == TheGangPhase.Preparing && PreparingCard == card ? null : "That is not possible now.";
         return error is null;
     }
 
@@ -527,9 +540,19 @@ public partial class TheGangGame : ITheGangGame
         _revealOrder = [];
         Revealed = 0;
         Stage = SkippedStages.Contains(0) ? 1 : 0;
-        _passing = new Card?[PlayerCount];
-        _prepared = new bool[PlayerCount];
         ResetDecisions();
-        Phase = Has(TheGangCards.Coordinator) || Has(TheGangCards.ConArtist) ? TheGangPhase.Preparing : TheGangPhase.Betting;
+        _preparingSteps = new Queue<string>(new[] { TheGangCards.Coordinator, TheGangCards.ConArtist }.Where(Has));
+        NextPreparingStep();
+    }
+
+    /// <summary>
+    /// Starts the next step before the betting (Coordinator first, then Con Artist), or the betting if none is left.
+    /// </summary>
+    private void NextPreparingStep()
+    {
+        _prepared = new bool[PlayerCount];
+        _passing = new Card?[PlayerCount];
+        PreparingCard = _preparingSteps.TryDequeue(out var step) ? step : null;
+        Phase = PreparingCard is null ? TheGangPhase.Betting : TheGangPhase.Preparing;
     }
 }

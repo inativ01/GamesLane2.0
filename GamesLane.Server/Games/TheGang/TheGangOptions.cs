@@ -62,7 +62,7 @@ public static class TheGangOptions
             [
                 new GameOptionChoice(nameof(TheGangMode.Basic), "Basic", "The standard rules."),
                 new GameOptionChoice(nameof(TheGangMode.Advanced), "Advanced",
-                    "With challenge and specialist cards: after a successful heist, the next one gets a challenge card; after a failed one, a specialist card."),
+                    "With challenge and specialist cards: after a successful heist, a challenge card is added; after a failed one, a specialist card. Cards stay for the rest of the game."),
             ],
             nameof(TheGangMode.Basic)),
         new GameOption(

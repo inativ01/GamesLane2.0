@@ -330,7 +330,7 @@ public class TheGangGameTests
     }
 
     [Fact]
-    public void A_success_adds_a_challenge_card_and_a_failure_a_specialist_card_each_used_once()
+    public void Cards_are_added_after_each_heist_and_stay_in_play_each_drawn_once()
     {
         var rules = Advanced(0, [TheGangCards.Blackout], [TheGangCards.Investor]);
         var game = new TheGangGame(3, () => Cards(RankedDeck), rules);
@@ -338,12 +338,58 @@ public class TheGangGameTests
 
         PlayHeist(game, [1, 2, 3]);
         Assert.Equal(TheGangCards.Blackout, Assert.Single(game.Cards).Key);
+        Assert.Equal([TheGangCards.Blackout], game.NewCards);
 
         PlayHeist(game, [3, 2, 1]);
-        Assert.Equal(TheGangCards.Investor, Assert.Single(game.Cards).Key);
+        Assert.Equal([TheGangCards.Blackout, TheGangCards.Investor], game.Cards.Select(c => c.Key));
+        Assert.Equal([TheGangCards.Investor], game.NewCards);
 
         PlayHeist(game, [1, 2, 3]);
-        Assert.Empty(game.Cards);
+        Assert.Equal(2, game.Cards.Count);
+        Assert.Empty(game.NewCards);
+    }
+
+    [Fact]
+    public void Avoiding_clashes_also_considers_the_cards_already_in_play()
+    {
+        var rules = new TheGangRules(TheGangMode.Advanced, 1, [TheGangCards.QuickAccess, TheGangCards.MotionDetector], [], AvoidClashes: true);
+        var game = new TheGangGame(3, () => Cards(RankedDeck), rules);
+        var first = Assert.Single(game.Cards).Key;
+
+        PlayHeist(game, [1, 2, 3]);
+
+        Assert.Equal([first], game.Cards.Select(c => c.Key));
+    }
+
+    [Fact]
+    public void Coordinator_and_con_artist_together_take_turns_before_the_betting()
+    {
+        var game = new TheGangGame(3, () => Cards(RankedDeck), Advanced(0, [], [TheGangCards.Coordinator, TheGangCards.ConArtist]));
+        PlayHeist(game, [3, 2, 1]);
+        Prepare(game);
+        PlayHeist(game, [3, 2, 1]);
+        Assert.Equal(2, game.Cards.Count);
+
+        Assert.Equal(TheGangCards.Coordinator, game.PreparingCard);
+        Assert.False(game.TryConfirmSeen(0, out _));
+        Enumerable.Range(0, 3).ToList().ForEach(p => Assert.True(game.TryPassCard(p, 0, out _)));
+
+        Assert.Equal((TheGangPhase.Preparing, TheGangCards.ConArtist), (game.Phase, game.PreparingCard));
+        Assert.False(game.IsPrepared(0));
+        Enumerable.Range(0, 3).ToList().ForEach(p => Assert.True(game.TryConfirmSeen(p, out _)));
+
+        Assert.Equal(TheGangPhase.Betting, game.Phase);
+        Assert.Null(game.PreparingCard);
+    }
+
+    [Fact]
+    public void Investor_and_math_whiz_together_show_both_facts()
+    {
+        var game = new TheGangGame(3, () => Cards(RankedDeck), Advanced(0, [], [TheGangCards.Investor, TheGangCards.MathWhiz]));
+        PlayHeist(game, [3, 2, 1]);
+        PlayHeist(game, [3, 2, 1]);
+
+        Assert.Equal("2 face cards · 20 total", game.Announcement(2));
     }
 
     [Fact]
@@ -676,6 +722,21 @@ public class TheGangGameTests
         return game;
     }
 
+    // Does the steps before the betting (Coordinator: everyone passes their first card; Con Artist: everyone has seen).
+    private static void Prepare(TheGangGame game)
+    {
+        while (game.Phase == TheGangPhase.Preparing)
+        {
+            for (var player = 0; player < game.PlayerCount; player++)
+            {
+                var done = game.PreparingCard == TheGangCards.Coordinator
+                    ? game.TryPassCard(player, 0, out var error)
+                    : game.TryConfirmSeen(player, out error);
+                Assert.True(done, error);
+            }
+        }
+    }
+
     private static void AgreeAll(TheGangGame game, string card)
     {
         for (var player = 0; player < game.PlayerCount; player++)
@@ -687,6 +748,7 @@ public class TheGangGameTests
     private static void PlayHeist(TheGangGame game, int[] chips)
     {
         var heist = game.Heist;
+        Prepare(game);
         PlayAllStages(game, chips);
         RevealAll(game);
         Assert.True(game.TryNextHeist(heist, out var error), error);

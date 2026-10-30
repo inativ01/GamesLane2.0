@@ -857,10 +857,6 @@ footer {
     font-weight: 600;
 }
 
-.my-hand .best-hand {
-    font-weight: 700;
-}
-
 .stage-pill {
     display: inline-flex;
     align-items: center;
@@ -978,6 +974,24 @@ footer {
 
 .heist-card.specialist .heist-card-kind {
     background: #2f7d45;
+}
+
+.heist-card-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.3rem;
+}
+
+.heist-card-new {
+    padding: 0.05rem 0.45rem;
+    border-radius: 999px;
+    background: var(--gold);
+    color: var(--black);
+    font-size: 0.62rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
 }
 
 .heist-card-name {

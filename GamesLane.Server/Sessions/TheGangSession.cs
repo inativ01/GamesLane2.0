@@ -51,6 +51,8 @@ public record TheGangShownCard(int FromSeat, string Card);
 public record TheGangState(
     TheGangMode Mode,
     IReadOnlyList<TheGangCard> Cards,
+    IReadOnlyList<string> NewCards,
+    string? PreparingCard,
     int? RedrawnSeat,
     IReadOnlyList<int> SkippedStages,
     IReadOnlyList<int> LockedChips,
@@ -77,10 +79,10 @@ public record TheGangState(
     IReadOnlyList<TheGangRevealedHand> Revealed);
 
 /// <summary>
-/// A player's own cards in The Gang, the name of their current best hand (once there are shared cards), with
-/// Coordinator, the card they picked to pass on, and with Informant, a card another seat showed them.
+/// A player's own cards in The Gang, with Coordinator, the card they picked to pass on, and with Informant, a card
+/// another seat showed them. The hand's name is only shown when hands are revealed.
 /// </summary>
-public record TheGangHand(int Seat, IReadOnlyList<string> Cards, string? BestHand, string? PassingCard, TheGangShownCard? ShownCard);
+public record TheGangHand(int Seat, IReadOnlyList<string> Cards, string? PassingCard, TheGangShownCard? ShownCard);
 
 /// <summary>
 /// Private state of The Gang, sent only to the user holding these seats.
@@ -171,6 +173,8 @@ public class TheGangSession(string id, Func<IReadOnlyList<Card>>? newDeck = null
         return new TheGangState(
             game.Mode,
             game.Cards,
+            game.NewCards,
+            game.PreparingCard,
             game.RedrawnPlayer is { } redrawn ? bySeat[redrawn] : null,
             game.SkippedStages,
             game.LockedChips,
@@ -220,16 +224,13 @@ public class TheGangSession(string id, Func<IReadOnlyList<Card>>? newDeck = null
     {
         var game = _game!;
         var bySeat = SeatOfPlayer();
-        var cards = game.VisibleCommunityCards;
         return new TheGangPrivateState(seats.Select(seat =>
         {
             var player = PlayerAt(seat)!.Value;
-            var holeCards = game.HoleCards(player);
-            var best = cards.Count >= 3 ? HandEvaluator.Best([.. holeCards, .. cards]).Name : null;
             var shown = game.ShownCardFor(player) is { } card && game.ShownBetween is { } between
                 ? new TheGangShownCard(bySeat[between.From], card.ToString())
                 : null;
-            return new TheGangHand(seat, Text(holeCards), best, game.PassingCard(player)?.ToString(), shown);
+            return new TheGangHand(seat, Text(game.HoleCards(player)), game.PassingCard(player)?.ToString(), shown);
         }).ToArray());
     }
 
