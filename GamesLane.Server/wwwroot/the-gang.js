@@ -305,10 +305,12 @@ function myHand(game, state, view, hand) {
 
     const title = view.mySeats.length > 1 ? `Seat ${seat + 1} · ${state.seats[seat]?.name ?? ""}` : "Your hand";
     const info = el("div", "my-hand-info", el("span", "my-hand-title", title));
-    if (myChip !== null) {
-        info.append(el("span", "stage-pill", chipElement(stage, myChip), `Your ${STAGES[stage].toLowerCase()} chip`));
-    } else if (betting) {
-        info.append(el("span", "stage-pill", `Take a ${STAGES[stage].toLowerCase()} chip`));
+    // The chips this seat took in this heist's stages so far.
+    const taken = STAGES.map((_, s) => (s <= stage ? game.chips[s][seat] : null))
+        .map((number, s) => (number === null ? null : chipElement(s, number)))
+        .filter((chip) => chip !== null);
+    if (taken.length) {
+        info.append(el("span", "stage-pill", ...taken));
     }
 
     if (hand.shownCard) {
@@ -406,9 +408,11 @@ function myHand(game, state, view, hand) {
     ready.setAttribute("aria-pressed", String(isReady));
     const actions = el("div", "my-hand-actions", ready);
 
-    const hint = `1 = weakest hand, ${game.playingSeats.length} = strongest. Tap your chip to return it.`
-        + (game.lockedChips.length ? " 🔒 = locked: whoever takes it first keeps it." : "");
-    box.append(chips, el("p", "hint", hint), actions);
+    box.append(chips);
+    if (game.lockedChips.length) {
+        box.append(el("p", "hint", "🔒 Locked: whoever takes it first keeps it."));
+    }
+    box.append(actions);
     return box;
 }
 
@@ -464,6 +468,10 @@ function fitTable() {
         if (fits()) low = size; else high = size;
     }
     table.style.fontSize = `${low}px`;
+    while (low > 8 && !fits()) {
+        low -= 0.5;
+        table.style.fontSize = `${low}px`;
+    }
 }
 
 let gangState = null;
@@ -503,7 +511,7 @@ const gang = startSessionPage("TheGang", (game, state, view) => {
     fitTable();
 });
 
-addEventListener("resize", fitTable);
+addEventListener("resize", () => requestAnimationFrame(fitTable));
 $("toggle-table").addEventListener("click", () => {
     tableHidden = !tableHidden;
     localStorage.setItem(TABLE_HIDDEN_KEY, tableHidden ? "1" : "0");

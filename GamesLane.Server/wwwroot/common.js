@@ -457,6 +457,37 @@ async function uploadIcon(file, errorElement) {
     return false;
 }
 
+// Clicking the game code in the game's banner copies it; its label says "Copied!" for a moment.
+function setUpCodeCopy(sessionId) {
+    const code = $("session-code").closest(".code");
+    if (!navigator.clipboard || !code) {
+        return;
+    }
+    const label = code.querySelector("span");
+    code.classList.add("copyable");
+    code.setAttribute("role", "button");
+    code.tabIndex = 0;
+    code.title = "Copy the game code";
+    let timer = 0;
+    const copy = async () => {
+        try {
+            await navigator.clipboard.writeText(sessionId);
+            label.textContent = "Copied!";
+            clearTimeout(timer);
+            timer = setTimeout(() => { label.textContent = "Game code"; }, 2000);
+        } catch {
+            showError("Could not copy the game code.");
+        }
+    };
+    code.addEventListener("click", copy);
+    code.addEventListener("keydown", (event) => {
+        if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            copy();
+        }
+    });
+}
+
 function setUpInviteButtons(joinUrl) {
     if (navigator.clipboard) {
         $("copy-link").hidden = false;
@@ -811,6 +842,7 @@ function startSessionPage(gameType, render) {
     });
 
     setUpInviteButtons(joinUrl);
+    setUpCodeCopy(sessionId);
     showBusy("Opening the game…");
     ready.then((ok) => (ok ? enter() : hideBusy()));
     return view;
