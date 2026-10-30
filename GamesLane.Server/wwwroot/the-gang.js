@@ -93,6 +93,9 @@ function button(text, className, onClick) {
 
 const hasCard = (game, key) => game.cards.some((c) => c.key === key);
 
+// A playing seat's player number (1 to 6), in seat order.
+const playerNumber = (game, seat) => game.playingSeats.indexOf(seat) + 1;
+
 // The names of the different users holding these seats, in seat order. Each user votes once, for all their seats.
 function userNames(state, seats) {
     const names = new Map();
@@ -311,8 +314,7 @@ function myHand(game, state, view, hand) {
     const isLocked = (number) => game.lockedChips.includes(number);
     const keepsLockedChip = myChip !== null && isLocked(myChip);
 
-    const title = view.mySeats.length > 1 ? `Seat ${seat + 1} · ${state.seats[seat]?.name ?? ""}` : "Your hand";
-    const info = el("div", "my-hand-info", el("span", "my-hand-title", title));
+    const info = el("div", "my-hand-info", el("span", "my-hand-title", `Player ${playerNumber(game, seat)}`));
     // The chips this seat took in this heist's stages so far.
     const taken = STAGES.map((_, s) => (s <= stage ? game.chips[s][seat] : null))
         .map((number, s) => (number === null ? null : chipElement(s, number)))
@@ -445,7 +447,7 @@ function chipTable(game, state, view) {
         return th;
     }));
     const rows = game.playingSeats.map((seat) => el("tr", null,
-        el("td", null, seatLabel(state, seat, view)),
+        el("td", null, el("span", "player-number", String(playerNumber(game, seat))), seatLabel(state, seat, view)),
         ...STAGES.map((_, stage) => {
             const chip = game.chips[stage][seat];
             const removed = blackout && stage < game.stage && !skipped(stage);

@@ -46,6 +46,11 @@ public interface IGameSession
     bool TryTakeSeat(string userKey, PlayerProfile profile, string connectionId, int seat, [NotNullWhen(false)] out string? error);
 
     /// <summary>
+    /// Takes the next available seat: the first empty one, or if none is empty, the first seat of a disconnected user.
+    /// </summary>
+    bool TryTakeNextSeat(string userKey, PlayerProfile profile, string connectionId, [NotNullWhen(false)] out string? error);
+
+    /// <summary>
     /// Gives up one of the user's seats. An unfinished game pauses if too few of its players remain.
     /// </summary>
     bool TryLeaveSeat(string userKey, int seat, [NotNullWhen(false)] out string? error);

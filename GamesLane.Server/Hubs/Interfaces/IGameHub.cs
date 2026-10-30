@@ -20,9 +20,10 @@ public interface IGameHub
     Task<string> CreateSession(GameType gameType);
 
     /// <summary>
-    /// Takes a seat as the logged-in user, using their display name.
+    /// Takes the next available seat (the first empty one, or else the first of a disconnected user) as the logged-in
+    /// user, using their display name.
     /// </summary>
-    Task TakeSeat(string sessionId, int seat);
+    Task TakeSeat(string sessionId);
 
     /// <summary>
     /// Gives up one of the caller's seats (used for Leave seat and Stand up).

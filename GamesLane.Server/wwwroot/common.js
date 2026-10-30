@@ -572,16 +572,11 @@ function startSessionPage(gameType, render) {
 
     const act = (method, ...args) => call(method, sessionId, ...args).catch(() => {});
 
-    // A seat tile: a big icon, the name, and a note such as "Seat 2 · You". If the user can sit down or leave,
-    // the whole tile is a button, labelled with what tapping it does.
+    // A seat tile: a big icon, the name, and a note such as "Seat 2 · You". The user's own seat is a button to leave
+    // it. Users do not choose a seat: Take a seat gives them the next available one.
     function seatItem(state, seat) {
         const info = state.seats[seat];
-        let action = null;
-        if (view.isMe(seat)) {
-            action = { text: "Leave seat", run: () => act("LeaveSeat", seat) };
-        } else if (account?.signedIn && (!info || !info.isConnected)) {
-            action = { text: info ? "Take this seat" : "Sit here", run: () => act("TakeSeat", seat) };
-        }
+        const action = view.isMe(seat) ? { text: "Leave seat", run: () => act("LeaveSeat", seat) } : null;
 
         const tile = document.createElement(action ? "button" : "div");
         tile.className = "seat";
@@ -772,6 +767,8 @@ function startSessionPage(gameType, render) {
             $("options-summary").textContent = optionsSummary(state);
             $("edit-options").hidden = !view.isPlayer;
             $("login-to-play").hidden = Boolean(account?.signedIn);
+            $("take-seat").hidden = !(account?.signedIn
+                && state.seats.some((s) => !s || (!s.isConnected && s.playerId !== view.playerId)));
             $("resume-game").hidden = !(view.isPlayer && state.canResume);
             $("start-game").hidden = !(view.isPlayer && taken >= state.minSeats);
             $("start-game").textContent = state.gameNumber > 0 ? "New game" : "Start";
@@ -823,6 +820,7 @@ function startSessionPage(gameType, render) {
         enter();
     });
 
+    $("take-seat").addEventListener("click", () => act("TakeSeat"));
     $("start-game").addEventListener("click", () => act("NewGame", lastState?.gameNumber ?? 0));
     $("resume-game").addEventListener("click", () => act("ResumeGame"));
     $("edit-options").addEventListener("click", openOptionsDialog);

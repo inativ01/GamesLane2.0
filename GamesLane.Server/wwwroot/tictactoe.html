@@ -12,11 +12,10 @@
 <body>
 <header class="top">
     <a href="/" class="brand" data-leave><img class="brand-logo" src="images/logo-180.png" alt=""><span class="brand-name">Games<span>Lane</span></span></a>
+    <a href="/" class="home-link" data-leave title="Main screen" aria-label="Main screen"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11.5 12 4l9 7.5M5.5 9.5v10h5V14h3v5.5h5v-10"/></svg></a>
     <div id="account" class="account"></div>
 </header>
 <main>
-    <nav class="back"><a href="/" data-leave>← Main screen</a></nav>
-
     <section id="session">
         <div class="session-head">
             <img class="session-art" src="images/games/tictactoe.svg" alt="">
@@ -49,6 +48,7 @@
             <ul id="seats" class="seats"></ul>
             <p id="login-to-play" class="hint" hidden>Log in to take a seat. <button type="button" class="secondary small" data-login>Log in</button></p>
             <div class="actions center">
+                <button id="take-seat" type="button" class="big secondary" hidden>Take a seat</button>
                 <button id="resume-game" type="button" class="big" hidden>Resume game</button>
                 <button id="start-game" type="button" class="big" hidden>Start</button>
             </div>

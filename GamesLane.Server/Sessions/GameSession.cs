@@ -308,6 +308,29 @@ public abstract class GameSession : IGameSession
     }
 
     /// <summary>
+    /// Takes the next available seat: the first empty one, or if none is empty, the first seat of a disconnected user.
+    /// </summary>
+    public bool TryTakeNextSeat(string userKey, PlayerProfile profile, string connectionId, [NotNullWhen(false)] out string? error)
+    {
+        lock (Sync)
+        {
+            var seat = Array.FindIndex(_seats, s => s is null);
+            if (seat < 0)
+            {
+                seat = Array.FindIndex(_seats, s => s!.UserKey != userKey && !IsConnected(s.UserKey));
+            }
+
+            if (seat < 0)
+            {
+                error = "All seats are taken.";
+                return false;
+            }
+
+            return TryTakeSeat(userKey, profile, connectionId, seat, out error);
+        }
+    }
+
+    /// <summary>
     /// Gives up one of the user's seats. An unfinished game pauses if too few of its players remain.
     /// </summary>
     public bool TryLeaveSeat(string userKey, int seat, [NotNullWhen(false)] out string? error)

@@ -105,6 +105,26 @@ public class GameSessionTests
     }
 
     [Fact]
+    public void Taking_the_next_seat_fills_the_first_empty_one_then_a_disconnected_users()
+    {
+        var session = new TicTacToeSession("ABC123");
+        Assert.True(session.TryTakeNextSeat(Bob, BobProfile, "conn-b", out _));
+        Assert.True(session.TryTakeNextSeat(Alice, AliceProfile, "conn-a", out _));
+        Assert.Equal(["Bob", "Alice"], session.GetPublicState().Seats.Select(s => s!.Name));
+
+        Assert.False(session.TryTakeNextSeat(Carol, CarolProfile, "conn-c", out var error));
+        Assert.Equal("All seats are taken.", error);
+        session.Disconnect("conn-a", Now);
+        Assert.False(session.TryTakeNextSeat(Alice, AliceProfile, "conn-a2", out _));
+
+        Assert.True(session.TryTakeNextSeat(Carol, CarolProfile, "conn-c", out error), error);
+        Assert.Equal(["Bob", "Carol"], session.GetPublicState().Seats.Select(s => s!.Name));
+        session.TryLeaveSeat(Bob, 0, out _);
+        Assert.True(session.TryTakeNextSeat(Alice, AliceProfile, "conn-a2", out _));
+        Assert.Equal("Alice", session.GetPublicState().Seats[0]!.Name);
+    }
+
+    [Fact]
     public void Leaving_a_seat_empties_it()
     {
         var session = Seated(new TicTacToeSession("ABC123"));

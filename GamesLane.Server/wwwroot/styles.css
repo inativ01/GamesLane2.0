@@ -154,6 +154,35 @@ a.button.small {
     color: transparent;
 }
 
+/* The home icon in the header (pages other than the main screen), on the right before the account. */
+.home-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    margin-left: auto;
+    border-radius: 50%;
+    color: var(--gold);
+    background: rgba(255, 255, 255, 0.1);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.2);
+    transition: background-color 0.15s;
+}
+
+.home-link:hover {
+    background: rgba(255, 255, 255, 0.22);
+}
+
+.home-link svg {
+    width: 22px;
+    height: 22px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
 .account {
     display: flex;
     flex-wrap: wrap;
@@ -536,16 +565,6 @@ footer {
 .code.copyable:focus-visible {
     outline: 3px solid var(--focus);
     outline-offset: 2px;
-}
-
-.back {
-    margin: 0.5rem 0 0;
-    text-align: left;
-    font-size: 0.95rem;
-}
-
-.back a {
-    text-decoration: none;
 }
 
 .invite {
@@ -1304,6 +1323,15 @@ button.ready-thumb.is-ready:not(:disabled):hover {
     text-align: left;
 }
 
+/* The player's number (1 to 6) before their name. */
+.player-number {
+    display: inline-block;
+    min-width: 1.4em;
+    margin-right: 0.35em;
+    color: var(--gold);
+    font-weight: 800;
+}
+
 .chip-table .chip {
     font-size: 0.85rem;
 }
@@ -1787,7 +1815,6 @@ body.observer main.gang {
     padding-bottom: 0.5rem;
 }
 
-body.observer main.gang .back,
 body.observer main.gang #my-hands,
 body.observer main.gang #my-decisions {
     display: none;

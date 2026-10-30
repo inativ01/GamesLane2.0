@@ -32,8 +32,9 @@ It is a complete reimplementation of the original [GamesLane](https://github.com
 
 ### Session lobby (inactive session)
 - A screen shared by all games, showing the game's **seats**.
-- Only a logged-in user can take a seat. A user may take more than one seat (and then sees the private information of all of them).
-- A user can leave a seat. A seat whose user has disconnected can be taken by another user.
+- Only a logged-in user can take a seat. Users do not choose a seat: **Take a seat** gives them the next available one (the first empty seat, or if none is empty, the first seat of a disconnected user). A user may take more than one seat (and then sees the private information of all of them).
+- A user can leave a seat by tapping it.
+- On every page except the main screen, a home icon in the top bar goes back to the main screen (for players, this gives up their seats).
 - A user who loses their connection (closed tab, phone asleep, network lost) keeps their seats for 30 seconds and gets them back if they return in time. After that, the seats are freed.
 - Creating a session does not seat the creator; they join the session and can then take a seat.
 - Each game defines its maximum number of seats (up to 12) and the minimum needed to start (which may equal the maximum). Current games have 2 seats, both required.
@@ -93,7 +94,7 @@ GamesLane.Server.Tests/        Unit tests
 - **Rock-paper-scissors** (2 players): both players pick secretly. When both have picked, the picks are revealed and the winner scores a point. Play continues for as many rounds as you like.
 - **The Gang** (3–6 players), the cooperative poker game by John Cooper and Kory Heath. Each heist:
   - Every player gets 2 private cards, shown only on their own screen. Five shared cards are dealt: none at first, then 3, 4 and 5 as the stages go on.
-  - Four betting stages (white, yellow, orange, red). In each, every player takes a numbered chip, from 1 (weakest hand) up to the number of players (strongest), from the middle or from another player. Tapping your own chip returns it to the middle. Next to the player's cards are the chips they took in this heist's earlier stages. Once every player holds a chip, the **Ready** button (👍) appears; the stage ends when everyone has pressed it. Any chip change clears everyone's Ready (and hides the button again while a chip is in the middle). A user with several seats presses Ready once, for all their hands.
+  - Four betting stages (white, yellow, orange, red). In each, every player takes a numbered chip, from 1 (weakest hand) up to the number of players (strongest), from the middle or from another player. Tapping your own chip returns it to the middle. Players are numbered 1 to the number of players in seat order: each hand is titled "Player N", and the table's chip list shows the numbers. Next to the player's cards are the chips they took in this heist's earlier stages. Once every player holds a chip, the **Ready** button (👍) appears; the stage ends when everyone has pressed it. Any chip change clears everyone's Ready (and hides the button again while a chip is in the middle). A user with several seats presses Ready once, for all their hands.
   - Players work out their hand's strength themselves; its name is only shown when the hands are revealed.
   - Hands are then revealed one at a time, from the lowest red chip to the highest, with each hand's name. If any hand is weaker than the one before it, the alarm goes off; otherwise the vault opens. Equal hands may be in either order.
   - 3 vaults win the game; 3 alarms lose it.
@@ -120,7 +121,7 @@ Clients connect to the SignalR hub at `/hubs/game` and call these methods:
 | --- | --- | --- |
 | `CreateSession(gameType)` | session code | Logged-in users only. Creates a session (`"TicTacToe"`, `"RockPaperScissors"` or `"TheGang"`) and returns its 6-character code. The creator is not seated. The session starts with the creator's saved options for the game, if any. |
 | `EnterSession(sessionId)` | `{ state, playerId }` | Subscribes to the session's updates. For a logged-in user, reconnects them to their seats, updates their name on them, and returns their `playerId`; otherwise `playerId` is `null`. Pages call this when they open and after reconnecting. |
-| `TakeSeat(sessionId, seat)` | — | Logged-in users only. Takes an empty seat, or the seat of a disconnected user, under the user's display name. Only in the session lobby. |
+| `TakeSeat(sessionId)` | — | Logged-in users only. Takes the next available seat (the first empty one, or else the first of a disconnected user) under the user's display name. Only in the session lobby. |
 | `LeaveSeat(sessionId, seat)` | — | Gives up one of the caller's seats (used for **Leave seat** and **Stand up**). |
 | `LeaveSession(sessionId)` | — | Stops receiving updates and gives up all the caller's seats (used when going back to the main screen). |
 | `NewGame(sessionId, gameNumber)` | — | Seated users only. Starts a new game for everyone seated, replacing game `gameNumber` (0 before the first game). Refused while a game is in progress. If that game was already replaced, nothing changes. |
@@ -292,7 +293,7 @@ dotnet run --project GamesLane.Server
 - Health check: `GET /health`
 - SignalR hub: `/hubs/game`
 
-To play: on the main screen, log in and choose **New session** for a game. The session lobby shows the code, a join link (`/join/{code}`) to send to the others, and the seats. Anyone who opens the link can watch; logged-in users choose **Sit here**, and once enough seats are taken, any seated user presses **Start**. To use a shared screen (e.g. a TV), open the session there without taking a seat. To try several players on one computer, use a separate tab for each user. To play from phones on the same Wi-Fi, run the server with `--urls http://0.0.0.0:5000` and open `http://<computer's IP address>:5000`.
+To play: on the main screen, log in and choose **New session** for a game. The session lobby shows the code, a join link (`/join/{code}`) to send to the others, and the seats. Anyone who opens the link can watch; logged-in users choose **Take a seat**, and once enough seats are taken, any seated user presses **Start**. To use a shared screen (e.g. a TV), open the session there without taking a seat. To try several players on one computer, use a separate tab for each user. To play from phones on the same Wi-Fi, run the server with `--urls http://0.0.0.0:5000` and open `http://<computer's IP address>:5000`.
 
 ## Running Tests
 

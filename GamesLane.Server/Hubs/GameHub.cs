@@ -103,10 +103,10 @@ public class GameHub(
     }
 
     /// <inheritdoc />
-    public Task TakeSeat(string sessionId, int seat)
+    public Task TakeSeat(string sessionId)
     {
         var profile = RequireProfile("Log in to take a seat.");
-        return Act(sessionId, (IGameSession s, out string? error) => s.TryTakeSeat(UserKey, profile, Context.ConnectionId, seat, out error));
+        return Act(sessionId, (IGameSession s, out string? error) => s.TryTakeNextSeat(UserKey, profile, Context.ConnectionId, out error));
     }
 
     /// <inheritdoc />
