@@ -510,12 +510,8 @@ const gang = startSessionPage("TheGang", (game, state, view) => {
     $("my-decisions").replaceChildren(...decisions);
 
     const hands = view.private?.hands ?? [];
-    const handBoxes = hands.map((hand) => myHand(game, state, view, hand));
     const actions = myActions(game, state, view);
-    if (actions && handBoxes.length) {
-        handBoxes.at(-1).append(actions);
-    }
-    $("my-hands").replaceChildren(...handBoxes);
+    $("my-hands").replaceChildren(...hands.map((hand) => myHand(game, state, view, hand)), ...(actions ? [actions] : []));
     $("reveal-next").hidden = !(view.isPlayer && game.phase === "Reveal" && !awaitsScan(game));
     $("next-heist").hidden = !(view.isPlayer && game.phase === "HeistOver" && !state.isGameOver);
 
