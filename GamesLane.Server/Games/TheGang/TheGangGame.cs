@@ -54,6 +54,8 @@ public class TheGangGame : ITheGangGame
     private Card[] _community = [];
     private int[] _revealOrder = [];
     private TheGangCard[] _cards = [];
+    private IReadOnlyList<Card> _deck = [];
+    private int _nextCard;
 
     /// <summary>
     /// Starts the first heist. <paramref name="rules"/> defaults to the basic game; <paramref name="random"/> draws the cards.
@@ -80,6 +82,9 @@ public class TheGangGame : ITheGangGame
 
     /// <inheritdoc />
     public IReadOnlyList<TheGangCard> Cards => _cards;
+
+    /// <inheritdoc />
+    public int? RedrawnPlayer { get; private set; }
 
     /// <inheritdoc />
     public IReadOnlyList<int> SkippedStages =>
@@ -321,6 +326,27 @@ public class TheGangGame : ITheGangGame
     private bool Has(string key) => _cards.Any(c => c.Key == key);
 
     /// <summary>
+    /// When the first 3 shared cards appear: with Motion Detector, if any of them is a J, Q or K, the holder of the
+    /// 1-star white chip gets new private cards; with Laser Tripwires, if none is, the holder of the highest white chip.
+    /// </summary>
+    private void CheckAlarmsOnTheFlop()
+    {
+        var hasFace = _community.Take(3).Any(c => c.Rank is >= 11 and <= 13);
+        var chip = Has(TheGangCards.MotionDetector) && hasFace ? 1
+            : Has(TheGangCards.LaserTripwires) && !hasFace ? PlayerCount
+            : (int?)null;
+        var player = Enumerable.Range(0, PlayerCount).FirstOrDefault(p => chip is not null && _chips[0, p] == chip, -1);
+        if (player < 0)
+        {
+            return;
+        }
+
+        _holeCards[player] = _deck.Skip(_nextCard).Take(_holeCards[player].Length).ToArray();
+        _nextCard += _holeCards[player].Length;
+        RedrawnPlayer = player;
+    }
+
+    /// <summary>
     /// Whether a chip of a stage is locked (Noise Sensors: the 1-star chips; Ventilation Shaft: the highest chips; both
     /// only in the white, yellow and orange stages).
     /// </summary>
@@ -382,6 +408,11 @@ public class TheGangGame : ITheGangGame
                 Stage++;
             }
 
+            if (Stage == 1)
+            {
+                CheckAlarmsOnTheFlop();
+            }
+
             return;
         }
 
@@ -399,6 +430,9 @@ public class TheGangGame : ITheGangGame
         var perPlayer = Has(TheGangCards.SecurityCameras) ? 3 : 2;
         _holeCards = Enumerable.Range(0, PlayerCount).Select(p => deck.Skip(perPlayer * p).Take(perPlayer).ToArray()).ToArray();
         _community = deck.Skip(perPlayer * PlayerCount).Take(5).ToArray();
+        _deck = deck;
+        _nextCard = (perPlayer * PlayerCount) + 5;
+        RedrawnPlayer = null;
         Array.Clear(_chips);
         Array.Clear(_ready);
         _revealOrder = [];

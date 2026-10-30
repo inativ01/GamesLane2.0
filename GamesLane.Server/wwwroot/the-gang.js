@@ -117,6 +117,9 @@ function heistCards(game, state, view) {
             el("span", "heist-card-kind", card.kind === "Challenge" ? "Challenge" : "Specialist"),
             el("strong", null, card.name),
             el("span", "heist-card-text", card.text));
+        if ((card.key === "motion-detector" || card.key === "laser-tripwires") && game.redrawnSeat !== null) {
+            item.append(el("span", "heist-card-result", seatLabel(state, game.redrawnSeat, view), " got new private cards."));
+        }
         if (card.kind === "Specialist" && game.announcements.length) {
             item.append(el("ul", "announcements", ...game.announcements.map((a) =>
                 el("li", null, seatLabel(state, a.seat, view), el("strong", null, a.text)))));

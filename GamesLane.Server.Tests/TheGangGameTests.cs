@@ -384,6 +384,27 @@ public class TheGangGameTests
         Assert.True(game.TryTakeChip(2, 1, out _));
     }
 
+    [Theory]
+    // First 3 shared cards 2C 7D 9H: no face card, so only Laser Tripwires goes off (highest white chip: player 2).
+    [InlineData(TheGangCards.LaserTripwires, RankedDeck + " AS AD", 2)]
+    [InlineData(TheGangCards.MotionDetector, RankedDeck + " AS AD", null)]
+    // First 3 shared cards JC 7D 9H: a face card, so only Motion Detector goes off (1-star white chip: player 0).
+    [InlineData(TheGangCards.MotionDetector, "3D 4H 9C 5S KD KH JC 7D 9H JS KC AS AD", 0)]
+    [InlineData(TheGangCards.LaserTripwires, "3D 4H 9C 5S KD KH JC 7D 9H JS KC AS AD", null)]
+    public void Alarm_cards_give_new_private_cards_when_the_first_shared_cards_appear(string challenge, string deck, int? redrawn)
+    {
+        var game = new TheGangGame(3, () => Cards(deck), Advanced(1, [challenge]));
+        var before = Enumerable.Range(0, 3).Select(p => game.HoleCards(p).ToArray()).ToArray();
+
+        PlayStage(game, [1, 2, 3]);
+
+        Assert.Equal(redrawn, game.RedrawnPlayer);
+        for (var player = 0; player < 3; player++)
+        {
+            Assert.Equal(player == redrawn ? Cards("AS AD") : before[player], game.HoleCards(player));
+        }
+    }
+
     [Fact]
     public void Blackout_removes_each_stages_chips_when_the_next_starts()
     {

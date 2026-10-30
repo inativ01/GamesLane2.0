@@ -22,8 +22,10 @@ public static class TheGangCards
 {
     public const string QuickAccess = "quick-access";
     public const string NoiseSensors = "noise-sensors";
+    public const string MotionDetector = "motion-detector";
     public const string HastyGetaway = "hasty-getaway";
     public const string VentilationShaft = "ventilation-shaft";
+    public const string LaserTripwires = "laser-tripwires";
     public const string Blackout = "blackout";
     public const string SecurityCameras = "security-cameras";
     public const string Investor = "investor";
@@ -38,10 +40,14 @@ public static class TheGangCards
             "No white chips: the heist starts with 3 shared cards and the yellow chips."),
         new(NoiseSensors, "Noise Sensors", TheGangCardKind.Challenge,
             "The 1-star white, yellow and orange chips are locked: whoever takes one first keeps it."),
+        new(MotionDetector, "Motion Detector", TheGangCardKind.Challenge,
+            "If the first 3 shared cards include a J, Q or K, whoever has the 1-star white chip gets new private cards."),
         new(HastyGetaway, "Hasty Getaway", TheGangCardKind.Challenge,
             "No orange chips: after the yellow stage, the red stage starts with all 5 shared cards."),
         new(VentilationShaft, "Ventilation Shaft", TheGangCardKind.Challenge,
             "The highest white, yellow and orange chips are locked: whoever takes one first keeps it."),
+        new(LaserTripwires, "Laser Tripwires", TheGangCardKind.Challenge,
+            "If none of the first 3 shared cards is a J, Q or K, whoever has the highest white chip gets new private cards."),
         new(Blackout, "Blackout", TheGangCardKind.Challenge,
             "Each stage's chips are removed when the next stage starts, so remember who had which chips."),
         new(SecurityCameras, "Security Cameras", TheGangCardKind.Challenge,
@@ -65,6 +71,8 @@ public static class TheGangCards
     public static IReadOnlyList<(string, string)> Clashes { get; } =
     [
         (QuickAccess, HastyGetaway),
+        (QuickAccess, MotionDetector),
+        (QuickAccess, LaserTripwires),
     ];
 
     /// <summary>

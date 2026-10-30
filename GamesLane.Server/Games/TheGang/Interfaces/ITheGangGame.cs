@@ -23,6 +23,11 @@ public interface ITheGangGame
     IReadOnlyList<TheGangCard> Cards { get; }
 
     /// <summary>
+    /// The player who got new private cards in this heist (Motion Detector, Laser Tripwires), or null.
+    /// </summary>
+    int? RedrawnPlayer { get; }
+
+    /// <summary>
     /// The stages the current heist skips (Quick Access: white; Hasty Getaway: orange).
     /// </summary>
     IReadOnlyList<int> SkippedStages { get; }

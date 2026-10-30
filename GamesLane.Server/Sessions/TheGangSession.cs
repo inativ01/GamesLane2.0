@@ -18,12 +18,13 @@ public record TheGangAnnouncement(int Seat, string Text);
 /// entry per seat (null if the seat holds no chip in that stage, or does not play, or the stage's chips were removed by
 /// Blackout). Cards are short text such as "10♥". Private cards are not included until revealed.
 /// <see cref="Mode"/> is the mode this game is played in; <see cref="Cards"/> are the current heist's challenge or
-/// specialist cards, <see cref="SkippedStages"/> the stages it skips, and <see cref="LockedChips"/> the current stage's
-/// locked chips.
+/// specialist cards, <see cref="SkippedStages"/> the stages it skips, <see cref="LockedChips"/> the current stage's
+/// locked chips, and <see cref="RedrawnSeat"/> the seat that got new private cards (Motion Detector, Laser Tripwires).
 /// </summary>
 public record TheGangState(
     TheGangMode Mode,
     IReadOnlyList<TheGangCard> Cards,
+    int? RedrawnSeat,
     IReadOnlyList<int> SkippedStages,
     IReadOnlyList<int> LockedChips,
     IReadOnlyList<TheGangAnnouncement> Announcements,
@@ -106,6 +107,7 @@ public class TheGangSession(string id, Func<IReadOnlyList<Card>>? newDeck = null
         return new TheGangState(
             game.Mode,
             game.Cards,
+            game.RedrawnPlayer is { } redrawn ? bySeat[redrawn] : null,
             game.SkippedStages,
             game.LockedChips,
             Enumerable.Range(0, game.PlayerCount)

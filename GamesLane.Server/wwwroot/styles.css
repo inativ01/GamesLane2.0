@@ -972,6 +972,16 @@ footer {
     font-size: 0.9rem;
 }
 
+.heist-card-result {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.3rem;
+    margin-top: 0.2rem;
+    font-size: 0.9rem;
+    font-weight: 700;
+}
+
 .announcements {
     display: flex;
     flex-wrap: wrap;
