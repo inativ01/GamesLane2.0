@@ -44,6 +44,10 @@ function postJson(url, body) {
     return authFetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
 }
 
+// The "please wait" overlay (see showBusy). Declared before accountReady, which may show it as soon as the page loads.
+let busyElement = null;
+let busyTimer = null;
+
 // The current user, set once accountReady resolves:
 // { signedIn, kind, name, icon, uploadedIcon, providers, icons }. kind is "Guest", "Registered" or a provider such as "Google".
 let account = null;
@@ -101,9 +105,6 @@ function showError(message) {
 
 // A full-screen "please wait" overlay with a spinner, for waits on the server (which may need a few seconds to wake up)
 // or on Google. It appears only if the wait lasts longer than `delay` milliseconds, so quick actions do not flash.
-let busyElement = null;
-let busyTimer = null;
-
 function showBusy(message, delay = 300) {
     clearTimeout(busyTimer);
     busyTimer = setTimeout(() => {
