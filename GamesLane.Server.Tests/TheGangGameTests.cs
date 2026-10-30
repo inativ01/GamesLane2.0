@@ -131,18 +131,21 @@ public class TheGangGameTests
     }
 
     [Fact]
-    public void Ready_needs_a_chip_and_any_chip_change_clears_it()
+    public void Ready_waits_until_everyone_has_a_chip_and_any_chip_change_clears_it()
     {
         var game = NewGame();
-        Assert.False(game.TrySetReady(0, true, out var error));
-        Assert.Equal("Take a chip first.", error);
-
         game.TryTakeChip(0, 1, out _);
-        game.TrySetReady(0, true, out _);
+        game.TryTakeChip(1, 2, out _);
+        Assert.False(game.TrySetReady(0, true, out var error));
+        Assert.Equal("Wait until everyone has a chip.", error);
+
+        game.TryTakeChip(2, 3, out _);
+        Assert.True(game.TrySetReady(0, true, out _));
         Assert.True(game.IsReady(0));
 
-        game.TryTakeChip(1, 2, out _);
+        game.TryTakeChip(1, 1, out _);
         Assert.False(game.IsReady(0));
+        Assert.False(game.TrySetReady(0, true, out _));
     }
 
     [Fact]
@@ -160,19 +163,6 @@ public class TheGangGameTests
             Assert.Equal(chips, Enumerable.Range(0, 3).Select(p => game.Chip(stage, p) ?? 0));
             Assert.Equal([1, 2, 3], game.MiddleChips);
         }
-    }
-
-    [Fact]
-    public void A_stage_does_not_end_while_a_chip_is_in_the_middle()
-    {
-        var game = NewGame();
-        game.TryTakeChip(0, 1, out _);
-        game.TryTakeChip(1, 2, out _);
-        game.TrySetReady(0, true, out _);
-        game.TrySetReady(1, true, out _);
-
-        Assert.Equal(0, game.Stage);
-        Assert.False(game.TrySetReady(2, true, out _));
     }
 
     // Revealing
@@ -725,10 +715,8 @@ public class TheGangGameTests
         var game = new TheGangGame(3, () => Cards(RankedDeck), sameHolder: OneUserPlaysOneAndTwo);
         game.TryTakeChip(0, 1, out _);
         game.TryTakeChip(1, 2, out _);
-
-        Assert.False(game.TrySetReady(1, true, out var error));
-        Assert.Equal("Take a chip for each of your hands first.", error);
         game.TryTakeChip(2, 3, out _);
+
         Assert.True(game.TrySetReady(2, true, out _));
         Assert.True(game.IsReady(1));
         Assert.True(game.TrySetReady(1, false, out _));

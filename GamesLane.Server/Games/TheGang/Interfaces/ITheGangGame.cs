@@ -147,8 +147,8 @@ public interface ITheGangGame
     bool TryReturnChip(int player, out string? error);
 
     /// <summary>
-    /// Marks the player ready (or not), together with the other players of the same user (a user is ready once, and
-    /// only when each of their players holds a chip). When every player holds a chip and is ready, the stage ends.
+    /// Marks the player ready (or not), together with the other players of the same user (a user is ready once).
+    /// Players can only be ready once every player holds a chip. When everyone is ready, the stage ends.
     /// </summary>
     bool TrySetReady(int player, bool ready, out string? error);
 

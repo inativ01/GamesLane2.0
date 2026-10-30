@@ -404,8 +404,8 @@ function myHand(game, state, view, hand) {
     return box;
 }
 
-// This user's buttons, once for all their hands (each user is ready or confirms once): Ready during the betting, and
-// with Con Artist, "I've seen my cards". Null if there are none now.
+// This user's buttons, once for all their hands (each user is ready or confirms once): Ready once everyone holds a
+// chip, and with Con Artist, "I've seen my cards". Null if there are none now.
 function myActions(game, state, view) {
     const seats = view.mySeats.filter((s) => game.playingSeats.includes(s));
     if (!seats.length) {
@@ -420,18 +420,15 @@ function myActions(game, state, view) {
             el("p", "hint", "Remember your cards: once everyone has seen theirs, all private cards are shuffled and dealt again."),
             el("div", "my-hand-actions", seen));
     }
-    if (game.phase !== "Betting") {
+    if (game.phase !== "Betting" || game.middleChips.length > 0) {
         return null;
     }
 
     // Ready is a thumbs-up: grey until pressed, green once ready (tap again to undo).
     const isReady = seats.every((s) => game.readySeats.includes(s));
-    const missingChip = seats.some((s) => game.chips[game.stage][s] === null);
     const ready = button("👍", isReady ? "ready-thumb is-ready" : "ready-thumb",
         () => call("SetReady", view.sessionId, seats[0], !isReady).catch(() => {}));
-    ready.disabled = missingChip;
-    ready.title = missingChip ? (seats.length > 1 ? "Take a chip for each hand first" : "Take a chip first")
-        : isReady ? "Ready: tap to undo" : "Ready";
+    ready.title = isReady ? "Ready: tap to undo" : "Ready";
     ready.setAttribute("aria-label", ready.title);
     ready.setAttribute("aria-pressed", String(isReady));
     return el("div", "my-hand-actions", ready);

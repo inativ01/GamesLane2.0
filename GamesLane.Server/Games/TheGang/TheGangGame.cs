@@ -260,20 +260,20 @@ public partial class TheGangGame : ITheGangGame
             return false;
         }
 
-        // Each user is ready once, for all of their players.
-        var usersPlayers = Enumerable.Range(0, PlayerCount).Where(p => _sameHolder(p, player)).ToArray();
-        if (ready && usersPlayers.Any(p => _chips[Stage, p] is null))
+        // Ready only once every player holds a chip (any chip change clears it); each user is ready once, for all of
+        // their players.
+        if (ready && MiddleChips.Count > 0)
         {
-            error = usersPlayers.Length == 1 ? "Take a chip first." : "Take a chip for each of your hands first.";
+            error = "Wait until everyone has a chip.";
             return false;
         }
 
-        foreach (var p in usersPlayers)
+        foreach (var p in Enumerable.Range(0, PlayerCount).Where(p => _sameHolder(p, player)))
         {
             _ready[p] = ready;
         }
 
-        if (_ready.All(r => r) && MiddleChips.Count == 0 && PendingStep == TheGangStep.None)
+        if (_ready.All(r => r) && PendingStep == TheGangStep.None)
         {
             EndStage();
         }
