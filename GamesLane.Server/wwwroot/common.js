@@ -572,11 +572,17 @@ function startSessionPage(gameType, render) {
 
     const act = (method, ...args) => call(method, sessionId, ...args).catch(() => {});
 
+    // The one empty seat shown in the lobby: the next available one (while a game is paused, the first empty seat of
+    // its players), or -1 if there is none.
+    const nextSeat = (state) => (state.canResume ? state.vacantGameSeats[0] ?? -1 : state.seats.findIndex((s) => !s));
+
     // A seat tile: a big icon, the name, and a note such as "Seat 2 · You". The user's own seat is a button to leave
-    // it. Users do not choose a seat: Take a seat gives them the next available one.
+    // it; the empty seat is a button to sit there (the server gives the next available seat, which is this one).
     function seatItem(state, seat) {
         const info = state.seats[seat];
-        const action = view.isMe(seat) ? { text: "Leave seat", run: () => act("LeaveSeat", seat) } : null;
+        const action = view.isMe(seat) ? { text: "Leave seat", run: () => act("LeaveSeat", seat) }
+            : !info && account?.signedIn ? { text: "Sit here", run: () => act("TakeSeat") }
+                : null;
 
         const tile = document.createElement(action ? "button" : "div");
         tile.className = "seat";
@@ -741,7 +747,10 @@ function startSessionPage(gameType, render) {
 
     function lobbyStatus(state, taken) {
         if (state.canResume) {
-            return "The game is paused. Resume it, or start a new game.";
+            const toFill = state.vacantGameSeats.length;
+            return toFill
+                ? `Game paused: ${toFill === 1 ? "1 seat" : `${toFill} seats`} to fill to resume it, or end it to change players.`
+                : "Game paused. Resume it, or end it to change players.";
         }
         if (taken < state.minSeats) {
             return `Waiting for players (${taken}/${state.minSeats} needed)…`;
@@ -762,15 +771,15 @@ function startSessionPage(gameType, render) {
         if (inLobby) {
             $("lobby-status").textContent = lobbyStatus(state, taken);
             $("seat-count").textContent = `${taken} / ${state.seats.length}`;
-            $("seats").replaceChildren(...state.seats.map((_, seat) => seatItem(state, seat)));
+            const next = nextSeat(state);
+            $("seats").replaceChildren(...state.seats.flatMap((info, seat) => (info || seat === next ? [seatItem(state, seat)] : [])));
             $("lobby-options").hidden = state.optionList.length === 0;
             $("options-summary").textContent = optionsSummary(state);
             $("edit-options").hidden = !view.isPlayer;
             $("login-to-play").hidden = Boolean(account?.signedIn);
-            $("take-seat").hidden = !(account?.signedIn
-                && state.seats.some((s) => !s || (!s.isConnected && s.playerId !== view.playerId)));
-            $("resume-game").hidden = !(view.isPlayer && state.canResume);
-            $("start-game").hidden = !(view.isPlayer && taken >= state.minSeats);
+            $("resume-game").hidden = !(view.isPlayer && state.canResume && state.vacantGameSeats.length === 0);
+            $("end-game").hidden = !(view.isPlayer && state.canResume);
+            $("start-game").hidden = !(view.isPlayer && !state.canResume && taken >= state.minSeats);
             $("start-game").textContent = state.gameNumber > 0 ? "New game" : "Start";
             return;
         }
@@ -820,7 +829,11 @@ function startSessionPage(gameType, render) {
         enter();
     });
 
-    $("take-seat").addEventListener("click", () => act("TakeSeat"));
+    $("end-game").addEventListener("click", () => {
+        if (confirm("End the paused game? Its progress is lost, and other players can then join for a new game.")) {
+            act("EndGame");
+        }
+    });
     $("start-game").addEventListener("click", () => act("NewGame", lastState?.gameNumber ?? 0));
     $("resume-game").addEventListener("click", () => act("ResumeGame"));
     $("edit-options").addEventListener("click", openOptionsDialog);

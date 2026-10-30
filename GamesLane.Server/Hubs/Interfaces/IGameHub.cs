@@ -20,8 +20,8 @@ public interface IGameHub
     Task<string> CreateSession(GameType gameType);
 
     /// <summary>
-    /// Takes the next available seat (the first empty one, or else the first of a disconnected user) as the logged-in
-    /// user, using their display name.
+    /// Takes the next available seat (the first empty one, or while a game is paused, the first empty seat of its
+    /// players) as the logged-in user, using their display name.
     /// </summary>
     Task TakeSeat(string sessionId);
 
@@ -50,6 +50,12 @@ public interface IGameHub
     /// Seated users only. Continues the paused game; whoever now holds each of its seats plays that seat.
     /// </summary>
     Task ResumeGame(string sessionId);
+
+    /// <summary>
+    /// Seated users only. Ends the paused game, however many of its seats are taken, so other users can join and a
+    /// new game can be started.
+    /// </summary>
+    Task EndGame(string sessionId);
 
     /// <summary>
     /// Seated users only. After a game has ended, takes everyone back to the session lobby.

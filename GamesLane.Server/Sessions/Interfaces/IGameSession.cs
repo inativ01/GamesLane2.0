@@ -41,12 +41,12 @@ public interface IGameSession
     bool IsAbandoned(DateTimeOffset now, TimeSpan gracePeriod);
 
     /// <summary>
-    /// Takes an empty seat, or the seat of a user who is disconnected, showing the user's name and icon on it.
+    /// Takes an empty seat, showing the user's name and icon on it. While a game is paused, only one of its players' seats.
     /// </summary>
     bool TryTakeSeat(string userKey, PlayerProfile profile, string connectionId, int seat, [NotNullWhen(false)] out string? error);
 
     /// <summary>
-    /// Takes the next available seat: the first empty one, or if none is empty, the first seat of a disconnected user.
+    /// Takes the next available seat: the first empty one, or while a game is paused, the first empty seat of its players.
     /// </summary>
     bool TryTakeNextSeat(string userKey, PlayerProfile profile, string connectionId, [NotNullWhen(false)] out string? error);
 
@@ -82,6 +82,12 @@ public interface IGameSession
     /// Continues the paused game. Whoever now holds each of its seats plays that seat.
     /// </summary>
     bool TryResume(string userKey, [NotNullWhen(false)] out string? error);
+
+    /// <summary>
+    /// Ends the paused game, however many of its seats are taken. The seats then move up, other users can join, and
+    /// a new game can be started.
+    /// </summary>
+    bool TryEndGame(string userKey, [NotNullWhen(false)] out string? error);
 
     /// <summary>
     /// After a game has ended, takes everyone back to the session lobby.

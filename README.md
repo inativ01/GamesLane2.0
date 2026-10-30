@@ -32,14 +32,14 @@ It is a complete reimplementation of the original [GamesLane](https://github.com
 
 ### Session lobby (inactive session)
 - A screen shared by all games, showing the game's **seats**.
-- Only a logged-in user can take a seat. Users do not choose a seat: **Take a seat** gives them the next available one (the first empty seat, or if none is empty, the first seat of a disconnected user). A user may take more than one seat (and then sees the private information of all of them).
-- A user can leave a seat by tapping it.
+- Only a logged-in user can take a seat. Users do not choose a seat: the taken seats are always the first ones, followed by a single empty seat (**Sit here**), until all seats are taken. A user may take more than one seat (and then sees the private information of all of them).
+- A user can leave a seat by tapping it. The seats after it then move up one, so there are no gaps.
 - On every page except the main screen, a home icon in the top bar goes back to the main screen (for players, this gives up their seats).
-- A user who loses their connection (closed tab, phone asleep, network lost) keeps their seats for 30 seconds and gets them back if they return in time. After that, the seats are freed.
+- A user who loses their connection (closed tab, phone asleep, network lost) keeps their seats for 30 seconds and gets them back if they return in time. After that, the seats are freed, as if they had left. A disconnected user's seat cannot be taken by someone else before then.
 - Creating a session does not seat the creator; they join the session and can then take a seat.
 - Each game defines its maximum number of seats (up to 12) and the minimum needed to start (which may equal the maximum). Current games have 2 seats, both required.
 - When the minimum number of seats is taken, a **Start** button appears. Any seated user can start the game.
-- If an unfinished game was interrupted, the seated users can either **Resume** it or start a **New game** (once the minimum number of seats is taken).
+- **Paused game:** if an unfinished game was interrupted (players left or stayed disconnected), the lobby says it is paused and how many seats must be filled to resume it. Its players' seats stay where they are, and only those empty seats can be taken (one **Sit here** at a time, lowest first); the newcomer continues that player's hand. No other players can join. Once all its seats are taken, seated users can **Resume** it. At any time, a seated user can **End game** (after confirming): the seats then move up, others can join, and **Start** begins a new game with however many are seated (at least the minimum).
 - Anyone not seated (logged in or not) is a **spectator**.
 
 ### Game screen (active session)
@@ -48,7 +48,7 @@ It is a complete reimplementation of the original [GamesLane](https://github.com
 - Anyone can watch an active game. Taking a seat in an active game is normally not allowed, but a game may allow it.
 - A seated user can **stand up** (become a spectator) or **leave** (go back to the main lobby, giving up their seats).
 - If players leave during a game and at least the minimum number remain, the game may continue (a per-game option). Otherwise the game pauses and the session goes back to the session lobby.
-- When a game is resumed, anyone who took a seat in the meantime continues the game in place of the previous user.
+- When a game is resumed, anyone who took a seat in the meantime continues the game in place of the previous user. Private game information is not sent while the session is in the lobby.
 - When a game ends, anyone seated can choose **Play again** while at least the minimum number of players are seated, or go **Back to session lobby** (for everyone). A new game is played by whoever is seated (any number between the minimum and the maximum). If fewer than the minimum remain, the session goes back to the session lobby automatically.
 - Rock-paper-scissors never ends by itself; players stand up or leave when they are done.
 
@@ -121,12 +121,13 @@ Clients connect to the SignalR hub at `/hubs/game` and call these methods:
 | --- | --- | --- |
 | `CreateSession(gameType)` | session code | Logged-in users only. Creates a session (`"TicTacToe"`, `"RockPaperScissors"` or `"TheGang"`) and returns its 6-character code. The creator is not seated. The session starts with the creator's saved options for the game, if any. |
 | `EnterSession(sessionId)` | `{ state, playerId }` | Subscribes to the session's updates. For a logged-in user, reconnects them to their seats, updates their name on them, and returns their `playerId`; otherwise `playerId` is `null`. Pages call this when they open and after reconnecting. |
-| `TakeSeat(sessionId)` | — | Logged-in users only. Takes the next available seat (the first empty one, or else the first of a disconnected user) under the user's display name. Only in the session lobby. |
+| `TakeSeat(sessionId)` | — | Logged-in users only. Takes the next available seat (the first empty one, or while a game is paused, the first empty seat of its players) under the user's display name. Only in the session lobby. |
 | `LeaveSeat(sessionId, seat)` | — | Gives up one of the caller's seats (used for **Leave seat** and **Stand up**). |
 | `LeaveSession(sessionId)` | — | Stops receiving updates and gives up all the caller's seats (used when going back to the main screen). |
 | `NewGame(sessionId, gameNumber)` | — | Seated users only. Starts a new game for everyone seated, replacing game `gameNumber` (0 before the first game). Refused while a game is in progress. If that game was already replaced, nothing changes. |
 | `SetOptions(sessionId, options)` | — | Seated users only, in the session lobby. Sets the options for the next new game, e.g. `{ "mode": "Advanced" }`. Options left out get their default. |
 | `ResumeGame(sessionId)` | — | Seated users only. Continues the paused game; whoever now holds each of its seats plays that seat. |
+| `EndGame(sessionId)` | — | Seated users only. Ends the paused game, however many of its seats are taken; the seats move up, others can join, and a new game can be started. |
 | `ReturnToLobby(sessionId)` | — | Seated users only. After a game has ended, takes everyone back to the session lobby. |
 | `MakeMove(sessionId, seat, cell)` | — | Tic-tac-toe: places the mark of `seat` (0 is X, 1 is O), which the caller must hold. Cells are numbered 0–8, left to right, top to bottom. |
 | `Pick(sessionId, seat, choice)` | — | Rock-paper-scissors: picks `"Rock"`, `"Paper"` or `"Scissors"` for `seat`, which the caller must hold. |
@@ -293,7 +294,7 @@ dotnet run --project GamesLane.Server
 - Health check: `GET /health`
 - SignalR hub: `/hubs/game`
 
-To play: on the main screen, log in and choose **New session** for a game. The session lobby shows the code, a join link (`/join/{code}`) to send to the others, and the seats. Anyone who opens the link can watch; logged-in users choose **Take a seat**, and once enough seats are taken, any seated user presses **Start**. To use a shared screen (e.g. a TV), open the session there without taking a seat. To try several players on one computer, use a separate tab for each user. To play from phones on the same Wi-Fi, run the server with `--urls http://0.0.0.0:5000` and open `http://<computer's IP address>:5000`.
+To play: on the main screen, log in and choose **New session** for a game. The session lobby shows the code, a join link (`/join/{code}`) to send to the others, and the seats. Anyone who opens the link can watch; logged-in users tap **Sit here**, and once enough seats are taken, any seated user presses **Start**. To use a shared screen (e.g. a TV), open the session there without taking a seat. To try several players on one computer, use a separate tab for each user. To play from phones on the same Wi-Fi, run the server with `--urls http://0.0.0.0:5000` and open `http://<computer's IP address>:5000`.
 
 ## Running Tests
 

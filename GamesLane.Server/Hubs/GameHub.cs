@@ -137,6 +137,10 @@ public class GameHub(
         Act(sessionId, (IGameSession s, out string? error) => s.TryResume(UserKey, out error));
 
     /// <inheritdoc />
+    public Task EndGame(string sessionId) =>
+        Act(sessionId, (IGameSession s, out string? error) => s.TryEndGame(UserKey, out error));
+
+    /// <inheritdoc />
     public Task ReturnToLobby(string sessionId) =>
         Act(sessionId, (IGameSession s, out string? error) => s.TryReturnToLobby(UserKey, out error));
 
