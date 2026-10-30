@@ -446,6 +446,26 @@ function revealedHand(game, state, view, hand) {
         el("span", "hand-name", hand.name + (hand.inOrder ? "" : " ✗ weaker than the hand before")));
 }
 
+// Observers see everything without scrolling: the table's font size is the largest (8 to 40 pixels) at which the page
+// fits the screen.
+function fitTable() {
+    const table = document.querySelector(".table-view");
+    if (!document.body.classList.contains("observer")) {
+        table.style.removeProperty("font-size");
+        return;
+    }
+    const page = document.documentElement;
+    const fits = () => page.scrollHeight <= innerHeight && page.scrollWidth <= innerWidth;
+    let low = 8;
+    let high = 40;
+    while (high - low > 0.5) {
+        const size = (low + high) / 2;
+        table.style.fontSize = `${size}px`;
+        if (fits()) low = size; else high = size;
+    }
+    table.style.fontSize = `${low}px`;
+}
+
 let gangState = null;
 let tableHidden = localStorage.getItem(TABLE_HIDDEN_KEY) === "1";
 
@@ -480,8 +500,10 @@ const gang = startSessionPage("TheGang", (game, state, view) => {
         ...(game.middleChips.length ? game.middleChips.map((n) => chipElement(game.stage, n)) : [" none"]));
     $("chip-table").replaceChildren(...chipTable(game, state, view));
     $("revealed").replaceChildren(...game.revealed.map((hand) => revealedHand(game, state, view, hand)));
+    fitTable();
 });
 
+addEventListener("resize", fitTable);
 $("toggle-table").addEventListener("click", () => {
     tableHidden = !tableHidden;
     localStorage.setItem(TABLE_HIDDEN_KEY, tableHidden ? "1" : "0");

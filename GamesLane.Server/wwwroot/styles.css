@@ -1704,8 +1704,7 @@ a.button.is-busy {
     }
 }
 
-/* The Gang on wide screens. Players: their hand on the left, the table on the right. Observers (e.g. a TV): the table
-   uses most of the width, with everything larger. */
+/* The Gang on wide screens. Players: their hand on the left, the table on the right. */
 @media (min-width: 1000px) {
     main.gang {
         max-width: min(1500px, 94vw);
@@ -1748,52 +1747,127 @@ a.button.is-busy {
         grid-template-areas: "status" "hand" "decisions" "controls" "over" "standup" "table";
         justify-content: center;
     }
+}
 
-    body.observer main.gang {
-        max-width: min(1800px, 96vw);
+/* The Gang for observers (e.g. a TV): everything on one screen, without scrolling. The table's parts are sized in em,
+   and the page's script sets the table's font size to the largest at which the page fits the screen. */
+body.observer main.gang {
+    max-width: none;
+    padding-bottom: 0.5rem;
+}
+
+body.observer main.gang .back,
+body.observer main.gang #my-hands,
+body.observer main.gang #my-decisions {
+    display: none;
+}
+
+body.observer main.gang .session-head {
+    margin: 0.4rem 0;
+    padding: 0.4rem 0.75rem;
+}
+
+body.observer main.gang .session-art {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+}
+
+body.observer main.gang #game-screen {
+    display: block;
+}
+
+body.observer main.gang .status {
+    margin: 0.3rem 0;
+    font-size: clamp(1rem, 2.6vh, 2rem);
+}
+
+body.observer main.gang .table-view {
+    margin: 0;
+}
+
+body.observer main.gang .table-head {
+    padding: 0.4em 0.75em;
+}
+
+body.observer main.gang .gang-score {
+    font-size: 1em;
+}
+
+body.observer main.gang .table-body {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: "community" "middle" "chips" "revealed" "cards";
+    gap: 0.5em 1.5em;
+    padding: 0.6em 0.9em;
+}
+
+/* Landscape screens: the chips and the revealed hands side by side. */
+@media (min-aspect-ratio: 5/4) {
+    body.observer main.gang .table-body:has(#revealed:not(:empty)) {
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        grid-template-areas: "community community" "middle middle" "chips revealed" "cards cards";
+    }
+}
+
+/* Very wide screens (a phone on its side, an ultrawide monitor): the heist's cards in a column on the right. */
+@media (min-aspect-ratio: 2/1) {
+    body.observer main.gang .table-body:has(#heist-cards:not([hidden])) {
+        grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+        grid-template-areas: "community cards" "middle cards" "chips cards";
+        grid-template-rows: auto auto 1fr;
     }
 
-    body.observer main.gang #game-screen {
-        grid-template-columns: 1fr;
-        grid-template-areas: "status" "table" "controls" "over" "standup";
-        grid-template-rows: none;
+    body.observer main.gang .table-body:has(#heist-cards:not([hidden])):has(#revealed:not(:empty)) {
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr);
+        grid-template-areas: "community community cards" "middle middle cards" "chips revealed cards";
     }
 
-    body.observer main.gang #my-hands,
-    body.observer main.gang #my-decisions {
-        display: none;
-    }
+    body.observer main.gang .heist-cards { align-content: flex-start; margin: 0; }
+}
 
-    body.observer main.gang .table-view {
-        font-size: clamp(1rem, 1.25vw, 1.5rem);
-    }
+body.observer main.gang #community { grid-area: community; justify-content: center; margin: 0; }
+body.observer main.gang #community .card { font-size: 1.8em; }
+body.observer main.gang #middle { grid-area: middle; margin: 0; font-size: 1em; }
+body.observer main.gang .chip-table { grid-area: chips; align-self: start; font-size: 1em; }
+body.observer main.gang .chip-table th { padding: 0.3em; font-size: 0.75em; }
+body.observer main.gang .chip-table td { padding: 0.25em; }
+body.observer main.gang .chip-table .chip { font-size: 0.9em; }
 
-    body.observer main.gang .table-body {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        grid-template-areas:
-            "community community"
-            "middle middle"
-            "chips revealed"
-            "cards cards";
-        gap: 0.5rem 2rem;
-        padding: 1.25rem 1.5rem;
-    }
+body.observer main.gang .revealed {
+    grid-area: revealed;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-content: start;
+    gap: 0.35em;
+    margin: 0;
+}
 
-    body.observer main.gang #community { grid-area: community; justify-content: center; }
-    body.observer main.gang #community .card { font-size: clamp(1.5rem, 2.6vw, 3rem); }
-    body.observer main.gang #middle { grid-area: middle; font-size: 1em; }
-    body.observer main.gang .chip-table { grid-area: chips; font-size: 1em; align-self: start; }
-    body.observer main.gang .chip-table th { font-size: 0.75em; }
-    body.observer main.gang .chip-table .chip { font-size: 0.9em; }
-    body.observer main.gang .revealed { grid-area: revealed; margin: 0; }
-    body.observer main.gang .revealed-hand .card { font-size: clamp(0.9rem, 1.3vw, 1.5rem); }
-    body.observer main.gang .heist-cards { grid-area: cards; }
-    body.observer main.gang .heist-card { flex-basis: 16rem; min-height: 0; }
-    body.observer main.gang .heist-card-name { font-size: 1.1em; }
-    body.observer main.gang .heist-card-text,
-    body.observer main.gang .heist-card .heist-card-result { font-size: 0.85em; }
-    body.observer main.gang .status { font-size: 1.6rem; }
+body.observer main.gang .revealed:empty { display: none; }
+body.observer main.gang .revealed-hand { margin: 0; padding: 0.35em 0.5em; }
+body.observer main.gang .revealed-hand .hand-name { font-size: 0.85em; }
+body.observer main.gang .revealed-hand .card { font-size: 0.9em; }
+
+body.observer main.gang .heist-cards { grid-area: cards; gap: 0.5em; margin: 0.2em 0 0; }
+body.observer main.gang .heist-card { flex: 1 1 13em; max-width: 22em; min-height: 0; gap: 0.15em; padding: 0.45em 0.6em 0.55em; }
+body.observer main.gang .heist-card-kind,
+body.observer main.gang .heist-card-new { font-size: 0.6em; }
+body.observer main.gang .heist-card-name { font-size: 1em; }
+body.observer main.gang .heist-card-text { font-size: 0.78em; }
+body.observer main.gang .heist-card .heist-card-result,
+body.observer main.gang .heist-card .announcements { font-size: 0.8em; }
+
+/* Short screens, such as a phone on its side: a slimmer header and game banner. */
+@media (max-height: 500px) {
+    body.observer:has(main.gang) .top { padding-top: 0.2rem; padding-bottom: 0.2rem; }
+    body.observer:has(main.gang) .brand-logo { width: 28px; height: 28px; }
+    body.observer main.gang { padding-top: 0.25rem; }
+    body.observer main.gang .session-head { margin: 0.2rem 0; padding: 0.25rem 0.75rem; }
+    body.observer main.gang .session-art,
+    body.observer main.gang .session-title p { display: none; }
+    body.observer main.gang .code { flex-direction: row; gap: 0.5rem; padding: 0.1rem 0.6rem; }
+    body.observer main.gang .code strong { font-size: 1.1rem; }
+    body.observer main.gang .status { margin: 0.15rem 0; }
 }
 
 @media (max-width: 420px) {
