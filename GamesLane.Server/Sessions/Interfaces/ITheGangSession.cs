@@ -3,7 +3,7 @@ using System.Diagnostics.CodeAnalysis;
 namespace GamesLane.Server.Sessions;
 
 /// <summary>
-/// A session of The Gang for 3 to 6 seats. Each player's two cards are private and sent only to them.
+/// A session of The Gang for 3 to 6 seats. Each player's cards are private and sent only to them.
 /// </summary>
 public interface ITheGangSession : IGameSession
 {
@@ -21,6 +21,16 @@ public interface ITheGangSession : IGameSession
     /// Marks <paramref name="seat"/>, which <paramref name="userKey"/> must hold, ready (or not) to end the stage.
     /// </summary>
     bool TrySetReady(string userKey, int seat, bool ready, [NotNullWhen(false)] out string? error);
+
+    /// <summary>
+    /// Coordinator: <paramref name="seat"/>, which <paramref name="userKey"/> must hold, picks the card to pass on.
+    /// </summary>
+    bool TryPassCard(string userKey, int seat, int cardIndex, [NotNullWhen(false)] out string? error);
+
+    /// <summary>
+    /// Con Artist: <paramref name="seat"/>, which <paramref name="userKey"/> must hold, has seen its cards.
+    /// </summary>
+    bool TryConfirmSeen(string userKey, int seat, [NotNullWhen(false)] out string? error);
 
     /// <summary>
     /// Reveals the next hand, if <paramref name="revealed"/> hands have been revealed so far. Players only.

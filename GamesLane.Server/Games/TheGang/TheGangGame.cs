@@ -8,6 +8,12 @@ public enum TheGangPhase
     /// <summary>Players take chips; the stage ends when everyone holds a chip and is ready.</summary>
     Betting,
 
+    /// <summary>
+    /// Before the betting, every player does the specialist card's step: Coordinator (pick a card to pass on) or
+    /// Con Artist (confirm they have seen their cards).
+    /// </summary>
+    Preparing,
+
     /// <summary>Hands are revealed one at a time, from the lowest red chip to the highest.</summary>
     Reveal,
 
@@ -56,6 +62,8 @@ public class TheGangGame : ITheGangGame
     private TheGangCard[] _cards = [];
     private IReadOnlyList<Card> _deck = [];
     private int _nextCard;
+    private Card?[] _passing = [];
+    private bool[] _prepared = [];
 
     /// <summary>
     /// Starts the first heist. <paramref name="rules"/> defaults to the basic game; <paramref name="random"/> draws the cards.
@@ -114,7 +122,13 @@ public class TheGangGame : ITheGangGame
 
     /// <inheritdoc />
     public IReadOnlyList<Card> VisibleCommunityCards =>
-        Phase == TheGangPhase.Betting ? _community[..(Stage == 0 ? 0 : Stage + 2)] : _community;
+        Phase is TheGangPhase.Reveal or TheGangPhase.HeistOver ? _community : _community[..(Stage == 0 ? 0 : Stage + 2)];
+
+    /// <inheritdoc />
+    public bool IsPrepared(int player) => Phase == TheGangPhase.Preparing && _prepared[player];
+
+    /// <inheritdoc />
+    public Card? PassingCard(int player) => Phase == TheGangPhase.Preparing ? _passing[player] : null;
 
     /// <inheritdoc />
     public IReadOnlyList<int> MiddleChips =>
@@ -259,6 +273,59 @@ public class TheGangGame : ITheGangGame
     }
 
     /// <inheritdoc />
+    public bool TryPassCard(int player, int cardIndex, out string? error)
+    {
+        if (!TryCheckPreparing(player, TheGangCards.Coordinator, out error))
+        {
+            return false;
+        }
+
+        if (cardIndex < 0 || cardIndex >= _holeCards[player].Length)
+        {
+            error = "Pick one of your cards.";
+            return false;
+        }
+
+        _passing[player] = _holeCards[player][cardIndex];
+        _prepared[player] = true;
+        if (_prepared.All(p => p))
+        {
+            // Everyone passes their chosen card to the next player at the same time.
+            var passed = _passing.Select(c => c!.Value).ToArray();
+            for (var p = 0; p < PlayerCount; p++)
+            {
+                _holeCards[p] = [.. _holeCards[p].Where(c => c != passed[p]), passed[(p + PlayerCount - 1) % PlayerCount]];
+            }
+
+            Phase = TheGangPhase.Betting;
+        }
+
+        return true;
+    }
+
+    /// <inheritdoc />
+    public bool TryConfirmSeen(int player, out string? error)
+    {
+        if (!TryCheckPreparing(player, TheGangCards.ConArtist, out error))
+        {
+            return false;
+        }
+
+        _prepared[player] = true;
+        if (_prepared.All(p => p))
+        {
+            // All private cards are gathered, shuffled and dealt again, the same number to each player.
+            var gathered = _holeCards.SelectMany(cards => cards).ToArray();
+            _random.Shuffle(gathered);
+            var perPlayer = _holeCards[0].Length;
+            _holeCards = [.. Enumerable.Range(0, PlayerCount).Select(p => gathered.Skip(perPlayer * p).Take(perPlayer).ToArray())];
+            Phase = TheGangPhase.Betting;
+        }
+
+        return true;
+    }
+
+    /// <inheritdoc />
     public bool TryRevealNext(int revealed, out string? error)
     {
         error = null;
@@ -390,7 +457,23 @@ public class TheGangGame : ITheGangGame
     {
         ArgumentOutOfRangeException.ThrowIfNegative(player);
         ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(player, PlayerCount);
-        error = Phase == TheGangPhase.Betting ? null : "The betting is over for this heist.";
+        error = Phase switch
+        {
+            TheGangPhase.Betting => null,
+            TheGangPhase.Preparing => "The betting starts once everyone has done the specialist card's step.",
+            _ => "The betting is over for this heist.",
+        };
+        return error is null;
+    }
+
+    /// <summary>
+    /// Checks that the heist is waiting for the step of the specialist card <paramref name="card"/>.
+    /// </summary>
+    private bool TryCheckPreparing(int player, string card, out string? error)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegative(player);
+        ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(player, PlayerCount);
+        error = Phase == TheGangPhase.Preparing && Has(card) ? null : "That is not possible now.";
         return error is null;
     }
 
@@ -438,6 +521,8 @@ public class TheGangGame : ITheGangGame
         _revealOrder = [];
         Revealed = 0;
         Stage = SkippedStages.Contains(0) ? 1 : 0;
-        Phase = TheGangPhase.Betting;
+        _passing = new Card?[PlayerCount];
+        _prepared = new bool[PlayerCount];
+        Phase = Has(TheGangCards.Coordinator) || Has(TheGangCards.ConArtist) ? TheGangPhase.Preparing : TheGangPhase.Betting;
     }
 }

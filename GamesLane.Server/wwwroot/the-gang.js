@@ -91,8 +91,15 @@ function button(text, className, onClick) {
     return b;
 }
 
+const hasCard = (game, key) => game.cards.some((c) => c.key === key);
+
 function gangStatus(game, state, view) {
     switch (game.phase) {
+        case "Preparing": {
+            const waiting = game.playingSeats.filter((s) => !game.preparedSeats.includes(s)).map((s) => state.seats[s]?.name ?? "");
+            const step = hasCard(game, "coordinator") ? "Pick a card to pass on" : "Look at your cards";
+            return `${step}. Waiting for: ${waiting.join(", ")}`;
+        }
         case "Betting":
             return view.isPlayer
                 ? `${STAGES[game.stage]} chips`
@@ -152,11 +159,38 @@ function myHand(game, state, view, hand) {
         info.append(el("span", "stage-pill", `Take a ${STAGES[stage].toLowerCase()} chip`));
     }
 
-    const box = el("div", "my-hand", el("div", "my-hand-top", el("div", "card-row", ...hand.cards.map((c) => {
+    // Coordinator: tapping a card picks it to pass on (it can be changed until everyone has picked).
+    const passing = game.phase === "Preparing" && hasCard(game, "coordinator");
+    const box = el("div", "my-hand", el("div", "my-hand-top", el("div", "card-row", ...hand.cards.map((c, index) => {
         const card = cardElement(c);
         card.classList.add("big");
-        return card;
+        if (!passing) {
+            return card;
+        }
+        const pick = el("button", c === hand.passingCard ? "card-pick picked" : "card-pick", card);
+        pick.type = "button";
+        pick.title = `Pass ${c} on`;
+        pick.addEventListener("click", () => call("PassCard", view.sessionId, seat, index).catch(() => {}));
+        return pick;
     })), info));
+
+    if (game.phase === "Preparing") {
+        const done = game.preparedSeats.includes(seat);
+        if (passing) {
+            const order = game.playingSeats;
+            const next = order[(order.indexOf(seat) + 1) % order.length];
+            box.append(el("p", "hint", hand.passingCard
+                ? `You pass ${hand.passingCard} to ${state.seats[next]?.name ?? ""}. Tap another card to change it.`
+                : `Tap the card you want to pass to ${state.seats[next]?.name ?? ""}.`));
+        } else {
+            const seen = button(done ? "✓ Seen" : "I've seen my cards", done ? "is-ready" : "",
+                () => call("ConfirmSeen", view.sessionId, seat).catch(() => {}));
+            seen.disabled = done;
+            box.append(el("p", "hint", "Remember your cards: once everyone has seen theirs, all private cards are shuffled and dealt again."),
+                el("div", "my-hand-actions", seen));
+        }
+        return box;
+    }
 
     if (!betting) {
         return box;

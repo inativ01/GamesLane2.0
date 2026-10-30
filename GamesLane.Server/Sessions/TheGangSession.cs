@@ -37,14 +37,16 @@ public record TheGangState(
     IReadOnlyList<IReadOnlyList<int?>> Chips,
     IReadOnlyList<int> MiddleChips,
     IReadOnlyList<int> ReadySeats,
+    IReadOnlyList<int> PreparedSeats,
     IReadOnlyList<int> PlayingSeats,
     IReadOnlyList<int> RevealOrder,
     IReadOnlyList<TheGangRevealedHand> Revealed);
 
 /// <summary>
-/// A player's own cards in The Gang, and the name of their current best hand (once there are shared cards).
+/// A player's own cards in The Gang, the name of their current best hand (once there are shared cards), and with
+/// Coordinator, the card they picked to pass on.
 /// </summary>
-public record TheGangHand(int Seat, IReadOnlyList<string> Cards, string? BestHand);
+public record TheGangHand(int Seat, IReadOnlyList<string> Cards, string? BestHand, string? PassingCard);
 
 /// <summary>
 /// Private state of The Gang, sent only to the user holding these seats.
@@ -87,6 +89,14 @@ public class TheGangSession(string id, Func<IReadOnlyList<Card>>? newDeck = null
         WithPlayer(userKey, seat, (game, player) => (game.TrySetReady(player, ready, out var e), e), out error);
 
     /// <inheritdoc />
+    public bool TryPassCard(string userKey, int seat, int cardIndex, [NotNullWhen(false)] out string? error) =>
+        WithPlayer(userKey, seat, (game, player) => (game.TryPassCard(player, cardIndex, out var e), e), out error);
+
+    /// <inheritdoc />
+    public bool TryConfirmSeen(string userKey, int seat, [NotNullWhen(false)] out string? error) =>
+        WithPlayer(userKey, seat, (game, player) => (game.TryConfirmSeen(player, out var e), e), out error);
+
+    /// <inheritdoc />
     public bool TryRevealNext(string userKey, int revealed, [NotNullWhen(false)] out string? error) =>
         WithGame(userKey, game => (game.TryRevealNext(revealed, out var e), e), out error);
 
@@ -103,7 +113,7 @@ public class TheGangSession(string id, Func<IReadOnlyList<Card>>? newDeck = null
     {
         var game = _game!;
         var bySeat = SeatOfPlayer();
-        var showsAllCards = game.Phase != TheGangPhase.Betting;
+        var showsAllCards = game.Phase is TheGangPhase.Reveal or TheGangPhase.HeistOver;
         return new TheGangState(
             game.Mode,
             game.Cards,
@@ -127,6 +137,7 @@ public class TheGangSession(string id, Func<IReadOnlyList<Card>>? newDeck = null
                 .ToArray(),
             game.MiddleChips,
             Enumerable.Range(0, game.PlayerCount).Where(game.IsReady).Select(p => bySeat[p]).ToArray(),
+            Enumerable.Range(0, game.PlayerCount).Where(game.IsPrepared).Select(p => bySeat[p]).ToArray(),
             bySeat,
             game.RevealOrder.Select(p => bySeat[p]).ToArray(),
             showsAllCards
@@ -145,7 +156,7 @@ public class TheGangSession(string id, Func<IReadOnlyList<Card>>? newDeck = null
             var player = PlayerAt(seat)!.Value;
             var holeCards = game.HoleCards(player);
             var best = cards.Count >= 3 ? HandEvaluator.Best([.. holeCards, .. cards]).Name : null;
-            return new TheGangHand(seat, Text(holeCards), best);
+            return new TheGangHand(seat, Text(holeCards), best, game.PassingCard(player)?.ToString());
         }).ToArray());
     }
 

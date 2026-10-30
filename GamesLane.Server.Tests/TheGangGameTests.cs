@@ -464,6 +464,50 @@ public class TheGangGameTests
     }
 
     [Fact]
+    public void Coordinator_everyone_passes_a_card_to_the_next_player_before_the_betting()
+    {
+        var game = new TheGangGame(3, () => Cards(RankedDeck), Advanced(0, [], [TheGangCards.Coordinator]));
+        PlayHeist(game, [3, 2, 1]);
+
+        Assert.Equal(TheGangPhase.Preparing, game.Phase);
+        Assert.Empty(game.VisibleCommunityCards);
+        Assert.False(game.TryTakeChip(0, 1, out var error));
+        Assert.Equal("The betting starts once everyone has done the specialist card's step.", error);
+
+        Assert.True(game.TryPassCard(0, 1, out _));
+        Assert.True(game.TryPassCard(0, 0, out _));
+        Assert.Equal(Card.Parse("3D"), game.PassingCard(0));
+        Assert.True(game.IsPrepared(0));
+        Assert.True(game.TryPassCard(1, 0, out _));
+        Assert.Equal(TheGangPhase.Preparing, game.Phase);
+        Assert.True(game.TryPassCard(2, 1, out _));
+
+        Assert.Equal(TheGangPhase.Betting, game.Phase);
+        Assert.Equal(Cards("4H KH"), game.HoleCards(0));
+        Assert.Equal(Cards("5S 3D"), game.HoleCards(1));
+        Assert.Equal(Cards("KD 9C"), game.HoleCards(2));
+        Assert.False(game.TryPassCard(0, 0, out _));
+    }
+
+    [Fact]
+    public void Con_artist_reshuffles_the_private_cards_once_everyone_has_seen_them()
+    {
+        var game = new TheGangGame(3, () => Cards(RankedDeck), Advanced(0, [], [TheGangCards.ConArtist]), new Random(7));
+        PlayHeist(game, [3, 2, 1]);
+        var before = Enumerable.Range(0, 3).SelectMany(game.HoleCards).ToArray();
+
+        Assert.True(game.TryConfirmSeen(0, out _));
+        Assert.True(game.TryConfirmSeen(1, out _));
+        Assert.Equal(TheGangPhase.Preparing, game.Phase);
+        Assert.False(game.TryPassCard(2, 0, out _));
+        Assert.True(game.TryConfirmSeen(2, out _));
+
+        Assert.Equal(TheGangPhase.Betting, game.Phase);
+        Assert.All(Enumerable.Range(0, 3), p => Assert.Equal(2, game.HoleCards(p).Count));
+        Assert.Equal(before.Select(c => c.ToString()).Order(), Enumerable.Range(0, 3).SelectMany(game.HoleCards).Select(c => c.ToString()).Order());
+    }
+
+    [Fact]
     public void Options_turn_into_rules()
     {
         var defaults = TheGangRules.FromOptions(GameOptions.Normalize(GameType.TheGang, new Dictionary<string, string>
@@ -475,7 +519,8 @@ public class TheGangGameTests
         Assert.Equal(TheGangMode.Advanced, defaults.Mode);
         Assert.Equal(1, defaults.FirstHeistChallenges);
         Assert.Equal(TheGangCards.Challenges.Select(c => c.Key), defaults.Challenges);
-        Assert.Equal([TheGangCards.Investor], defaults.Specialists);
+        Assert.Equal(TheGangCards.Specialists.Select(c => c.Key).Where(k => k != TheGangCards.MathWhiz), defaults.Specialists);
+        Assert.False(defaults.AvoidClashes);
     }
 
     // Player 0: high card king; player 1: pair of nines; player 2: three kings.

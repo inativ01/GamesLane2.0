@@ -87,6 +87,17 @@ public interface IGameHub
     Task SetReady(string sessionId, int seat, bool ready);
 
     /// <summary>
+    /// The Gang, Coordinator: <paramref name="seat"/>, which the caller must hold, picks its card number
+    /// <paramref name="cardIndex"/> (from 0) to pass to the next player.
+    /// </summary>
+    Task PassCard(string sessionId, int seat, int cardIndex);
+
+    /// <summary>
+    /// The Gang, Con Artist: <paramref name="seat"/>, which the caller must hold, has seen its cards.
+    /// </summary>
+    Task ConfirmSeen(string sessionId, int seat);
+
+    /// <summary>
     /// The Gang: reveals the next hand, if <paramref name="revealed"/> hands have been revealed so far.
     /// </summary>
     Task RevealNext(string sessionId, int revealed);

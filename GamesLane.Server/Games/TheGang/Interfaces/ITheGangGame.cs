@@ -141,6 +141,28 @@ public interface ITheGangGame
     bool TrySetReady(int player, bool ready, out string? error);
 
     /// <summary>
+    /// Whether a player has done the specialist card's step before the betting (<see cref="TheGangPhase.Preparing"/>).
+    /// </summary>
+    bool IsPrepared(int player);
+
+    /// <summary>
+    /// Coordinator: the card a player has picked to pass on, or null.
+    /// </summary>
+    Card? PassingCard(int player);
+
+    /// <summary>
+    /// Coordinator: picks the card to pass to the next player (it can be changed until everyone has picked). When
+    /// everyone has picked, all cards move at once and the betting starts.
+    /// </summary>
+    bool TryPassCard(int player, int cardIndex, out string? error);
+
+    /// <summary>
+    /// Con Artist: confirms the player has seen their cards. When everyone has, all private cards are shuffled and dealt
+    /// again, and the betting starts.
+    /// </summary>
+    bool TryConfirmSeen(int player, out string? error);
+
+    /// <summary>
     /// Reveals the next hand, if <paramref name="revealed"/> hands have been revealed so far; otherwise nothing changes.
     /// </summary>
     bool TryRevealNext(int revealed, out string? error);

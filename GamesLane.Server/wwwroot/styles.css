@@ -972,6 +972,29 @@ footer {
     font-size: 0.9rem;
 }
 
+/* Coordinator: the player's cards are buttons; the card picked to pass on is lifted and outlined. */
+.card-pick {
+    padding: 0;
+    border-radius: 0.3em;
+    background: none;
+    box-shadow: none;
+    transition: transform 0.15s;
+}
+
+.card-pick:not(:disabled):hover {
+    background: none;
+}
+
+.card-pick.picked {
+    outline: 3px solid var(--gold);
+    outline-offset: 2px;
+    transform: translateY(-0.4rem);
+}
+
+.card-pick + .card-pick {
+    margin-left: 0.4rem;
+}
+
 .heist-card-result {
     display: inline-flex;
     flex-wrap: wrap;

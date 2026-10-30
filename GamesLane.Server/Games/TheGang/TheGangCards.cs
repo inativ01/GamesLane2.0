@@ -29,7 +29,9 @@ public static class TheGangCards
     public const string Blackout = "blackout";
     public const string SecurityCameras = "security-cameras";
     public const string Investor = "investor";
+    public const string Coordinator = "coordinator";
     public const string MathWhiz = "math-whiz";
+    public const string ConArtist = "con-artist";
 
     /// <summary>
     /// The challenge cards, in the order shown in the options.
@@ -61,8 +63,12 @@ public static class TheGangCards
     [
         new(Investor, "Investor", TheGangCardKind.Specialist,
             "Everyone's number of face cards (J, Q, K) is shown to all."),
+        new(Coordinator, "Coordinator", TheGangCardKind.Specialist,
+            "Before the betting, everyone picks one of their cards and passes it to the next player, all at once."),
         new(MathWhiz, "Math Whiz", TheGangCardKind.Specialist,
             "Everyone's total card value is shown to all (2–10 as numbered, J, Q and K 10, A 11)."),
+        new(ConArtist, "Con Artist", TheGangCardKind.Specialist,
+            "Look at your cards: once everyone has, all private cards are shuffled and dealt again."),
     ];
 
     /// <summary>
