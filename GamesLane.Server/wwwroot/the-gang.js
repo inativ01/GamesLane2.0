@@ -108,7 +108,7 @@ function gangStatus(game, state, view) {
                 : `Players are taking ${STAGES[game.stage].toLowerCase()} chips…`;
         case "Reveal":
             return awaitsScan(game)
-                ? "Before the strongest hand is revealed, agree on the guess (see the card above)."
+                ? "Before the strongest hand is revealed, the other players agree on the guess."
                 : "Revealing hands, lowest red chip first…";
         default:
             if (game.vaults >= TO_FINISH) {
@@ -121,12 +121,13 @@ function gangStatus(game, state, view) {
     }
 }
 
-// The heist's challenge and specialist cards with what they do, and what a specialist card shows about everyone's cards.
+// The heist's challenge and specialist cards, drawn as small cards on the table: kind, name, what they do, and what
+// they showed everyone. Open group decisions are shown to players next to their hand instead (see myDecisions).
 function heistCards(game, state, view) {
     return game.cards.map((card) => {
         const item = el("li", `heist-card ${card.kind.toLowerCase()}`,
             el("span", "heist-card-kind", card.kind === "Challenge" ? "Challenge" : "Specialist"),
-            el("strong", null, card.name),
+            el("strong", "heist-card-name", card.name),
             el("span", "heist-card-text", card.text));
         if (card.key === "motion-detector" || card.key === "laser-tripwires") {
             if (game.cards.some((c) => c.key === "quick-access")) {
@@ -140,11 +141,25 @@ function heistCards(game, state, view) {
                 el("li", null, seatLabel(state, a.seat, view), el("strong", null, a.text)))));
         }
         const decision = game.decisions.find((d) => d.card === card.key);
-        if (decision) {
-            item.append(decision.isDone ? decisionResult(game, state, view, decision) : decisionPanel(game, state, view, decision));
+        if (decision?.isDone) {
+            item.append(decisionResult(game, state, view, decision));
+        } else if (decision?.isOpen) {
+            const names = decision.agreed.map((s) => state.seats[s]?.name ?? "").join(", ");
+            item.append(el("span", "heist-card-result", `Deciding: ${decision.agreed.length} of ${decision.voters.length} agreed`
+                + (names ? ` (${names})` : "")));
         }
         return item;
     });
+}
+
+// The open group decisions this user takes part in, as panels next to their hand.
+function myDecisions(game, state, view) {
+    return game.decisions
+        .filter((d) => d.isOpen && view.mySeats.some((s) => d.voters.includes(s)))
+        .map((d) => {
+            const card = game.cards.find((c) => c.key === d.card);
+            return el("div", `my-decision ${card.kind.toLowerCase()}`, el("strong", null, card.name), decisionPanel(game, state, view, d));
+        });
 }
 
 const RANKS = ["2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A"];
@@ -390,8 +405,12 @@ const gang = startSessionPage("TheGang", (game, state, view) => {
     gangState = game;
     $("status").textContent = gangStatus(game, state, view);
 
+    document.body.classList.toggle("observer", !view.isPlayer);
     $("heist-cards").hidden = game.cards.length === 0;
     $("heist-cards").replaceChildren(...heistCards(game, state, view));
+    const decisions = myDecisions(game, state, view);
+    $("my-decisions").hidden = decisions.length === 0;
+    $("my-decisions").replaceChildren(...decisions);
 
     const hands = view.private?.hands ?? [];
     $("my-hands").replaceChildren(...hands.map((hand) => myHand(game, state, view, hand)));

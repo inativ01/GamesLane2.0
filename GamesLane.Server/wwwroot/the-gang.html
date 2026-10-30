@@ -14,7 +14,7 @@
     <a href="/" class="brand" data-leave><img class="brand-logo" src="images/logo-180.png" alt=""><span class="brand-name">Games<span>Lane</span></span></a>
     <div id="account" class="account"></div>
 </header>
-<main>
+<main class="gang">
     <nav class="back"><a href="/" data-leave>← Main screen</a></nav>
 
     <section id="session">
@@ -57,11 +57,9 @@
         <div id="game-screen" hidden>
             <p id="status" class="status"></p>
 
-            <!-- The heist's challenge or specialist cards, and what they show everyone. -->
-            <ul id="heist-cards" class="heist-cards" hidden></ul>
-
-            <!-- This user's own cards and controls. -->
+            <!-- This user's own cards and controls, and the group decisions of the heist's cards. -->
             <div id="my-hands"></div>
+            <div id="my-decisions" class="my-decisions" hidden></div>
             <div class="actions center gang-controls">
                 <button id="reveal-next" type="button" hidden>Reveal next hand</button>
                 <button id="next-heist" type="button" hidden>Next heist</button>
@@ -86,6 +84,8 @@
                     <div id="middle"></div>
                     <table id="chip-table" class="chip-table"></table>
                     <ol id="revealed" class="revealed"></ol>
+                    <!-- The heist's challenge or specialist cards, and what they showed everyone. -->
+                    <ul id="heist-cards" class="heist-cards" hidden></ul>
                 </div>
             </section>
 

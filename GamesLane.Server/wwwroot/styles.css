@@ -930,11 +930,13 @@ footer {
     margin: 0.25rem 0;
 }
 
-/* The heist's challenge (red) and specialist (green) cards. */
+/* The heist's challenge (red) and specialist (green) cards, as small cards lying on the table. */
 .heist-cards {
-    display: grid;
-    gap: 0.5rem;
-    margin: 0.5rem 0;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.6rem;
+    margin: 0.9rem 0 0.2rem;
     padding: 0;
     list-style: none;
     text-align: left;
@@ -942,8 +944,69 @@ footer {
 
 .heist-card {
     display: flex;
+    flex: 0 1 11.5rem;
     flex-direction: column;
-    gap: 0.15rem;
+    gap: 0.2rem;
+    min-height: 8.5rem;
+    padding: 0.5rem 0.6rem 0.6rem;
+    border-radius: 10px;
+    background: linear-gradient(170deg, #fff 55%, #f6efe3);
+    color: var(--ink);
+    box-shadow: inset 0 0 0 3px var(--red), inset 0 0 0 5px #fff, 0 3px 8px rgba(0, 0, 0, 0.35);
+    transform: rotate(-1deg);
+}
+
+.heist-card:nth-child(even) {
+    transform: rotate(1deg);
+}
+
+.heist-card.specialist {
+    box-shadow: inset 0 0 0 3px #2f7d45, inset 0 0 0 5px #fff, 0 3px 8px rgba(0, 0, 0, 0.35);
+}
+
+.heist-card-kind {
+    align-self: flex-start;
+    padding: 0.05rem 0.45rem;
+    border-radius: 999px;
+    background: var(--red);
+    color: #fff;
+    font-size: 0.62rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.heist-card.specialist .heist-card-kind {
+    background: #2f7d45;
+}
+
+.heist-card-name {
+    font-size: 0.95rem;
+    line-height: 1.15;
+}
+
+.heist-card-text {
+    color: var(--muted);
+    font-size: 0.75rem;
+    line-height: 1.3;
+}
+
+.heist-card .heist-card-result,
+.heist-card .announcements {
+    margin-top: auto;
+    padding-top: 0.25rem;
+    font-size: 0.78rem;
+}
+
+/* Open group decisions, next to the player's hand. */
+.my-decisions {
+    display: grid;
+    gap: 0.5rem;
+    margin: 0.5rem 0;
+    text-align: left;
+}
+
+.my-decision {
     padding: 0.6rem 0.8rem;
     border-left: 5px solid var(--red);
     border-radius: 10px;
@@ -951,25 +1014,14 @@ footer {
     box-shadow: var(--shadow);
 }
 
-.heist-card.specialist {
+.my-decision.specialist {
     border-left-color: #2f7d45;
 }
 
-.heist-card-kind {
-    color: var(--red);
-    font-size: 0.7rem;
-    font-weight: 800;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-}
-
-.heist-card.specialist .heist-card-kind {
-    color: #2f7d45;
-}
-
-.heist-card-text {
-    color: var(--muted);
-    font-size: 0.9rem;
+.my-decision .decision {
+    margin-top: 0.3rem;
+    padding-top: 0;
+    border-top: none;
 }
 
 /* Coordinator: the player's cards are buttons; the card picked to pass on is lifted and outlined. */
@@ -1574,6 +1626,98 @@ a.button.is-busy {
     a.button.is-busy::before {
         animation-duration: 2.4s;
     }
+}
+
+/* The Gang on wide screens. Players: their hand on the left, the table on the right. Observers (e.g. a TV): the table
+   uses most of the width, with everything larger. */
+@media (min-width: 1000px) {
+    main.gang {
+        max-width: min(1500px, 94vw);
+    }
+
+    main.gang #game-screen {
+        display: grid;
+        grid-template-columns: minmax(340px, 440px) 1fr;
+        grid-template-areas:
+            "status status"
+            "hand table"
+            "decisions table"
+            "controls table"
+            "over table"
+            "standup table";
+        grid-template-rows: auto auto auto auto auto 1fr;
+        column-gap: 1.25rem;
+        align-items: start;
+    }
+
+    main.gang #status { grid-area: status; }
+    main.gang #my-hands { grid-area: hand; }
+    main.gang #my-decisions { grid-area: decisions; }
+    main.gang .gang-controls { grid-area: controls; }
+    main.gang #game-over-actions { grid-area: over; }
+    main.gang #stand-up { grid-area: standup; justify-self: start; }
+
+    main.gang .table-view {
+        grid-area: table;
+        margin-top: 0.5rem;
+    }
+
+    main.gang #community .card {
+        font-size: 1.35rem;
+    }
+
+    /* A player who hid the table gets their hand in the middle instead. */
+    main.gang #game-screen:has(#table-body[hidden]) {
+        grid-template-columns: minmax(340px, 560px);
+        grid-template-areas: "status" "hand" "decisions" "controls" "over" "standup" "table";
+        justify-content: center;
+    }
+
+    body.observer main.gang {
+        max-width: min(1800px, 96vw);
+    }
+
+    body.observer main.gang #game-screen {
+        grid-template-columns: 1fr;
+        grid-template-areas: "status" "table" "controls" "over" "standup";
+        grid-template-rows: none;
+    }
+
+    body.observer main.gang #my-hands,
+    body.observer main.gang #my-decisions {
+        display: none;
+    }
+
+    body.observer main.gang .table-view {
+        font-size: clamp(1rem, 1.25vw, 1.5rem);
+    }
+
+    body.observer main.gang .table-body {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        grid-template-areas:
+            "community community"
+            "middle middle"
+            "chips revealed"
+            "cards cards";
+        gap: 0.5rem 2rem;
+        padding: 1.25rem 1.5rem;
+    }
+
+    body.observer main.gang #community { grid-area: community; justify-content: center; }
+    body.observer main.gang #community .card { font-size: clamp(1.5rem, 2.6vw, 3rem); }
+    body.observer main.gang #middle { grid-area: middle; font-size: 1em; }
+    body.observer main.gang .chip-table { grid-area: chips; font-size: 1em; align-self: start; }
+    body.observer main.gang .chip-table th { font-size: 0.75em; }
+    body.observer main.gang .chip-table .chip { font-size: 0.9em; }
+    body.observer main.gang .revealed { grid-area: revealed; margin: 0; }
+    body.observer main.gang .revealed-hand .card { font-size: clamp(0.9rem, 1.3vw, 1.5rem); }
+    body.observer main.gang .heist-cards { grid-area: cards; }
+    body.observer main.gang .heist-card { flex-basis: 16rem; min-height: 0; }
+    body.observer main.gang .heist-card-name { font-size: 1.1em; }
+    body.observer main.gang .heist-card-text,
+    body.observer main.gang .heist-card .heist-card-result { font-size: 0.85em; }
+    body.observer main.gang .status { font-size: 1.6rem; }
 }
 
 @media (max-width: 420px) {
