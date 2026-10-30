@@ -29,7 +29,7 @@ public interface ITheGangGame
     IReadOnlyList<string> NewCards { get; }
 
     /// <summary>
-    /// The specialist card whose step comes before the betting now (Coordinator, then Con Artist), or null.
+    /// The specialist card whose step every player must do now (Coordinator or Con Artist), pausing the betting; or null.
     /// </summary>
     string? PreparingCard { get; }
 
@@ -152,7 +152,7 @@ public interface ITheGangGame
     bool TrySetReady(int player, bool ready, out string? error);
 
     /// <summary>
-    /// Whether a player has done the specialist card's step before the betting (<see cref="TheGangPhase.Preparing"/>).
+    /// Whether a player has done the specialist card's step (<see cref="TheGangPhase.Preparing"/>).
     /// </summary>
     bool IsPrepared(int player);
 

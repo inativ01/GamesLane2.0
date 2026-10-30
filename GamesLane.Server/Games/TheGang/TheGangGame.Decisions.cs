@@ -2,9 +2,11 @@ namespace GamesLane.Server.Games.TheGang;
 
 /// <summary>
 /// The cards where the group decides together. Any voter proposes (a player, a value, or both); everyone sees it; once
-/// every voter agrees, the card takes effect. Changing the proposal clears the agreement. Specialist cards can be decided
-/// at any time during the betting, once per heist. The scans (Retina Scan, Fingerprint Scan) are decided by everyone
-/// except the strongest hand's player, just before that hand is revealed.
+/// every voter agrees, the card takes effect. Changing the proposal clears the agreement. Specialist cards are optional:
+/// the group may use any of them, in any order, at any time during the betting, each at most once per heist; unused ones
+/// do not hold up the heist. Cards without a choice (Investor, Math Whiz, Coordinator, Con Artist) only need everyone to
+/// agree to use them. The scans (Retina Scan, Fingerprint Scan) are decided by everyone except the strongest hand's
+/// player, just before that hand is revealed.
 /// </summary>
 public partial class TheGangGame
 {
@@ -46,6 +48,12 @@ public partial class TheGangGame
 
         // A proposal may be partial (e.g. Mastermind's player before its value); agreeing needs a complete one.
         var choice = decision.Card.Choice;
+        if (choice == TheGangChoice.Use)
+        {
+            error = "There is nothing to choose for this card: just agree to use it.";
+            return false;
+        }
+
         var needsPlayer = choice is TheGangChoice.Player or TheGangChoice.PlayerAndRank;
         var needsValue = choice is not TheGangChoice.Player;
         var valueError = choice == TheGangChoice.Ranking ? "Choose a hand ranking." : "Choose a card value.";
@@ -175,6 +183,11 @@ public partial class TheGangGame
         [.. Enumerable.Range(0, PlayerCount).Where(p => !IsScan(decision) || _revealOrder.Length == 0 || p != _revealOrder[^1])];
 
     /// <summary>
+    /// Whether a specialist card has been used in this heist.
+    /// </summary>
+    private bool Used(string key) => _decisions.TryGetValue(key, out var decision) && decision.Done;
+
+    /// <summary>
     /// Whether players can propose and agree now: specialist cards during the betting (unless a chosen player still has a
     /// step to take), scans just before the strongest hand is revealed.
     /// </summary>
@@ -199,7 +212,8 @@ public partial class TheGangGame
     private void Carry(Decision decision)
     {
         decision.Done = true;
-        var player = decision.Player ?? _revealOrder[^1];
+        // The chosen player, or for a scan the strongest hand's player; cards without a choice have none.
+        var player = decision.Player ?? (_revealOrder.Length > 0 ? _revealOrder[^1] : -1);
         switch (decision.Card.Key)
         {
             case TheGangCards.Informant:
@@ -227,6 +241,9 @@ public partial class TheGangGame
                 break;
             case TheGangCards.Muscle:
                 _muscle = player;
+                break;
+            case TheGangCards.Coordinator or TheGangCards.ConArtist:
+                StartPreparing(decision.Card.Key);
                 break;
             case TheGangCards.RetinaScan or TheGangCards.FingerprintScan:
                 var right = decision.Card.Key == TheGangCards.RetinaScan
@@ -269,7 +286,7 @@ public partial class TheGangGame
 
         public string? Value { get; set; }
 
-        public bool Proposed { get; set; }
+        public bool Proposed { get; set; } = card.Choice == TheGangChoice.Use;
 
         public HashSet<int> Agreed { get; } = [];
 

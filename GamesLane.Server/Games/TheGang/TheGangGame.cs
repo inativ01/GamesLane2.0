@@ -9,8 +9,8 @@ public enum TheGangPhase
     Betting,
 
     /// <summary>
-    /// Before the betting, every player does the specialist card's step: Coordinator (pick a card to pass on) or
-    /// Con Artist (confirm they have seen their cards).
+    /// The betting is paused while every player does the step of a specialist card the group used: Coordinator (pick a
+    /// card to pass on) or Con Artist (confirm they have seen their cards).
     /// </summary>
     Preparing,
 
@@ -65,7 +65,6 @@ public partial class TheGangGame : ITheGangGame
     private int _nextCard;
     private Card?[] _passing = [];
     private bool[] _prepared = [];
-    private Queue<string> _preparingSteps = new();
     private string[] _newCards = [];
 
     /// <summary>
@@ -166,13 +165,13 @@ public partial class TheGangGame : ITheGangGame
     {
         var cards = _holeCards[player];
         var facts = new List<string>();
-        if (Has(TheGangCards.Investor))
+        if (Used(TheGangCards.Investor))
         {
             var faces = cards.Count(c => c.Rank is >= 11 and <= 13);
             facts.Add(faces == 1 ? "1 face card" : $"{faces} face cards");
         }
 
-        if (Has(TheGangCards.MathWhiz))
+        if (Used(TheGangCards.MathWhiz))
         {
             facts.Add($"{cards.Sum(c => c.Rank == Card.Ace ? 11 : Math.Min(c.Rank, 10))} total");
         }
@@ -307,7 +306,7 @@ public partial class TheGangGame : ITheGangGame
                 _holeCards[p] = [.. _holeCards[p].Where(c => c != passed[p]), passed[(p + PlayerCount - 1) % PlayerCount]];
             }
 
-            NextPreparingStep();
+            FinishPreparing();
         }
 
         return true;
@@ -329,7 +328,7 @@ public partial class TheGangGame : ITheGangGame
             _random.Shuffle(gathered);
             var perPlayer = _holeCards[0].Length;
             _holeCards = [.. Enumerable.Range(0, PlayerCount).Select(p => gathered.Skip(perPlayer * p).Take(perPlayer).ToArray())];
-            NextPreparingStep();
+            FinishPreparing();
         }
 
         return true;
@@ -479,7 +478,7 @@ public partial class TheGangGame : ITheGangGame
         error = Phase switch
         {
             TheGangPhase.Betting => null,
-            TheGangPhase.Preparing => "The betting starts once everyone has done the specialist card's step.",
+            TheGangPhase.Preparing => "The betting continues once everyone has done the specialist card's step.",
             _ => "The betting is over for this heist.",
         };
         return error is null;
@@ -541,18 +540,29 @@ public partial class TheGangGame : ITheGangGame
         Revealed = 0;
         Stage = SkippedStages.Contains(0) ? 1 : 0;
         ResetDecisions();
-        _preparingSteps = new Queue<string>(new[] { TheGangCards.Coordinator, TheGangCards.ConArtist }.Where(Has));
-        NextPreparingStep();
+        PreparingCard = null;
+        Phase = TheGangPhase.Betting;
     }
 
     /// <summary>
-    /// Starts the next step before the betting (Coordinator first, then Con Artist), or the betting if none is left.
+    /// When the group uses Coordinator or Con Artist: the betting pauses (and Ready is cleared) until every player has
+    /// done the card's step.
     /// </summary>
-    private void NextPreparingStep()
+    private void StartPreparing(string card)
     {
         _prepared = new bool[PlayerCount];
         _passing = new Card?[PlayerCount];
-        PreparingCard = _preparingSteps.TryDequeue(out var step) ? step : null;
-        Phase = PreparingCard is null ? TheGangPhase.Betting : TheGangPhase.Preparing;
+        Array.Clear(_ready);
+        PreparingCard = card;
+        Phase = TheGangPhase.Preparing;
+    }
+
+    /// <summary>
+    /// Once every player has done the step, the betting continues.
+    /// </summary>
+    private void FinishPreparing()
+    {
+        PreparingCard = null;
+        Phase = TheGangPhase.Betting;
     }
 }

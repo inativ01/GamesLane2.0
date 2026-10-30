@@ -362,24 +362,43 @@ public class TheGangGameTests
     }
 
     [Fact]
-    public void Coordinator_and_con_artist_together_take_turns_before_the_betting()
+    public void Specialists_are_optional_and_can_be_used_in_any_order_at_any_stage()
     {
-        var game = new TheGangGame(3, () => Cards(RankedDeck), Advanced(0, [], [TheGangCards.Coordinator, TheGangCards.ConArtist]));
+        var game = new TheGangGame(3, () => Cards(RankedDeck), Advanced(0, [], [TheGangCards.ConArtist, TheGangCards.Coordinator]));
         PlayHeist(game, [3, 2, 1]);
-        Prepare(game);
         PlayHeist(game, [3, 2, 1]);
         Assert.Equal(2, game.Cards.Count);
+        Assert.Equal(TheGangPhase.Betting, game.Phase);
 
-        Assert.Equal(TheGangCards.Coordinator, game.PreparingCard);
-        Assert.False(game.TryConfirmSeen(0, out _));
-        Enumerable.Range(0, 3).ToList().ForEach(p => Assert.True(game.TryPassCard(p, 0, out _)));
-
+        PlayStage(game, [1, 2, 3]);
+        AgreeAll(game, TheGangCards.ConArtist);
         Assert.Equal((TheGangPhase.Preparing, TheGangCards.ConArtist), (game.Phase, game.PreparingCard));
-        Assert.False(game.IsPrepared(0));
+        Assert.False(game.TryAgree(0, TheGangCards.Coordinator, true, out _));
         Enumerable.Range(0, 3).ToList().ForEach(p => Assert.True(game.TryConfirmSeen(p, out _)));
 
-        Assert.Equal(TheGangPhase.Betting, game.Phase);
-        Assert.Null(game.PreparingCard);
+        Assert.Equal((TheGangPhase.Betting, 1), (game.Phase, game.Stage));
+        Assert.False(game.TryAgree(0, TheGangCards.ConArtist, true, out _));
+        PlayStage(game, [1, 2, 3]);
+        PlayStage(game, [1, 2, 3]);
+        PlayStage(game, [1, 2, 3]);
+
+        Assert.Equal(TheGangPhase.Reveal, game.Phase);
+        Assert.False(game.Decisions.Single(d => d.Card == TheGangCards.Coordinator).IsDone);
+    }
+
+    [Fact]
+    public void Cards_without_a_choice_only_need_everyone_to_agree()
+    {
+        var game = WithSpecialist(TheGangCards.Investor);
+
+        Assert.False(game.TryPropose(0, TheGangCards.Investor, 1, null, out var error));
+        Assert.Equal("There is nothing to choose for this card: just agree to use it.", error);
+        game.TryAgree(0, TheGangCards.Investor, true, out _);
+        game.TryAgree(1, TheGangCards.Investor, true, out _);
+        Assert.Null(game.Announcement(0));
+        game.TryAgree(2, TheGangCards.Investor, true, out _);
+
+        Assert.Equal("0 face cards", game.Announcement(0));
     }
 
     [Fact]
@@ -388,6 +407,8 @@ public class TheGangGameTests
         var game = new TheGangGame(3, () => Cards(RankedDeck), Advanced(0, [], [TheGangCards.Investor, TheGangCards.MathWhiz]));
         PlayHeist(game, [3, 2, 1]);
         PlayHeist(game, [3, 2, 1]);
+        AgreeAll(game, TheGangCards.Investor);
+        AgreeAll(game, TheGangCards.MathWhiz);
 
         Assert.Equal("2 face cards · 20 total", game.Announcement(2));
     }
@@ -502,23 +523,26 @@ public class TheGangGameTests
     [InlineData(TheGangCards.MathWhiz, "7 total", "14 total", "20 total")]
     public void Specialists_show_everyone_a_fact_about_each_hand(string specialist, string first, string second, string third)
     {
-        var game = new TheGangGame(3, () => Cards(RankedDeck), Advanced(0, [], [specialist]));
+        var game = WithSpecialist(specialist);
         Assert.Null(game.Announcement(0));
 
-        PlayHeist(game, [3, 2, 1]);
+        AgreeAll(game, specialist);
         Assert.Equal([first, second, third], Enumerable.Range(0, 3).Select(game.Announcement));
     }
 
     [Fact]
-    public void Coordinator_everyone_passes_a_card_to_the_next_player_before_the_betting()
+    public void Coordinator_everyone_passes_a_card_to_the_next_player_while_the_betting_waits()
     {
         var game = new TheGangGame(3, () => Cards(RankedDeck), Advanced(0, [], [TheGangCards.Coordinator]));
         PlayHeist(game, [3, 2, 1]);
+        game.TryTakeChip(0, 1, out _);
+        game.TrySetReady(0, true, out _);
+        AgreeAll(game, TheGangCards.Coordinator);
 
         Assert.Equal(TheGangPhase.Preparing, game.Phase);
-        Assert.Empty(game.VisibleCommunityCards);
-        Assert.False(game.TryTakeChip(0, 1, out var error));
-        Assert.Equal("The betting starts once everyone has done the specialist card's step.", error);
+        Assert.False(game.IsReady(0));
+        Assert.False(game.TryTakeChip(0, 2, out var error));
+        Assert.Equal("The betting continues once everyone has done the specialist card's step.", error);
 
         Assert.True(game.TryPassCard(0, 1, out _));
         Assert.True(game.TryPassCard(0, 0, out _));
@@ -540,6 +564,7 @@ public class TheGangGameTests
     {
         var game = new TheGangGame(3, () => Cards(RankedDeck), Advanced(0, [], [TheGangCards.ConArtist]), new Random(7));
         PlayHeist(game, [3, 2, 1]);
+        AgreeAll(game, TheGangCards.ConArtist);
         var before = Enumerable.Range(0, 3).SelectMany(game.HoleCards).ToArray();
 
         Assert.True(game.TryConfirmSeen(0, out _));

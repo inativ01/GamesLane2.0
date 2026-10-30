@@ -146,24 +146,44 @@ function heistCards(game, state, view) {
         const decision = game.decisions.find((d) => d.card === card.key);
         if (decision?.isDone) {
             item.append(decisionResult(game, state, view, decision));
-        } else if (decision?.isOpen) {
+        } else if (decision?.isOpen && isUnderWay(decision)) {
             const names = decision.agreed.map((s) => state.seats[s]?.name ?? "").join(", ");
             item.append(el("span", "heist-card-result", `Deciding: ${decision.agreed.length} of ${decision.voters.length} agreed`
                 + (names ? ` (${names})` : "")));
+        } else if (decision && card.kind === "Specialist" && !decision.isDone) {
+            item.append(el("span", "heist-card-result optional", "Optional: not used in this heist yet"));
         }
         return item;
     });
 }
 
-// The open group decisions this user takes part in, as panels next to their hand.
+// Whether someone has started a decision: proposed something or agreed.
+const isUnderWay = (decision) => decision.agreed.length > 0 || decision.seat !== null || decision.value !== null;
+
+// The open group decisions this user takes part in, next to their hand. Specialist cards are optional and folded
+// away until someone starts using one; the scans must be decided, so they are always open.
 function myDecisions(game, state, view) {
     return game.decisions
         .filter((d) => d.isOpen && view.mySeats.some((s) => d.voters.includes(s)))
         .map((d) => {
             const card = game.cards.find((c) => c.key === d.card);
-            return el("div", `my-decision ${card.kind.toLowerCase()}`, el("strong", null, card.name), decisionPanel(game, state, view, d));
+            if (card.kind !== "Specialist") {
+                return el("div", "my-decision challenge", el("strong", null, card.name), decisionPanel(game, state, view, d));
+            }
+            const box = el("details", "my-decision specialist",
+                el("summary", null, el("strong", null, card.name), el("span", "hint", " · optional, use it any time")),
+                el("p", "hint", card.text),
+                decisionPanel(game, state, view, d));
+            box.open = isUnderWay(d) || openSpecialists.has(d.card);
+            box.addEventListener("toggle", () => {
+                box.open ? openSpecialists.add(d.card) : openSpecialists.delete(d.card);
+            });
+            return box;
         });
 }
+
+// Specialist panels this user has opened, kept open across updates.
+const openSpecialists = new Set();
 
 const RANKS = ["2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A"];
 const RANKINGS = ["High card", "Pair", "Two pair", "Three of a kind", "Straight", "Flush", "Full house", "Four of a kind",
@@ -186,8 +206,15 @@ function decisionResult(game, state, view, decision) {
             return line(who, pending ? " got the Jack card and is choosing one to discard." : " got the Jack card and discarded one.");
         case "muscle":
             return line(who, " beats every hand of the same ranking.");
+        case "coordinator":
+            return line(game.preparingCard === "coordinator" ? "Used: everyone is passing a card on." : "Used: everyone passed a card on.");
+        case "con-artist":
+            return line(game.preparingCard === "con-artist" ? "Used: everyone is looking at their cards." : "Used: the private cards were reshuffled.");
+        case "investor":
+        case "math-whiz":
+            return line("Used in this heist.");
         default:
-            return line(seatLabel(state, result.seat, view), el("strong", null, result.text));
+            return result ? line(seatLabel(state, result.seat, view), el("strong", null, result.text)) : line("Used in this heist.");
     }
 }
 
@@ -204,9 +231,12 @@ function decisionPanel(game, state, view, decision) {
 
     const mine = view.mySeats.filter((s) => decision.voters.includes(s));
     const needsPlayer = decision.choice === "Player" || decision.choice === "PlayerAndRank";
-    const values = decision.choice === "Ranking" ? RANKINGS : decision.choice === "Player" ? [] : RANKS;
+    const values = decision.choice === "Ranking" ? RANKINGS
+        : decision.choice === "Rank" || decision.choice === "PlayerAndRank" ? RANKS
+            : [];
     const propose = (seat, value) => call("Propose", view.sessionId, mine[0], decision.card, seat, value).catch(() => {});
     const prompt = {
+        Use: "Use this card now? It takes effect once everyone agrees.",
         Player: "Choose a player together:",
         PlayerAndRank: "Choose a player and a card value together:",
         Rank: "Agree on a card value the strongest hand's player holds:",
@@ -238,7 +268,8 @@ function decisionPanel(game, state, view, decision) {
     const toAgree = mine.filter((s) => !decision.agreed.includes(s));
     if (mine.length && complete) {
         const agree = toAgree.length > 0;
-        panel.append(button(agree ? "Agree" : "✓ Agreed (tap to undo)", agree ? "small" : "small is-ready", () => {
+        const label = decision.choice === "Use" ? "Use it" : "Agree";
+        panel.append(button(agree ? label : "✓ Agreed (tap to undo)", agree ? "small" : "small is-ready", () => {
             (agree ? toAgree : mine).forEach((s) => call("Agree", view.sessionId, s, decision.card, agree).catch(() => {}));
         }));
     } else if (!mine.length) {
@@ -343,12 +374,15 @@ function myHand(game, state, view, hand) {
         const lockedByOther = isLocked(number) && holder !== undefined && !mine;
         const chip = el("button", mine ? "chip-button mine" : "chip-button",
             chipElement(stage, number), el("span", "holder", isLocked(number) ? `🔒 ${label}`.trim() : label));
+        // Tapping your own chip returns it to the middle (unless it is locked).
         chip.type = "button";
-        chip.disabled = mine || lockedByOther || keepsLockedChip;
+        chip.disabled = lockedByOther || keepsLockedChip;
         chip.title = lockedByOther ? `Chip ${number} is locked: ${label} keeps it`
-            : keepsLockedChip && !mine ? "Your chip is locked: you keep it for this stage"
-                : holder === undefined ? `Take chip ${number}` : mine ? "Your chip" : `Take chip ${number} from ${label}`;
-        chip.addEventListener("click", () => call("TakeChip", view.sessionId, seat, number).catch(() => {}));
+            : keepsLockedChip ? "Your chip is locked: you keep it for this stage"
+                : holder === undefined ? `Take chip ${number}` : mine ? "Your chip: tap to return it" : `Take chip ${number} from ${label}`;
+        chip.addEventListener("click", () => (mine
+            ? call("ReturnChip", view.sessionId, seat)
+            : call("TakeChip", view.sessionId, seat, number)).catch(() => {}));
         chips.append(chip);
     }
 
@@ -356,11 +390,8 @@ function myHand(game, state, view, hand) {
         () => call("SetReady", view.sessionId, seat, !isReady).catch(() => {}));
     ready.disabled = myChip === null;
     const actions = el("div", "my-hand-actions", ready);
-    if (myChip !== null && !keepsLockedChip) {
-        actions.append(button("Return", "secondary", () => call("ReturnChip", view.sessionId, seat).catch(() => {})));
-    }
 
-    const hint = `1 = weakest hand, ${game.playingSeats.length} = strongest.`
+    const hint = `1 = weakest hand, ${game.playingSeats.length} = strongest. Tap your chip to return it.`
         + (game.lockedChips.length ? " 🔒 = locked: whoever takes it first keeps it." : "");
     box.append(chips, el("p", "hint", hint), actions);
     return box;

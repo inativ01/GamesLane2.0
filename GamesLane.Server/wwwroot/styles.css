@@ -898,10 +898,31 @@ footer {
 }
 
 .chip-button.mine,
-.chip-button.mine:disabled {
+.chip-button.mine:disabled,
+.chip-button.mine:not(:disabled):hover {
     opacity: 1;
     background: #fbe7d6;
     box-shadow: inset 0 0 0 2px var(--primary);
+}
+
+/* Hovering your own chip shows that tapping it returns it. */
+.chip-button.mine:not(:disabled):hover .holder::after {
+    content: " ↩";
+}
+
+/* Optional specialist cards, folded until someone starts using one. */
+details.my-decision summary {
+    cursor: pointer;
+}
+
+details.my-decision > .hint {
+    margin: 0.3rem 0 0;
+}
+
+.heist-card-result.optional {
+    color: var(--muted);
+    font-weight: 400;
+    font-style: italic;
 }
 
 .my-hand-actions {

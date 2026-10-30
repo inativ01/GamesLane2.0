@@ -10,11 +10,13 @@ public enum TheGangCardKind
 }
 
 /// <summary>
-/// What the group agrees on for a card: a player, a player and a card value, a card value, or a hand ranking.
+/// What the group agrees on for a card: just to use it now (<see cref="Use"/>), a player, a player and a card value, a
+/// card value, or a hand ranking.
 /// </summary>
 public enum TheGangChoice
 {
     None,
+    Use,
     Player,
     PlayerAndRank,
     Rank,
@@ -92,21 +94,21 @@ public static class TheGangCards
         new(GetawayDriver, "Getaway Driver", TheGangCardKind.Specialist,
             "The group chooses a player; everyone sees the ranking of that player's current hand (e.g. a pair).", TheGangChoice.Player),
         new(Investor, "Investor", TheGangCardKind.Specialist,
-            "Everyone's number of face cards (J, Q, K) is shown to all."),
+            "Everyone's number of face cards (J, Q, K) is shown to all.", TheGangChoice.Use),
         new(Mastermind, "Mastermind", TheGangCardKind.Specialist,
             "The group chooses a player and a card value; everyone sees how many of that value the player has.",
             TheGangChoice.PlayerAndRank),
         new(Hacker, "Hacker", TheGangCardKind.Specialist,
             "The group chooses a player, who draws a card from the deck, then discards one of their cards.", TheGangChoice.Player),
         new(Coordinator, "Coordinator", TheGangCardKind.Specialist,
-            "Before the betting, everyone picks one of their cards and passes it to the next player, all at once."),
+            "Everyone picks one of their cards and passes it to the next player, all at once.", TheGangChoice.Use),
         new(Jack, "Jack", TheGangCardKind.Specialist,
             "The group chooses a player, who gets the \"Jack\" card (a J without a suit: never part of a flush) and discards one card.",
             TheGangChoice.Player),
         new(MathWhiz, "Math Whiz", TheGangCardKind.Specialist,
-            "Everyone's total card value is shown to all (2–10 as numbered, J, Q and K 10, A 11)."),
+            "Everyone's total card value is shown to all (2–10 as numbered, J, Q and K 10, A 11).", TheGangChoice.Use),
         new(ConArtist, "Con Artist", TheGangCardKind.Specialist,
-            "Look at your cards: once everyone has, all private cards are shuffled and dealt again."),
+            "Look at your cards: once everyone has, all private cards are shuffled and dealt again.", TheGangChoice.Use),
         new(Muscle, "Muscle", TheGangCardKind.Specialist,
             "The group chooses a player, whose hand beats every other hand of the same ranking at the reveal.", TheGangChoice.Player),
     ];
