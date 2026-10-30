@@ -82,7 +82,8 @@ public interface IGameHub
     Task ReturnChip(string sessionId, int seat);
 
     /// <summary>
-    /// The Gang: marks <paramref name="seat"/> ready (or not) to end the current stage.
+    /// The Gang: marks <paramref name="seat"/> ready (or not) to end the current stage, together with the caller's other
+    /// seats (each user is ready once).
     /// </summary>
     Task SetReady(string sessionId, int seat, bool ready);
 
@@ -93,7 +94,8 @@ public interface IGameHub
     Task PassCard(string sessionId, int seat, int cardIndex);
 
     /// <summary>
-    /// The Gang, Con Artist: <paramref name="seat"/>, which the caller must hold, has seen its cards.
+    /// The Gang, Con Artist: <paramref name="seat"/>, which the caller must hold, has seen its cards (and so have the
+    /// caller's other seats).
     /// </summary>
     Task ConfirmSeen(string sessionId, int seat);
 
@@ -104,7 +106,8 @@ public interface IGameHub
     Task Propose(string sessionId, int seat, string card, int? targetSeat, string? value);
 
     /// <summary>
-    /// The Gang: <paramref name="seat"/>, which the caller must hold, agrees (or no longer agrees) to the proposal.
+    /// The Gang: <paramref name="seat"/>, which the caller must hold, agrees (or no longer agrees) to the proposal, for
+    /// all the caller's seats that vote (each user votes once).
     /// </summary>
     Task Agree(string sessionId, int seat, string card, bool agree);
 

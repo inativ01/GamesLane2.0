@@ -18,7 +18,8 @@ public interface ITheGangSession : IGameSession
     bool TryReturnChip(string userKey, int seat, [NotNullWhen(false)] out string? error);
 
     /// <summary>
-    /// Marks <paramref name="seat"/>, which <paramref name="userKey"/> must hold, ready (or not) to end the stage.
+    /// Marks <paramref name="seat"/>, which <paramref name="userKey"/> must hold, ready (or not) to end the stage,
+    /// together with the user's other seats.
     /// </summary>
     bool TrySetReady(string userKey, int seat, bool ready, [NotNullWhen(false)] out string? error);
 
@@ -28,7 +29,8 @@ public interface ITheGangSession : IGameSession
     bool TryPassCard(string userKey, int seat, int cardIndex, [NotNullWhen(false)] out string? error);
 
     /// <summary>
-    /// Con Artist: <paramref name="seat"/>, which <paramref name="userKey"/> must hold, has seen its cards.
+    /// Con Artist: <paramref name="seat"/>, which <paramref name="userKey"/> must hold, has seen its cards (and so have
+    /// the user's other seats).
     /// </summary>
     bool TryConfirmSeen(string userKey, int seat, [NotNullWhen(false)] out string? error);
 
@@ -39,7 +41,8 @@ public interface ITheGangSession : IGameSession
     bool TryPropose(string userKey, int seat, string card, int? targetSeat, string? value, [NotNullWhen(false)] out string? error);
 
     /// <summary>
-    /// <paramref name="seat"/>, which <paramref name="userKey"/> must hold, agrees (or no longer agrees) to the proposal.
+    /// <paramref name="seat"/>, which <paramref name="userKey"/> must hold, agrees (or no longer agrees) to the proposal,
+    /// for all the user's seats that vote.
     /// </summary>
     bool TryAgree(string userKey, int seat, string card, bool agree, [NotNullWhen(false)] out string? error);
 

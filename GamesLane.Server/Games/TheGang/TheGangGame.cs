@@ -9,8 +9,8 @@ public enum TheGangPhase
     Betting,
 
     /// <summary>
-    /// The betting is paused while every player does the step of a specialist card the group used: Coordinator (pick a
-    /// card to pass on) or Con Artist (confirm they have seen their cards).
+    /// Before the betting, every player does the step of a specialist card in play: Coordinator (pick a card to pass
+    /// on), then Con Artist (confirm they have seen their cards).
     /// </summary>
     Preparing,
 
@@ -67,6 +67,7 @@ public partial class TheGangGame : ITheGangGame
     private Card?[] _passing = [];
     private bool[] _prepared = [];
     private string[] _newCards = [];
+    private string?[] _announcements = [];
 
     /// <summary>
     /// Starts the first heist. <paramref name="rules"/> defaults to the basic game; <paramref name="random"/> draws the cards.
@@ -170,23 +171,7 @@ public partial class TheGangGame : ITheGangGame
     public bool AreChipsDiscarded(int stage) => Has(TheGangCards.Blackout) && stage < Stage;
 
     /// <inheritdoc />
-    public string? Announcement(int player)
-    {
-        var cards = _holeCards[player];
-        var facts = new List<string>();
-        if (Used(TheGangCards.Investor))
-        {
-            var faces = cards.Count(c => c.Rank is >= 11 and <= 13);
-            facts.Add(faces == 1 ? "1 face card" : $"{faces} face cards");
-        }
-
-        if (Used(TheGangCards.MathWhiz))
-        {
-            facts.Add($"{cards.Sum(c => c.Rank == Card.Ace ? 11 : Math.Min(c.Rank, 10))} total");
-        }
-
-        return facts.Count == 0 ? null : string.Join(" · ", facts);
-    }
+    public string? Announcement(int player) => _announcements.ElementAtOrDefault(player);
 
     /// <inheritdoc />
     public HandValue Hand(int player) => HandEvaluator.Best([.. _holeCards[player], .. _community]);
@@ -275,13 +260,19 @@ public partial class TheGangGame : ITheGangGame
             return false;
         }
 
-        if (ready && _chips[Stage, player] is null)
+        // Each user is ready once, for all of their players.
+        var usersPlayers = Enumerable.Range(0, PlayerCount).Where(p => _sameHolder(p, player)).ToArray();
+        if (ready && usersPlayers.Any(p => _chips[Stage, p] is null))
         {
-            error = "Take a chip first.";
+            error = usersPlayers.Length == 1 ? "Take a chip first." : "Take a chip for each of your hands first.";
             return false;
         }
 
-        _ready[player] = ready;
+        foreach (var p in usersPlayers)
+        {
+            _ready[p] = ready;
+        }
+
         if (_ready.All(r => r) && MiddleChips.Count == 0 && PendingStep == TheGangStep.None)
         {
             EndStage();
@@ -329,7 +320,12 @@ public partial class TheGangGame : ITheGangGame
             return false;
         }
 
-        _prepared[player] = true;
+        // Each user confirms once, for all of their players.
+        foreach (var p in Enumerable.Range(0, PlayerCount).Where(p => _sameHolder(p, player)))
+        {
+            _prepared[p] = true;
+        }
+
         if (_prepared.All(p => p))
         {
             // All private cards are gathered, shuffled and dealt again, the same number to each player.
@@ -487,7 +483,7 @@ public partial class TheGangGame : ITheGangGame
         error = Phase switch
         {
             TheGangPhase.Betting => null,
-            TheGangPhase.Preparing => "The betting continues once everyone has done the specialist card's step.",
+            TheGangPhase.Preparing => "The betting starts once everyone has done the specialist card's step.",
             _ => "The betting is over for this heist.",
         };
         return error is null;
@@ -549,28 +545,68 @@ public partial class TheGangGame : ITheGangGame
         Revealed = 0;
         Stage = SkippedStages.Contains(0) ? 1 : 0;
         ResetDecisions();
-        PreparingCard = null;
-        Phase = TheGangPhase.Betting;
+        _announcements = [];
+        if (Has(TheGangCards.Coordinator))
+        {
+            StartPreparing(TheGangCards.Coordinator);
+        }
+        else if (Has(TheGangCards.ConArtist))
+        {
+            StartPreparing(TheGangCards.ConArtist);
+        }
+        else
+        {
+            StartBetting();
+        }
     }
 
     /// <summary>
-    /// When the group uses Coordinator or Con Artist: the betting pauses (and Ready is cleared) until every player has
-    /// done the card's step.
+    /// With Coordinator or Con Artist in play, every player does the card's step before the betting starts.
     /// </summary>
     private void StartPreparing(string card)
     {
         _prepared = new bool[PlayerCount];
         _passing = new Card?[PlayerCount];
-        Array.Clear(_ready);
         PreparingCard = card;
         Phase = TheGangPhase.Preparing;
     }
 
     /// <summary>
-    /// Once every player has done the step, the betting continues.
+    /// Once every player has done the step: Con Artist's step follows Coordinator's; then the betting starts.
     /// </summary>
     private void FinishPreparing()
     {
+        if (PreparingCard == TheGangCards.Coordinator && Has(TheGangCards.ConArtist))
+        {
+            StartPreparing(TheGangCards.ConArtist);
+            return;
+        }
+
+        StartBetting();
+    }
+
+    /// <summary>
+    /// Starts the betting. With Investor or Math Whiz in play, what they show about each player's private cards is
+    /// announced now, after the steps before the betting.
+    /// </summary>
+    private void StartBetting()
+    {
+        _announcements = [.. _holeCards.Select(cards =>
+        {
+            var facts = new List<string>();
+            if (Has(TheGangCards.Investor))
+            {
+                var faces = cards.Count(c => c.Rank is >= 11 and <= 13);
+                facts.Add(faces == 1 ? "1 face card" : $"{faces} face cards");
+            }
+
+            if (Has(TheGangCards.MathWhiz))
+            {
+                facts.Add($"{cards.Sum(c => c.Rank == Card.Ace ? 11 : Math.Min(c.Rank, 10))} total");
+            }
+
+            return facts.Count == 0 ? null : string.Join(" · ", facts);
+        })];
         PreparingCard = null;
         Phase = TheGangPhase.Betting;
     }

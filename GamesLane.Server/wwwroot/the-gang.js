@@ -92,14 +92,26 @@ function button(text, className, onClick) {
 }
 
 const hasCard = (game, key) => game.cards.some((c) => c.key === key);
+
+// The names of the different users holding these seats, in seat order. Each user votes once, for all their seats.
+function userNames(state, seats) {
+    const names = new Map();
+    for (const s of seats) {
+        const seat = state.seats[s];
+        if (seat && !names.has(seat.playerId)) {
+            names.set(seat.playerId, seat.name);
+        }
+    }
+    return [...names.values()];
+}
 // Whether a scan's guess must be agreed before the strongest hand can be revealed.
 const awaitsScan = (game) => game.decisions.some((d) => d.isOpen && (d.choice === "Rank" || d.choice === "Ranking"));
 
 function gangStatus(game, state, view) {
     switch (game.phase) {
         case "Preparing": {
-            const waiting = game.playingSeats.filter((s) => !game.preparedSeats.includes(s)).map((s) => state.seats[s]?.name ?? "");
-            const step = game.preparingCard === "coordinator" ? "Pick a card to pass on" : "Look at your cards";
+            const waiting = userNames(state, game.playingSeats.filter((s) => !game.preparedSeats.includes(s)));
+            const step = game.preparingCard === "coordinator" ? "Coordinator: pick a card to pass on" : "Con Artist: look at your cards";
             return `${step}. Waiting for: ${waiting.join(", ")}`;
         }
         case "Betting":
@@ -139,17 +151,24 @@ function heistCards(game, state, view) {
                 item.append(el("span", "heist-card-result", seatLabel(state, game.redrawnSeat, view), " got new private cards."));
             }
         }
-        if (card.kind === "Specialist" && game.announcements.length) {
+        // Investor and Math Whiz: what they showed about everyone's cards, under the first of them.
+        const announcer = game.cards.find((c) => c.key === "investor" || c.key === "math-whiz");
+        if (card === announcer && game.announcements.length) {
             item.append(el("ul", "announcements", ...game.announcements.map((a) =>
                 el("li", null, seatLabel(state, a.seat, view), el("strong", null, a.text)))));
+        }
+        if (game.preparingCard === card.key) {
+            item.append(el("span", "heist-card-result", card.key === "coordinator"
+                ? "Everyone is picking a card to pass on."
+                : "Everyone is looking at their cards."));
         }
         const decision = game.decisions.find((d) => d.card === card.key);
         if (decision?.isDone) {
             item.append(decisionResult(game, state, view, decision));
         } else if (decision?.isOpen && isUnderWay(decision)) {
-            const names = decision.agreed.map((s) => state.seats[s]?.name ?? "").join(", ");
-            item.append(el("span", "heist-card-result", `Deciding: ${decision.agreed.length} of ${decision.voters.length} agreed`
-                + (names ? ` (${names})` : "")));
+            const names = userNames(state, decision.agreed);
+            item.append(el("span", "heist-card-result", `Deciding: ${names.length} of ${userNames(state, decision.voters).length} agreed`
+                + (names.length ? ` (${names.join(", ")})` : "")));
         } else if (decision && card.kind === "Specialist" && !decision.isDone) {
             item.append(el("span", "heist-card-result optional", "Optional: not used in this heist yet"));
         }
@@ -206,20 +225,13 @@ function decisionResult(game, state, view, decision) {
             return line(who, pending ? " got the Jack card and is choosing one to discard." : " got the Jack card and discarded one.");
         case "muscle":
             return line(who, " beats every hand of the same ranking.");
-        case "coordinator":
-            return line(game.preparingCard === "coordinator" ? "Used: everyone is passing a card on." : "Used: everyone passed a card on.");
-        case "con-artist":
-            return line(game.preparingCard === "con-artist" ? "Used: everyone is looking at their cards." : "Used: the private cards were reshuffled.");
-        case "investor":
-        case "math-whiz":
-            return line("Used in this heist.");
         default:
             return result ? line(seatLabel(state, result.seat, view), el("strong", null, result.text)) : line("Used in this heist.");
     }
 }
 
 // The group's choice for a card: any voter proposes (a player and/or a value), everyone sees it, and it takes effect
-// once every voter has agreed. Changing the proposal clears the agreement.
+// once every voter has agreed. Changing the proposal clears the agreement. Each user agrees once, for all their seats.
 function decisionPanel(game, state, view, decision) {
     const panel = el("div", "decision");
     if (!decision.isOpen) {
@@ -236,7 +248,6 @@ function decisionPanel(game, state, view, decision) {
             : [];
     const propose = (seat, value) => call("Propose", view.sessionId, mine[0], decision.card, seat, value).catch(() => {});
     const prompt = {
-        Use: "Use this card now? It takes effect once everyone agrees.",
         Player: "Choose a player together:",
         PlayerAndRank: "Choose a player and a card value together:",
         Rank: "Agree on a card value the strongest hand's player holds:",
@@ -264,22 +275,20 @@ function decisionPanel(game, state, view, decision) {
 
     // Agreeing is a thumbs-up, like Ready: grey until pressed, green once agreed (tap again to undo).
     const complete = (!needsPlayer || decision.seat !== null) && (!values.length || decision.value !== null);
-    const agreedNames = decision.agreed.map((s) => state.seats[s]?.name ?? "").join(", ");
-    const toAgree = mine.filter((s) => !decision.agreed.includes(s));
+    const agreedNames = userNames(state, decision.agreed);
     const row = el("div", "decision-agree");
     if (mine.length) {
-        const agree = toAgree.length > 0;
-        const action = decision.choice === "Use" ? "Use it" : "Agree";
-        const thumb = button("👍", agree ? "ready-thumb" : "ready-thumb is-ready", () => {
-            (agree ? toAgree : mine).forEach((s) => call("Agree", view.sessionId, s, decision.card, agree).catch(() => {}));
-        });
+        const agree = mine.some((s) => !decision.agreed.includes(s));
+        const thumb = button("👍", agree ? "ready-thumb" : "ready-thumb is-ready",
+            () => call("Agree", view.sessionId, mine[0], decision.card, agree).catch(() => {}));
         thumb.disabled = !complete;
-        thumb.title = !complete ? "Complete the choice first" : agree ? action : "Agreed: tap to undo";
+        thumb.title = !complete ? "Complete the choice first" : agree ? "Agree" : "Agreed: tap to undo";
         thumb.setAttribute("aria-label", thumb.title);
         thumb.setAttribute("aria-pressed", String(!agree));
         row.append(thumb);
     }
-    row.append(el("span", "hint", `👍 ${decision.agreed.length} of ${decision.voters.length}` + (agreedNames ? ` (${agreedNames})` : "")));
+    row.append(el("span", "hint", `👍 ${agreedNames.length} of ${userNames(state, decision.voters).length}`
+        + (agreedNames.length ? ` (${agreedNames.join(", ")})` : "")));
     panel.append(row);
     if (!mine.length) {
         panel.append(el("span", "hint", view.isPlayer
@@ -292,13 +301,12 @@ function decisionPanel(game, state, view, decision) {
 // The seat each Informant chooses to show a card to, kept across updates.
 const showTo = {};
 
-// One of this user's hands: big cards with the hand name, then the chip buttons and Ready.
+// One of this user's hands: big cards with the hand name, then the chip buttons.
 // A locked chip (🔒) stays with whoever took it first: it cannot be taken from them, swapped or returned.
 function myHand(game, state, view, hand) {
     const seat = hand.seat;
     const stage = game.stage;
     const myChip = game.chips[stage][seat];
-    const isReady = game.readySeats.includes(seat);
     const betting = game.phase === "Betting";
     const isLocked = (number) => game.lockedChips.includes(number);
     const keepsLockedChip = myChip !== null && isLocked(myChip);
@@ -356,22 +364,12 @@ function myHand(game, state, view, hand) {
         box.append(el("p", "hint step", "Tap the card to discard. The stage can't end until you do."));
     }
 
-    if (game.phase === "Preparing") {
-        const done = game.preparedSeats.includes(seat);
-        if (passing) {
-            const order = game.playingSeats;
-            const next = order[(order.indexOf(seat) + 1) % order.length];
-            box.append(el("p", "hint", hand.passingCard
-                ? `You pass ${hand.passingCard} to ${state.seats[next]?.name ?? ""}. Tap another card to change it.`
-                : `Tap the card you want to pass to ${state.seats[next]?.name ?? ""}.`));
-        } else {
-            const seen = button(done ? "✓ Seen" : "I've seen my cards", done ? "is-ready" : "",
-                () => call("ConfirmSeen", view.sessionId, seat).catch(() => {}));
-            seen.disabled = done;
-            box.append(el("p", "hint", "Remember your cards: once everyone has seen theirs, all private cards are shuffled and dealt again."),
-                el("div", "my-hand-actions", seen));
-        }
-        return box;
+    if (passing) {
+        const order = game.playingSeats;
+        const next = order[(order.indexOf(seat) + 1) % order.length];
+        box.append(el("p", "hint", hand.passingCard
+            ? `You pass ${hand.passingCard} to ${state.seats[next]?.name ?? ""}. Tap another card to change it.`
+            : `Tap the card you want to pass to ${state.seats[next]?.name ?? ""}.`));
     }
 
     if (!betting) {
@@ -399,21 +397,44 @@ function myHand(game, state, view, hand) {
         chips.append(chip);
     }
 
-    // Ready is a thumbs-up: grey until pressed, green once ready (tap again to undo).
-    const ready = button("👍", isReady ? "ready-thumb is-ready" : "ready-thumb",
-        () => call("SetReady", view.sessionId, seat, !isReady).catch(() => {}));
-    ready.disabled = myChip === null;
-    ready.title = myChip === null ? "Take a chip first" : isReady ? "Ready: tap to undo" : "Ready";
-    ready.setAttribute("aria-label", ready.title);
-    ready.setAttribute("aria-pressed", String(isReady));
-    const actions = el("div", "my-hand-actions", ready);
-
     box.append(chips);
     if (game.lockedChips.length) {
         box.append(el("p", "hint", "🔒 Locked: whoever takes it first keeps it."));
     }
-    box.append(actions);
     return box;
+}
+
+// This user's buttons, once for all their hands (each user is ready or confirms once): Ready during the betting, and
+// with Con Artist, "I've seen my cards". Null if there are none now.
+function myActions(game, state, view) {
+    const seats = view.mySeats.filter((s) => game.playingSeats.includes(s));
+    if (!seats.length) {
+        return null;
+    }
+    if (game.phase === "Preparing" && game.preparingCard === "con-artist") {
+        const done = seats.every((s) => game.preparedSeats.includes(s));
+        const seen = button(done ? "✓ Seen" : "I've seen my cards", done ? "is-ready" : "",
+            () => call("ConfirmSeen", view.sessionId, seats[0]).catch(() => {}));
+        seen.disabled = done;
+        return el("div", null,
+            el("p", "hint", "Remember your cards: once everyone has seen theirs, all private cards are shuffled and dealt again."),
+            el("div", "my-hand-actions", seen));
+    }
+    if (game.phase !== "Betting") {
+        return null;
+    }
+
+    // Ready is a thumbs-up: grey until pressed, green once ready (tap again to undo).
+    const isReady = seats.every((s) => game.readySeats.includes(s));
+    const missingChip = seats.some((s) => game.chips[game.stage][s] === null);
+    const ready = button("👍", isReady ? "ready-thumb is-ready" : "ready-thumb",
+        () => call("SetReady", view.sessionId, seats[0], !isReady).catch(() => {}));
+    ready.disabled = missingChip;
+    ready.title = missingChip ? (seats.length > 1 ? "Take a chip for each hand first" : "Take a chip first")
+        : isReady ? "Ready: tap to undo" : "Ready";
+    ready.setAttribute("aria-label", ready.title);
+    ready.setAttribute("aria-pressed", String(isReady));
+    return el("div", "my-hand-actions", ready);
 }
 
 // Every playing seat's chips from all stages, with ✓ for players who are ready. Skipped stages are struck out, and
@@ -489,7 +510,12 @@ const gang = startSessionPage("TheGang", (game, state, view) => {
     $("my-decisions").replaceChildren(...decisions);
 
     const hands = view.private?.hands ?? [];
-    $("my-hands").replaceChildren(...hands.map((hand) => myHand(game, state, view, hand)));
+    const handBoxes = hands.map((hand) => myHand(game, state, view, hand));
+    const actions = myActions(game, state, view);
+    if (actions && handBoxes.length) {
+        handBoxes.at(-1).append(actions);
+    }
+    $("my-hands").replaceChildren(...handBoxes);
     $("reveal-next").hidden = !(view.isPlayer && game.phase === "Reveal" && !awaitsScan(game));
     $("next-heist").hidden = !(view.isPlayer && game.phase === "HeistOver" && !state.isGameOver);
 

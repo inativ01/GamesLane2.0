@@ -29,7 +29,7 @@ public interface ITheGangGame
     IReadOnlyList<string> NewCards { get; }
 
     /// <summary>
-    /// The specialist card whose step every player must do now (Coordinator or Con Artist), pausing the betting; or null.
+    /// The specialist card whose step every player must do before the betting (Coordinator or Con Artist), or null.
     /// </summary>
     string? PreparingCard { get; }
 
@@ -54,8 +54,8 @@ public interface ITheGangGame
     bool AreChipsDiscarded(int stage);
 
     /// <summary>
-    /// What the current heist's specialist card shows everyone about a player's cards, e.g. "2 face cards" (Investor)
-    /// or "17 total" (Math Whiz), or null.
+    /// What the specialist cards in play show everyone about a player's private cards when the betting starts, e.g.
+    /// "2 face cards" (Investor) or "17 total" (Math Whiz), or null.
     /// </summary>
     string? Announcement(int player);
 
@@ -147,7 +147,8 @@ public interface ITheGangGame
     bool TryReturnChip(int player, out string? error);
 
     /// <summary>
-    /// Marks the player ready (or not). When every player holds a chip and is ready, the stage ends.
+    /// Marks the player ready (or not), together with the other players of the same user (a user is ready once, and
+    /// only when each of their players holds a chip). When every player holds a chip and is ready, the stage ends.
     /// </summary>
     bool TrySetReady(int player, bool ready, out string? error);
 
@@ -168,8 +169,8 @@ public interface ITheGangGame
     bool TryPassCard(int player, int cardIndex, out string? error);
 
     /// <summary>
-    /// Con Artist: confirms the player has seen their cards. When everyone has, all private cards are shuffled and dealt
-    /// again, and the betting starts.
+    /// Con Artist: confirms the player, and the other players of the same user, have seen their cards. When everyone
+    /// has, all private cards are shuffled and dealt again, and the betting starts.
     /// </summary>
     bool TryConfirmSeen(int player, out string? error);
 
@@ -215,7 +216,8 @@ public interface ITheGangGame
     bool TryPropose(int player, string card, int? target, string? value, out string? error);
 
     /// <summary>
-    /// Agrees (or no longer agrees) to the proposal. Once every voter agrees, the card takes effect.
+    /// Agrees (or no longer agrees) to the proposal, for all the voting players of the same user. Once every voter
+    /// agrees, the card takes effect.
     /// </summary>
     bool TryAgree(int player, string card, bool agree, out string? error);
 

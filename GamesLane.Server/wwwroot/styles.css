@@ -945,7 +945,7 @@ details.my-decision > .hint {
     margin-top: 0.6rem;
 }
 
-.my-hand-actions button:first-child {
+.my-hand-actions button:first-child:not(.ready-thumb) {
     flex: 1;
 }
 
