@@ -66,11 +66,12 @@ public static class TheGangCards
     ];
 
     /// <summary>
-    /// Pairs of cards that are never drawn for the same heist, because they do not fit together.
+    /// Pairs of cards where one cancels the other: Quick Access removes the white chips, so Motion Detector and Laser
+    /// Tripwires (which depend on who holds a white chip) have no effect. They are drawn together unless the "avoid
+    /// clashing cards" option is on.
     /// </summary>
     public static IReadOnlyList<(string, string)> Clashes { get; } =
     [
-        (QuickAccess, HastyGetaway),
         (QuickAccess, MotionDetector),
         (QuickAccess, LaserTripwires),
     ];
@@ -82,7 +83,7 @@ public static class TheGangCards
         Challenges.Concat(Specialists).FirstOrDefault(c => c.Key == key);
 
     /// <summary>
-    /// Whether two cards are never drawn for the same heist.
+    /// Whether one of two cards cancels the other.
     /// </summary>
     public static bool Clash(string a, string b) => Clashes.Contains((a, b)) || Clashes.Contains((b, a));
 }

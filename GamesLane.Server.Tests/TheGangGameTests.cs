@@ -293,18 +293,40 @@ public class TheGangGameTests
     }
 
     [Fact]
-    public void The_first_heist_gets_the_chosen_number_of_challenge_cards_that_do_not_clash()
+    public void The_first_heist_gets_the_chosen_number_of_challenge_cards_in_any_combination()
     {
-        string[] challenges = [TheGangCards.QuickAccess, TheGangCards.HastyGetaway, TheGangCards.Blackout];
+        string[] challenges = [TheGangCards.QuickAccess, TheGangCards.MotionDetector, TheGangCards.HastyGetaway];
+        var game = new TheGangGame(3, () => Cards(RankedDeck), Advanced(3, challenges));
+
+        Assert.Equal(challenges.Order(), game.Cards.Select(c => c.Key).Order());
+        Assert.All(game.Cards, c => Assert.Equal(TheGangCardKind.Challenge, c.Kind));
+        Assert.Equal([0, 2], game.SkippedStages);
+    }
+
+    [Fact]
+    public void Avoiding_clashes_keeps_quick_access_apart_from_the_white_chip_cards()
+    {
+        string[] challenges = [TheGangCards.QuickAccess, TheGangCards.MotionDetector, TheGangCards.LaserTripwires];
         for (var seed = 0; seed < 20; seed++)
         {
-            var game = new TheGangGame(3, () => Cards(RankedDeck), Advanced(3, challenges), new Random(seed));
-            var keys = game.Cards.Select(c => c.Key).ToArray();
+            var rules = new TheGangRules(TheGangMode.Advanced, 3, challenges, [], AvoidClashes: true);
+            var keys = new TheGangGame(3, () => Cards(RankedDeck), rules, new Random(seed)).Cards.Select(c => c.Key).ToArray();
 
-            Assert.Equal(2, keys.Length);
-            Assert.Contains(TheGangCards.Blackout, keys);
-            Assert.All(game.Cards, c => Assert.Equal(TheGangCardKind.Challenge, c.Kind));
+            Assert.True(keys is [TheGangCards.QuickAccess] || !keys.Contains(TheGangCards.QuickAccess), string.Join(", ", keys));
         }
+    }
+
+    [Fact]
+    public void With_quick_access_the_white_chip_cards_have_no_effect()
+    {
+        var deck = "3D 4H 9C 5S KD KH JC 7D 9H JS KC AS AD";
+        var game = new TheGangGame(3, () => Cards(deck), Advanced(2, [TheGangCards.QuickAccess, TheGangCards.MotionDetector]));
+        var before = game.HoleCards(0).ToArray();
+
+        PlayStage(game, [1, 2, 3]);
+
+        Assert.Null(game.RedrawnPlayer);
+        Assert.Equal(before, game.HoleCards(0));
     }
 
     [Fact]

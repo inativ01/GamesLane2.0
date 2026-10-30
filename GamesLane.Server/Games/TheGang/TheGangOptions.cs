@@ -34,6 +34,21 @@ public static class TheGangOptions
     /// </summary>
     public const string Specialists = "specialists";
 
+    /// <summary>
+    /// The key of the option that keeps cards which cancel each other out of the same heist (off by default).
+    /// </summary>
+    public const string AvoidClashes = "avoidClashes";
+
+    /// <summary>
+    /// The values of yes/no options.
+    /// </summary>
+    public const string Yes = "Yes";
+
+    /// <summary>
+    /// The values of yes/no options.
+    /// </summary>
+    public const string No = "No";
+
     private static readonly GameOptionCondition WhenAdvanced = new(Mode, nameof(TheGangMode.Advanced));
 
     /// <summary>
@@ -58,6 +73,15 @@ public static class TheGangOptions
             ShownWhen: WhenAdvanced),
         new GameOption(Challenges, "Challenge cards", CardChoices(TheGangCards.Challenges), "", GameOptionKind.Set, WhenAdvanced),
         new GameOption(Specialists, "Specialist cards", CardChoices(TheGangCards.Specialists), "", GameOptionKind.Set, WhenAdvanced),
+        new GameOption(
+            AvoidClashes,
+            "Cards that cancel each other",
+            [
+                new GameOptionChoice(No, "Allow", "As in the original game. E.g. with Quick Access, Motion Detector and Laser Tripwires have no effect."),
+                new GameOptionChoice(Yes, "Avoid", "Never draw them for the same heist."),
+            ],
+            No,
+            ShownWhen: WhenAdvanced),
     ];
 
     private static GameOptionChoice[] CardChoices(IEnumerable<TheGangCard> cards) =>

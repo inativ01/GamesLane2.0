@@ -2,14 +2,15 @@ namespace GamesLane.Server.Games.TheGang;
 
 /// <summary>
 /// The rules a game of The Gang is played with, from its options: the mode, how many challenge cards the first heist
-/// gets, and which challenge and specialist cards (keys from <see cref="TheGangCards"/>) can be drawn. Cards are only
-/// drawn in <see cref="TheGangMode.Advanced"/> mode.
+/// gets, which challenge and specialist cards (keys from <see cref="TheGangCards"/>) can be drawn, and whether cards that
+/// cancel each other are kept apart. Cards are only drawn in <see cref="TheGangMode.Advanced"/> mode.
 /// </summary>
 public record TheGangRules(
     TheGangMode Mode,
     int FirstHeistChallenges,
     IReadOnlyList<string> Challenges,
-    IReadOnlyList<string> Specialists)
+    IReadOnlyList<string> Specialists,
+    bool AvoidClashes = false)
 {
     /// <summary>
     /// The basic game, without cards.
@@ -26,6 +27,7 @@ public record TheGangRules(
             TheGangOptions.ModeOf(options),
             int.TryParse(options.GetValueOrDefault(TheGangOptions.FirstChallenges), out var count) ? count : 0,
             GameOptions.TurnedOn(option(TheGangOptions.Challenges), options),
-            GameOptions.TurnedOn(option(TheGangOptions.Specialists), options));
+            GameOptions.TurnedOn(option(TheGangOptions.Specialists), options),
+            options.GetValueOrDefault(TheGangOptions.AvoidClashes) == TheGangOptions.Yes);
     }
 }

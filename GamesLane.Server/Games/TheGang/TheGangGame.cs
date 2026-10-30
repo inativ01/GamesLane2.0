@@ -19,8 +19,8 @@ public enum TheGangPhase
 /// The Gang rules. <c>newDeck</c> supplies a shuffled deck for each heist. With <c>n</c> private cards each (2, or 3 with
 /// Security Cameras), player <c>i</c> gets the deck's cards <c>n·i</c> to <c>n·i+n-1</c>; the five shared cards follow.
 /// In Advanced mode, the first heist gets the chosen number of challenge cards; each later heist gets one challenge card
-/// after a successful heist, or one specialist card after a failed one. A card is used at most once per game, and
-/// clashing cards are never drawn for the same heist.
+/// after a successful heist, or one specialist card after a failed one. A card is used at most once per game. Cards that
+/// cancel each other may be drawn together (the cancelled card has no effect) unless the rules avoid clashes.
 /// </summary>
 public class TheGangGame : ITheGangGame
 {
@@ -356,7 +356,7 @@ public class TheGangGame : ITheGangGame
 
     /// <summary>
     /// Replaces the heist's cards with up to <paramref name="count"/> random cards of a kind (only in Advanced mode):
-    /// enabled, not used before in this game, and not clashing with each other.
+    /// enabled, not used before in this game, and if the rules say so, not cancelling each other.
     /// </summary>
     private void DrawCards(TheGangCardKind kind, int count)
     {
@@ -365,7 +365,7 @@ public class TheGangGame : ITheGangGame
         while (Mode == TheGangMode.Advanced && drawn.Count < count)
         {
             var candidates = enabled
-                .Where(key => !_usedCards.Contains(key) && !drawn.Any(d => TheGangCards.Clash(d.Key, key)))
+                .Where(key => !_usedCards.Contains(key) && !(_rules.AvoidClashes && drawn.Any(d => TheGangCards.Clash(d.Key, key))))
                 .Select(TheGangCards.Find)
                 .OfType<TheGangCard>()
                 .Where(card => card.Kind == kind)
