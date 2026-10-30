@@ -98,6 +98,28 @@ public interface IGameHub
     Task ConfirmSeen(string sessionId, int seat);
 
     /// <summary>
+    /// The Gang: <paramref name="seat"/>, which the caller must hold, proposes a choice for the group decision of
+    /// <paramref name="card"/>: a seat and/or a value (a card value such as "9", or a hand ranking such as "Pair").
+    /// </summary>
+    Task Propose(string sessionId, int seat, string card, int? targetSeat, string? value);
+
+    /// <summary>
+    /// The Gang: <paramref name="seat"/>, which the caller must hold, agrees (or no longer agrees) to the proposal.
+    /// </summary>
+    Task Agree(string sessionId, int seat, string card, bool agree);
+
+    /// <summary>
+    /// The Gang, Informant: the chosen <paramref name="seat"/> secretly shows its card number <paramref name="cardIndex"/>
+    /// to <paramref name="toSeat"/>.
+    /// </summary>
+    Task ShowCard(string sessionId, int seat, int cardIndex, int toSeat);
+
+    /// <summary>
+    /// The Gang, Hacker and Jack: the chosen <paramref name="seat"/> discards its card number <paramref name="cardIndex"/>.
+    /// </summary>
+    Task DiscardCard(string sessionId, int seat, int cardIndex);
+
+    /// <summary>
     /// The Gang: reveals the next hand, if <paramref name="revealed"/> hands have been revealed so far.
     /// </summary>
     Task RevealNext(string sessionId, int revealed);

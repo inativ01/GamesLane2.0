@@ -1,7 +1,7 @@
 namespace GamesLane.Server.Games.TheGang;
 
 /// <summary>
-/// A card suit.
+/// A card suit. <see cref="None"/> is only for the "Jack" specialist card, which has no suit and so never makes a flush.
 /// </summary>
 public enum Suit
 {
@@ -9,6 +9,7 @@ public enum Suit
     Diamonds,
     Hearts,
     Spades,
+    None,
 }
 
 /// <summary>
@@ -32,7 +33,12 @@ public readonly record struct Card(int Rank, Suit Suit)
     public override string ToString() => $"{RankSymbol(Rank)}{SuitSymbol(Suit)}";
 
     /// <summary>
-    /// Parses short text such as <c>"10H"</c>, <c>"AS"</c> or <c>"7♦"</c>.
+    /// The "Jack" specialist card: a jack without a suit.
+    /// </summary>
+    public static Card SuitlessJack { get; } = new(11, Suit.None);
+
+    /// <summary>
+    /// Parses short text such as <c>"10H"</c>, <c>"AS"</c> or <c>"7♦"</c>; <c>"JX"</c> or <c>"J★"</c> is the suitless jack.
     /// </summary>
     public static Card Parse(string text)
     {
@@ -50,6 +56,7 @@ public readonly record struct Card(int Rank, Suit Suit)
             'D' or '♦' => Suit.Diamonds,
             'H' or '♥' => Suit.Hearts,
             'S' or '♠' => Suit.Spades,
+            'X' or '★' => Suit.None,
             _ => throw new FormatException($"Unknown suit in '{text}'."),
         };
         if (rank is < Two or > Ace)
@@ -73,13 +80,14 @@ public readonly record struct Card(int Rank, Suit Suit)
     };
 
     /// <summary>
-    /// ♣, ♦, ♥ or ♠.
+    /// ♣, ♦, ♥ or ♠, or ★ for no suit.
     /// </summary>
     private static char SuitSymbol(Suit suit) => suit switch
     {
         Suit.Clubs => '♣',
         Suit.Diamonds => '♦',
         Suit.Hearts => '♥',
+        Suit.None => '★',
         _ => '♠',
     };
 }
@@ -95,6 +103,7 @@ public static class Deck
     public static IReadOnlyList<Card> Shuffled(Random random)
     {
         var cards = Enum.GetValues<Suit>()
+            .Where(suit => suit != Suit.None)
             .SelectMany(suit => Enumerable.Range(Card.Two, Card.Ace - Card.Two + 1).Select(rank => new Card(rank, suit)))
             .ToArray();
         random.Shuffle(cards);

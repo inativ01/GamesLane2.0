@@ -88,12 +88,58 @@ public sealed record HandValue(HandCategory Category, IReadOnlyList<int> Ranks) 
     /// <summary>
     /// "two", "king", "ace", ...
     /// </summary>
-    private static string Singular(int rank) => RankNames[rank];
+    internal static string Singular(int rank) => RankNames[rank];
 
     /// <summary>
     /// "twos", "sixes", "kings", ...
     /// </summary>
-    private static string Plural(int rank) => rank == 6 ? "sixes" : RankNames[rank] + "s";
+    internal static string Plural(int rank) => rank == 6 ? "sixes" : RankNames[rank] + "s";
+
+    /// <summary>
+    /// The hand ranking as named in the game: "High card" to "Straight flush", or "Royal flush".
+    /// </summary>
+    public string Ranking => HandRankings.Of(this);
+}
+
+/// <summary>
+/// The hand rankings players can name (Getaway Driver, Fingerprint Scan): the categories, plus the royal flush.
+/// </summary>
+public static class HandRankings
+{
+    /// <summary>
+    /// "High card", "Pair", ... "Straight flush", "Royal flush", from weakest to strongest.
+    /// </summary>
+    public static IReadOnlyList<string> All { get; } =
+        ["High card", "Pair", "Two pair", "Three of a kind", "Straight", "Flush", "Full house", "Four of a kind", "Straight flush", "Royal flush"];
+
+    /// <summary>
+    /// The ranking of a hand.
+    /// </summary>
+    public static string Of(HandValue hand) =>
+        hand.Category == HandCategory.StraightFlush && hand.Ranks[0] == Card.Ace ? All[^1] : All[(int)hand.Category];
+
+    /// <summary>
+    /// The ranking of any number of cards: the best 5-card hand if there are at least 5, otherwise what the cards make
+    /// so far (high card, pair, two pair, three or four of a kind).
+    /// </summary>
+    public static string OfCards(IReadOnlyList<Card> cards)
+    {
+        if (cards.Count >= 5)
+        {
+            return Of(HandEvaluator.Best(cards));
+        }
+
+        var shape = cards.GroupBy(c => c.Rank).Select(g => g.Count()).OrderByDescending(n => n).ToArray();
+        var category = shape switch
+        {
+            [4, ..] => HandCategory.FourOfAKind,
+            [3, ..] => HandCategory.ThreeOfAKind,
+            [2, 2, ..] => HandCategory.TwoPair,
+            [2, ..] => HandCategory.OnePair,
+            _ => HandCategory.HighCard,
+        };
+        return All[(int)category];
+    }
 }
 
 /// <summary>
@@ -141,6 +187,8 @@ public static class HandEvaluator
 
         return shape switch
         {
+            // Five of a rank (the four jacks and the "Jack" specialist card) count as four of a kind with that kicker.
+            [5] => new HandValue(HandCategory.FourOfAKind, [byGroup[0], byGroup[0]]),
             [4, ..] => new HandValue(HandCategory.FourOfAKind, byGroup),
             [3, 2] => new HandValue(HandCategory.FullHouse, byGroup),
             _ when isFlush => new HandValue(HandCategory.Flush, ranks),

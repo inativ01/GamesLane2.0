@@ -28,7 +28,7 @@ public enum TheGangPhase
 /// after a successful heist, or one specialist card after a failed one. A card is used at most once per game. Cards that
 /// cancel each other may be drawn together (the cancelled card has no effect) unless the rules avoid clashes.
 /// </summary>
-public class TheGangGame : ITheGangGame
+public partial class TheGangGame : ITheGangGame
 {
     /// <summary>
     /// The fewest players.
@@ -176,7 +176,7 @@ public class TheGangGame : ITheGangGame
     /// <inheritdoc />
     public IReadOnlyList<bool> RevealedInOrder =>
         Enumerable.Range(0, Revealed)
-            .Select(i => i == 0 || !Hand(_revealOrder[i]).IsWeakerThan(Hand(_revealOrder[i - 1])))
+            .Select(i => i == 0 || !IsWeaker(_revealOrder[i], _revealOrder[i - 1]))
             .ToArray();
 
     /// <inheritdoc />
@@ -264,7 +264,7 @@ public class TheGangGame : ITheGangGame
         }
 
         _ready[player] = ready;
-        if (_ready.All(r => r) && MiddleChips.Count == 0)
+        if (_ready.All(r => r) && MiddleChips.Count == 0 && PendingStep == TheGangStep.None)
         {
             EndStage();
         }
@@ -340,11 +340,17 @@ public class TheGangGame : ITheGangGame
             return false;
         }
 
+        if (AwaitsScan)
+        {
+            error = "First agree on the guess about the strongest hand.";
+            return false;
+        }
+
         Revealed++;
         if (Revealed == PlayerCount)
         {
             Phase = TheGangPhase.HeistOver;
-            if (RevealedInOrder.All(inOrder => inOrder))
+            if (HeistSucceeds)
             {
                 Vaults++;
             }
@@ -378,7 +384,7 @@ public class TheGangGame : ITheGangGame
             return false;
         }
 
-        var succeeded = RevealedInOrder.All(inOrder => inOrder);
+        var succeeded = HeistSucceeds;
         Heist++;
         DrawCards(succeeded ? TheGangCardKind.Challenge : TheGangCardKind.Specialist, 1);
         Deal();
@@ -523,6 +529,7 @@ public class TheGangGame : ITheGangGame
         Stage = SkippedStages.Contains(0) ? 1 : 0;
         _passing = new Card?[PlayerCount];
         _prepared = new bool[PlayerCount];
+        ResetDecisions();
         Phase = Has(TheGangCards.Coordinator) || Has(TheGangCards.ConArtist) ? TheGangPhase.Preparing : TheGangPhase.Betting;
     }
 }

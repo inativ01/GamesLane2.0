@@ -173,6 +173,22 @@ public class GameHub(
         Act(sessionId, (ITheGangSession s, out string? error) => s.TryConfirmSeen(UserKey, seat, out error));
 
     /// <inheritdoc />
+    public Task Propose(string sessionId, int seat, string card, int? targetSeat, string? value) =>
+        Act(sessionId, (ITheGangSession s, out string? error) => s.TryPropose(UserKey, seat, card, targetSeat, value, out error));
+
+    /// <inheritdoc />
+    public Task Agree(string sessionId, int seat, string card, bool agree) =>
+        Act(sessionId, (ITheGangSession s, out string? error) => s.TryAgree(UserKey, seat, card, agree, out error));
+
+    /// <inheritdoc />
+    public Task ShowCard(string sessionId, int seat, int cardIndex, int toSeat) =>
+        Act(sessionId, (ITheGangSession s, out string? error) => s.TryShowCard(UserKey, seat, cardIndex, toSeat, out error));
+
+    /// <inheritdoc />
+    public Task DiscardCard(string sessionId, int seat, int cardIndex) =>
+        Act(sessionId, (ITheGangSession s, out string? error) => s.TryDiscard(UserKey, seat, cardIndex, out error));
+
+    /// <inheritdoc />
     public Task RevealNext(string sessionId, int revealed) =>
         Act(sessionId, (ITheGangSession s, out string? error) => s.TryRevealNext(UserKey, revealed, out error));
 

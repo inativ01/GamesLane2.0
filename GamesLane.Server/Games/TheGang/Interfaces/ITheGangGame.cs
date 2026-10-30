@@ -163,7 +163,59 @@ public interface ITheGangGame
     bool TryConfirmSeen(int player, out string? error);
 
     /// <summary>
+    /// The group decisions of the heist's cards (Informant, Getaway Driver, Mastermind, Hacker, Jack, Muscle, and the scans).
+    /// </summary>
+    IReadOnlyList<TheGangDecisionInfo> Decisions { get; }
+
+    /// <summary>
+    /// What the cards showed everyone so far (Getaway Driver, Mastermind, the scans' guesses).
+    /// </summary>
+    IReadOnlyList<TheGangResult> Results { get; }
+
+    /// <summary>
+    /// The player who must take a private step (show or discard a card) before the stage can end, or null.
+    /// </summary>
+    int? PendingPlayer { get; }
+
+    /// <summary>
+    /// The step <see cref="PendingPlayer"/> must take.
+    /// </summary>
+    TheGangStep PendingStep { get; }
+
+    /// <summary>
+    /// Informant: who showed a card to whom, or null.
+    /// </summary>
+    (int From, int To)? ShownBetween { get; }
+
+    /// <summary>
+    /// Informant: the card shown to <paramref name="player"/>, or null.
+    /// </summary>
+    Card? ShownCardFor(int player);
+
+    /// <summary>
+    /// Proposes a choice for a card's group decision: a player (<paramref name="target"/>) and/or a value (a card value
+    /// such as "9" or a hand ranking such as "Pair"). Clears everyone's agreement.
+    /// </summary>
+    bool TryPropose(int player, string card, int? target, string? value, out string? error);
+
+    /// <summary>
+    /// Agrees (or no longer agrees) to the proposal. Once every voter agrees, the card takes effect.
+    /// </summary>
+    bool TryAgree(int player, string card, bool agree, out string? error);
+
+    /// <summary>
+    /// Informant: the chosen player secretly shows their card number <paramref name="cardIndex"/> to player <paramref name="to"/>.
+    /// </summary>
+    bool TryShowCard(int player, int cardIndex, int to, out string? error);
+
+    /// <summary>
+    /// Hacker, Jack: the chosen player discards their card number <paramref name="cardIndex"/>.
+    /// </summary>
+    bool TryDiscard(int player, int cardIndex, out string? error);
+
+    /// <summary>
     /// Reveals the next hand, if <paramref name="revealed"/> hands have been revealed so far; otherwise nothing changes.
+    /// Before the strongest hand, the scans' guesses must be agreed.
     /// </summary>
     bool TryRevealNext(int revealed, out string? error);
 

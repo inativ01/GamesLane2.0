@@ -14,12 +14,39 @@ public record TheGangRevealedHand(int Seat, IReadOnlyList<string> Cards, string 
 public record TheGangAnnouncement(int Seat, string Text);
 
 /// <summary>
+/// A card's group decision, by seat: the proposed seat and value, the seats that vote and those that agreed, whether it
+/// can be decided now, and whether it was carried out.
+/// </summary>
+public record TheGangDecisionState(
+    string Card,
+    TheGangChoice Choice,
+    int? Seat,
+    string? Value,
+    IReadOnlyList<int> Voters,
+    IReadOnlyList<int> Agreed,
+    bool IsOpen,
+    bool IsDone);
+
+/// <summary>
+/// What a card showed everyone about a seat (Getaway Driver, Mastermind, the scans' guesses), e.g. "Pair".
+/// </summary>
+public record TheGangResultState(int Seat, string Card, string Text);
+
+/// <summary>
+/// A card shown to this seat by another seat (Informant).
+/// </summary>
+public record TheGangShownCard(int FromSeat, string Card);
+
+/// <summary>
 /// Public state of The Gang. <see cref="Chips"/> has one list per stage (white, yellow, orange, red), each with one
 /// entry per seat (null if the seat holds no chip in that stage, or does not play, or the stage's chips were removed by
 /// Blackout). Cards are short text such as "10♥". Private cards are not included until revealed.
 /// <see cref="Mode"/> is the mode this game is played in; <see cref="Cards"/> are the current heist's challenge or
 /// specialist cards, <see cref="SkippedStages"/> the stages it skips, <see cref="LockedChips"/> the current stage's
 /// locked chips, and <see cref="RedrawnSeat"/> the seat that got new private cards (Motion Detector, Laser Tripwires).
+/// <see cref="Decisions"/> are the cards' group decisions and <see cref="Results"/> what they showed;
+/// <see cref="PendingSeat"/> must take <see cref="PendingStep"/> before the stage can end; with Informant,
+/// <see cref="ShownFromSeat"/> showed a card to <see cref="ShownToSeat"/>.
 /// </summary>
 public record TheGangState(
     TheGangMode Mode,
@@ -28,6 +55,12 @@ public record TheGangState(
     IReadOnlyList<int> SkippedStages,
     IReadOnlyList<int> LockedChips,
     IReadOnlyList<TheGangAnnouncement> Announcements,
+    IReadOnlyList<TheGangDecisionState> Decisions,
+    IReadOnlyList<TheGangResultState> Results,
+    int? PendingSeat,
+    TheGangStep PendingStep,
+    int? ShownFromSeat,
+    int? ShownToSeat,
     int Heist,
     int Stage,
     TheGangPhase Phase,
@@ -43,10 +76,10 @@ public record TheGangState(
     IReadOnlyList<TheGangRevealedHand> Revealed);
 
 /// <summary>
-/// A player's own cards in The Gang, the name of their current best hand (once there are shared cards), and with
-/// Coordinator, the card they picked to pass on.
+/// A player's own cards in The Gang, the name of their current best hand (once there are shared cards), with
+/// Coordinator, the card they picked to pass on, and with Informant, a card another seat showed them.
 /// </summary>
-public record TheGangHand(int Seat, IReadOnlyList<string> Cards, string? BestHand, string? PassingCard);
+public record TheGangHand(int Seat, IReadOnlyList<string> Cards, string? BestHand, string? PassingCard, TheGangShownCard? ShownCard);
 
 /// <summary>
 /// Private state of The Gang, sent only to the user holding these seats.
@@ -97,6 +130,26 @@ public class TheGangSession(string id, Func<IReadOnlyList<Card>>? newDeck = null
         WithPlayer(userKey, seat, (game, player) => (game.TryConfirmSeen(player, out var e), e), out error);
 
     /// <inheritdoc />
+    public bool TryPropose(string userKey, int seat, string card, int? targetSeat, string? value, [NotNullWhen(false)] out string? error) =>
+        WithPlayer(userKey, seat, (game, player) =>
+        {
+            int? target = targetSeat is { } s ? PlayerAt(s) ?? -1 : null;
+            return (game.TryPropose(player, card, target, value, out var e), e);
+        }, out error);
+
+    /// <inheritdoc />
+    public bool TryAgree(string userKey, int seat, string card, bool agree, [NotNullWhen(false)] out string? error) =>
+        WithPlayer(userKey, seat, (game, player) => (game.TryAgree(player, card, agree, out var e), e), out error);
+
+    /// <inheritdoc />
+    public bool TryShowCard(string userKey, int seat, int cardIndex, int toSeat, [NotNullWhen(false)] out string? error) =>
+        WithPlayer(userKey, seat, (game, player) => (game.TryShowCard(player, cardIndex, PlayerAt(toSeat) ?? -1, out var e), e), out error);
+
+    /// <inheritdoc />
+    public bool TryDiscard(string userKey, int seat, int cardIndex, [NotNullWhen(false)] out string? error) =>
+        WithPlayer(userKey, seat, (game, player) => (game.TryDiscard(player, cardIndex, out var e), e), out error);
+
+    /// <inheritdoc />
     public bool TryRevealNext(string userKey, int revealed, [NotNullWhen(false)] out string? error) =>
         WithGame(userKey, game => (game.TryRevealNext(revealed, out var e), e), out error);
 
@@ -124,6 +177,20 @@ public class TheGangSession(string id, Func<IReadOnlyList<Card>>? newDeck = null
                 .Select(player => game.Announcement(player) is { } text ? new TheGangAnnouncement(bySeat[player], text) : null)
                 .OfType<TheGangAnnouncement>()
                 .ToArray(),
+            [.. game.Decisions.Select(d => new TheGangDecisionState(
+                d.Card,
+                d.Choice,
+                d.Player is { } p ? bySeat[p] : null,
+                d.Value,
+                [.. d.Voters.Select(v => bySeat[v])],
+                [.. d.Agreed.Select(a => bySeat[a])],
+                d.IsOpen,
+                d.IsDone))],
+            [.. game.Results.Select(r => new TheGangResultState(bySeat[r.Player], r.Card, r.Text))],
+            game.PendingPlayer is { } pending ? bySeat[pending] : null,
+            game.PendingStep,
+            game.ShownBetween is { } shown ? bySeat[shown.From] : null,
+            game.ShownBetween is { } shownTo ? bySeat[shownTo.To] : null,
             game.Heist,
             game.Stage,
             game.Phase,
@@ -150,13 +217,17 @@ public class TheGangSession(string id, Func<IReadOnlyList<Card>>? newDeck = null
     protected override object? GetPrivateGameState(IReadOnlyList<int> seats)
     {
         var game = _game!;
+        var bySeat = SeatOfPlayer();
         var cards = game.VisibleCommunityCards;
         return new TheGangPrivateState(seats.Select(seat =>
         {
             var player = PlayerAt(seat)!.Value;
             var holeCards = game.HoleCards(player);
             var best = cards.Count >= 3 ? HandEvaluator.Best([.. holeCards, .. cards]).Name : null;
-            return new TheGangHand(seat, Text(holeCards), best, game.PassingCard(player)?.ToString());
+            var shown = game.ShownCardFor(player) is { } card && game.ShownBetween is { } between
+                ? new TheGangShownCard(bySeat[between.From], card.ToString())
+                : null;
+            return new TheGangHand(seat, Text(holeCards), best, game.PassingCard(player)?.ToString(), shown);
         }).ToArray());
     }
 

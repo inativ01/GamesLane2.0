@@ -33,6 +33,27 @@ public interface ITheGangSession : IGameSession
     bool TryConfirmSeen(string userKey, int seat, [NotNullWhen(false)] out string? error);
 
     /// <summary>
+    /// <paramref name="seat"/>, which <paramref name="userKey"/> must hold, proposes a choice for a card's group decision:
+    /// a seat (<paramref name="targetSeat"/>) and/or a value such as "9" or "Pair".
+    /// </summary>
+    bool TryPropose(string userKey, int seat, string card, int? targetSeat, string? value, [NotNullWhen(false)] out string? error);
+
+    /// <summary>
+    /// <paramref name="seat"/>, which <paramref name="userKey"/> must hold, agrees (or no longer agrees) to the proposal.
+    /// </summary>
+    bool TryAgree(string userKey, int seat, string card, bool agree, [NotNullWhen(false)] out string? error);
+
+    /// <summary>
+    /// Informant: <paramref name="seat"/> secretly shows its card number <paramref name="cardIndex"/> to <paramref name="toSeat"/>.
+    /// </summary>
+    bool TryShowCard(string userKey, int seat, int cardIndex, int toSeat, [NotNullWhen(false)] out string? error);
+
+    /// <summary>
+    /// Hacker, Jack: <paramref name="seat"/> discards its card number <paramref name="cardIndex"/>.
+    /// </summary>
+    bool TryDiscard(string userKey, int seat, int cardIndex, [NotNullWhen(false)] out string? error);
+
+    /// <summary>
     /// Reveals the next hand, if <paramref name="revealed"/> hands have been revealed so far. Players only.
     /// </summary>
     bool TryRevealNext(string userKey, int revealed, [NotNullWhen(false)] out string? error);

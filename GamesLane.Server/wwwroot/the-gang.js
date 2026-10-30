@@ -92,6 +92,8 @@ function button(text, className, onClick) {
 }
 
 const hasCard = (game, key) => game.cards.some((c) => c.key === key);
+// Whether a scan's guess must be agreed before the strongest hand can be revealed.
+const awaitsScan = (game) => game.decisions.some((d) => d.isOpen && (d.choice === "Rank" || d.choice === "Ranking"));
 
 function gangStatus(game, state, view) {
     switch (game.phase) {
@@ -105,7 +107,9 @@ function gangStatus(game, state, view) {
                 ? `${STAGES[game.stage]} chips`
                 : `Players are taking ${STAGES[game.stage].toLowerCase()} chips…`;
         case "Reveal":
-            return "Revealing hands, lowest red chip first…";
+            return awaitsScan(game)
+                ? "Before the strongest hand is revealed, agree on the guess (see the card above)."
+                : "Revealing hands, lowest red chip first…";
         default:
             if (game.vaults >= TO_FINISH) {
                 return "🎉 Three vaults cracked: the gang wins!";
@@ -135,9 +139,98 @@ function heistCards(game, state, view) {
             item.append(el("ul", "announcements", ...game.announcements.map((a) =>
                 el("li", null, seatLabel(state, a.seat, view), el("strong", null, a.text)))));
         }
+        const decision = game.decisions.find((d) => d.card === card.key);
+        if (decision) {
+            item.append(decision.isDone ? decisionResult(game, state, view, decision) : decisionPanel(game, state, view, decision));
+        }
         return item;
     });
 }
+
+const RANKS = ["2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A"];
+const RANKINGS = ["High card", "Pair", "Two pair", "Three of a kind", "Straight", "Flush", "Full house", "Four of a kind",
+    "Straight flush", "Royal flush"];
+
+// What a carried-out decision did, for everyone to see.
+function decisionResult(game, state, view, decision) {
+    const who = decision.seat === null ? null : seatLabel(state, decision.seat, view);
+    const pending = game.pendingSeat !== null;
+    const result = game.results.find((r) => r.card === decision.card);
+    const line = (...content) => el("span", "heist-card-result", ...content);
+    switch (decision.card) {
+        case "informant":
+            return game.shownFromSeat === null
+                ? line(who, " is choosing a card to show someone.")
+                : line(seatLabel(state, game.shownFromSeat, view), " showed a card to ", seatLabel(state, game.shownToSeat, view), ".");
+        case "hacker":
+            return line(who, pending ? " drew a card and is choosing one to discard." : " drew a card and discarded one.");
+        case "jack":
+            return line(who, pending ? " got the Jack card and is choosing one to discard." : " got the Jack card and discarded one.");
+        case "muscle":
+            return line(who, " beats every hand of the same ranking.");
+        default:
+            return line(seatLabel(state, result.seat, view), el("strong", null, result.text));
+    }
+}
+
+// The group's choice for a card: any voter proposes (a player and/or a value), everyone sees it, and it takes effect
+// once every voter has agreed. Changing the proposal clears the agreement.
+function decisionPanel(game, state, view, decision) {
+    const panel = el("div", "decision");
+    if (!decision.isOpen) {
+        panel.append(el("span", "hint", decision.choice === "Rank" || decision.choice === "Ranking"
+            ? "Decided just before the strongest hand is revealed."
+            : "Can be decided during the betting."));
+        return panel;
+    }
+
+    const mine = view.mySeats.filter((s) => decision.voters.includes(s));
+    const needsPlayer = decision.choice === "Player" || decision.choice === "PlayerAndRank";
+    const values = decision.choice === "Ranking" ? RANKINGS : decision.choice === "Player" ? [] : RANKS;
+    const propose = (seat, value) => call("Propose", view.sessionId, mine[0], decision.card, seat, value).catch(() => {});
+    const prompt = {
+        Player: "Choose a player together:",
+        PlayerAndRank: "Choose a player and a card value together:",
+        Rank: "Agree on a card value the strongest hand's player holds:",
+        Ranking: "Agree on the strongest hand's ranking:",
+    }[decision.choice];
+    panel.append(el("span", "decision-prompt", prompt));
+
+    if (needsPlayer) {
+        panel.append(el("div", "decision-players", ...game.playingSeats.map((seat) => {
+            const pick = el("button", decision.seat === seat ? "secondary small picked" : "secondary small", seatLabel(state, seat, view));
+            pick.type = "button";
+            pick.disabled = mine.length === 0;
+            pick.addEventListener("click", () => propose(seat, decision.value));
+            return pick;
+        })));
+    }
+    if (values.length) {
+        const select = el("select", "decision-value", el("option", null, "Choose…"), ...values.map((v) => el("option", null, v)));
+        select.firstChild.value = "";
+        select.value = decision.value ?? "";
+        select.disabled = mine.length === 0;
+        select.addEventListener("change", () => select.value && propose(decision.seat, select.value));
+        panel.append(select);
+    }
+
+    const complete = (!needsPlayer || decision.seat !== null) && (!values.length || decision.value !== null);
+    const agreedNames = decision.agreed.map((s) => state.seats[s]?.name ?? "").join(", ");
+    panel.append(el("span", "hint", `Agreed: ${decision.agreed.length} of ${decision.voters.length}` + (agreedNames ? ` (${agreedNames})` : "")));
+    const toAgree = mine.filter((s) => !decision.agreed.includes(s));
+    if (mine.length && complete) {
+        const agree = toAgree.length > 0;
+        panel.append(button(agree ? "Agree" : "✓ Agreed (tap to undo)", agree ? "small" : "small is-ready", () => {
+            (agree ? toAgree : mine).forEach((s) => call("Agree", view.sessionId, s, decision.card, agree).catch(() => {}));
+        }));
+    } else if (!mine.length) {
+        panel.append(el("span", "hint", view.isPlayer ? "The other players decide this." : "The players decide this."));
+    }
+    return panel;
+}
+
+// The seat each Informant chooses to show a card to, kept across updates.
+const showTo = {};
 
 // One of this user's hands: big cards with the hand name, then the chip buttons and Ready.
 // A locked chip (🔒) stays with whoever took it first: it cannot be taken from them, swapped or returned.
@@ -159,20 +252,48 @@ function myHand(game, state, view, hand) {
         info.append(el("span", "stage-pill", `Take a ${STAGES[stage].toLowerCase()} chip`));
     }
 
-    // Coordinator: tapping a card picks it to pass on (it can be changed until everyone has picked).
+    if (hand.shownCard) {
+        const shown = cardElement(hand.shownCard.card);
+        info.append(el("span", "shown-card", seatLabel(state, hand.shownCard.fromSeat, view), " showed you", shown));
+    }
+
+    // Tapping a card: Coordinator picks it to pass on (it can be changed until everyone has picked); Informant shows it;
+    // Hacker and Jack discard it.
     const passing = game.phase === "Preparing" && hasCard(game, "coordinator");
+    const step = game.pendingSeat === seat ? game.pendingStep : "None";
+    const others = game.playingSeats.filter((s) => s !== seat);
+    if (step === "ShowCard" && !others.includes(showTo[seat])) {
+        showTo[seat] = others[0];
+    }
+    const cardAction = passing ? { verb: "Pass", run: (index) => call("PassCard", view.sessionId, seat, index) }
+        : step === "ShowCard" ? { verb: "Show", run: (index) => call("ShowCard", view.sessionId, seat, index, showTo[seat]) }
+            : step === "Discard" ? { verb: "Discard", run: (index) => call("DiscardCard", view.sessionId, seat, index) }
+                : null;
     const box = el("div", "my-hand", el("div", "my-hand-top", el("div", "card-row", ...hand.cards.map((c, index) => {
         const card = cardElement(c);
         card.classList.add("big");
-        if (!passing) {
+        if (!cardAction) {
             return card;
         }
-        const pick = el("button", c === hand.passingCard ? "card-pick picked" : "card-pick", card);
+        const pick = el("button", passing && c === hand.passingCard ? "card-pick picked" : "card-pick", card);
         pick.type = "button";
-        pick.title = `Pass ${c} on`;
-        pick.addEventListener("click", () => call("PassCard", view.sessionId, seat, index).catch(() => {}));
+        pick.title = `${cardAction.verb} ${c}`;
+        pick.addEventListener("click", () => cardAction.run(index).catch(() => {}));
         return pick;
     })), info));
+
+    if (step === "ShowCard") {
+        const select = el("select", "decision-value", ...others.map((s) => {
+            const option = el("option", null, state.seats[s]?.name ?? `Seat ${s + 1}`);
+            option.value = String(s);
+            return option;
+        }));
+        select.value = String(showTo[seat]);
+        select.addEventListener("change", () => { showTo[seat] = Number(select.value); });
+        box.append(el("p", "hint step", "Informant: choose who sees it, then tap the card to show them. ", select));
+    } else if (step === "Discard") {
+        box.append(el("p", "hint step", "Tap the card to discard. The stage can't end until you do."));
+    }
 
     if (game.phase === "Preparing") {
         const done = game.preparedSeats.includes(seat);
@@ -274,7 +395,7 @@ const gang = startSessionPage("TheGang", (game, state, view) => {
 
     const hands = view.private?.hands ?? [];
     $("my-hands").replaceChildren(...hands.map((hand) => myHand(game, state, view, hand)));
-    $("reveal-next").hidden = !(view.isPlayer && game.phase === "Reveal");
+    $("reveal-next").hidden = !(view.isPlayer && game.phase === "Reveal" && !awaitsScan(game));
     $("next-heist").hidden = !(view.isPlayer && game.phase === "HeistOver" && !state.isGameOver);
 
     // The table. Observers always see it; players may hide it.

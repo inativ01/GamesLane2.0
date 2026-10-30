@@ -507,6 +507,139 @@ public class TheGangGameTests
         Assert.Equal(before.Select(c => c.ToString()).Order(), Enumerable.Range(0, 3).SelectMany(game.HoleCards).Select(c => c.ToString()).Order());
     }
 
+    // Group decisions
+
+    [Fact]
+    public void A_group_decision_takes_effect_once_everyone_agrees_to_the_latest_proposal()
+    {
+        var game = WithSpecialist(TheGangCards.GetawayDriver);
+
+        Assert.False(game.TryAgree(0, TheGangCards.GetawayDriver, true, out var error));
+        Assert.Equal("Complete the proposal first.", error);
+        Assert.False(game.TryPropose(0, TheGangCards.GetawayDriver, null, null, out error));
+        Assert.Equal("Choose a player.", error);
+        Assert.False(game.TryPropose(0, TheGangCards.GetawayDriver, 1, "9", out error));
+        Assert.Equal("This card does not choose a value.", error);
+
+        Assert.True(game.TryPropose(0, TheGangCards.GetawayDriver, 1, null, out _));
+        game.TryAgree(0, TheGangCards.GetawayDriver, true, out _);
+        game.TryAgree(1, TheGangCards.GetawayDriver, true, out _);
+        Assert.True(game.TryPropose(1, TheGangCards.GetawayDriver, 2, null, out _));
+        Assert.Empty(game.Decisions[0].Agreed);
+
+        AgreeAll(game, TheGangCards.GetawayDriver);
+        Assert.True(game.Decisions[0].IsDone);
+        Assert.Equal(new TheGangResult(2, TheGangCards.GetawayDriver, "Pair"), Assert.Single(game.Results));
+        Assert.False(game.TryPropose(0, TheGangCards.GetawayDriver, 0, null, out error));
+        Assert.Equal("That cannot be decided now.", error);
+    }
+
+    [Theory]
+    [InlineData(1, "9", "one 9")]
+    [InlineData(2, "K", "2 Ks")]
+    [InlineData(0, "A", "no As")]
+    public void Mastermind_shows_how_many_of_a_value_the_chosen_player_has(int player, string value, string text)
+    {
+        var game = WithSpecialist(TheGangCards.Mastermind);
+
+        Assert.False(game.TryPropose(0, TheGangCards.Mastermind, player, "1", out _));
+        Assert.True(game.TryPropose(0, TheGangCards.Mastermind, player, null, out _));
+        Assert.False(game.TryAgree(0, TheGangCards.Mastermind, true, out _));
+        Assert.True(game.TryPropose(0, TheGangCards.Mastermind, player, value, out _));
+        AgreeAll(game, TheGangCards.Mastermind);
+
+        Assert.Equal(text, Assert.Single(game.Results).Text);
+    }
+
+    [Theory]
+    [InlineData(TheGangCards.Hacker, "A♠")]
+    [InlineData(TheGangCards.Jack, "J★")]
+    public void Hacker_and_jack_add_a_card_and_the_stage_waits_for_a_discard(string specialist, string added)
+    {
+        var game = WithSpecialist(specialist);
+        game.TryPropose(1, specialist, 0, null, out _);
+        AgreeAll(game, specialist);
+
+        Assert.Equal(["3♦", "4♥", added], game.HoleCards(0).Select(c => c.ToString()));
+        Assert.Equal((0, TheGangStep.Discard), (game.PendingPlayer, game.PendingStep));
+        PlayStage(game, [1, 2, 3]);
+        Assert.Equal(0, game.Stage);
+        Assert.False(game.TryDiscard(1, 0, out _));
+
+        Assert.True(game.TryDiscard(0, 0, out _));
+        Assert.Equal(["4♥", added], game.HoleCards(0).Select(c => c.ToString()));
+        Assert.Equal(1, game.Stage);
+    }
+
+    [Fact]
+    public void Informant_shows_one_card_to_one_other_player_only()
+    {
+        var game = WithSpecialist(TheGangCards.Informant);
+        game.TryPropose(2, TheGangCards.Informant, 0, null, out _);
+        AgreeAll(game, TheGangCards.Informant);
+
+        Assert.Equal(TheGangStep.ShowCard, game.PendingStep);
+        Assert.False(game.TryShowCard(0, 1, 0, out var error));
+        Assert.Equal("Choose another player to show the card to.", error);
+        Assert.True(game.TryShowCard(0, 1, 2, out _));
+
+        Assert.Equal((0, 2), game.ShownBetween);
+        Assert.Equal(Card.Parse("4H"), game.ShownCardFor(2));
+        Assert.Null(game.ShownCardFor(1));
+        Assert.Equal(TheGangStep.None, game.PendingStep);
+    }
+
+    [Fact]
+    public void Muscle_makes_the_chosen_hand_beat_every_hand_of_the_same_ranking()
+    {
+        // Player 0: pair of twos; player 1: pair of nines; player 2: pair of kings. Shared cards do not help.
+        const string deck = "2C 2D 9C 9D KD KH 3S 5H 7C JS QD";
+        var game = new TheGangGame(3, () => Cards(deck), Advanced(0, [], [TheGangCards.Muscle]));
+        PlayHeist(game, [3, 2, 1]);
+        game.TryPropose(0, TheGangCards.Muscle, 0, null, out _);
+        AgreeAll(game, TheGangCards.Muscle);
+
+        PlayAllStages(game, [3, 1, 2]);
+        RevealAll(game);
+
+        Assert.Equal([true, true, true], game.RevealedInOrder);
+        Assert.Equal(1, game.Vaults);
+    }
+
+    [Theory]
+    [InlineData(TheGangCards.RetinaScan, "K", true)]
+    [InlineData(TheGangCards.RetinaScan, "A", false)]
+    [InlineData(TheGangCards.FingerprintScan, "Three of a kind", true)]
+    [InlineData(TheGangCards.FingerprintScan, "Pair", false)]
+    public void Scans_need_a_right_guess_about_the_strongest_hand(string scan, string guess, bool right)
+    {
+        var game = WithChallenge(scan);
+        PlayAllStages(game, [1, 2, 3]);
+        game.TryRevealNext(0, out _);
+        game.TryRevealNext(1, out _);
+
+        Assert.False(game.TryRevealNext(2, out var error));
+        Assert.Equal("First agree on the guess about the strongest hand.", error);
+        Assert.False(game.TryPropose(2, scan, null, guess, out error));
+        Assert.Equal("You do not take part in this decision.", error);
+        Assert.True(game.TryPropose(0, scan, null, guess, out error), error);
+        Assert.True(game.TryAgree(0, scan, true, out _));
+        Assert.True(game.TryAgree(1, scan, true, out _));
+        Assert.True(game.TryRevealNext(2, out error), error);
+
+        Assert.Equal([true, true, true], game.RevealedInOrder);
+        Assert.Equal(right ? (1, 0) : (0, 1), (game.Vaults, game.Alarms));
+        Assert.Equal($"guessed {guess}: {(right ? "right" : "wrong")}", Assert.Single(game.Results).Text);
+    }
+
+    [Theory]
+    [InlineData("JX AH KH QH 10H", "Straight, ace high")]
+    [InlineData("JC JD JH JS JX", "Four jacks")]
+    public void The_jack_card_has_no_suit(string cards, string name)
+    {
+        Assert.Equal(name, HandEvaluator.Evaluate(Cards(cards)).Name);
+    }
+
     [Fact]
     public void Options_turn_into_rules()
     {
@@ -533,6 +666,22 @@ public class TheGangGameTests
 
     private static TheGangGame WithChallenge(string challenge) =>
         new(3, () => Cards(RankedDeck), Advanced(1, [challenge]));
+
+    // A failed first heist, so the second heist has this specialist card.
+    private static TheGangGame WithSpecialist(string specialist)
+    {
+        var game = new TheGangGame(3, () => Cards(RankedDeck + " AS AD"), Advanced(0, [], [specialist]));
+        PlayHeist(game, [3, 2, 1]);
+        return game;
+    }
+
+    private static void AgreeAll(TheGangGame game, string card)
+    {
+        for (var player = 0; player < game.PlayerCount; player++)
+        {
+            Assert.True(game.TryAgree(player, card, true, out var error), error);
+        }
+    }
 
     private static void PlayHeist(TheGangGame game, int[] chips)
     {

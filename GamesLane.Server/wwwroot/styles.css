@@ -995,6 +995,62 @@ footer {
     margin-left: 0.4rem;
 }
 
+/* A card's group decision: who proposes what, and who agreed. */
+.decision {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.4rem;
+    margin-top: 0.4rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid var(--line);
+}
+
+.decision-prompt {
+    font-size: 0.9rem;
+    font-weight: 700;
+}
+
+.decision-players {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+}
+
+.decision-players .picked {
+    background: #fbe9d8;
+    box-shadow: inset 0 0 0 2px var(--primary);
+}
+
+.decision-value {
+    padding: 0.35rem 0.5rem;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: #fff;
+    font: inherit;
+}
+
+.decision .hint {
+    margin: 0;
+}
+
+.decision .is-ready {
+    background: #2f7d45;
+}
+
+.shown-card {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.85rem;
+}
+
+.hint.step {
+    color: var(--primary-dark);
+    font-weight: 600;
+}
+
 .heist-card-result {
     display: inline-flex;
     flex-wrap: wrap;
