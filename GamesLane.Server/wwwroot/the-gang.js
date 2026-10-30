@@ -386,9 +386,13 @@ function myHand(game, state, view, hand) {
         chips.append(chip);
     }
 
-    const ready = button(isReady ? "✓ Ready (tap to undo)" : "Ready", isReady ? "is-ready" : "",
+    // Ready is a thumbs-up: grey until pressed, green once ready (tap again to undo).
+    const ready = button("👍", isReady ? "ready-thumb is-ready" : "ready-thumb",
         () => call("SetReady", view.sessionId, seat, !isReady).catch(() => {}));
     ready.disabled = myChip === null;
+    ready.title = myChip === null ? "Take a chip first" : isReady ? "Ready: tap to undo" : "Ready";
+    ready.setAttribute("aria-label", ready.title);
+    ready.setAttribute("aria-pressed", String(isReady));
     const actions = el("div", "my-hand-actions", ready);
 
     const hint = `1 = weakest hand, ${game.playingSeats.length} = strongest. Tap your chip to return it.`
@@ -416,7 +420,7 @@ function chipTable(game, state, view) {
             const cell = el("td", null, chip === null ? empty : chipElement(stage, chip));
             cell.title = removed ? "Removed (Blackout)" : "";
             if (stage === game.stage && game.phase === "Betting" && game.readySeats.includes(seat)) {
-                cell.append(el("span", "ready", " ✓"));
+                cell.append(el("span", "ready", " 👍"));
             }
             return cell;
         })));

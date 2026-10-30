@@ -943,6 +943,38 @@ details.my-decision > .hint {
     background: #25663a;
 }
 
+/* The Ready button: a round thumbs-up, grey and faded until pressed, green when ready. */
+.my-hand-actions:has(.ready-thumb) {
+    justify-content: center;
+}
+
+.my-hand-actions button.ready-thumb {
+    flex: none;
+    width: 3.6rem;
+    height: 3.6rem;
+    padding: 0;
+    border-radius: 50%;
+    background: var(--surface-soft);
+    font-size: 1.9rem;
+    line-height: 1;
+    box-shadow: inset 0 0 0 2px var(--line);
+    filter: grayscale(1);
+    transition: background-color 0.15s, filter 0.15s, transform 0.1s;
+}
+
+.my-hand-actions button.ready-thumb:not(:disabled):hover {
+    background: #e5dacb;
+    filter: grayscale(0.4);
+}
+
+.my-hand-actions button.ready-thumb.is-ready,
+.my-hand-actions button.ready-thumb.is-ready:not(:disabled):hover {
+    background: #2f7d45;
+    box-shadow: 0 0 0 3px rgba(47, 125, 69, 0.3);
+    filter: none;
+    transform: scale(1.08);
+}
+
 .gang-controls {
     margin: 0.25rem 0;
 }
