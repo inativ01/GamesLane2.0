@@ -177,10 +177,21 @@ public partial class TheGangGame
     private static bool IsScan(Decision decision) => decision.Card.Kind == TheGangCardKind.Challenge;
 
     /// <summary>
-    /// The players who decide: everyone, or for a scan, everyone except the strongest hand's player.
+    /// The players who decide: everyone, or for a scan, everyone except the players of the user who holds the strongest
+    /// hand (they can see it on their screen). If that user plays every seat, only the strongest hand's player is left out.
     /// </summary>
-    private IReadOnlyList<int> Voters(Decision decision) =>
-        [.. Enumerable.Range(0, PlayerCount).Where(p => !IsScan(decision) || _revealOrder.Length == 0 || p != _revealOrder[^1])];
+    private IReadOnlyList<int> Voters(Decision decision)
+    {
+        var everyone = Enumerable.Range(0, PlayerCount).ToArray();
+        if (!IsScan(decision) || _revealOrder.Length == 0)
+        {
+            return everyone;
+        }
+
+        var strongest = _revealOrder[^1];
+        var others = everyone.Where(p => !_sameHolder(p, strongest)).ToArray();
+        return others.Length > 0 ? others : [.. everyone.Where(p => p != strongest)];
+    }
 
     /// <summary>
     /// Whether a specialist card has been used in this heist.

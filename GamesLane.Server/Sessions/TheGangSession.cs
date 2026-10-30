@@ -162,7 +162,8 @@ public class TheGangSession(string id, Func<IReadOnlyList<Card>>? newDeck = null
 
     /// <inheritdoc />
     protected override void StartNewGame(IReadOnlyList<int> seats) =>
-        _game = new TheGangGame(seats.Count, _newDeck, TheGangRules.FromOptions(Options), _random);
+        _game = new TheGangGame(seats.Count, _newDeck, TheGangRules.FromOptions(Options), _random,
+            (a, b) => HolderOf(GameSeats[a]) is { } holder && holder == HolderOf(GameSeats[b]));
 
     /// <inheritdoc />
     protected override object GetGameState()

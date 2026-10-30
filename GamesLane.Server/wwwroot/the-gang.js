@@ -262,18 +262,29 @@ function decisionPanel(game, state, view, decision) {
         panel.append(select);
     }
 
+    // Agreeing is a thumbs-up, like Ready: grey until pressed, green once agreed (tap again to undo).
     const complete = (!needsPlayer || decision.seat !== null) && (!values.length || decision.value !== null);
     const agreedNames = decision.agreed.map((s) => state.seats[s]?.name ?? "").join(", ");
-    panel.append(el("span", "hint", `Agreed: ${decision.agreed.length} of ${decision.voters.length}` + (agreedNames ? ` (${agreedNames})` : "")));
     const toAgree = mine.filter((s) => !decision.agreed.includes(s));
-    if (mine.length && complete) {
+    const row = el("div", "decision-agree");
+    if (mine.length) {
         const agree = toAgree.length > 0;
-        const label = decision.choice === "Use" ? "Use it" : "Agree";
-        panel.append(button(agree ? label : "✓ Agreed (tap to undo)", agree ? "small" : "small is-ready", () => {
+        const action = decision.choice === "Use" ? "Use it" : "Agree";
+        const thumb = button("👍", agree ? "ready-thumb" : "ready-thumb is-ready", () => {
             (agree ? toAgree : mine).forEach((s) => call("Agree", view.sessionId, s, decision.card, agree).catch(() => {}));
-        }));
-    } else if (!mine.length) {
-        panel.append(el("span", "hint", view.isPlayer ? "The other players decide this." : "The players decide this."));
+        });
+        thumb.disabled = !complete;
+        thumb.title = !complete ? "Complete the choice first" : agree ? action : "Agreed: tap to undo";
+        thumb.setAttribute("aria-label", thumb.title);
+        thumb.setAttribute("aria-pressed", String(!agree));
+        row.append(thumb);
+    }
+    row.append(el("span", "hint", `👍 ${decision.agreed.length} of ${decision.voters.length}` + (agreedNames ? ` (${agreedNames})` : "")));
+    panel.append(row);
+    if (!mine.length) {
+        panel.append(el("span", "hint", view.isPlayer
+            ? "You can see the strongest hand, so the other players decide this."
+            : "The players decide this."));
     }
     return panel;
 }

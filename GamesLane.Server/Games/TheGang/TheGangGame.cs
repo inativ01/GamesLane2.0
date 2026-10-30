@@ -54,6 +54,7 @@ public partial class TheGangGame : ITheGangGame
     private readonly Func<IReadOnlyList<Card>> _newDeck;
     private readonly TheGangRules _rules;
     private readonly Random _random;
+    private readonly Func<int, int, bool> _sameHolder;
     private readonly int?[,] _chips;
     private readonly bool[] _ready;
     private readonly HashSet<string> _usedCards = [];
@@ -69,9 +70,17 @@ public partial class TheGangGame : ITheGangGame
 
     /// <summary>
     /// Starts the first heist. <paramref name="rules"/> defaults to the basic game; <paramref name="random"/> draws the cards.
+    /// <paramref name="sameHolder"/> tells whether two players are played by the same user (one screen), so a user who
+    /// sees the strongest hand does not take part in the scans' guesses; by default, every player is a different user.
     /// </summary>
-    public TheGangGame(int playerCount, Func<IReadOnlyList<Card>> newDeck, TheGangRules? rules = null, Random? random = null)
+    public TheGangGame(
+        int playerCount,
+        Func<IReadOnlyList<Card>> newDeck,
+        TheGangRules? rules = null,
+        Random? random = null,
+        Func<int, int, bool>? sameHolder = null)
     {
+        _sameHolder = sameHolder ?? ((a, b) => a == b);
         ArgumentOutOfRangeException.ThrowIfLessThan(playerCount, MinPlayers);
         ArgumentOutOfRangeException.ThrowIfGreaterThan(playerCount, MaxPlayers);
         PlayerCount = playerCount;

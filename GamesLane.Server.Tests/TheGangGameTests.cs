@@ -704,6 +704,35 @@ public class TheGangGameTests
         Assert.Equal($"guessed {guess}: {(right ? "right" : "wrong")}", Assert.Single(game.Results).Text);
     }
 
+    [Fact]
+    public void A_user_who_sees_the_strongest_hand_takes_no_part_in_the_scan()
+    {
+        // Players 1 and 2 are on the same screen; player 2 has the strongest hand.
+        var game = new TheGangGame(3, () => Cards(RankedDeck), Advanced(1, [TheGangCards.RetinaScan]),
+            sameHolder: (a, b) => a == b || (a >= 1 && b >= 1));
+        PlayAllStages(game, [1, 2, 3]);
+        game.TryRevealNext(0, out _);
+        game.TryRevealNext(1, out _);
+
+        Assert.Equal([0], Assert.Single(game.Decisions).Voters);
+        Assert.False(game.TryAgree(1, TheGangCards.RetinaScan, true, out var error));
+        Assert.Equal("You do not take part in this decision.", error);
+        Assert.True(game.TryPropose(0, TheGangCards.RetinaScan, null, "K", out _));
+        Assert.True(game.TryAgree(0, TheGangCards.RetinaScan, true, out _));
+        Assert.True(Assert.Single(game.Decisions).IsDone);
+    }
+
+    [Fact]
+    public void When_one_user_plays_every_seat_only_the_strongest_hand_sits_out_the_scan()
+    {
+        var game = new TheGangGame(3, () => Cards(RankedDeck), Advanced(1, [TheGangCards.FingerprintScan]), sameHolder: (_, _) => true);
+        PlayAllStages(game, [1, 2, 3]);
+        game.TryRevealNext(0, out _);
+        game.TryRevealNext(1, out _);
+
+        Assert.Equal([0, 1], Assert.Single(game.Decisions).Voters);
+    }
+
     [Theory]
     [InlineData("JX AH KH QH 10H", "Straight, ace high")]
     [InlineData("JC JD JH JS JX", "Four jacks")]

@@ -943,12 +943,12 @@ details.my-decision > .hint {
     background: #25663a;
 }
 
-/* The Ready button: a round thumbs-up, grey and faded until pressed, green when ready. */
+/* The Ready and Agree buttons: a round thumbs-up, grey and faded until pressed, green when pressed. */
 .my-hand-actions:has(.ready-thumb) {
     justify-content: center;
 }
 
-.my-hand-actions button.ready-thumb {
+button.ready-thumb {
     flex: none;
     width: 3.6rem;
     height: 3.6rem;
@@ -962,13 +962,13 @@ details.my-decision > .hint {
     transition: background-color 0.15s, filter 0.15s, transform 0.1s;
 }
 
-.my-hand-actions button.ready-thumb:not(:disabled):hover {
+button.ready-thumb:not(:disabled):hover {
     background: #e5dacb;
     filter: grayscale(0.4);
 }
 
-.my-hand-actions button.ready-thumb.is-ready,
-.my-hand-actions button.ready-thumb.is-ready:not(:disabled):hover {
+button.ready-thumb.is-ready,
+button.ready-thumb.is-ready:not(:disabled):hover {
     background: #2f7d45;
     box-shadow: 0 0 0 3px rgba(47, 125, 69, 0.3);
     filter: none;
@@ -1153,8 +1153,17 @@ details.my-decision > .hint {
     margin: 0;
 }
 
-.decision .is-ready {
-    background: #2f7d45;
+/* The thumbs-up to agree, with how many have agreed next to it. */
+.decision-agree {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+}
+
+.decision-agree button.ready-thumb {
+    width: 2.8rem;
+    height: 2.8rem;
+    font-size: 1.45rem;
 }
 
 .shown-card {

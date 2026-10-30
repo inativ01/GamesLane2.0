@@ -165,6 +165,11 @@ public abstract class GameSession : IGameSession
     protected IReadOnlyDictionary<string, string> Options => _options;
 
     /// <summary>
+    /// The user holding <paramref name="seat"/>, or null if it is empty. Call while holding <see cref="Sync"/>.
+    /// </summary>
+    protected string? HolderOf(int seat) => _seats[seat]?.UserKey;
+
+    /// <summary>
     /// Whether the session shows the session lobby or the game screen.
     /// </summary>
     private SessionPhase Phase { get; set; }
