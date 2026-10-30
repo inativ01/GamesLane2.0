@@ -117,7 +117,7 @@ function gangStatus(game, state, view) {
             if (game.alarms >= TO_FINISH) {
                 return "🚨 Three alarms: the gang is caught. Game over.";
             }
-            return game.revealed.every((h) => h.inOrder) ? "💰 The vault is open!" : "🚨 The alarm went off!";
+            return game.succeeded ? "💰 The vault is open!" : "🚨 The alarm went off!";
     }
 }
 

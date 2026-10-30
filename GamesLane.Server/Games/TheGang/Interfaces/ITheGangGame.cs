@@ -193,6 +193,11 @@ public interface ITheGangGame
     Card? ShownCardFor(int player);
 
     /// <summary>
+    /// Once the heist is over, whether it succeeded (hands in order and no wrong scan guess); null before.
+    /// </summary>
+    bool? Succeeded { get; }
+
+    /// <summary>
     /// Proposes a choice for a card's group decision: a player (<paramref name="target"/>) and/or a value (a card value
     /// such as "9" or a hand ranking such as "Pair"). Clears everyone's agreement.
     /// </summary>

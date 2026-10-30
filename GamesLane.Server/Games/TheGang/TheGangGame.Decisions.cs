@@ -34,6 +34,9 @@ public partial class TheGangGame
     public Card? ShownCardFor(int player) => _shown is { } s && s.To == player ? s.Card : null;
 
     /// <inheritdoc />
+    public bool? Succeeded => Phase == TheGangPhase.HeistOver ? HeistSucceeds : null;
+
+    /// <inheritdoc />
     public bool TryPropose(int player, string card, int? target, string? value, out string? error)
     {
         if (!TryGetOpenDecision(player, card, out var decision, out error))

@@ -629,6 +629,7 @@ public class TheGangGameTests
 
         Assert.Equal([true, true, true], game.RevealedInOrder);
         Assert.Equal(right ? (1, 0) : (0, 1), (game.Vaults, game.Alarms));
+        Assert.Equal(right, game.Succeeded);
         Assert.Equal($"guessed {guess}: {(right ? "right" : "wrong")}", Assert.Single(game.Results).Text);
     }
 
