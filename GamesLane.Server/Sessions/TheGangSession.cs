@@ -4,17 +4,29 @@ using GamesLane.Server.Games.TheGang;
 namespace GamesLane.Server.Sessions;
 
 /// <summary>
-/// A revealed hand: its two cards and its name, and whether it was at least as strong as the hand revealed before it.
+/// A revealed hand: its private cards and its name, and whether it was at least as strong as the hand revealed before it.
 /// </summary>
 public record TheGangRevealedHand(int Seat, IReadOnlyList<string> Cards, string Name, bool InOrder);
 
 /// <summary>
+/// What a specialist card shows everyone about a seat's cards, e.g. "2 face cards".
+/// </summary>
+public record TheGangAnnouncement(int Seat, string Text);
+
+/// <summary>
 /// Public state of The Gang. <see cref="Chips"/> has one list per stage (white, yellow, orange, red), each with one
-/// entry per seat (null if the seat holds no chip in that stage, or does not play). Cards are short text such as "10♥".
-/// Private cards are not included until revealed. <see cref="Mode"/> is the mode this game is played in.
+/// entry per seat (null if the seat holds no chip in that stage, or does not play, or the stage's chips were removed by
+/// Blackout). Cards are short text such as "10♥". Private cards are not included until revealed.
+/// <see cref="Mode"/> is the mode this game is played in; <see cref="Cards"/> are the current heist's challenge or
+/// specialist cards, <see cref="SkippedStages"/> the stages it skips, and <see cref="LockedChips"/> the current stage's
+/// locked chips.
 /// </summary>
 public record TheGangState(
     TheGangMode Mode,
+    IReadOnlyList<TheGangCard> Cards,
+    IReadOnlyList<int> SkippedStages,
+    IReadOnlyList<int> LockedChips,
+    IReadOnlyList<TheGangAnnouncement> Announcements,
     int Heist,
     int Stage,
     TheGangPhase Phase,
@@ -39,12 +51,14 @@ public record TheGangHand(int Seat, IReadOnlyList<string> Cards, string? BestHan
 public record TheGangPrivateState(IReadOnlyList<TheGangHand> Hands);
 
 /// <summary>
-/// A session of The Gang for 3 to 6 seats. Each player's two cards are private and sent only to them.
+/// A session of The Gang for 3 to 6 seats. Each player's cards are private and sent only to them.
 /// Players in the game are numbered in seat order.
 /// </summary>
-public class TheGangSession(string id, Func<IReadOnlyList<Card>>? newDeck = null) : GameSession(id), ITheGangSession
+public class TheGangSession(string id, Func<IReadOnlyList<Card>>? newDeck = null, Random? random = null)
+    : GameSession(id), ITheGangSession
 {
     private readonly Func<IReadOnlyList<Card>> _newDeck = newDeck ?? (() => Deck.Shuffled(Random.Shared));
+    private readonly Random _random = random ?? Random.Shared;
     private TheGangGame? _game;
 
     /// <inheritdoc />
@@ -81,7 +95,7 @@ public class TheGangSession(string id, Func<IReadOnlyList<Card>>? newDeck = null
 
     /// <inheritdoc />
     protected override void StartNewGame(IReadOnlyList<int> seats) =>
-        _game = new TheGangGame(seats.Count, _newDeck, TheGangOptions.ModeOf(Options));
+        _game = new TheGangGame(seats.Count, _newDeck, TheGangRules.FromOptions(Options), _random);
 
     /// <inheritdoc />
     protected override object GetGameState()
@@ -91,6 +105,13 @@ public class TheGangSession(string id, Func<IReadOnlyList<Card>>? newDeck = null
         var showsAllCards = game.Phase != TheGangPhase.Betting;
         return new TheGangState(
             game.Mode,
+            game.Cards,
+            game.SkippedStages,
+            game.LockedChips,
+            Enumerable.Range(0, game.PlayerCount)
+                .Select(player => game.Announcement(player) is { } text ? new TheGangAnnouncement(bySeat[player], text) : null)
+                .OfType<TheGangAnnouncement>()
+                .ToArray(),
             game.Heist,
             game.Stage,
             game.Phase,
@@ -99,7 +120,8 @@ public class TheGangSession(string id, Func<IReadOnlyList<Card>>? newDeck = null
             Text(game.VisibleCommunityCards),
             Enumerable.Range(0, TheGangGame.StageCount)
                 .Select(stage => (IReadOnlyList<int?>)Enumerable.Range(0, MaxSeats)
-                    .Select(seat => PlayerAt(seat) is { } player ? game.Chip(stage, player) : null).ToArray())
+                    .Select(seat => PlayerAt(seat) is { } player && !game.AreChipsDiscarded(stage) ? game.Chip(stage, player) : null)
+                    .ToArray())
                 .ToArray(),
             game.MiddleChips,
             Enumerable.Range(0, game.PlayerCount).Where(game.IsReady).Select(p => bySeat[p]).ToArray(),

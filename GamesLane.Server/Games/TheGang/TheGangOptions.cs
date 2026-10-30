@@ -20,7 +20,24 @@ public static class TheGangOptions
     public const string Mode = "mode";
 
     /// <summary>
-    /// All options, in the order they are shown.
+    /// The key of the option for how many challenge cards the first heist gets (0 to 3).
+    /// </summary>
+    public const string FirstChallenges = "firstChallenges";
+
+    /// <summary>
+    /// The key of the set of challenge cards that can be drawn.
+    /// </summary>
+    public const string Challenges = "challenges";
+
+    /// <summary>
+    /// The key of the set of specialist cards that can be drawn.
+    /// </summary>
+    public const string Specialists = "specialists";
+
+    private static readonly GameOptionCondition WhenAdvanced = new(Mode, nameof(TheGangMode.Advanced));
+
+    /// <summary>
+    /// All options, in the order they are shown. The card options only apply in Advanced mode.
     /// </summary>
     public static IReadOnlyList<GameOption> All { get; } =
     [
@@ -29,10 +46,22 @@ public static class TheGangOptions
             "Mode",
             [
                 new GameOptionChoice(nameof(TheGangMode.Basic), "Basic", "The standard rules."),
-                new GameOptionChoice(nameof(TheGangMode.Advanced), "Advanced", "With challenge cards. Coming soon: plays like Basic for now."),
+                new GameOptionChoice(nameof(TheGangMode.Advanced), "Advanced",
+                    "With challenge and specialist cards: after a successful heist, the next one gets a challenge card; after a failed one, a specialist card."),
             ],
             nameof(TheGangMode.Basic)),
+        new GameOption(
+            FirstChallenges,
+            "Challenge cards on the first heist",
+            [.. Enumerable.Range(0, 4).Select(n => new GameOptionChoice(n.ToString(), n.ToString()))],
+            "1",
+            ShownWhen: WhenAdvanced),
+        new GameOption(Challenges, "Challenge cards", CardChoices(TheGangCards.Challenges), "", GameOptionKind.Set, WhenAdvanced),
+        new GameOption(Specialists, "Specialist cards", CardChoices(TheGangCards.Specialists), "", GameOptionKind.Set, WhenAdvanced),
     ];
+
+    private static GameOptionChoice[] CardChoices(IEnumerable<TheGangCard> cards) =>
+        [.. cards.Select(c => new GameOptionChoice(c.Key, c.Name, c.Text))];
 
     /// <summary>
     /// The mode in <paramref name="options"/>, Basic if it is missing or unknown.

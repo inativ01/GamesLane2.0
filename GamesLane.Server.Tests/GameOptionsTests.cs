@@ -13,11 +13,37 @@ public class GameOptionsTests
     private static Dictionary<string, string> Advanced => new() { [TheGangOptions.Mode] = "Advanced" };
 
     [Fact]
-    public void The_gang_defaults_to_basic_and_other_games_have_no_options()
+    public void The_gang_defaults_to_basic_with_all_cards_and_other_games_have_no_options()
     {
-        Assert.Equal(new Dictionary<string, string> { [TheGangOptions.Mode] = "Basic" }, GameOptions.Defaults(GameType.TheGang));
+        var defaults = GameOptions.Defaults(GameType.TheGang);
+
+        Assert.Equal("Basic", defaults[TheGangOptions.Mode]);
+        Assert.Equal("1", defaults[TheGangOptions.FirstChallenges]);
+        Assert.Equal("", defaults[TheGangOptions.Challenges]);
+        Assert.Equal("", defaults[TheGangOptions.Specialists]);
         Assert.Empty(GameOptions.For(GameType.TicTacToe));
         Assert.Empty(GameOptions.Defaults(GameType.RockPaperScissors));
+    }
+
+    [Theory]
+    [InlineData("blackout,noise-sensors", true)]
+    [InlineData("", true)]
+    [InlineData("investor", false)]
+    [InlineData("blackout,blackout", false)]
+    [InlineData("no-such-card", false)]
+    public void Card_sets_list_only_their_own_cards_once(string turnedOff, bool valid)
+    {
+        var values = new Dictionary<string, string> { [TheGangOptions.Challenges] = turnedOff };
+
+        Assert.Equal(valid, GameOptions.TryValidate(GameType.TheGang, values, out _, out _));
+    }
+
+    [Fact]
+    public void Saved_card_sets_keep_known_cards_in_order_and_drop_removed_ones()
+    {
+        var saved = new Dictionary<string, string> { [TheGangOptions.Challenges] = "blackout,removed-card,quick-access" };
+
+        Assert.Equal("quick-access,blackout", GameOptions.Normalize(GameType.TheGang, saved)[TheGangOptions.Challenges]);
     }
 
     [Fact]
@@ -40,7 +66,9 @@ public class GameOptionsTests
     public void Saved_options_keep_valid_values_and_drop_the_rest()
     {
         var saved = new Dictionary<string, string> { [TheGangOptions.Mode] = "Advanced", ["removed"] = "x" };
-        Assert.Equal(Advanced, GameOptions.Normalize(GameType.TheGang, saved));
+        var normalized = GameOptions.Normalize(GameType.TheGang, saved);
+        Assert.Equal("Advanced", normalized[TheGangOptions.Mode]);
+        Assert.DoesNotContain("removed", normalized.Keys);
 
         var outdated = new Dictionary<string, string> { [TheGangOptions.Mode] = "Expert" };
         Assert.Equal("Basic", GameOptions.Normalize(GameType.TheGang, outdated)[TheGangOptions.Mode]);
@@ -57,7 +85,7 @@ public class GameOptionsTests
 
         var state = session.GetPublicState();
         Assert.Equal("Advanced", state.Options[TheGangOptions.Mode]);
-        Assert.Equal(TheGangOptions.Mode, Assert.Single(state.OptionList).Key);
+        Assert.Equal(TheGangOptions.Mode, state.OptionList[0].Key);
     }
 
     [Fact]

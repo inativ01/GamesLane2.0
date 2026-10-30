@@ -930,6 +930,64 @@ footer {
     margin: 0.25rem 0;
 }
 
+/* The heist's challenge (red) and specialist (green) cards. */
+.heist-cards {
+    display: grid;
+    gap: 0.5rem;
+    margin: 0.5rem 0;
+    padding: 0;
+    list-style: none;
+    text-align: left;
+}
+
+.heist-card {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    padding: 0.6rem 0.8rem;
+    border-left: 5px solid var(--red);
+    border-radius: 10px;
+    background: var(--surface);
+    box-shadow: var(--shadow);
+}
+
+.heist-card.specialist {
+    border-left-color: #2f7d45;
+}
+
+.heist-card-kind {
+    color: var(--red);
+    font-size: 0.7rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.heist-card.specialist .heist-card-kind {
+    color: #2f7d45;
+}
+
+.heist-card-text {
+    color: var(--muted);
+    font-size: 0.9rem;
+}
+
+.announcements {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3rem 0.9rem;
+    margin: 0.3rem 0 0;
+    padding: 0;
+    list-style: none;
+    font-size: 0.9rem;
+}
+
+.announcements li {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
 /* The table (everything observers see) */
 
 .table-view {
@@ -1022,6 +1080,11 @@ footer {
 .chip-table .ready {
     color: #9fe3b0;
     font-weight: 700;
+}
+
+.chip-table th.skipped {
+    color: rgba(207, 227, 212, 0.45);
+    text-decoration: line-through;
 }
 
 .revealed {
@@ -1144,6 +1207,26 @@ footer {
 .option-prefs {
     justify-content: center;
 }
+
+/* Short choices without explanations (e.g. 0 to 3) sit side by side. */
+.option.inline {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+}
+
+.option.inline legend {
+    width: 100%;
+}
+
+.option.inline .option-choice {
+    flex: 1;
+    justify-content: center;
+    min-width: 3.5rem;
+    margin: 0;
+    padding: 0.5rem;
+}
+
 
 .lobby .status {
     color: var(--muted);

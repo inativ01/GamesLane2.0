@@ -96,12 +96,13 @@ GamesLane.Server.Tests/        Unit tests
   - Players see the name of their current best hand once there are shared cards.
   - Hands are then revealed one at a time, from the lowest red chip to the highest, with each hand's name. If any hand is weaker than the one before it, the alarm goes off; otherwise the vault opens. Equal hands may be in either order.
   - 3 vaults win the game; 3 alarms lose it.
-  - Option **Mode**: Basic (the default) or Advanced. Advanced is meant for challenge cards; until they are added, it plays like Basic.
-  - Not yet included: the challenge and specialist cards, and in-game chat.
+  - **Advanced mode** (option **Mode**; Basic is the default) adds challenge and specialist cards. The first heist gets 0–3 challenge cards (option, default 1); after a successful heist, the next one gets one challenge card, and after a failed heist, one specialist card. Cards are drawn at random from the enabled ones (all by default; players can turn cards off), each at most once per game, and clashing cards (Quick Access and Hasty Getaway) are never drawn together. The current heist's cards are shown above the hands. The full card texts are in `docs/the-gang/`.
+  - Available so far: challenge cards Quick Access, Noise Sensors, Hasty Getaway, Ventilation Shaft, Blackout and Security Cameras; specialist cards Investor and Math Whiz. Locked chips (Noise Sensors, Ventilation Shaft) stay with whoever takes them first: they cannot be taken, swapped or returned. With Blackout, earlier stages' chips are hidden. Investor and Math Whiz show every player's count or total to everyone.
+  - Not yet included: the other challenge and specialist cards, and in-game chat.
 
 ### Game options
 
-A game can offer **options**, i.e. rule variants (so far only The Gang's Mode). Each option has a key, a label and a list of choices, one of which is the default; `Games/GameOptions.cs` lists them per game.
+A game can offer **options**, i.e. rule variants (so far only The Gang's). Each option has a key, a label and a list of choices with a default; `Games/GameOptions.cs` lists them per game. A **choice** option is one of its choices. A **set** option (e.g. The Gang's challenge cards) is a list of tick boxes, all on by default; its value lists the choices turned off, separated by commas, so cards added later are on by default. An option can apply only when another option has a certain value (`shownWhen`, e.g. the card options only in Advanced mode).
 
 - In the session lobby, everyone sees the chosen options; seated players can change them with **Game options**. They apply to the next new game; a paused game keeps the options it started with.
 - Saved users (registered or Google, not guests) can **save** the options as their preferences for that game, and **load** them back in the dialog. A session starts with its creator's saved preferences.
@@ -143,7 +144,7 @@ After every change, the server sends a `StateUpdated` message with the public se
 | `isGameOver` | The current game has ended |
 | `canResume` | In the lobby with an unfinished, paused game |
 | `game` | Game-specific state, or `null` before the first game |
-| `optionList` | The game's options: `{ key, label, choices: [{ value, label, hint }], default }` (empty for games without options) |
+| `optionList` | The game's options: `{ key, label, choices: [{ value, label, hint }], default, kind, shownWhen }`, where `kind` is `"Choice"` or `"Set"` and `shownWhen` is `{ key, value }` or `null` (empty for games without options) |
 | `options` | The chosen value of each option, e.g. `{ "mode": "Basic" }`, used by the next new game |
 
 In rock-paper-scissors, the game state only shows whether each seat has picked; the picks themselves are revealed once both have picked. Errors (e.g. "It is not your turn.") are returned as hub errors to the caller.

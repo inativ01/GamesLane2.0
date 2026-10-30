@@ -110,13 +110,31 @@ function gangStatus(game, state, view) {
     }
 }
 
-// One of this user's hands: two big cards with the hand name, then the chip buttons and Ready.
+// The heist's challenge and specialist cards with what they do, and what a specialist card shows about everyone's cards.
+function heistCards(game, state, view) {
+    return game.cards.map((card) => {
+        const item = el("li", `heist-card ${card.kind.toLowerCase()}`,
+            el("span", "heist-card-kind", card.kind === "Challenge" ? "Challenge" : "Specialist"),
+            el("strong", null, card.name),
+            el("span", "heist-card-text", card.text));
+        if (card.kind === "Specialist" && game.announcements.length) {
+            item.append(el("ul", "announcements", ...game.announcements.map((a) =>
+                el("li", null, seatLabel(state, a.seat, view), el("strong", null, a.text)))));
+        }
+        return item;
+    });
+}
+
+// One of this user's hands: big cards with the hand name, then the chip buttons and Ready.
+// A locked chip (🔒) stays with whoever took it first: it cannot be taken from them, swapped or returned.
 function myHand(game, state, view, hand) {
     const seat = hand.seat;
     const stage = game.stage;
     const myChip = game.chips[stage][seat];
     const isReady = game.readySeats.includes(seat);
     const betting = game.phase === "Betting";
+    const isLocked = (number) => game.lockedChips.includes(number);
+    const keepsLockedChip = myChip !== null && isLocked(myChip);
 
     const title = view.mySeats.length > 1 ? `Seat ${seat + 1} · ${state.seats[seat]?.name ?? ""}` : "Your hand";
     const info = el("div", "my-hand-info", el("span", "my-hand-title", title));
@@ -143,10 +161,14 @@ function myHand(game, state, view, hand) {
         const holder = game.playingSeats.find((s) => game.chips[stage][s] === number);
         const mine = holder === seat;
         const label = holder === undefined ? "" : mine ? "You" : state.seats[holder]?.name ?? "";
-        const chip = el("button", mine ? "chip-button mine" : "chip-button", chipElement(stage, number), el("span", "holder", label));
+        const lockedByOther = isLocked(number) && holder !== undefined && !mine;
+        const chip = el("button", mine ? "chip-button mine" : "chip-button",
+            chipElement(stage, number), el("span", "holder", isLocked(number) ? `🔒 ${label}`.trim() : label));
         chip.type = "button";
-        chip.disabled = mine;
-        chip.title = holder === undefined ? `Take chip ${number}` : mine ? "Your chip" : `Take chip ${number} from ${label}`;
+        chip.disabled = mine || lockedByOther || keepsLockedChip;
+        chip.title = lockedByOther ? `Chip ${number} is locked: ${label} keeps it`
+            : keepsLockedChip && !mine ? "Your chip is locked: you keep it for this stage"
+                : holder === undefined ? `Take chip ${number}` : mine ? "Your chip" : `Take chip ${number} from ${label}`;
         chip.addEventListener("click", () => call("TakeChip", view.sessionId, seat, number).catch(() => {}));
         chips.append(chip);
     }
@@ -155,22 +177,34 @@ function myHand(game, state, view, hand) {
         () => call("SetReady", view.sessionId, seat, !isReady).catch(() => {}));
     ready.disabled = myChip === null;
     const actions = el("div", "my-hand-actions", ready);
-    if (myChip !== null) {
+    if (myChip !== null && !keepsLockedChip) {
         actions.append(button("Return", "secondary", () => call("ReturnChip", view.sessionId, seat).catch(() => {})));
     }
 
-    box.append(chips, el("p", "hint", `1 = weakest hand, ${game.playingSeats.length} = strongest.`), actions);
+    const hint = `1 = weakest hand, ${game.playingSeats.length} = strongest.`
+        + (game.lockedChips.length ? " 🔒 = locked: whoever takes it first keeps it." : "");
+    box.append(chips, el("p", "hint", hint), actions);
     return box;
 }
 
-// Every playing seat's chips from all stages, with ✓ for players who are ready.
+// Every playing seat's chips from all stages, with ✓ for players who are ready. Skipped stages are struck out, and
+// with Blackout, earlier stages' chips show as "?" because they were removed.
 function chipTable(game, state, view) {
-    const header = el("tr", null, el("th", null, "Player"), ...STAGES.map((s) => el("th", null, s)));
+    const blackout = game.cards.some((c) => c.key === "blackout");
+    const skipped = (stage) => game.skippedStages.includes(stage);
+    const header = el("tr", null, el("th", null, "Player"), ...STAGES.map((s, stage) => {
+        const th = el("th", skipped(stage) ? "skipped" : null, s);
+        th.title = skipped(stage) ? "Skipped in this heist" : "";
+        return th;
+    }));
     const rows = game.playingSeats.map((seat) => el("tr", null,
         el("td", null, seatLabel(state, seat, view)),
         ...STAGES.map((_, stage) => {
             const chip = game.chips[stage][seat];
-            const cell = el("td", null, chip === null ? (stage <= game.stage ? "–" : "") : chipElement(stage, chip));
+            const removed = blackout && stage < game.stage && !skipped(stage);
+            const empty = skipped(stage) ? "" : removed ? "?" : stage <= game.stage ? "–" : "";
+            const cell = el("td", null, chip === null ? empty : chipElement(stage, chip));
+            cell.title = removed ? "Removed (Blackout)" : "";
             if (stage === game.stage && game.phase === "Betting" && game.readySeats.includes(seat)) {
                 cell.append(el("span", "ready", " ✓"));
             }
@@ -193,6 +227,9 @@ let tableHidden = localStorage.getItem(TABLE_HIDDEN_KEY) === "1";
 const gang = startSessionPage("TheGang", (game, state, view) => {
     gangState = game;
     $("status").textContent = gangStatus(game, state, view);
+
+    $("heist-cards").hidden = game.cards.length === 0;
+    $("heist-cards").replaceChildren(...heistCards(game, state, view));
 
     const hands = view.private?.hands ?? [];
     $("my-hands").replaceChildren(...hands.map((hand) => myHand(game, state, view, hand)));

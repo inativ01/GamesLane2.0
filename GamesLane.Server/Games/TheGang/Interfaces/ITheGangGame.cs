@@ -13,9 +13,35 @@ public interface ITheGangGame
     int PlayerCount { get; }
 
     /// <summary>
-    /// Basic or Advanced. Advanced plays like Basic until challenge cards are added.
+    /// Basic, or Advanced with challenge and specialist cards.
     /// </summary>
     TheGangMode Mode { get; }
+
+    /// <summary>
+    /// The challenge or specialist cards of the current heist (none in Basic mode).
+    /// </summary>
+    IReadOnlyList<TheGangCard> Cards { get; }
+
+    /// <summary>
+    /// The stages the current heist skips (Quick Access: white; Hasty Getaway: orange).
+    /// </summary>
+    IReadOnlyList<int> SkippedStages { get; }
+
+    /// <summary>
+    /// The current stage's locked chips: whoever takes one first keeps it (Noise Sensors, Ventilation Shaft).
+    /// </summary>
+    IReadOnlyList<int> LockedChips { get; }
+
+    /// <summary>
+    /// Whether a stage's chips have been removed and must no longer be shown (Blackout: every stage before the current one).
+    /// </summary>
+    bool AreChipsDiscarded(int stage);
+
+    /// <summary>
+    /// What the current heist's specialist card shows everyone about a player's cards, e.g. "2 face cards" (Investor)
+    /// or "17 total" (Math Whiz), or null.
+    /// </summary>
+    string? Announcement(int player);
 
     /// <summary>
     /// The current heist, starting at 1.
@@ -53,7 +79,7 @@ public interface ITheGangGame
     IReadOnlyList<Card> VisibleCommunityCards { get; }
 
     /// <summary>
-    /// A player's two private cards.
+    /// A player's private cards (two, or three with Security Cameras).
     /// </summary>
     IReadOnlyList<Card> HoleCards(int player);
 
@@ -89,17 +115,18 @@ public interface ITheGangGame
     IReadOnlyList<bool> RevealedInOrder { get; }
 
     /// <summary>
-    /// A player's best hand from their two cards and the five shared cards.
+    /// A player's best hand from their private cards and the five shared cards.
     /// </summary>
     HandValue Hand(int player);
 
     /// <summary>
-    /// Takes a chip of the current stage, from the middle or from another player. The player's previous chip goes back to the middle.
+    /// Takes a chip of the current stage, from the middle or from another player. The player's previous chip goes back to
+    /// the middle. A locked chip cannot be taken from another player, and a player holding one cannot swap it.
     /// </summary>
     bool TryTakeChip(int player, int chip, out string? error);
 
     /// <summary>
-    /// Puts the player's chip of the current stage back in the middle.
+    /// Puts the player's chip of the current stage back in the middle, unless it is locked.
     /// </summary>
     bool TryReturnChip(int player, out string? error);
 

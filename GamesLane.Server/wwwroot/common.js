@@ -583,10 +583,22 @@ function startSessionPage(gameType, render) {
         return item;
     }
 
-    // The chosen options in a few words, e.g. "Mode: Advanced".
+    // A set option's value lists the choices turned off, separated by commas.
+    const turnedOff = (value) => (value ?? "").split(",").filter(Boolean);
+    // Whether an option applies, given the chosen values (e.g. card options only in Advanced mode).
+    const applies = (option, values) => !option.shownWhen || values[option.shownWhen.key] === option.shownWhen.value;
+
+    // The chosen options in a few words, e.g. "Mode: Advanced · Challenge cards: 5 of 6".
     function optionsSummary(state) {
         return state.optionList
-            .map((option) => `${option.label}: ${option.choices.find((c) => c.value === state.options[option.key])?.label ?? ""}`)
+            .filter((option) => applies(option, state.options))
+            .map((option) => {
+                if (option.kind === "Set") {
+                    const on = option.choices.length - turnedOff(state.options[option.key]).length;
+                    return `${option.label}: ${on === option.choices.length ? "all" : `${on} of ${option.choices.length}`}`;
+                }
+                return `${option.label}: ${option.choices.find((c) => c.value === state.options[option.key])?.label ?? ""}`;
+            })
             .join(" · ");
     }
 
@@ -611,16 +623,19 @@ function startSessionPage(gameType, render) {
         const note = form.querySelector("[data-note]");
         const error = form.querySelector(".error");
 
+        // One group per option: radio buttons for a choice, tick boxes for a set. Choices without hints sit in one row.
         form.querySelector(".option-list").replaceChildren(...state.optionList.map((option) => {
             const fieldset = document.createElement("fieldset");
             fieldset.className = "option";
+            fieldset.dataset.key = option.key;
+            fieldset.classList.toggle("inline", option.choices.every((c) => !c.hint));
             const legend = document.createElement("legend");
             legend.textContent = option.label;
             fieldset.append(legend, ...option.choices.map((choice) => {
                 const label = document.createElement("label");
                 label.className = "option-choice";
                 const input = document.createElement("input");
-                input.type = "radio";
+                input.type = option.kind === "Set" ? "checkbox" : "radio";
                 input.name = option.key;
                 input.value = choice.value;
                 const text = document.createElement("span");
@@ -635,13 +650,27 @@ function startSessionPage(gameType, render) {
             return fieldset;
         }));
 
-        const fill = (values) => state.optionList.forEach((option) => {
-            const input = form.querySelector(`input[name="${option.key}"][value="${values[option.key] ?? option.default}"]`);
-            if (input) {
-                input.checked = true;
-            }
-        });
-        const chosen = () => Object.fromEntries(state.optionList.map((o) => [o.key, new FormData(form).get(o.key) ?? o.default]));
+        const inputs = (option) => [...form.querySelectorAll(`input[name="${option.key}"]`)];
+        const chosen = () => Object.fromEntries(state.optionList.map((option) => [option.key, option.kind === "Set"
+            ? inputs(option).filter((i) => !i.checked).map((i) => i.value).join(",")
+            : inputs(option).find((i) => i.checked)?.value ?? option.default]));
+        // Shows only the options that apply to the current choices.
+        const showApplicable = () => {
+            const values = chosen();
+            state.optionList.forEach((option) => {
+                form.querySelector(`fieldset[data-key="${option.key}"]`).hidden = !applies(option, values);
+            });
+        };
+        const fill = (values) => {
+            state.optionList.forEach((option) => {
+                const value = values[option.key] ?? option.default;
+                inputs(option).forEach((input) => {
+                    input.checked = option.kind === "Set" ? !turnedOff(value).includes(input.value) : input.value === value;
+                });
+            });
+            showApplicable();
+        };
+        form.addEventListener("change", showApplicable);
         const url = `/api/options/${state.gameType}`;
         const unreachable = "Could not reach the server. Check your connection and try again.";
         fill(state.options);

@@ -1,4 +1,6 @@
+using GamesLane.Server.Games;
 using GamesLane.Server.Games.TheGang;
+using GamesLane.Server.Sessions;
 
 namespace GamesLane.Server.Tests;
 
@@ -278,10 +280,179 @@ public class TheGangGameTests
         Assert.Equal("The game is over.", error);
     }
 
+    // Challenge and specialist cards
+
+    [Fact]
+    public void Basic_mode_draws_no_cards()
+    {
+        var rules = new TheGangRules(TheGangMode.Basic, 3, [TheGangCards.Blackout], [TheGangCards.Investor]);
+        var game = new TheGangGame(3, () => Cards(RankedDeck), rules);
+
+        Assert.Empty(game.Cards);
+        Assert.Equal(TheGangMode.Basic, game.Mode);
+    }
+
+    [Fact]
+    public void The_first_heist_gets_the_chosen_number_of_challenge_cards_that_do_not_clash()
+    {
+        string[] challenges = [TheGangCards.QuickAccess, TheGangCards.HastyGetaway, TheGangCards.Blackout];
+        for (var seed = 0; seed < 20; seed++)
+        {
+            var game = new TheGangGame(3, () => Cards(RankedDeck), Advanced(3, challenges), new Random(seed));
+            var keys = game.Cards.Select(c => c.Key).ToArray();
+
+            Assert.Equal(2, keys.Length);
+            Assert.Contains(TheGangCards.Blackout, keys);
+            Assert.All(game.Cards, c => Assert.Equal(TheGangCardKind.Challenge, c.Kind));
+        }
+    }
+
+    [Fact]
+    public void A_success_adds_a_challenge_card_and_a_failure_a_specialist_card_each_used_once()
+    {
+        var rules = Advanced(0, [TheGangCards.Blackout], [TheGangCards.Investor]);
+        var game = new TheGangGame(3, () => Cards(RankedDeck), rules);
+        Assert.Empty(game.Cards);
+
+        PlayHeist(game, [1, 2, 3]);
+        Assert.Equal(TheGangCards.Blackout, Assert.Single(game.Cards).Key);
+
+        PlayHeist(game, [3, 2, 1]);
+        Assert.Equal(TheGangCards.Investor, Assert.Single(game.Cards).Key);
+
+        PlayHeist(game, [1, 2, 3]);
+        Assert.Empty(game.Cards);
+    }
+
+    [Fact]
+    public void Quick_access_starts_with_three_shared_cards_and_yellow_chips()
+    {
+        var game = WithChallenge(TheGangCards.QuickAccess);
+
+        Assert.Equal(1, game.Stage);
+        Assert.Equal(3, game.VisibleCommunityCards.Count);
+        Assert.Equal([0], game.SkippedStages);
+        PlayAllStages(game, [1, 2, 3]);
+        Assert.Null(game.Chip(0, 0));
+        Assert.Equal(TheGangPhase.Reveal, game.Phase);
+    }
+
+    [Fact]
+    public void Hasty_getaway_goes_from_yellow_straight_to_red()
+    {
+        var game = WithChallenge(TheGangCards.HastyGetaway);
+        PlayStage(game, [1, 2, 3]);
+        PlayStage(game, [1, 2, 3]);
+
+        Assert.Equal(3, game.Stage);
+        Assert.Equal(5, game.VisibleCommunityCards.Count);
+    }
+
+    [Fact]
+    public void Noise_sensors_lock_the_one_star_chip_until_the_red_stage()
+    {
+        var game = WithChallenge(TheGangCards.NoiseSensors);
+        Assert.True(game.TryTakeChip(0, 1, out _));
+
+        Assert.Equal([1], game.LockedChips);
+        Assert.False(game.TryTakeChip(1, 1, out var error));
+        Assert.Equal("That chip is locked: whoever took it first keeps it.", error);
+        Assert.False(game.TryReturnChip(0, out error));
+        Assert.Equal("Your chip is locked: you keep it for this stage.", error);
+        Assert.False(game.TryTakeChip(0, 2, out _));
+
+        game.TryTakeChip(1, 2, out _);
+        game.TryTakeChip(2, 3, out _);
+        Enumerable.Range(0, 3).ToList().ForEach(p => game.TrySetReady(p, true, out _));
+        PlayStage(game, [1, 2, 3]);
+        PlayStage(game, [1, 2, 3]);
+        Assert.Equal(3, game.Stage);
+        Assert.Empty(game.LockedChips);
+        Assert.True(game.TryTakeChip(0, 1, out _));
+        Assert.True(game.TryTakeChip(1, 1, out _));
+    }
+
+    [Fact]
+    public void Ventilation_shaft_locks_the_highest_chip()
+    {
+        var game = WithChallenge(TheGangCards.VentilationShaft);
+        game.TryTakeChip(0, 3, out _);
+
+        Assert.Equal([3], game.LockedChips);
+        Assert.False(game.TryTakeChip(1, 3, out _));
+        Assert.True(game.TryTakeChip(1, 1, out _));
+        Assert.True(game.TryTakeChip(2, 1, out _));
+    }
+
+    [Fact]
+    public void Blackout_removes_each_stages_chips_when_the_next_starts()
+    {
+        var game = WithChallenge(TheGangCards.Blackout);
+        Assert.False(game.AreChipsDiscarded(0));
+
+        PlayStage(game, [1, 2, 3]);
+        Assert.True(game.AreChipsDiscarded(0));
+        Assert.False(game.AreChipsDiscarded(1));
+    }
+
+    [Fact]
+    public void Security_cameras_deal_three_private_cards_and_count_the_best_five_of_eight()
+    {
+        // Player 0: 3D 4H 9C; player 1: 5S KD KH; player 2: 2C 7D 9H; shared: JS KC 9S 9D 2D.
+        var game = new TheGangGame(3, () => Cards("3D 4H 9C 5S KD KH 2C 7D 9H JS KC 9S 9D 2D"),
+            Advanced(1, [TheGangCards.SecurityCameras]));
+
+        Assert.All(Enumerable.Range(0, 3), p => Assert.Equal(3, game.HoleCards(p).Count));
+        PlayAllStages(game, [1, 2, 3]);
+        Assert.Equal(Cards("JS KC 9S 9D 2D"), game.VisibleCommunityCards);
+        Assert.Equal("Full house, kings over nines", game.Hand(1).Name);
+    }
+
+    [Theory]
+    [InlineData(TheGangCards.Investor, "0 face cards", "0 face cards", "2 face cards")]
+    [InlineData(TheGangCards.MathWhiz, "7 total", "14 total", "20 total")]
+    public void Specialists_show_everyone_a_fact_about_each_hand(string specialist, string first, string second, string third)
+    {
+        var game = new TheGangGame(3, () => Cards(RankedDeck), Advanced(0, [], [specialist]));
+        Assert.Null(game.Announcement(0));
+
+        PlayHeist(game, [3, 2, 1]);
+        Assert.Equal([first, second, third], Enumerable.Range(0, 3).Select(game.Announcement));
+    }
+
+    [Fact]
+    public void Options_turn_into_rules()
+    {
+        var defaults = TheGangRules.FromOptions(GameOptions.Normalize(GameType.TheGang, new Dictionary<string, string>
+        {
+            [TheGangOptions.Mode] = "Advanced",
+            [TheGangOptions.Specialists] = TheGangCards.MathWhiz,
+        }));
+
+        Assert.Equal(TheGangMode.Advanced, defaults.Mode);
+        Assert.Equal(1, defaults.FirstHeistChallenges);
+        Assert.Equal(TheGangCards.Challenges.Select(c => c.Key), defaults.Challenges);
+        Assert.Equal([TheGangCards.Investor], defaults.Specialists);
+    }
+
     // Player 0: high card king; player 1: pair of nines; player 2: three kings.
     private const string RankedDeck = "3D 4H 9C 5S KD KH 2C 7D 9H JS KC";
 
     private static TheGangGame NewGame() => new(3, () => Cards(RankedDeck));
+
+    private static TheGangRules Advanced(int firstHeist, string[] challenges, string[]? specialists = null) =>
+        new(TheGangMode.Advanced, firstHeist, challenges, specialists ?? []);
+
+    private static TheGangGame WithChallenge(string challenge) =>
+        new(3, () => Cards(RankedDeck), Advanced(1, [challenge]));
+
+    private static void PlayHeist(TheGangGame game, int[] chips)
+    {
+        var heist = game.Heist;
+        PlayAllStages(game, chips);
+        RevealAll(game);
+        Assert.True(game.TryNextHeist(heist, out var error), error);
+    }
 
     private static Card[] Cards(string cards) => cards.Split(' ').Select(Card.Parse).ToArray();
 
@@ -300,7 +471,7 @@ public class TheGangGameTests
 
     private static void PlayAllStages(TheGangGame game, int[] chips)
     {
-        for (var stage = 0; stage < TheGangGame.StageCount; stage++)
+        while (game.Phase == TheGangPhase.Betting)
         {
             PlayStage(game, chips);
         }
