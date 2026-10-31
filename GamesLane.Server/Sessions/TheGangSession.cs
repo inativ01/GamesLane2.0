@@ -90,7 +90,7 @@ public record TheGangHand(int Seat, IReadOnlyList<string> Cards, string? Passing
 public record TheGangPrivateState(IReadOnlyList<TheGangHand> Hands);
 
 /// <summary>
-/// A session of The Gang for 3 to 6 seats. Each player's cards are private and sent only to them.
+/// A session of The Gang for 3 to 8 seats. Each player's cards are private and sent only to them.
 /// Players in the game are numbered in seat order.
 /// </summary>
 public class TheGangSession(string id, Func<IReadOnlyList<Card>>? newDeck = null, Random? random = null)

@@ -499,6 +499,18 @@ public class TheGangGameTests
         Assert.Equal("Full house, kings over nines", game.Hand(1).Name);
     }
 
+    [Fact]
+    public void Eight_players_can_play_a_heist_with_three_private_cards_each()
+    {
+        var game = new TheGangGame(8, () => Deck.Shuffled(new Random(3)), Advanced(1, [TheGangCards.SecurityCameras]));
+
+        Assert.All(Enumerable.Range(0, 8), p => Assert.Equal(3, game.HoleCards(p).Count));
+        PlayAllStages(game, [1, 2, 3, 4, 5, 6, 7, 8]);
+        RevealAll(game);
+        Assert.Equal(TheGangPhase.HeistOver, game.Phase);
+        Assert.Throws<ArgumentOutOfRangeException>(() => new TheGangGame(9, () => Deck.Shuffled(Random.Shared)));
+    }
+
     [Theory]
     [InlineData(TheGangCards.Investor, "0 face cards", "0 face cards", "2 face cards")]
     [InlineData(TheGangCards.MathWhiz, "7 total", "14 total", "20 total")]

@@ -3,7 +3,7 @@ using System.Diagnostics.CodeAnalysis;
 namespace GamesLane.Server.Sessions;
 
 /// <summary>
-/// A session of The Gang for 3 to 6 seats. Each player's cards are private and sent only to them.
+/// A session of The Gang for 3 to 8 seats. Each player's cards are private and sent only to them.
 /// </summary>
 public interface ITheGangSession : IGameSession
 {

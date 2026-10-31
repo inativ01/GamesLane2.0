@@ -792,7 +792,7 @@ public class GameSessionTests
         session.TryTakeSeat(Bob, BobProfile, "conn-b", 4, out _);
 
         var state = session.GetPublicState();
-        Assert.Equal((3, 6), (state.MinSeats, state.MaxSeats));
+        Assert.Equal((3, 8), (state.MinSeats, state.MaxSeats));
         Assert.False(session.TryNewGame(Alice, 0, out var error));
         Assert.Equal("At least 3 players must be seated.", error);
     }

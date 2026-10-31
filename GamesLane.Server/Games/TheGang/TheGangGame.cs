@@ -39,7 +39,7 @@ public partial class TheGangGame : ITheGangGame
     /// <summary>
     /// The most players.
     /// </summary>
-    public const int MaxPlayers = 6;
+    public const int MaxPlayers = 8;
 
     /// <summary>
     /// The number of betting stages.

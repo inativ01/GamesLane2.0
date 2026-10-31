@@ -92,7 +92,7 @@ GamesLane.Server.Tests/        Unit tests
 
 - **Tic-tac-toe** (2 players): after each board, the wins and draws are kept and players start the next round. The starting player alternates: X starts the odd rounds, O the even ones.
 - **Rock-paper-scissors** (2 players): both players pick secretly. When both have picked, the picks are revealed and the winner scores a point. Play continues for as many rounds as you like.
-- **The Gang** (3–6 players), the cooperative poker game by John Cooper and Kory Heath. Each heist:
+- **The Gang** (3–8 players), the cooperative poker game by John Cooper and Kory Heath. Each heist:
   - Every player gets 2 private cards, shown only on their own screen. Five shared cards are dealt: none at first, then 3, 4 and 5 as the stages go on.
   - Four betting stages (white, yellow, orange, red). In each, every player takes a numbered chip, from 1 (weakest hand) up to the number of players (strongest), from the middle or from another player. Tapping your own chip returns it to the middle. Players are numbered 1 to the number of players in seat order: each hand is titled "Player N", and the table's chip list shows the numbers. Next to the player's cards are the chips they took in this heist's earlier stages. Once every player holds a chip, the **Ready** button (👍) appears; the stage ends when everyone has pressed it. Any chip change clears everyone's Ready (and hides the button again while a chip is in the middle). A user with several seats presses Ready once, for all their hands.
   - Players work out their hand's strength themselves; its name is only shown when the hands are revealed.

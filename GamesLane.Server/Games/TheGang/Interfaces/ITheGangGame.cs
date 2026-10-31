@@ -8,7 +8,7 @@ namespace GamesLane.Server.Games.TheGang;
 public interface ITheGangGame
 {
     /// <summary>
-    /// The number of players (3 to 6). Chips are numbered 1 to this number.
+    /// The number of players (3 to 8). Chips are numbered 1 to this number.
     /// </summary>
     int PlayerCount { get; }
 
