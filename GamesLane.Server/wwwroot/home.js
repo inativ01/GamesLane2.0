@@ -5,6 +5,22 @@
 // user has logged in (the page reloads after logging in, or returns here after Google sign-in).
 
 const PENDING_GAME_KEY = "pendingGame";
+const SPLASH_SECONDS = 5;
+
+// The splash screen (see index.html) fades out after 5 seconds. The ?splash used by the home icon is removed from the
+// address, so reloading the page does not show it again.
+if (document.documentElement.classList.contains("splashing")) {
+    sessionStorage.setItem("splashShown", "1");
+    if (params.has("splash")) {
+        const url = new URL(location.href);
+        url.searchParams.delete("splash");
+        history.replaceState(null, "", url.pathname + url.search);
+    }
+    setTimeout(() => {
+        $("splash").classList.add("done");
+        $("splash").addEventListener("transitionend", () => document.documentElement.classList.remove("splashing"), { once: true });
+    }, SPLASH_SECONDS * 1000);
+}
 
 function goToSession(gameType, sessionId) {
     location.href = `${GAME_PAGES[gameType]}?session=${sessionId}`;

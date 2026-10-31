@@ -19,6 +19,8 @@ It is a complete reimplementation of the original [GamesLane](https://github.com
 - Changing the display name or icon also updates it on any seat the user holds.
 
 ### Lobby (main screen)
+- A splash screen (the portrait or landscape picture, to suit the screen) is shown for 5 seconds when the app is first opened in a browser tab and whenever the home icon is used; then the main screen appears. It is not shown again when the page reloads (e.g. after logging in).
+- The top bar of every page shows the GamesLane name picture.
 - A list of games. A new session can be started only when a user is logged in.
 - A way to join a session by entering its code. This does not require a logged-in user.
 - A **Login** button, shown only when no user is logged in, and a **Logout** button, shown only when a user is logged in.
@@ -84,7 +86,7 @@ GamesLane.Server/              ASP.NET Core backend
     tictactoe.html/.js         Tic-tac-toe page
     rock-paper-scissors.html/.js  Rock-paper-scissors page
     the-gang.html/.js          The Gang page
-    images/                    Logo and main-screen background (small copies of the originals), game pictures (SVG)
+    images/                    Logo, the GamesLane name for the header and the splash screens (web-sized copies of the originals in docs/), game pictures (SVG)
 GamesLane.Server.Tests/        Unit tests
 ```
 

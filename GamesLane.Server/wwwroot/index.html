@@ -8,18 +8,26 @@
     <link rel="apple-touch-icon" href="images/logo-180.png">
     <meta name="theme-color" content="#0d0c0b">
     <link rel="stylesheet" href="styles.css">
+    <script>
+        // The splash screen shows when the app is first opened in this tab, and when the home icon is used (/?splash).
+        if (!sessionStorage.getItem("splashShown") || new URLSearchParams(location.search).has("splash")) {
+            document.documentElement.classList.add("splashing");
+        }
+    </script>
 </head>
 <body>
+<div id="splash" class="splash" aria-hidden="true">
+    <picture>
+        <source media="(orientation: portrait)" srcset="images/splash-portrait-small.jpg 512w, images/splash-portrait.jpg 1024w" sizes="100vw">
+        <img src="images/splash-landscape.jpg" srcset="images/splash-landscape-small.jpg 768w, images/splash-landscape.jpg 1536w" sizes="100vw" alt="">
+    </picture>
+</div>
 <header class="top">
-    <a href="/" class="brand"><img class="brand-logo" src="images/logo-180.png" alt=""><span class="brand-name">Games<span>Lane</span></span></a>
+    <a href="/" class="brand"><img class="brand-name" src="images/name.png" alt="GamesLane"></a>
     <div id="account" class="account"></div>
 </header>
 <main>
     <section id="home">
-        <img class="banner" src="images/background-768.jpg"
-             srcset="images/background-768.jpg 768w, images/background-1536.jpg 1536w"
-             sizes="(max-width: 680px) 100vw, 680px" width="1536" height="1024" alt="GamesLane">
-
         <div class="panel">
             <h2>Start a new game</h2>
             <div class="game-list">
