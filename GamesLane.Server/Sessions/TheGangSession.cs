@@ -15,7 +15,7 @@ public record TheGangAnnouncement(int Seat, string Text);
 
 /// <summary>
 /// A card's group decision, by seat: the proposed seat and value, the seats that vote and those that agreed, whether it
-/// can be decided now, and whether it was carried out.
+/// can be decided now, whether it was carried out, and for a scan, whether it was skipped (the heist fails anyway).
 /// </summary>
 public record TheGangDecisionState(
     string Card,
@@ -25,12 +25,14 @@ public record TheGangDecisionState(
     IReadOnlyList<int> Voters,
     IReadOnlyList<int> Agreed,
     bool IsOpen,
-    bool IsDone);
+    bool IsDone,
+    bool IsSkipped);
 
 /// <summary>
-/// What a card showed everyone about a seat (Getaway Driver, Mastermind, the scans' guesses), e.g. "Pair".
+/// What a card showed everyone about a seat (Getaway Driver, Mastermind, the scans' guesses), e.g. "Pair". For a scan,
+/// <see cref="Passed"/> tells whether the guess was right.
 /// </summary>
-public record TheGangResultState(int Seat, string Card, string Text);
+public record TheGangResultState(int Seat, string Card, string Text, bool? Passed);
 
 /// <summary>
 /// A card shown to this seat by another seat (Informant).
@@ -191,8 +193,9 @@ public class TheGangSession(string id, Func<IReadOnlyList<Card>>? newDeck = null
                 [.. d.Voters.Select(v => bySeat[v])],
                 [.. d.Agreed.Select(a => bySeat[a])],
                 d.IsOpen,
-                d.IsDone))],
-            [.. game.Results.Select(r => new TheGangResultState(bySeat[r.Player], r.Card, r.Text))],
+                d.IsDone,
+                d.IsSkipped))],
+            [.. game.Results.Select(r => new TheGangResultState(bySeat[r.Player], r.Card, r.Text, r.Passed))],
             game.PendingPlayer is { } pending ? bySeat[pending] : null,
             game.PendingStep,
             game.ShownBetween is { } shown ? bySeat[shown.From] : null,

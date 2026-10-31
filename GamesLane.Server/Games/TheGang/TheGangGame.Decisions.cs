@@ -6,7 +6,7 @@ namespace GamesLane.Server.Games.TheGang;
 /// for one seat agrees for all of that user's seats. These specialist cards are optional: the group may use any of them,
 /// in any order, at any time during the betting, each at most once per heist; unused ones do not hold up the heist. The
 /// scans (Retina Scan, Fingerprint Scan) are decided by everyone except the strongest hand's player, just before that
-/// hand is revealed.
+/// hand is revealed; they are skipped if the hands are already out of order, since the heist fails anyway.
 /// </summary>
 public partial class TheGangGame
 {
@@ -18,7 +18,7 @@ public partial class TheGangGame
 
     /// <inheritdoc />
     public IReadOnlyList<TheGangDecisionInfo> Decisions => [.. _decisions.Values.Select(d => new TheGangDecisionInfo(
-        d.Card.Key, d.Card.Choice, d.Player, d.Value, Voters(d), [.. d.Agreed.Order()], IsOpen(d), d.Done))];
+        d.Card.Key, d.Card.Choice, d.Player, d.Value, Voters(d), [.. d.Agreed.Order()], IsOpen(d), d.Done, IsSkipped(d)))];
 
     /// <inheritdoc />
     public IReadOnlyList<TheGangResult> Results => _results;
@@ -136,9 +136,22 @@ public partial class TheGangGame
     private bool HeistSucceeds => RevealedInOrder.All(inOrder => inOrder) && !_scanFailed;
 
     /// <summary>
-    /// Whether the scans' guesses must be agreed before the next (strongest) hand can be revealed.
+    /// Whether the scans' guesses must be agreed before the next (strongest) hand can be revealed. Not if the heist
+    /// already fails because the hands are out of order (including the strongest hand, not yet revealed).
     /// </summary>
-    private bool AwaitsScan => Phase == TheGangPhase.Reveal && Revealed == PlayerCount - 1 && _decisions.Values.Any(d => IsScan(d) && !d.Done);
+    private bool AwaitsScan => _decisions.Values.Any(d => IsScan(d) && IsOpen(d));
+
+    /// <summary>
+    /// Whether every hand, revealed or not, is at least as strong as the one before it in the reveal order.
+    /// </summary>
+    private bool AllHandsInOrder =>
+        _revealOrder.Length > 0 && Enumerable.Range(1, _revealOrder.Length - 1).All(i => !IsWeaker(_revealOrder[i], _revealOrder[i - 1]));
+
+    /// <summary>
+    /// Whether a scan is not needed: the hands are revealed and already out of order, so the heist fails anyway.
+    /// </summary>
+    private bool IsSkipped(Decision decision) =>
+        IsScan(decision) && !decision.Done && Phase is (TheGangPhase.Reveal or TheGangPhase.HeistOver) && !AllHandsInOrder;
 
     /// <summary>
     /// Whether <paramref name="weaker"/>'s hand is weaker than <paramref name="stronger"/>'s. With Muscle, the chosen
@@ -193,7 +206,7 @@ public partial class TheGangGame
     /// step to take), scans just before the strongest hand is revealed.
     /// </summary>
     private bool IsOpen(Decision decision) => !decision.Done && (IsScan(decision)
-        ? Phase == TheGangPhase.Reveal && Revealed == PlayerCount - 1
+        ? Phase == TheGangPhase.Reveal && Revealed == PlayerCount - 1 && AllHandsInOrder
         : Phase == TheGangPhase.Betting && PendingStep == TheGangStep.None);
 
     private bool TryGetOpenDecision(int player, string card, out Decision decision, out string? error)
@@ -248,7 +261,7 @@ public partial class TheGangGame
                     ? _holeCards[player].Any(c => c.Rank == TheGangValues.RankOf(decision.Value))
                     : HandRankings.Of(Hand(player)) == decision.Value;
                 _scanFailed |= !right;
-                _results.Add(new(player, decision.Card.Key, $"guessed {decision.Value}: {(right ? "right" : "wrong")}"));
+                _results.Add(new(player, decision.Card.Key, $"guessed {decision.Value}: {(right ? "right" : "wrong")}", right));
                 break;
         }
     }

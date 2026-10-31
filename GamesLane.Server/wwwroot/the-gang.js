@@ -166,7 +166,17 @@ function heistCards(game, state, view) {
                 : "Everyone is looking at their cards."));
         }
         const decision = game.decisions.find((d) => d.card === card.key);
-        if (decision?.isDone) {
+        const scanResult = game.results.find((r) => r.card === card.key && r.passed !== null);
+        if (scanResult) {
+            // A scan's guess: a big PASS or FAIL stamp across the card.
+            const stamp = el("span", scanResult.passed ? "scan-stamp pass" : "scan-stamp fail", scanResult.passed ? "PASS" : "FAIL");
+            stamp.setAttribute("role", "img");
+            stamp.setAttribute("aria-label", scanResult.passed ? "Scan passed" : "Scan failed");
+            item.classList.add("stamped");
+            item.append(stamp);
+        } else if (decision?.isSkipped) {
+            item.append(el("span", "heist-card-result optional", "Not needed: the heist already fails."));
+        } else if (decision?.isDone) {
             item.append(decisionResult(game, state, view, decision));
         } else if (decision?.isOpen && isUnderWay(decision)) {
             const names = userNames(state, decision.agreed);

@@ -689,7 +689,45 @@ public class TheGangGameTests
         Assert.Equal([true, true, true], game.RevealedInOrder);
         Assert.Equal(right ? (1, 0) : (0, 1), (game.Vaults, game.Alarms));
         Assert.Equal(right, game.Succeeded);
-        Assert.Equal($"guessed {guess}: {(right ? "right" : "wrong")}", Assert.Single(game.Results).Text);
+        var result = Assert.Single(game.Results);
+        Assert.Equal($"guessed {guess}: {(right ? "right" : "wrong")}", result.Text);
+        Assert.Equal(right, result.Passed);
+    }
+
+    [Theory]
+    // Player 2 (three kings) took chip 1, so the first revealed hand is already the strongest.
+    [InlineData(new[] { 2, 3, 1 })]
+    // Only the strongest hand, not yet revealed, is out of order: player 2 (three kings) took chip 2, player 1 chip 3.
+    [InlineData(new[] { 1, 3, 2 })]
+    public void Scans_are_skipped_when_the_hands_are_already_out_of_order(int[] chips)
+    {
+        var game = WithChallenge(TheGangCards.RetinaScan);
+        PlayAllStages(game, chips);
+        game.TryRevealNext(0, out _);
+        game.TryRevealNext(1, out _);
+
+        var scan = Assert.Single(game.Decisions);
+        Assert.False(scan.IsOpen);
+        Assert.True(scan.IsSkipped);
+        Assert.False(game.TryPropose(0, TheGangCards.RetinaScan, null, "K", out _));
+        Assert.True(game.TryRevealNext(2, out var error), error);
+
+        Assert.Equal((0, 1), (game.Vaults, game.Alarms));
+        Assert.Empty(game.Results);
+        Assert.True(Assert.Single(game.Decisions).IsSkipped);
+    }
+
+    [Fact]
+    public void A_scan_is_not_skipped_while_the_hands_are_in_order()
+    {
+        var game = WithChallenge(TheGangCards.FingerprintScan);
+        Assert.False(Assert.Single(game.Decisions).IsSkipped);
+        PlayAllStages(game, [1, 2, 3]);
+        game.TryRevealNext(0, out _);
+        game.TryRevealNext(1, out _);
+
+        Assert.False(Assert.Single(game.Decisions).IsSkipped);
+        Assert.True(Assert.Single(game.Decisions).IsOpen);
     }
 
     [Fact]

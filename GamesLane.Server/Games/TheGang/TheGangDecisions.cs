@@ -12,7 +12,8 @@ public enum TheGangStep
 
 /// <summary>
 /// A card's group decision: the proposed player and value, who votes and who has agreed, whether players can vote now,
-/// and whether it has been carried out. Players are game player numbers.
+/// whether it has been carried out, and for a scan, whether it was skipped because the heist fails anyway. Players are
+/// game player numbers.
 /// </summary>
 public record TheGangDecisionInfo(
     string Card,
@@ -22,13 +23,15 @@ public record TheGangDecisionInfo(
     IReadOnlyList<int> Voters,
     IReadOnlyList<int> Agreed,
     bool IsOpen,
-    bool IsDone);
+    bool IsDone,
+    bool IsSkipped);
 
 /// <summary>
 /// What a card showed everyone about a player: Getaway Driver (hand ranking), Mastermind (how many of a value), and the
-/// scans' guesses about the strongest hand (right or wrong).
+/// scans' guesses about the strongest hand, with <see cref="Passed"/> telling whether the guess was right (null for
+/// other cards).
 /// </summary>
-public record TheGangResult(int Player, string Card, string Text);
+public record TheGangResult(int Player, string Card, string Text, bool? Passed = null);
 
 /// <summary>
 /// The values players can name: card values ("2" to "10", "J", "Q", "K", "A") and hand rankings.
