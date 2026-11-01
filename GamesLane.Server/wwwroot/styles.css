@@ -158,7 +158,7 @@ html.splashing .splash {
     transition: opacity 0.5s;
 }
 
-html.splashing .splash.done {
+html.splash-done .splash {
     opacity: 0;
 }
 

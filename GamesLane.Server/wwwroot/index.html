@@ -9,9 +9,20 @@
     <meta name="theme-color" content="#19285d">
     <link rel="stylesheet" href="styles.css">
     <script>
-        // The splash screen shows when the app is first opened in this tab, and when the home icon is used (/?splash).
+        // The splash screen shows for 5 seconds when the app is first opened in this tab, and when the home icon is used
+        // (/?splash). It runs on its own, so it ends even if the page's other scripts are slow or fail to load. The
+        // ?splash is removed from the address, so reloading the page does not show it again.
         if (!sessionStorage.getItem("splashShown") || new URLSearchParams(location.search).has("splash")) {
-            document.documentElement.classList.add("splashing");
+            const root = document.documentElement;
+            root.classList.add("splashing");
+            sessionStorage.setItem("splashShown", "1");
+            const url = new URL(location.href);
+            if (url.searchParams.has("splash")) {
+                url.searchParams.delete("splash");
+                history.replaceState(null, "", url.pathname + url.search);
+            }
+            setTimeout(() => root.classList.add("splash-done"), 5000);
+            setTimeout(() => root.classList.remove("splashing", "splash-done"), 5500);
         }
     </script>
 </head>
