@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" role="img" aria-label="Tic-tac-toe">
+  <defs>
+    <radialGradient id="bg" cx="40%" cy="30%" r="80%">
+      <stop offset="0" stop-color="#2b2f3a"/>
+      <stop offset="1" stop-color="#0f1014"/>
+    </radialGradient>
+  </defs>
+  <rect width="120" height="120" rx="26" fill="url(#bg)"/>
+  <!-- Grid -->
+  <g stroke="#e9e2d6" stroke-width="5" stroke-linecap="round">
+    <line x1="47" y1="20" x2="47" y2="100"/>
+    <line x1="73" y1="20" x2="73" y2="100"/>
+    <line x1="20" y1="47" x2="100" y2="47"/>
+    <line x1="20" y1="73" x2="100" y2="73"/>
+  </g>
+  <!-- X X X on the diagonal, O O elsewhere -->
+  <g stroke="#e8731c" stroke-width="6.5" stroke-linecap="round">
+    <path d="M27 27 L40 40 M40 27 L27 40"/>
+    <path d="M53.5 53.5 L66.5 66.5 M66.5 53.5 L53.5 66.5"/>
+    <path d="M80 80 L93 93 M93 80 L80 93"/>
+  </g>
+  <g fill="none" stroke="#e6a93c" stroke-width="6">
+    <circle cx="86.5" cy="33.5" r="7.5"/>
+    <circle cx="33.5" cy="86.5" r="7.5"/>
+  </g>
+  <!-- Winning line -->
+  <line x1="21" y1="21" x2="99" y2="99" stroke="#f6cf6b" stroke-width="4" stroke-linecap="round" opacity="0.85"/>
+</svg>
