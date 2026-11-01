@@ -59,11 +59,18 @@ function cardFace(rank, suit) {
 }
 
 // A card such as "10♥", drawn like a playing card: rank and suit in two corners and a classic face in the middle.
-// Hearts and diamonds are red. Without text, a face-down card.
+// Hearts and diamonds are red. "JOKER" is a joker. Without text, a face-down card.
 function cardElement(text) {
     const card = el("span", "card");
     if (!text) {
         card.classList.add("empty");
+        return card;
+    }
+    if (text === "JOKER") {
+        card.classList.add("joker");
+        card.setAttribute("role", "img");
+        card.setAttribute("aria-label", "Joker");
+        card.append(el("span", "joker-face", "🃏"), el("span", "joker-word", "JOKER"));
         return card;
     }
     const rank = text.slice(0, -1);
@@ -93,7 +100,17 @@ function button(text, className, onClick) {
 
 const hasCard = (game, key) => game.cards.some((c) => c.key === key);
 
-// A playing seat's player number (1 to 6), in seat order.
+// A shared slot: one card, or with jokers, the 2 or 3 cards that replaced a joker, side by side (each hand uses one).
+function slotElement(cards) {
+    if (!cards || cards.length === 1) {
+        return cardElement(cards?.[0]);
+    }
+    const slot = el("span", "card-slot", ...cards.map(cardElement));
+    slot.title = "These cards replaced a joker: each hand uses one of them.";
+    return slot;
+}
+
+// A playing seat's player number (1 to 8), in seat order.
 const playerNumber = (game, seat) => game.playingSeats.indexOf(seat) + 1;
 
 // The names of the different users holding these seats, in seat order. Each user votes once, for all their seats.
@@ -114,7 +131,8 @@ function gangStatus(game, state, view) {
     switch (game.phase) {
         case "Preparing": {
             const waiting = userNames(state, game.playingSeats.filter((s) => !game.preparedSeats.includes(s)));
-            const step = game.preparingCard === "coordinator" ? "Coordinator: pick a card to pass on" : "Con Artist: look at your cards";
+            const step = { jokers: "Jokers: swap the jokers you were dealt", coordinator: "Coordinator: pick a card to pass on" }[game.preparingCard]
+                ?? "Con Artist: look at your cards";
             return `${step}. Waiting for: ${waiting.join(", ")}`;
         }
         case "Betting":
@@ -363,6 +381,23 @@ function myHand(game, state, view, hand) {
         return pick;
     })), info));
 
+    // A joker in the hand: tap the card to keep; tapping an offered joker swaps it for two more cards.
+    if (hand.jokerOffer) {
+        const offer = el("div", "card-row joker-offer", ...hand.jokerOffer.map((c, index) => {
+            const card = cardElement(c);
+            card.classList.add("big");
+            const pick = el("button", "card-pick", card);
+            pick.type = "button";
+            pick.title = c === "JOKER" ? "Swap this joker for two more cards" : `Keep ${c}`;
+            pick.addEventListener("click", () => call("ChooseJokerCard", view.sessionId, seat, index).catch(() => {}));
+            return pick;
+        }));
+        const hasJoker = hand.jokerOffer.includes("JOKER");
+        box.append(el("p", "hint step", hasJoker
+            ? "Joker: keep the other card, or tap the joker to swap it for two more cards."
+            : "Joker: tap the card you keep instead of it. The other is discarded."), offer);
+    }
+
     if (step === "ShowCard") {
         const select = el("select", "decision-value", ...others.map((s) => {
             const option = el("option", null, state.seats[s]?.name ?? `Seat ${s + 1}`);
@@ -456,8 +491,19 @@ function chipTable(game, state, view) {
         th.title = skipped(stage) ? "Skipped in this heist" : "";
         return th;
     }));
+    // With jokers: 🃏 for each joker a player swapped (nobody sees which cards), and "…" while they are choosing.
+    const jokerMark = (seat) => {
+        const swaps = game.jokerSwaps.filter((s) => s === seat).length;
+        const choosing = game.jokerSeats.includes(seat);
+        if (!swaps && !choosing) {
+            return [];
+        }
+        const mark = el("span", "joker-mark", "🃏".repeat(swaps) + (choosing ? "…" : ""));
+        mark.title = choosing ? "Swapping a joker" : swaps === 1 ? "Swapped a joker" : `Swapped ${swaps} jokers`;
+        return [mark];
+    };
     const rows = game.playingSeats.map((seat) => el("tr", null,
-        el("td", null, el("span", "player-number", String(playerNumber(game, seat))), seatLabel(state, seat, view)),
+        el("td", null, el("span", "player-number", String(playerNumber(game, seat))), seatLabel(state, seat, view), ...jokerMark(seat)),
         ...STAGES.map((_, stage) => {
             const chip = game.chips[stage][seat];
             const removed = blackout && stage < game.stage && !skipped(stage);
@@ -532,7 +578,7 @@ const gang = startSessionPage("TheGang", (game, state, view) => {
     $("toggle-table").textContent = tableHidden ? "Show table" : "Hide table";
     $("table-body").hidden = view.isPlayer && tableHidden;
 
-    $("community").replaceChildren(...Array.from({ length: 5 }, (_, i) => cardElement(game.communityCards[i])));
+    $("community").replaceChildren(...Array.from({ length: 5 }, (_, i) => slotElement(game.communityCards[i])));
     $("middle").hidden = game.phase !== "Betting";
     $("middle").replaceChildren(
         "Middle:",

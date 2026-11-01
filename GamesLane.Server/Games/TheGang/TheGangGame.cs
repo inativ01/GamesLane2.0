@@ -59,7 +59,7 @@ public partial class TheGangGame : ITheGangGame
     private readonly bool[] _ready;
     private readonly HashSet<string> _usedCards = [];
     private Card[][] _holeCards = [];
-    private Card[] _community = [];
+    private Card[][] _slots = [];
     private int[] _revealOrder = [];
     private TheGangCard[] _cards = [];
     private IReadOnlyList<Card> _deck = [];
@@ -139,11 +139,15 @@ public partial class TheGangGame : ITheGangGame
     public bool IsOver => Vaults >= HeistsToFinish || Alarms >= HeistsToFinish;
 
     /// <inheritdoc />
-    public IReadOnlyList<Card> VisibleCommunityCards =>
-        Phase is TheGangPhase.Reveal or TheGangPhase.HeistOver ? _community : _community[..(Stage == 0 ? 0 : Stage + 2)];
+    public IReadOnlyList<IReadOnlyList<Card>> VisibleCommunity =>
+        Phase is TheGangPhase.Reveal or TheGangPhase.HeistOver ? _slots : _slots[..(Stage == 0 ? 0 : Stage + 2)];
 
     /// <inheritdoc />
-    public bool IsPrepared(int player) => Phase == TheGangPhase.Preparing && _prepared[player];
+    public IReadOnlyList<Card> VisibleCommunityCards => [.. VisibleCommunity.SelectMany(slot => slot)];
+
+    /// <inheritdoc />
+    public bool IsPrepared(int player) => Phase == TheGangPhase.Preparing
+        && (PreparingCard == JokersStep ? _jokerOffers[player] is null : _prepared[player]);
 
     /// <inheritdoc />
     public Card? PassingCard(int player) => Phase == TheGangPhase.Preparing ? _passing[player] : null;
@@ -174,7 +178,7 @@ public partial class TheGangGame : ITheGangGame
     public string? Announcement(int player) => _announcements.ElementAtOrDefault(player);
 
     /// <inheritdoc />
-    public HandValue Hand(int player) => HandEvaluator.Best([.. _holeCards[player], .. _community]);
+    public HandValue Hand(int player) => HandEvaluator.Best(CountingCards(player), _slots);
 
     /// <inheritdoc />
     public IReadOnlyList<bool> RevealedInOrder =>
@@ -273,7 +277,7 @@ public partial class TheGangGame : ITheGangGame
             _ready[p] = ready;
         }
 
-        if (_ready.All(r => r) && PendingStep == TheGangStep.None)
+        if (CanEndStage)
         {
             EndStage();
         }
@@ -408,6 +412,11 @@ public partial class TheGangGame : ITheGangGame
     private const string LockedOwnChip = "Your chip is locked: you keep it for this stage.";
 
     /// <summary>
+    /// Whether the betting stage can end: everyone is ready, and no chosen player has a step or a joker waiting.
+    /// </summary>
+    private bool CanEndStage => _ready.All(r => r) && MiddleChips.Count == 0 && PendingStep == TheGangStep.None && !AwaitsJokers;
+
+    /// <summary>
     /// Whether this heist has the card with this key.
     /// </summary>
     private bool Has(string key) => _cards.Any(c => c.Key == key);
@@ -418,7 +427,7 @@ public partial class TheGangGame : ITheGangGame
     /// </summary>
     private void CheckAlarmsOnTheFlop()
     {
-        var hasFace = _community.Take(3).Any(c => c.Rank is >= 11 and <= 13);
+        var hasFace = _slots.Take(3).SelectMany(slot => slot).Any(c => c.Rank is >= 11 and <= 13);
         var chip = Has(TheGangCards.MotionDetector) && hasFace ? 1
             : Has(TheGangCards.LaserTripwires) && !hasFace ? PlayerCount
             : (int?)null;
@@ -428,9 +437,9 @@ public partial class TheGangGame : ITheGangGame
             return;
         }
 
-        _holeCards[player] = _deck.Skip(_nextCard).Take(_holeCards[player].Length).ToArray();
-        _nextCard += _holeCards[player].Length;
+        _holeCards[player] = [.. _holeCards[player].Select(_ => DrawCard())];
         RedrawnPlayer = player;
+        OfferJoker(player);
     }
 
     /// <summary>
@@ -483,6 +492,7 @@ public partial class TheGangGame : ITheGangGame
         error = Phase switch
         {
             TheGangPhase.Betting => null,
+            TheGangPhase.Preparing when PreparingCard == JokersStep => "The betting starts once every joker has been swapped.",
             TheGangPhase.Preparing => "The betting starts once everyone has done the specialist card's step.",
             _ => "The betting is over for this heist.",
         };
@@ -528,14 +538,15 @@ public partial class TheGangGame : ITheGangGame
 
     /// <summary>
     /// Deals a new heist: two private cards each (three with Security Cameras), five shared cards, no chips taken.
-    /// It starts at the first stage that is not skipped.
+    /// It starts at the first stage that is not skipped. Cards drawn later (jokers' replacements, Motion Detector,
+    /// Hacker) come from the rest of the deck, in order.
     /// </summary>
     private void Deal()
     {
-        var deck = _newDeck();
+        var deck = WithJokers(_newDeck());
         var perPlayer = Has(TheGangCards.SecurityCameras) ? 3 : 2;
         _holeCards = Enumerable.Range(0, PlayerCount).Select(p => deck.Skip(perPlayer * p).Take(perPlayer).ToArray()).ToArray();
-        _community = deck.Skip(perPlayer * PlayerCount).Take(5).ToArray();
+        _slots = [.. deck.Skip(perPlayer * PlayerCount).Take(5).Select(card => (Card[])[card])];
         _deck = deck;
         _nextCard = (perPlayer * PlayerCount) + 5;
         RedrawnPlayer = null;
@@ -546,22 +557,20 @@ public partial class TheGangGame : ITheGangGame
         Stage = SkippedStages.Contains(0) ? 1 : 0;
         ResetDecisions();
         _announcements = [];
-        if (Has(TheGangCards.Coordinator))
+        PreparingCard = null;
+        if (DealJokers())
         {
-            StartPreparing(TheGangCards.Coordinator);
-        }
-        else if (Has(TheGangCards.ConArtist))
-        {
-            StartPreparing(TheGangCards.ConArtist);
+            StartPreparing(JokersStep);
         }
         else
         {
-            StartBetting();
+            FinishPreparing();
         }
     }
 
     /// <summary>
-    /// With Coordinator or Con Artist in play, every player does the card's step before the betting starts.
+    /// Before the betting, every player does a step: swapping the jokers they were dealt (only those who have one), then
+    /// with Coordinator or Con Artist in play, the card's step.
     /// </summary>
     private void StartPreparing(string card)
     {
@@ -572,13 +581,16 @@ public partial class TheGangGame : ITheGangGame
     }
 
     /// <summary>
-    /// Once every player has done the step: Con Artist's step follows Coordinator's; then the betting starts.
+    /// Once every player has done the current step (or at the deal, with none): the steps go jokers, Coordinator, Con
+    /// Artist, each only if needed; then the betting starts.
     /// </summary>
     private void FinishPreparing()
     {
-        if (PreparingCard == TheGangCards.Coordinator && Has(TheGangCards.ConArtist))
+        string[] steps = [JokersStep, TheGangCards.Coordinator, TheGangCards.ConArtist];
+        var next = steps.Skip(Array.IndexOf(steps, PreparingCard) + 1).FirstOrDefault(Has);
+        if (next is not null)
         {
-            StartPreparing(TheGangCards.ConArtist);
+            StartPreparing(next);
             return;
         }
 

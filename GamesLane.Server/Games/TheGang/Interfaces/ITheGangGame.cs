@@ -29,7 +29,8 @@ public interface ITheGangGame
     IReadOnlyList<string> NewCards { get; }
 
     /// <summary>
-    /// The specialist card whose step every player must do before the betting (Coordinator or Con Artist), or null.
+    /// The step every player must do before the betting: <see cref="TheGangGame.JokersStep"/> (swapping the jokers they
+    /// were dealt), or a specialist card's (Coordinator or Con Artist); or null.
     /// </summary>
     string? PreparingCard { get; }
 
@@ -90,14 +91,37 @@ public interface ITheGangGame
     bool IsOver { get; }
 
     /// <summary>
-    /// The shared cards everyone can see: none, then 3, 4 and 5 as the stages go on.
+    /// The shared slots everyone can see: none, then 3, 4 and 5 as the stages go on. A slot holds one card, or with
+    /// jokers, the 2 or 3 cards that replaced a joker, of which each hand uses one.
+    /// </summary>
+    IReadOnlyList<IReadOnlyList<Card>> VisibleCommunity { get; }
+
+    /// <summary>
+    /// All the cards in <see cref="VisibleCommunity"/>.
     /// </summary>
     IReadOnlyList<Card> VisibleCommunityCards { get; }
 
     /// <summary>
-    /// A player's private cards (two, or three with Security Cameras).
+    /// A player's private cards (two, or three with Security Cameras). A joker is kept in place until the player has
+    /// swapped it.
     /// </summary>
     IReadOnlyList<Card> HoleCards(int player);
+
+    /// <summary>
+    /// With jokers: the two cards a player is offered for a joker in their hand, or null if they have none to swap.
+    /// </summary>
+    IReadOnlyList<Card>? JokerOffer(int player);
+
+    /// <summary>
+    /// With jokers: how many jokers a player has swapped in this heist (everyone sees this, not the cards).
+    /// </summary>
+    int JokerSwaps(int player);
+
+    /// <summary>
+    /// With jokers: the player picks card <paramref name="index"/> (0 or 1) of <see cref="JokerOffer"/>. A normal card
+    /// replaces the joker in their hand and the other is discarded; an offered joker is swapped for two more cards.
+    /// </summary>
+    bool TryChooseJokerCard(int player, int index, out string? error);
 
     /// <summary>
     /// The chip a player holds in a stage, or null.
@@ -131,7 +155,7 @@ public interface ITheGangGame
     IReadOnlyList<bool> RevealedInOrder { get; }
 
     /// <summary>
-    /// A player's best hand from their private cards and the five shared cards.
+    /// A player's best hand from their private cards and the five shared slots (one card from each).
     /// </summary>
     HandValue Hand(int player);
 

@@ -57,6 +57,12 @@ public interface ITheGangSession : IGameSession
     bool TryDiscard(string userKey, int seat, int cardIndex, [NotNullWhen(false)] out string? error);
 
     /// <summary>
+    /// With jokers: <paramref name="seat"/>, which <paramref name="userKey"/> must hold, picks card <paramref name="index"/>
+    /// (0 or 1) of the two offered for its joker.
+    /// </summary>
+    bool TryChooseJokerCard(string userKey, int seat, int index, [NotNullWhen(false)] out string? error);
+
+    /// <summary>
     /// Reveals the next hand, if <paramref name="revealed"/> hands have been revealed so far. Players only.
     /// </summary>
     bool TryRevealNext(string userKey, int revealed, [NotNullWhen(false)] out string? error);

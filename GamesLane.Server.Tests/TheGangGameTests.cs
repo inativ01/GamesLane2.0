@@ -826,6 +826,148 @@ public class TheGangGameTests
         Assert.Equal(TheGangCards.Challenges.Select(c => c.Key), defaults.Challenges);
         Assert.Equal(TheGangCards.Specialists.Select(c => c.Key).Where(k => k != TheGangCards.MathWhiz), defaults.Specialists);
         Assert.False(defaults.AvoidClashes);
+        Assert.False(defaults.Jokers);
+        Assert.True(TheGangRules.FromOptions(GameOptions.Normalize(GameType.TheGang,
+            new Dictionary<string, string> { [TheGangOptions.Jokers] = TheGangOptions.Yes })).Jokers);
+    }
+
+    // Full hand values at the reveal
+
+    [Theory]
+    [InlineData("9C 9D KH 7S 3C", "Pair of nines with K, 7, 3")]
+    [InlineData("KC KD 7H 7S 2C", "Two pair, kings and sevens with 2")]
+    [InlineData("7C 7D 7H KS 2C", "Three sevens with K, 2")]
+    [InlineData("QC QD QH QS 2C", "Four queens with 2")]
+    [InlineData("AD JD 9D 6D 2D", "Flush, ace high with J, 9, 6, 2")]
+    [InlineData("AC QD 9H 5S 2C", "High card, ace with Q, 9, 5, 2")]
+    [InlineData("6C 6D 6H 4S 4C", "Full house, sixes over fours")]
+    [InlineData("10C 9D 8H 7S 6C", "Straight, ten high")]
+    public void A_hands_description_gives_its_full_value(string cards, string description)
+    {
+        Assert.Equal(description, HandEvaluator.Evaluate(Cards(cards)).Description);
+    }
+
+    // Jokers
+
+    // Player 0: AH 3C; player 1: 5S 6D; player 2: 2C 7D. Shared: a joker, then 9H JS KC 4S.
+    private const string JokerOnTheTable = "AH 3C 5S 6D 2C 7D JOKER 9H JS KC 4S";
+
+    [Fact]
+    public void A_joker_on_the_table_becomes_two_cards_and_each_hand_uses_one_of_them()
+    {
+        var game = new TheGangGame(3, () => Cards(JokerOnTheTable + " AS AD"), Jokers());
+        PlayStage(game, [1, 2, 3]);
+
+        Assert.Equal([Cards("AS AD"), Cards("9H"), Cards("JS")], game.VisibleCommunity);
+        // Player 0 pairs the ace of hearts with one of the two aces, not both.
+        Assert.Equal("Pair of aces with K, J, 9", game.Hand(0).Description);
+    }
+
+    [Fact]
+    public void A_joker_among_a_table_jokers_replacements_is_replaced_again_and_all_three_cards_show()
+    {
+        var game = new TheGangGame(3, () => Cards(JokerOnTheTable + " JOKER AS KD QD"), Jokers());
+        PlayStage(game, [1, 2, 3]);
+
+        Assert.Equal(Cards("KD QD AS"), game.VisibleCommunity[0]);
+    }
+
+    // Player 0 is dealt a joker and 3C; the rest of the deck follows the shared cards.
+    private static TheGangGame JokerInHand(string rest) =>
+        new(3, () => Cards("JOKER 3C 5S 6D 2C 7D 9H JS KC 4S 8S " + rest), Jokers());
+
+    [Fact]
+    public void A_joker_in_a_hand_is_swapped_for_one_of_two_cards_before_the_betting()
+    {
+        var game = JokerInHand("AS AD");
+
+        Assert.Equal((TheGangPhase.Preparing, TheGangGame.JokersStep), (game.Phase, game.PreparingCard));
+        Assert.Equal(Cards("AS AD"), game.JokerOffer(0));
+        Assert.True(game.IsPrepared(1));
+        Assert.False(game.TryTakeChip(1, 1, out var error));
+        Assert.Equal("The betting starts once every joker has been swapped.", error);
+        Assert.False(game.TryChooseJokerCard(1, 0, out error));
+        Assert.Equal("You have no joker to swap.", error);
+
+        Assert.True(game.TryChooseJokerCard(0, 1, out _));
+        Assert.Equal(Cards("AD 3C"), game.HoleCards(0));
+        Assert.Equal(1, game.JokerSwaps(0));
+        Assert.Null(game.JokerOffer(0));
+        Assert.Equal(TheGangPhase.Betting, game.Phase);
+    }
+
+    [Theory]
+    [InlineData(1, "AS 3C")]
+    [InlineData(0, "QD 3C")]
+    public void An_offered_joker_is_either_left_for_the_other_card_or_swapped_for_two_more(int pick, string hand)
+    {
+        var game = JokerInHand("JOKER AS KD QD");
+        Assert.Equal(Cards("JOKER AS"), game.JokerOffer(0));
+
+        Assert.True(game.TryChooseJokerCard(0, pick, out _));
+        if (pick == 0)
+        {
+            Assert.Equal(Cards("KD QD"), game.JokerOffer(0));
+            Assert.True(game.TryChooseJokerCard(0, 1, out _));
+        }
+
+        Assert.Equal(Cards(hand), game.HoleCards(0));
+        Assert.Equal(TheGangPhase.Betting, game.Phase);
+    }
+
+    [Fact]
+    public void Two_jokers_in_a_hand_are_swapped_one_after_the_other()
+    {
+        var game = new TheGangGame(3, () => Cards("JOKER JOKER 5S 6D 2C 7D 9H JS KC 4S 8S AS AD KS KD"), Jokers());
+
+        Assert.Equal(Cards("AS AD"), game.JokerOffer(0));
+        game.TryChooseJokerCard(0, 0, out _);
+        Assert.Equal(Cards("KS KD"), game.JokerOffer(0));
+        game.TryChooseJokerCard(0, 1, out _);
+
+        Assert.Equal(Cards("AS KD"), game.HoleCards(0));
+        Assert.Equal(2, game.JokerSwaps(0));
+        Assert.Equal(TheGangPhase.Betting, game.Phase);
+    }
+
+    [Fact]
+    public void A_joker_drawn_during_the_betting_must_be_swapped_before_the_stage_ends()
+    {
+        // The second heist's Hacker draws the card after the shared cards: a joker.
+        var game = new TheGangGame(3, () => Cards(RankedDeck + " JOKER AS AD"),
+            Advanced(0, [], [TheGangCards.Hacker]) with { Jokers = true });
+        FailHeist(game);
+        game.TryPropose(0, TheGangCards.Hacker, 0, null, out _);
+        AgreeAll(game, TheGangCards.Hacker);
+
+        Assert.Equal(Cards("AS AD"), game.JokerOffer(0));
+        Assert.False(game.TryDiscard(0, 0, out var error));
+        Assert.Equal("First swap your joker.", error);
+        PlayStage(game, [1, 2, 3]);
+        Assert.Equal(0, game.Stage);
+
+        game.TryChooseJokerCard(0, 0, out _);
+        Assert.True(game.TryDiscard(0, 0, out error), error);
+        Assert.Equal(Cards("4H AS"), game.HoleCards(0));
+        Assert.Equal(1, game.Stage);
+    }
+
+    [Fact]
+    public void With_the_jokers_option_the_deck_gets_two_jokers()
+    {
+        // Each joker is put at the first place in the deck, so player 0 is dealt both.
+        var game = new TheGangGame(3, () => Cards(RankedDeck + " AS AD KS QS"), Jokers(), new FirstPlace());
+
+        Assert.Equal(Cards("JOKER JOKER"), game.HoleCards(0));
+        Assert.NotNull(game.JokerOffer(0));
+    }
+
+    private static TheGangRules Jokers() => TheGangRules.Basic with { Jokers = true };
+
+    // Always picks the first place.
+    private sealed class FirstPlace : Random
+    {
+        public override int Next(int maxValue) => 0;
     }
 
     // Player 0: high card king; player 1: pair of nines; player 2: three kings.

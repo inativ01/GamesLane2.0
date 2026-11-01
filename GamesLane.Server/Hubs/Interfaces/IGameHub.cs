@@ -130,6 +130,12 @@ public interface IGameHub
     Task DiscardCard(string sessionId, int seat, int cardIndex);
 
     /// <summary>
+    /// The Gang, with jokers: <paramref name="seat"/>, which the caller must hold, picks card <paramref name="index"/>
+    /// (0 or 1) of the two offered for its joker; picking an offered joker swaps it for two more cards.
+    /// </summary>
+    Task ChooseJokerCard(string sessionId, int seat, int index);
+
+    /// <summary>
     /// The Gang: reveals the next hand, if <paramref name="revealed"/> hands have been revealed so far.
     /// </summary>
     Task RevealNext(string sessionId, int revealed);

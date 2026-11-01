@@ -1,7 +1,8 @@
 namespace GamesLane.Server.Games.TheGang;
 
 /// <summary>
-/// A card suit. <see cref="None"/> is only for the "Jack" specialist card, which has no suit and so never makes a flush.
+/// A card suit. <see cref="None"/> is only for the "Jack" specialist card, which has no suit and so never makes a flush;
+/// <see cref="Joker"/> only for the jokers.
 /// </summary>
 public enum Suit
 {
@@ -10,10 +11,12 @@ public enum Suit
     Hearts,
     Spades,
     None,
+    Joker,
 }
 
 /// <summary>
-/// A playing card. <see cref="Rank"/> is 2 to 14, where 11 is a jack, 12 a queen, 13 a king and 14 an ace.
+/// A playing card. <see cref="Rank"/> is 2 to 14, where 11 is a jack, 12 a queen, 13 a king and 14 an ace; a joker
+/// (<see cref="Joker"/>) has rank 0. Jokers never count in a hand: they are replaced by other cards.
 /// </summary>
 public readonly record struct Card(int Rank, Suit Suit)
 {
@@ -28,9 +31,14 @@ public readonly record struct Card(int Rank, Suit Suit)
     public const int Ace = 14;
 
     /// <summary>
-    /// Short text such as <c>"10♥"</c> or <c>"A♠"</c>, used in tests and logs.
+    /// The text of a joker.
     /// </summary>
-    public override string ToString() => $"{RankSymbol(Rank)}{SuitSymbol(Suit)}";
+    public const string JokerText = "JOKER";
+
+    /// <summary>
+    /// Short text such as <c>"10♥"</c> or <c>"A♠"</c>, or <see cref="JokerText"/>; also sent to the pages.
+    /// </summary>
+    public override string ToString() => IsJoker ? JokerText : $"{RankSymbol(Rank)}{SuitSymbol(Suit)}";
 
     /// <summary>
     /// The "Jack" specialist card: a jack without a suit.
@@ -38,10 +46,26 @@ public readonly record struct Card(int Rank, Suit Suit)
     public static Card SuitlessJack { get; } = new(11, Suit.None);
 
     /// <summary>
-    /// Parses short text such as <c>"10H"</c>, <c>"AS"</c> or <c>"7♦"</c>; <c>"JX"</c> or <c>"J★"</c> is the suitless jack.
+    /// A joker (the deck has two when the game is played with jokers).
+    /// </summary>
+    public static Card Joker { get; } = new(0, Suit.Joker);
+
+    /// <summary>
+    /// Whether this card is a joker.
+    /// </summary>
+    public bool IsJoker => Suit == Suit.Joker;
+
+    /// <summary>
+    /// Parses short text such as <c>"10H"</c>, <c>"AS"</c> or <c>"7♦"</c>; <c>"JX"</c> or <c>"J★"</c> is the suitless jack,
+    /// and <c>"*"</c> or <see cref="JokerText"/> a joker.
     /// </summary>
     public static Card Parse(string text)
     {
+        if (text is "*" || text.Equals(JokerText, StringComparison.OrdinalIgnoreCase))
+        {
+            return Joker;
+        }
+
         var rank = text[..^1].ToUpperInvariant() switch
         {
             "J" => 11,
@@ -93,7 +117,7 @@ public readonly record struct Card(int Rank, Suit Suit)
 }
 
 /// <summary>
-/// The 52-card deck.
+/// The 52-card deck. When a game is played with jokers, the game adds two.
 /// </summary>
 public static class Deck
 {
@@ -102,8 +126,7 @@ public static class Deck
     /// </summary>
     public static IReadOnlyList<Card> Shuffled(Random random)
     {
-        var cards = Enum.GetValues<Suit>()
-            .Where(suit => suit != Suit.None)
+        var cards = new[] { Suit.Clubs, Suit.Diamonds, Suit.Hearts, Suit.Spades }
             .SelectMany(suit => Enumerable.Range(Card.Two, Card.Ace - Card.Two + 1).Select(rank => new Card(rank, suit)))
             .ToArray();
         random.Shuffle(cards);

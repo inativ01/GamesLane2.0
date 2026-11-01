@@ -234,7 +234,7 @@ public partial class TheGangGame
                 (PendingPlayer, PendingStep) = (player, TheGangStep.ShowCard);
                 break;
             case TheGangCards.GetawayDriver:
-                _results.Add(new(player, decision.Card.Key, HandRankings.OfCards([.. _holeCards[player], .. VisibleCommunityCards])));
+                _results.Add(new(player, decision.Card.Key, HandRankings.OfCards(CountingCards(player), VisibleCommunity)));
                 break;
             case TheGangCards.Mastermind:
                 var count = _holeCards[player].Count(c => c.Rank == TheGangValues.RankOf(decision.Value));
@@ -246,8 +246,9 @@ public partial class TheGangGame
                 }));
                 break;
             case TheGangCards.Hacker:
-                _holeCards[player] = [.. _holeCards[player], _deck[_nextCard++]];
+                _holeCards[player] = [.. _holeCards[player], DrawCard()];
                 (PendingPlayer, PendingStep) = (player, TheGangStep.Discard);
+                OfferJoker(player);
                 break;
             case TheGangCards.Jack:
                 _holeCards[player] = [.. _holeCards[player], Card.SuitlessJack];
@@ -269,6 +270,7 @@ public partial class TheGangGame
     private bool TryCheckStep(int player, TheGangStep step, int cardIndex, out string? error)
     {
         error = PendingPlayer != player || PendingStep != step ? "That is not possible now."
+            : _jokerOffers[player] is not null ? "First swap your joker."
             : cardIndex < 0 || cardIndex >= _holeCards[player].Length ? "Pick one of your cards."
             : null;
         return error is null;
@@ -280,7 +282,7 @@ public partial class TheGangGame
     private void FinishStep()
     {
         (PendingPlayer, PendingStep) = (null, TheGangStep.None);
-        if (Phase == TheGangPhase.Betting && _ready.All(r => r) && MiddleChips.Count == 0)
+        if (Phase == TheGangPhase.Betting && CanEndStage)
         {
             EndStage();
         }

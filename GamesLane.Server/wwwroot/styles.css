@@ -837,6 +837,50 @@ footer {
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3), inset 0 0 0 1px rgba(0, 0, 0, 0.1);
 }
 
+/* A joker: a big 🃏 with the word under it. */
+.card.joker {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.15em;
+    background: linear-gradient(160deg, #fff 40%, #f1e3ff);
+    color: #5b2a86;
+}
+
+.joker-face {
+    font-size: 1.5em;
+    font-weight: 400;
+}
+
+.joker-word {
+    font-size: 0.38em;
+    letter-spacing: 0.08em;
+}
+
+/* Cards that replaced a joker on the table: side by side in a gold frame, as one slot. */
+.card-slot {
+    display: inline-flex;
+    flex: none;
+    gap: 0.15em;
+    padding: 0.15em;
+    border-radius: 0.4em;
+    background: rgba(230, 169, 60, 0.25);
+    box-shadow: inset 0 0 0 2px var(--gold);
+}
+
+.card-slot .card {
+    font-size: 0.8em;
+}
+
+.joker-offer {
+    margin-top: 0.4rem;
+}
+
+.joker-offer .card-pick + .card-pick {
+    margin-left: 0.6rem;
+}
+
 /* The player's own two cards overlap slightly and fan out, like cards held in a hand. */
 .my-hand .card-row {
     flex-wrap: nowrap;
@@ -1368,7 +1412,7 @@ body.observer main.gang .scan-stamp {
     text-align: left;
 }
 
-/* The player's number (1 to 6) before their name. */
+/* The player's number (1 to 8) before their name. */
 .player-number {
     display: inline-block;
     min-width: 1.4em;
@@ -1379,6 +1423,11 @@ body.observer main.gang .scan-stamp {
 
 .chip-table .chip {
     font-size: 0.85rem;
+}
+
+/* 🃏 for each joker a player swapped. */
+.joker-mark {
+    margin-left: 0.3em;
 }
 
 .chip-table .ready {

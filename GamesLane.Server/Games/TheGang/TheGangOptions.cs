@@ -40,6 +40,11 @@ public static class TheGangOptions
     public const string AvoidClashes = "avoidClashes";
 
     /// <summary>
+    /// The key of the option that adds two jokers to the deck (off by default), in both modes.
+    /// </summary>
+    public const string Jokers = "jokers";
+
+    /// <summary>
     /// The values of yes/no options.
     /// </summary>
     public const string Yes = "Yes";
@@ -65,6 +70,15 @@ public static class TheGangOptions
                     "With challenge and specialist cards: after a successful heist, a challenge card is added; after a failed one, a specialist card. Cards stay for the rest of the game."),
             ],
             nameof(TheGangMode.Basic)),
+        new GameOption(
+            Jokers,
+            "Jokers",
+            [
+                new GameOptionChoice(No, "Without jokers", "The standard 52-card deck."),
+                new GameOptionChoice(Yes, "With 2 jokers",
+                    "A joker in your hand is swapped: choose one of two new cards. A joker on the table becomes two cards side by side; each hand uses one of them."),
+            ],
+            No),
         new GameOption(
             FirstChallenges,
             "Challenge cards on the first heist",

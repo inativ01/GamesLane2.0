@@ -4,7 +4,8 @@ using GamesLane.Server.Games.TheGang;
 namespace GamesLane.Server.Sessions;
 
 /// <summary>
-/// A revealed hand: its private cards and its name, and whether it was at least as strong as the hand revealed before it.
+/// A revealed hand: its private cards, its full value (e.g. "Pair of nines with K, 7, 3"), and whether it was at least as
+/// strong as the hand revealed before it.
 /// </summary>
 public record TheGangRevealedHand(int Seat, IReadOnlyList<string> Cards, string Name, bool InOrder);
 
@@ -48,7 +49,9 @@ public record TheGangShownCard(int FromSeat, string Card);
 /// locked chips, and <see cref="RedrawnSeat"/> the seat that got new private cards (Motion Detector, Laser Tripwires).
 /// <see cref="Decisions"/> are the cards' group decisions and <see cref="Results"/> what they showed;
 /// <see cref="PendingSeat"/> must take <see cref="PendingStep"/> before the stage can end; with Informant,
-/// <see cref="ShownFromSeat"/> showed a card to <see cref="ShownToSeat"/>.
+/// <see cref="ShownFromSeat"/> showed a card to <see cref="ShownToSeat"/>. <see cref="CommunityCards"/> has one entry per
+/// visible shared slot: one card, or with jokers, the 2 or 3 cards that replaced a joker. <see cref="JokerSwaps"/> has a
+/// seat for each joker swapped in this heist, and <see cref="JokerSeats"/> the seats choosing a card for a joker now.
 /// </summary>
 public record TheGangState(
     TheGangMode Mode,
@@ -71,7 +74,9 @@ public record TheGangState(
     TheGangPhase Phase,
     int Vaults,
     int Alarms,
-    IReadOnlyList<string> CommunityCards,
+    IReadOnlyList<IReadOnlyList<string>> CommunityCards,
+    IReadOnlyList<int> JokerSwaps,
+    IReadOnlyList<int> JokerSeats,
     IReadOnlyList<IReadOnlyList<int?>> Chips,
     IReadOnlyList<int> MiddleChips,
     IReadOnlyList<int> ReadySeats,
@@ -81,10 +86,16 @@ public record TheGangState(
     IReadOnlyList<TheGangRevealedHand> Revealed);
 
 /// <summary>
-/// A player's own cards in The Gang, with Coordinator, the card they picked to pass on, and with Informant, a card
-/// another seat showed them. The hand's name is only shown when hands are revealed.
+/// A player's own cards in The Gang, with Coordinator, the card they picked to pass on, with Informant, a card another
+/// seat showed them, and with jokers, the two cards offered for a joker in the hand. The hand's name is only shown when
+/// hands are revealed.
 /// </summary>
-public record TheGangHand(int Seat, IReadOnlyList<string> Cards, string? PassingCard, TheGangShownCard? ShownCard);
+public record TheGangHand(
+    int Seat,
+    IReadOnlyList<string> Cards,
+    string? PassingCard,
+    TheGangShownCard? ShownCard,
+    IReadOnlyList<string>? JokerOffer);
 
 /// <summary>
 /// Private state of The Gang, sent only to the user holding these seats.
@@ -98,6 +109,7 @@ public record TheGangPrivateState(IReadOnlyList<TheGangHand> Hands);
 public class TheGangSession(string id, Func<IReadOnlyList<Card>>? newDeck = null, Random? random = null)
     : GameSession(id), ITheGangSession
 {
+    // Jokers are added by the game when its rules use them.
     private readonly Func<IReadOnlyList<Card>> _newDeck = newDeck ?? (() => Deck.Shuffled(Random.Shared));
     private readonly Random _random = random ?? Random.Shared;
     private TheGangGame? _game;
@@ -155,6 +167,10 @@ public class TheGangSession(string id, Func<IReadOnlyList<Card>>? newDeck = null
         WithPlayer(userKey, seat, (game, player) => (game.TryDiscard(player, cardIndex, out var e), e), out error);
 
     /// <inheritdoc />
+    public bool TryChooseJokerCard(string userKey, int seat, int index, [NotNullWhen(false)] out string? error) =>
+        WithPlayer(userKey, seat, (game, player) => (game.TryChooseJokerCard(player, index, out var e), e), out error);
+
+    /// <inheritdoc />
     public bool TryRevealNext(string userKey, int revealed, [NotNullWhen(false)] out string? error) =>
         WithGame(userKey, game => (game.TryRevealNext(revealed, out var e), e), out error);
 
@@ -206,7 +222,9 @@ public class TheGangSession(string id, Func<IReadOnlyList<Card>>? newDeck = null
             game.Phase,
             game.Vaults,
             game.Alarms,
-            Text(game.VisibleCommunityCards),
+            [.. game.VisibleCommunity.Select(Text)],
+            [.. Enumerable.Range(0, game.PlayerCount).SelectMany(p => Enumerable.Repeat(bySeat[p], game.JokerSwaps(p)))],
+            [.. Enumerable.Range(0, game.PlayerCount).Where(p => game.JokerOffer(p) is not null).Select(p => bySeat[p])],
             Enumerable.Range(0, TheGangGame.StageCount)
                 .Select(stage => (IReadOnlyList<int?>)Enumerable.Range(0, MaxSeats)
                     .Select(seat => PlayerAt(seat) is { } player && !game.AreChipsDiscarded(stage) ? game.Chip(stage, player) : null)
@@ -219,7 +237,7 @@ public class TheGangSession(string id, Func<IReadOnlyList<Card>>? newDeck = null
             game.RevealOrder.Select(p => bySeat[p]).ToArray(),
             showsAllCards
                 ? game.RevealOrder.Take(game.Revealed).Select((player, i) => new TheGangRevealedHand(
-                    bySeat[player], Text(game.HoleCards(player)), game.Hand(player).Name, game.RevealedInOrder[i])).ToArray()
+                    bySeat[player], Text(game.HoleCards(player)), game.Hand(player).Description, game.RevealedInOrder[i])).ToArray()
                 : []);
     }
 
@@ -234,7 +252,8 @@ public class TheGangSession(string id, Func<IReadOnlyList<Card>>? newDeck = null
             var shown = game.ShownCardFor(player) is { } card && game.ShownBetween is { } between
                 ? new TheGangShownCard(bySeat[between.From], card.ToString())
                 : null;
-            return new TheGangHand(seat, Text(game.HoleCards(player)), game.PassingCard(player)?.ToString(), shown);
+            var offer = game.JokerOffer(player) is { } cards ? Text(cards) : null;
+            return new TheGangHand(seat, Text(game.HoleCards(player)), game.PassingCard(player)?.ToString(), shown, offer);
         }).ToArray());
     }
 

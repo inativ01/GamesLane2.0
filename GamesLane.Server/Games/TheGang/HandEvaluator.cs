@@ -82,6 +82,31 @@ public sealed record HandValue(HandCategory Category, IReadOnlyList<int> Ranks) 
         _ => Ranks[0] == Card.Ace ? "Royal flush" : $"Straight flush, {Singular(Ranks[0])} high",
     };
 
+    /// <summary>
+    /// The full value: <see cref="Name"/> and the other cards (kickers) that decide between hands of the same kind,
+    /// e.g. "Pair of nines with K, 7, 3". Hands with the same description are equally strong.
+    /// </summary>
+    public string Description
+    {
+        get
+        {
+            var kickers = Category switch
+            {
+                HandCategory.HighCard or HandCategory.Flush or HandCategory.OnePair or HandCategory.ThreeOfAKind => Ranks.Skip(1),
+                HandCategory.TwoPair => Ranks.Skip(2),
+                HandCategory.FourOfAKind => Ranks.Skip(1),
+                _ => [],
+            };
+            var text = string.Join(", ", kickers.Select(Symbol));
+            return text.Length == 0 ? Name : $"{Name} with {text}";
+        }
+    }
+
+    /// <summary>
+    /// "2" to "10", "J", "Q", "K" or "A".
+    /// </summary>
+    private static string Symbol(int rank) => rank switch { 11 => "J", 12 => "Q", 13 => "K", Card.Ace => "A", _ => rank.ToString() };
+
     private static readonly string[] RankNames =
         ["", "", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "jack", "queen", "king", "ace"];
 
@@ -117,6 +142,13 @@ public static class HandRankings
     /// </summary>
     public static string Of(HandValue hand) =>
         hand.Category == HandCategory.StraightFlush && hand.Ranks[0] == Card.Ace ? All[^1] : All[(int)hand.Category];
+
+    /// <summary>
+    /// The best ranking a player's private cards make with the shared cards, where each shared slot (one card, or 2 to 3
+    /// cards that replaced a joker) gives one card of the player's choice.
+    /// </summary>
+    public static string OfCards(IReadOnlyList<Card> hole, IReadOnlyList<IReadOnlyList<Card>> slots) =>
+        HandEvaluator.Choices(hole, slots).Select(OfCards).MaxBy(All.ToList().IndexOf)!;
 
     /// <summary>
     /// The ranking of any number of cards: the best 5-card hand if there are at least 5, otherwise what the cards make
@@ -165,6 +197,21 @@ public static class HandEvaluator
 
         return best!;
     }
+
+    /// <summary>
+    /// The best hand of a player's private cards and the shared cards (at least 5 cards in all), where each shared slot
+    /// (one card, or 2 to 3 cards that replaced a joker) gives one card of the player's choice.
+    /// </summary>
+    public static HandValue Best(IReadOnlyList<Card> hole, IReadOnlyList<IReadOnlyList<Card>> slots) =>
+        Choices(hole, slots).Select(Best).Max()!;
+
+    /// <summary>
+    /// Every set of cards a player can use: their private cards and one card from each shared slot.
+    /// </summary>
+    internal static IEnumerable<Card[]> Choices(IReadOnlyList<Card> hole, IReadOnlyList<IReadOnlyList<Card>> slots) =>
+        slots.Aggregate(
+            (IEnumerable<Card[]>)[[.. hole]],
+            (sets, slot) => sets.SelectMany(set => slot.Select(card => (Card[])[.. set, card])));
 
     /// <summary>
     /// The value of exactly 5 cards.
