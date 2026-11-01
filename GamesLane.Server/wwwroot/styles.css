@@ -873,12 +873,66 @@ footer {
     font-size: 0.8em;
 }
 
-.joker-offer {
-    margin-top: 0.4rem;
+/* A joker in the player's hand, waiting to be replaced: faded, with a dashed outline. */
+.my-hand .card.joker.replacing {
+    opacity: 0.55;
+    outline: 2px dashed #5b2a86;
+    outline-offset: 2px;
 }
 
-.joker-offer .card-pick + .card-pick {
-    margin-left: 0.6rem;
+/* The joker's replacement choice: a purple panel under the hand, with two smaller cards to pick from. */
+.joker-panel {
+    margin-top: 0.7rem;
+    padding: 0.65rem 0.75rem 0.75rem;
+    border-radius: 10px;
+    background: #f4ebff;
+    box-shadow: inset 0 0 0 2px #7b3fb0;
+    text-align: center;
+}
+
+.joker-panel-title {
+    display: block;
+    color: #5b2a86;
+    font-size: 1.05rem;
+}
+
+.joker-panel-text {
+    margin: 0.2rem 0 0.6rem;
+    color: var(--ink);
+    font-size: 0.9rem;
+}
+
+.joker-choices {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+}
+
+.joker-choice {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.45rem 0.6rem 0.4rem;
+    border-radius: 10px;
+    background: #fff;
+    color: #5b2a86;
+    box-shadow: inset 0 0 0 1px #c9a8e6;
+}
+
+.joker-choice:not(:disabled):hover {
+    background: #fff;
+    box-shadow: inset 0 0 0 2px #7b3fb0;
+    transform: translateY(-2px);
+}
+
+.joker-choice .card {
+    font-size: 0.85rem;
+}
+
+.joker-choice-label {
+    font-size: 0.8rem;
+    font-weight: 700;
 }
 
 /* The player's own two cards overlap slightly and fan out, like cards held in a hand. */

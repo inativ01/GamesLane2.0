@@ -381,21 +381,25 @@ function myHand(game, state, view, hand) {
         return pick;
     })), info));
 
-    // A joker in the hand: tap the card to keep; tapping an offered joker swaps it for two more cards.
+    // A joker in the hand: a panel offering two smaller cards; tap the one to keep instead of the joker. Tapping an
+    // offered joker swaps it for two more cards.
     if (hand.jokerOffer) {
-        const offer = el("div", "card-row joker-offer", ...hand.jokerOffer.map((c, index) => {
-            const card = cardElement(c);
-            card.classList.add("big");
-            const pick = el("button", "card-pick", card);
+        box.querySelector(".my-hand-top .card.joker")?.classList.add("replacing");
+        const offer = el("div", "joker-choices", ...hand.jokerOffer.map((c, index) => {
+            const again = c === "JOKER";
+            const pick = el("button", "joker-choice", cardElement(c), el("span", "joker-choice-label", again ? "Swap again" : "Keep"));
             pick.type = "button";
-            pick.title = c === "JOKER" ? "Swap this joker for two more cards" : `Keep ${c}`;
+            pick.title = again ? "Swap this joker for two more cards" : `Keep ${c} instead of the joker`;
             pick.addEventListener("click", () => call("ChooseJokerCard", view.sessionId, seat, index).catch(() => {}));
             return pick;
         }));
         const hasJoker = hand.jokerOffer.includes("JOKER");
-        box.append(el("p", "hint step", hasJoker
-            ? "Joker: keep the other card, or tap the joker to swap it for two more cards."
-            : "Joker: tap the card you keep instead of it. The other is discarded."), offer);
+        box.append(el("div", "joker-panel",
+            el("strong", "joker-panel-title", "🃏 You have a joker: replace it"),
+            el("p", "joker-panel-text", hasJoker
+                ? "Keep the other card, or swap this joker for two more cards."
+                : "Choose one of these two cards to take the joker's place. The other is discarded."),
+            offer));
     }
 
     if (step === "ShowCard") {
