@@ -480,3 +480,7 @@ $RECYCLE.BIN/
 
 # Vim temporary swap files
 *.swp
+
+# Original pictures (name, logo, splash screens); the site uses the smaller copies in GamesLane.Server/wwwroot/images
+docs/*.png
+docs/*.PNG
