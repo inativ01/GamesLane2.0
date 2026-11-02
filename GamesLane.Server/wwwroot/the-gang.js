@@ -691,7 +691,12 @@ function fitTable() {
 }
 
 let gangState = null;
-let tableHidden = localStorage.getItem(TABLE_HIDDEN_KEY) === "1";
+// Players on a phone or tablet (a touch screen without a mouse) start with the table hidden, as a shared screen usually
+// shows it; on a computer it is shown. Once a player hides or shows it, their choice is remembered on this device.
+const savedTableHidden = localStorage.getItem(TABLE_HIDDEN_KEY);
+let tableHidden = savedTableHidden === null
+    ? matchMedia("(hover: none) and (pointer: coarse)").matches
+    : savedTableHidden === "1";
 
 const gang = startSessionPage("TheGang", (game, state, view) => {
     gangState = game;
