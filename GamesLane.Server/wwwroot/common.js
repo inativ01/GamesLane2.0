@@ -51,7 +51,8 @@ let busyElement = null;
 let busyTimer = null;
 
 // The current user, set once accountReady resolves:
-// { signedIn, kind, name, icon, uploadedIcon, providers, icons }. kind is "Guest", "Registered" or a provider such as "Google".
+// { signedIn, kind, name, icon, uploadedIcon, gameOrder, providers, icons }. kind is "Guest", "Registered" or a provider
+// such as "Google"; gameOrder is a saved user's order of the games on the main screen, or null.
 let account = null;
 let isNewExternalUser = false;
 

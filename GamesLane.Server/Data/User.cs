@@ -47,6 +47,12 @@ public class User
     public DateTimeOffset LastActiveAt { get; set; }
 
     /// <summary>
+    /// The order of the games on the user's main screen: game names separated by commas, e.g. <c>Backgammon,TheGang</c>,
+    /// or null for the usual order.
+    /// </summary>
+    public string? GameOrder { get; set; }
+
+    /// <summary>
     /// The external accounts (e.g. Google) the user signs in with.
     /// </summary>
     public List<ExternalLogin> ExternalLogins { get; set; } = [];

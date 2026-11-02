@@ -45,6 +45,7 @@ public class GamesLaneDbContext(DbContextOptions<GamesLaneDbContext> options) : 
             user.HasIndex(u => u.NormalizedUsername).IsUnique();
             user.Property(u => u.DisplayName).HasMaxLength(30);
             user.Property(u => u.Icon).HasMaxLength(100);
+            user.Property(u => u.GameOrder).HasMaxLength(200);
             user.HasIndex(u => u.LastActiveAt);
             user.HasMany(u => u.ExternalLogins).WithOne().HasForeignKey(l => l.UserId).OnDelete(DeleteBehavior.Cascade);
         });

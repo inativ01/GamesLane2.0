@@ -1,5 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Text.RegularExpressions;
+using GamesLane.Server.Sessions;
 
 namespace GamesLane.Server.Users;
 
@@ -97,6 +98,40 @@ public static partial class UserRules
         [0x52, 0x49, 0x46, 0x46, _, _, _, _, 0x57, 0x45, 0x42, 0x50, ..] => "image/webp",
         _ => null,
     };
+
+    /// <summary>
+    /// Checks the order of games chosen on the main screen: game names (e.g. <c>TheGang</c>), each an existing game,
+    /// listed once. Games left out keep their usual place after the listed ones. On success, <paramref name="stored"/>
+    /// is the order as saved: the names separated by commas.
+    /// </summary>
+    public static bool TryNormalizeGameOrder(IReadOnlyList<string>? games, out string stored, out string? error)
+    {
+        stored = "";
+        var names = games ?? [];
+        if (names.Any(name => !Enum.TryParse<GameType>(name, out var type) || !Enum.IsDefined(type) || type.ToString() != name))
+        {
+            error = "Unknown game.";
+            return false;
+        }
+
+        if (names.Distinct().Count() != names.Count)
+        {
+            error = "Each game can be listed only once.";
+            return false;
+        }
+
+        stored = string.Join(",", names);
+        error = null;
+        return true;
+    }
+
+    /// <summary>
+    /// A saved game order: the games in it that still exist, in order.
+    /// </summary>
+    public static IReadOnlyList<string> ParseGameOrder(string? stored) =>
+        [.. (stored ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries)
+            .Where(name => Enum.TryParse<GameType>(name, out var type) && Enum.IsDefined(type) && type.ToString() == name)
+            .Distinct()];
 
     /// <summary>
     /// 3 to 20 letters, digits or underscores.

@@ -168,4 +168,28 @@ public class IdentityTests
     {
         Assert.Equal(expected, AuthSetup.SafeReturnUrl(returnUrl));
     }
+
+    [Theory]
+    [InlineData("Backgammon TheGang TicTacToe RockPaperScissors", true)]
+    [InlineData("TheGang", true)]
+    [InlineData("", true)]
+    [InlineData("TheGang Chess", false)]
+    [InlineData("thegang", false)]
+    [InlineData("2", false)]
+    [InlineData("TheGang TheGang", false)]
+    public void A_game_order_lists_existing_games_once_each(string games, bool valid)
+    {
+        var list = games.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+
+        Assert.Equal(valid, UserRules.TryNormalizeGameOrder(list, out var stored, out var error));
+        Assert.Equal(valid ? string.Join(",", list) : "", stored);
+        Assert.Equal(valid, error is null);
+    }
+
+    [Fact]
+    public void A_saved_game_order_keeps_only_games_that_still_exist()
+    {
+        Assert.Equal(["Backgammon", "TheGang"], UserRules.ParseGameOrder("Backgammon,Chess,TheGang,Backgammon"));
+        Assert.Empty(UserRules.ParseGameOrder(null));
+    }
 }

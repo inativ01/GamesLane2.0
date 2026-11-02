@@ -56,6 +56,10 @@ namespace GamesLane.Server.Data.Migrations
                         .HasMaxLength(30)
                         .HasColumnType("character varying(30)");
 
+                    b.Property<string>("GameOrder")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
                     b.Property<string>("Icon")
                         .IsRequired()
                         .HasMaxLength(100)

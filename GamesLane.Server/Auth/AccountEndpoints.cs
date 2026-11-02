@@ -30,7 +30,7 @@ public static class AccountEndpoints
 {
     /// <summary>
     /// Maps <c>/auth/me</c>, <c>/auth/guest</c>, <c>/auth/register</c>, <c>/auth/login</c>, <c>/auth/profile</c>,
-    /// <c>/auth/icon</c>, <c>/api/icons/{id}</c> and <c>/api/options/{gameType}</c>.
+    /// <c>/auth/icon</c>, <c>/api/icons/{id}</c>, <c>/api/game-order</c> and <c>/api/options/{gameType}</c>.
     /// </summary>
     public static void MapAccountEndpoints(this WebApplication app)
     {
@@ -46,6 +46,7 @@ public static class AccountEndpoints
                 name = profile?.Name,
                 icon = profile?.Icon,
                 uploadedIcon = savedId is { } id ? await users.GetUploadedIconPathAsync(id) : null,
+                gameOrder = savedId is { } orderId ? await users.GetGameOrderAsync(orderId) : null,
                 accessToken = user is null ? null : AuthSetup.IssueToken(context, user),
                 providers = providers.Names,
                 icons = UserRules.BuiltInIcons,
@@ -128,6 +129,17 @@ public static class AccountEndpoints
             context.Response.Headers.CacheControl = "public, max-age=31536000, immutable";
             context.Response.Headers.XContentTypeOptions = "nosniff";
             return Results.File(icon.Data, icon.ContentType);
+        });
+
+        // Saved users' order of the games on the main screen: a list of game names, e.g. ["Backgammon", "TheGang"].
+        app.MapPut("/api/game-order", async (string[]? body, HttpContext context, IUserService users) =>
+        {
+            if (AuthSetup.GetSavedUserId(context.User) is not { } id)
+            {
+                return Results.Unauthorized();
+            }
+
+            return await users.SetGameOrderAsync(id, body) is { } error ? Error(error) : Results.NoContent();
         });
 
         // Saved users' preferred options per game: { saved, options }, with the game's defaults if none are saved.

@@ -24,7 +24,7 @@ public record UserResult(User? User, string? Error)
 public record ExternalSignInResult(User User, bool IsNew);
 
 /// <summary>
-/// Saved users: registration, logging in, external accounts, profiles and icons.
+/// Saved users: registration, logging in, external accounts, profiles, icons and the order of their games.
 /// </summary>
 public interface IUserService
 {
@@ -67,6 +67,17 @@ public interface IUserService
     /// An uploaded icon, or null if there is none with this ID.
     /// </summary>
     Task<UserIcon?> GetIconAsync(Guid iconId);
+
+    /// <summary>
+    /// The order the user chose for the games on the main screen, or null if they have not chosen one.
+    /// </summary>
+    Task<IReadOnlyList<string>?> GetGameOrderAsync(Guid userId);
+
+    /// <summary>
+    /// Saves the order of the games on the user's main screen (game names such as <c>TheGang</c>). Returns an error
+    /// message, or null on success.
+    /// </summary>
+    Task<string?> SetGameOrderAsync(Guid userId, IReadOnlyList<string>? games);
 
     /// <summary>
     /// Deletes users (with their external accounts and icons) last active before <paramref name="cutoff"/>. Returns how many.

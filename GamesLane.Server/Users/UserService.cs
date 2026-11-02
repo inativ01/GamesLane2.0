@@ -210,6 +210,31 @@ public class UserService(
     public Task<UserIcon?> GetIconAsync(Guid iconId) => db.UserIcons.AsNoTracking().SingleOrDefaultAsync(i => i.Id == iconId);
 
     /// <inheritdoc />
+    public async Task<IReadOnlyList<string>?> GetGameOrderAsync(Guid userId)
+    {
+        var stored = await db.Users.Where(u => u.Id == userId).Select(u => u.GameOrder).FirstOrDefaultAsync();
+        return stored is null ? null : UserRules.ParseGameOrder(stored);
+    }
+
+    /// <inheritdoc />
+    public async Task<string?> SetGameOrderAsync(Guid userId, IReadOnlyList<string>? games)
+    {
+        if (!UserRules.TryNormalizeGameOrder(games, out var stored, out var error))
+        {
+            return error;
+        }
+
+        if (await db.Users.FindAsync(userId) is not { } user)
+        {
+            return "Your account no longer exists. Log in again.";
+        }
+
+        user.GameOrder = stored;
+        await db.SaveChangesAsync();
+        return null;
+    }
+
+    /// <inheritdoc />
     public Task<int> DeleteInactiveUsersAsync(DateTimeOffset cutoff) =>
         db.Users.Where(u => u.LastActiveAt < cutoff).ExecuteDeleteAsync();
 
