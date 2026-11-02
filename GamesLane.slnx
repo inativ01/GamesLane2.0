@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="GamesLane.Server/GamesLane.Server.csproj" />
+  <Project Path="GamesLane.Server.Tests/GamesLane.Server.Tests.csproj" />
+</Solution>
