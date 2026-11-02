@@ -21,13 +21,13 @@ It is a complete reimplementation of the original [GamesLane](https://github.com
 ### Lobby (main screen)
 - A splash screen (the portrait or landscape picture, to suit the screen) is shown for 5 seconds when the app is first opened in a browser tab and whenever the home icon is used; then the main screen appears. It is not shown again when the page reloads (e.g. after logging in).
 - The top bar of every page shows the GamesLane name picture and, on the right, a **Log in** button when no user is logged in, or the user's icon and name (which open their profile) and a **Log out** button.
-- **Languages:** English and Hebrew. On pages that have a Hebrew translation (so far the main screen and Backgammon, including the login and profile dialogs, the session lobby and the server's messages), the top bar shows the current language's flag; tapping it opens a menu of the languages, and choosing one reloads the page in it. Hebrew pages read from right to left (the backgammon board stays as it is). The choice is remembered in the browser; until the user chooses, Hebrew if the browser prefers it, otherwise English. Pages without a translation (The Gang, Rock-paper-scissors, Tic-tac-toe) stay in English and show no flag.
+- **Languages:** English and Hebrew. On pages that have a Hebrew translation (so far the main screen, Backgammon and Rich man, poor man, including the login and profile dialogs, the session lobby and the server's messages), the top bar shows the current language's flag; tapping it opens a menu of the languages, and choosing one reloads the page in it. Hebrew pages read from right to left (the backgammon board stays as it is). The choice is remembered in the browser; until the user chooses, Hebrew if the browser prefers it, otherwise English. Pages without a translation (The Gang, Rock-paper-scissors, Tic-tac-toe) stay in English and show no flag.
 - **Translating a page** (see `i18n.js`):
   - Load `lang/he.js` and then `i18n.js` in the page's `<head>` (untranslated pages load only `i18n.js`).
   - Mark fixed texts in the HTML with `data-i18n` (the element's whole text is translated) or `data-i18n-attr="title,aria-label"`; in scripts, wrap texts in `t("...")`, with varying parts as `{name}`: `t("Seat {n}", { n })`. Write whole sentences as keys, not pieces glued together, since word order differs in Hebrew.
   - Texts from the server (error messages, option names) go through `translateServerText()`, which finds their translation by their English text. **Changing an English message on the server means changing its key in `lang/he.js` too.**
   - Hebrew style: instructions in the plural (e.g. הקישו על הלוח), so they suit everyone. A text about the viewer has its own "you" form (e.g. "You rolled {n}." / "{name} rolled {n}."; see `about()` in `backgammon.js`). Texts about other players avoid male and female verb forms (e.g. "ל־{name} יצא {n}").
-  - Terms still to be confirmed by the user: מטץ' (match), צעדים (pips), משחק קרופורד (Crawford game), גמון / בקגמון (gammon / backgammon), "(אני)" for the viewer's own seat; game names שש־בש, הכנופיה, איקס־עיגול, אבן, נייר ומספריים.
+  - Terms still to be confirmed by the user: צעדים (pips), משחק קרופורד (Crawford game), גמון / בקגמון (gammon / backgammon), "(אני)" for the viewer's own seat; game names שש־בש, הכנופיה, איקס־עיגול, אבן, נייר ומספריים; in Rich man, poor man: זריקה / פס (Throw / Pass), מסירה (Give), עשיר / עני (rich man / poor man), נסיך (jack) and the spoken numbers (e.g. "3 תשיעיות"). Confirmed: משחקון (match), עשיר ועני (the game's name).
 - A list of games. A new session can be started only when a user is logged in; choosing a game while logged out opens the login dialog, and the session is started once the user has logged in.
 - Logged-in users can reorder the games by dragging a game by its ⋮⋮ handle (mouse or touch; Alt+↑/↓ with the keyboard). A saved user's order (registered or Google) is saved with their account; a guest's is remembered in the browser. The order is applied whenever the main screen opens. Games not in a saved order (e.g. new ones) keep their usual place after the others.
 - A way to join a session by entering its code. This does not require a logged-in user.
@@ -47,7 +47,7 @@ It is a complete reimplementation of the original [GamesLane](https://github.com
 - On every page except the main screen, a home icon in the top bar goes back to the main screen (for players, this gives up their seats).
 - A user who loses their connection (closed tab, phone asleep, network lost) keeps their seats for 30 seconds and gets them back if they return in time. After that, the seats are freed, as if they had left. A disconnected user's seat cannot be taken by someone else before then.
 - Creating a session does not seat the creator; they join the session and can then take a seat.
-- Each game defines its maximum number of seats (up to 12) and the minimum needed to start (which may equal the maximum). Tic-tac-toe, rock-paper-scissors and backgammon have 2 seats, both required; The Gang has 8 seats, at least 3 required.
+- Each game defines its maximum number of seats (up to 12) and the minimum needed to start (which may equal the maximum). Tic-tac-toe, rock-paper-scissors and backgammon have 2 seats, both required; The Gang has 8 seats, at least 3 required; Rich man, poor man has 12 seats, at least 6 required.
 - When the minimum number of seats is taken, a **Start** button appears (**New game** after the first game). Any seated user can start the game.
 - While the session is in the lobby, an **Invite friends** panel shows the join link (`/join/{code}`), with **Copy link** and **Share…** buttons where the browser supports them.
 - **Paused game:** if an unfinished game was interrupted (players left or stayed disconnected), the lobby says it is paused and how many seats must be filled to resume it. Its players' seats stay where they are, and only those empty seats can be taken (one **Sit here** at a time, lowest first); the newcomer continues that player's hand. No other players can join. Once all its seats are taken, seated users can **Resume** it. At any time, a seated user can **End game** (after confirming): the seats then move up, others can join, and **Start** begins a new game with however many are seated (at least the minimum).
@@ -56,9 +56,9 @@ It is a complete reimplementation of the original [GamesLane](https://github.com
 ### Game screen (active session)
 - Once the game starts, the session lobby is replaced by a game-specific screen.
 - Seated players may see a different version of the screen than spectators (for example, their own cards in hand). Spectators never see any player's private information.
-- Anyone can watch an active game. Taking a seat in an active game is normally not allowed, but a game may allow it.
+- Anyone can watch an active game. Taking a seat in an active game is normally not allowed, but a game may allow it (Rich man, poor man: the seat of a player who left).
 - A seated user can **stand up** (become a spectator) or **leave** (go back to the main lobby, giving up their seats).
-- If players leave during a game and at least the minimum number remain, the game may continue (a per-game option). Otherwise the game pauses and the session goes back to the session lobby.
+- If players leave during a game and at least the minimum number remain, the game may continue (a per-game option; Rich man, poor man continues with any number). Otherwise the game pauses and the session goes back to the session lobby.
 - When a game is resumed, anyone who took a seat in the meantime continues the game in place of the previous user. Private game information is not sent while the session is in the lobby.
 - When a game ends (The Gang, and a backgammon match), anyone seated can choose **Play again** while at least the minimum number of players are seated, or go **Back to the lobby** (for everyone). A new game is played by whoever is seated (any number between the minimum and the maximum). If fewer than the minimum remain, the session goes back to the session lobby automatically.
 - Tic-tac-toe and rock-paper-scissors never end by themselves; players stand up or leave when they are done.
@@ -90,9 +90,10 @@ GamesLane.Server/              ASP.NET Core backend
   Games/RockPaperScissors/     Rock-paper-scissors rules
   Games/TheGang/               The Gang rules: cards, poker hand ranking, heists
   Games/Backgammon/            Backgammon rules: position, legal moves, turns, doubling cube, matches, options
+  Games/RichManPoorMan/        Rich man, poor man rules: the deck (one set of 2 to A per player), rounds, players who left, the exchange
   wwwroot/                     Web pages
     index.html, home.js        Main screen: start a session or join one by code
-    common.js                  Shared: login dialog and account bar, hub connection, session lobby and page framework
+    common.js                  Shared: login dialog and account bar, hub connection, session lobby and page framework, playing cards
     i18n.js                    Shared: languages. The English texts in the code are the keys: t("Log in") gives the chosen language's text. Also matches the server's English messages to their translations, and the language picker
     lang/he.js                 Hebrew translations (a page offers Hebrew by loading this file before i18n.js)
     styles.css                 Styles for all pages
@@ -101,6 +102,7 @@ GamesLane.Server/              ASP.NET Core backend
     rock-paper-scissors.html/.js  Rock-paper-scissors page
     the-gang.html/.js          The Gang page
     backgammon.html/.js        Backgammon page (the board is drawn as SVG)
+    rich-man-poor-man.html/.js Rich man, poor man page
     images/                    Logo, the GamesLane name for the header and the splash screens (web-sized copies of the originals in docs/), game pictures (SVG)
     images/the-gang/           A picture (SVG) for each challenge and specialist card, named by the card's key, e.g. quick-access.svg
     images/flags/              Flags for the language picker
@@ -139,12 +141,10 @@ docs/                          Original logo, name and splash pictures (kept out
   - Players can **Hide table** (and **Show table** again), e.g. when a shared screen shows it; the browser remembers the choice. Until they choose, the table is hidden on phones and tablets and shown on computers.
   - Not yet included: in-game chat.
 
-### Planned: Rich man, poor man (not implemented yet)
+- **Rich man, poor man** (עשיר ועני, 6–12 players): a shedding card game, in English and Hebrew. The rules:
 
-A shedding card game for 6 to 12 players. The rules below are the ones to implement. It is to be built in English and Hebrew from the start.
-
-- **Goal:** get rid of all your cards. A game does not have a single winner: it ends with a full ranking of the players, in the order they emptied their hands. A player may empty their hand in the middle of a round; their place in the ranking is kept and they take no further part in that game. The game ends when every player has emptied their hand (the last player keeps throwing alone until their hand is empty).
-- **The deck:** 13 cards per player, so one suit (2 to A) per player: 6 players use 6 suits (a full deck plus 2 extra suits), 9 players use 9 suits, 12 players use three full decks. **Suits do not matter** at all; only the numbers count. With more than 4 players, the same number appears more than 4 times (with 9 players, there are nine 7s).
+- **Goal:** get rid of all your cards. A game does not have a single winner: it ends with a full ranking of the players, in the order they emptied their hands. A player may empty their hand in the middle of a round; their place in the ranking is kept and they take no further part in that game. The game ends when every active player has emptied their hand (the last player keeps throwing alone until their hand is empty).
+- **The deck:** one set of 2 to A per player, so every player gets 13 cards and each number appears once per player: 6 players use 6 sets, 9 players use 9 sets, 12 players use 12 sets. The sets are drawn as ordinary playing cards, taking the suits ♠, ♥, ♦, ♣ in turn (the fifth set is ♠ again), with ♥ and ♦ in red. **Suits do not matter** at all; only the numbers count. With more than 4 players, the same number appears more than 4 times (with 9 players, there are nine 7s).
 - **Order of strength:** 2 is the lowest, then 3, 4, … 10, J, Q, K, and A is the highest.
 - **Dealing:** the whole deck is shuffled and dealt; every player gets 13 cards.
 - **Rounds:** a game is played in rounds.
@@ -173,9 +173,11 @@ A shedding card game for 6 to 12 players. The rules below are the ones to implem
      | 11 | #1↔#11: 4, #2↔#10: 3, #3↔#9: 2, #4↔#8: 1, #5↔#7: 1; #6 does not exchange |
      | 12 | #1↔#12: 4, #2↔#11: 3, #3↔#10: 2, #4↔#9: 1, #5↔#8: 1; #6 and #7 do not exchange |
 
-  3. **How each pair exchanges:** the poorer player must give their N highest cards: the game picks them, and the player confirms with a button. The richer player gives any N cards they choose. The exchange happens at the same moment for everyone, so nobody sees the cards they will receive before choosing the cards they give; once everyone has given their cards, they are exchanged and the poorest player starts.
-- **Players leaving and joining:** a player who leaves is dropped, and the others keep their relative order. A new player who wants to join asks to sit down; any seated player can accept and choose where the newcomer sits (no vote is needed).
-- **Screens:** each player's phone shows their hand sorted from low to high, with equal numbers together; they tap cards of one number, then **Throw**, or **Pass**. The shared screen (e.g. a TV) shows the table: the current throw, whose turn it is, who has passed in this round, each player's number of cards, and the finishing order so far. It can also say the last throw out loud (e.g. "Three nines"), using the browser's speech.
+  3. **How each pair exchanges:** the poorer player must give their N highest cards: the game picks them, and the player confirms with **Give these cards**. The richer player taps any N cards and presses **Give**. Nobody gets any cards until every pair has given: then all the cards are exchanged at once, everyone gets their new cards together, and the poorest player starts. Nobody sees the cards they will receive before choosing the cards they give.
+- **A player who leaves during a game** (stands up, goes back to the main screen, or stays disconnected for 30 seconds): their cards are held until the end of the game. They become inactive and pass automatically; if they are to start a round, the next active player in turn starts it. Anyone can take their seat (**Take this seat** in the player list, no approval needed) and continue the game in their place, with their cards and their place; a player who left can also come back to their own seat this way. An inactive player gets no finishing place. When the game ends and **Next game** is pressed, players whose seat is still empty are out, and the exchange is for the remaining number of players (the others keep their order, by the ranking).
+- **Fewer than 6 players:** a game in progress continues with however many active players are left, but there can be no exchange with fewer than 6 players: **Next game** then takes everyone back to the session lobby (a new game can start there once 6 are seated). Likewise, if players leave during the exchange and fewer than 6 remain, everyone goes back to the lobby.
+- **Joining:** during a game, nobody can take a seat other than a seat whose player left. During the exchange, an observer who is logged in can **Ask to join**; any player sees the request and can **Accept** it, choosing the newcomer's place (#1 to the last; the players from that place down move down one), or **Decline** it. A player who leaves during the exchange is dropped at once. Each time a player is added or dropped, one set of 2 to A is added to or removed from the deck (so each number still appears once per player), all the cards are shuffled and dealt again, any cards already given are cancelled, and the exchange starts again for the new number of players.
+- **Screens:** each player's phone shows their hand sorted from low to high, with equal numbers together; they tap cards of one number, then **Throw**, or **Pass**. Tapping a card when there is a throw to beat picks as many cards of that number as are needed. A user holding several seats sees one hand per seat. The table (shown to everyone, and to observers such as a TV) shows the cards to beat and who threw them, then the round's winner; and the players in place order (#1, the rich man, to the last, the poor man), each with their number of cards, whose turn it is, who has passed in this round, who left, the finishing places so far, and during the exchange, who has given their cards. After a game, it shows the next game's places. On a screen without a seat, **Read throws aloud** says each throw out loud (e.g. "3 nines"), in the page's language, using the browser's speech; the choice is remembered in the browser.
 
 ### Game options
 
@@ -191,9 +193,9 @@ Clients connect to the SignalR hub at `/hubs/game` and call these methods:
 
 | Method | Returns | Description |
 | --- | --- | --- |
-| `CreateSession(gameType)` | session code | Logged-in users only. Creates a session (`"TicTacToe"`, `"RockPaperScissors"`, `"TheGang"` or `"Backgammon"`) and returns its 6-character code. The creator is not seated. The session starts with the creator's saved options for the game, if any. |
+| `CreateSession(gameType)` | session code | Logged-in users only. Creates a session (`"TicTacToe"`, `"RockPaperScissors"`, `"TheGang"`, `"Backgammon"` or `"RichManPoorMan"`) and returns its 6-character code. The creator is not seated. The session starts with the creator's saved options for the game, if any. |
 | `EnterSession(sessionId)` | `{ state, playerId, private }` | Subscribes to the session's updates. For a logged-in user, reconnects them to their seats, updates their name and icon on them, and returns their `playerId`; otherwise `playerId` is `null`. `private` is the user's private game information, or `null`. Pages call this when they open and after reconnecting. |
-| `TakeSeat(sessionId)` | — | Logged-in users only. Takes the next available seat (the first empty one, or while a game is paused, the first empty seat of its players) under the user's display name. Only in the session lobby. |
+| `TakeSeat(sessionId)` | — | Logged-in users only. Takes the next available seat (the first empty one, or while a game is paused, the first empty seat of its players) under the user's display name. Only in the session lobby, except in Rich man, poor man, where during a game it takes the first seat of a player who left. |
 | `LeaveSeat(sessionId, seat)` | — | Gives up one of the caller's seats (used for **Leave seat** and **Stand up**). |
 | `LeaveSession(sessionId)` | — | Stops receiving updates and gives up all the caller's seats (used when going back to the main screen). |
 | `NewGame(sessionId, gameNumber)` | — | Seated users only. Starts a new game for everyone seated, replacing game `gameNumber` (0 before the first game). Refused while a game is in progress. If that game was already replaced, nothing changes. |
@@ -203,7 +205,7 @@ Clients connect to the SignalR hub at `/hubs/game` and call these methods:
 | `ReturnToLobby(sessionId)` | — | Seated users only. After a game has ended, takes everyone back to the session lobby. |
 | `MakeMove(sessionId, seat, cell)` | — | Tic-tac-toe: places the mark of `seat` (0 is X, 1 is O), which the caller must hold. Cells are numbered 0–8, left to right, top to bottom. |
 | `Pick(sessionId, seat, choice)` | — | Rock-paper-scissors: picks `"Rock"`, `"Paper"` or `"Scissors"` for `seat`, which the caller must hold. |
-| `NextRound(sessionId, round)` | — | Rock-paper-scissors and tic-tac-toe: starts the round after `round`; backgammon: starts the game of the match after game `round`. If it has already started, nothing changes. |
+| `NextRound(sessionId, round)` | — | Rock-paper-scissors and tic-tac-toe: starts the round after `round`; backgammon: starts the game of the match after game `round`; Rich man, poor man: starts the game after game `round` (or with fewer than 6 players left, goes back to the session lobby). If it has already started, nothing changes. |
 | `Roll(sessionId, seat)` | — | Backgammon: `seat`, which the caller must hold, rolls the dice; during the opening roll, its one die. |
 | `MoveChecker(sessionId, seat, from, to)` | — | Backgammon: `seat` moves a checker. Points are numbered from that seat's side: 1 to 24 in the direction it moves, 25 for the bar, 0 for off the board. |
 | `UndoMove(sessionId, seat)` | — | Backgammon: takes back the last checker `seat` moved in this turn. |
@@ -223,6 +225,11 @@ Clients connect to the SignalR hub at `/hubs/game` and call these methods:
 | `ConfirmRedraw(sessionId, seat)` | — | The Gang, Motion Detector and Laser Tripwires: `seat`, which got new pocket cards, confirms it. |
 | `RevealNext(sessionId, revealed)` | — | The Gang: any player reveals the next hand, if `revealed` hands are revealed so far. |
 | `NextHeist(sessionId, heist)` | — | The Gang: any player deals the heist after `heist`, once its hands are revealed. |
+| `ThrowCards(sessionId, seat, cards)` | — | Rich man, poor man: `seat`, which the caller must hold, throws `cards` (short text such as `["9♥", "9♠"]`), all of one number. |
+| `Pass(sessionId, seat)` | — | Rich man, poor man: `seat` passes its turn. The round's starter cannot pass. |
+| `GiveCards(sessionId, seat, cards)` | — | Rich man, poor man, in the exchange: `seat` gives `cards` to its partner; the poorer player of a pair must give its highest cards. |
+| `RequestSeat(sessionId)` / `CancelSeatRequest(sessionId)` | — | Rich man, poor man, in the exchange: the logged-in caller asks to join the next game, or withdraws the request. |
+| `AcceptSeat(sessionId, playerId, place)` / `DeclineSeat(sessionId, playerId)` | — | Rich man, poor man, in the exchange: a player accepts the request of `playerId` at `place` (1 for #1), which deals the cards again for the new number of players, or declines it. |
 
 After every change, the server sends a `StateUpdated` message with the public session state to everyone in the session. In games with private information (The Gang), each player's connections then also receive a `PrivateStateUpdated` message with that user's own cards; nobody else receives it. `EnterSession` returns the same private information as `private`. The public session state has these fields:
 
@@ -346,7 +353,7 @@ _Last updated: 2026-11-02. Keep this section current; it is the hand-off point b
 2. Microsoft sign-in: app registration in the Entra admin center and the two environment variables on Render.
 3. Game history and stats (deferred).
 4. Backgammon: first play-test on phones and a TV; possible extras later (a move list, variants such as Nackgammon or Acey-deucey).
-5. Rich man, poor man: rules settled (see Games); implement when asked, in English and Hebrew. Still open: the name of the poorer player's button that confirms the cards they give (not **Pass**, which is used during play).
+5. Rich man, poor man: first play-test with real players on phones and a TV.
 6. Hebrew: translate The Gang, Rock-paper-scissors and Tic-tac-toe (main screen and Backgammon are done; first check on Render, and the user to review the terms listed under Languages).
 
 ### Working conventions
