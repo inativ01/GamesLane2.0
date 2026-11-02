@@ -39,7 +39,7 @@ It is a complete reimplementation of the original [GamesLane](https://github.com
 - On every page except the main screen, a home icon in the top bar goes back to the main screen (for players, this gives up their seats).
 - A user who loses their connection (closed tab, phone asleep, network lost) keeps their seats for 30 seconds and gets them back if they return in time. After that, the seats are freed, as if they had left. A disconnected user's seat cannot be taken by someone else before then.
 - Creating a session does not seat the creator; they join the session and can then take a seat.
-- Each game defines its maximum number of seats (up to 12) and the minimum needed to start (which may equal the maximum). Tic-tac-toe and rock-paper-scissors have 2 seats, both required; The Gang has 8 seats, at least 3 required.
+- Each game defines its maximum number of seats (up to 12) and the minimum needed to start (which may equal the maximum). Tic-tac-toe, rock-paper-scissors and backgammon have 2 seats, both required; The Gang has 8 seats, at least 3 required.
 - When the minimum number of seats is taken, a **Start** button appears (**New game** after the first game). Any seated user can start the game.
 - While the session is in the lobby, an **Invite friends** panel shows the join link (`/join/{code}`), with **Copy link** and **Share…** buttons where the browser supports them.
 - **Paused game:** if an unfinished game was interrupted (players left or stayed disconnected), the lobby says it is paused and how many seats must be filled to resume it. Its players' seats stay where they are, and only those empty seats can be taken (one **Sit here** at a time, lowest first); the newcomer continues that player's hand. No other players can join. Once all its seats are taken, seated users can **Resume** it. At any time, a seated user can **End game** (after confirming): the seats then move up, others can join, and **Start** begins a new game with however many are seated (at least the minimum).
@@ -52,7 +52,7 @@ It is a complete reimplementation of the original [GamesLane](https://github.com
 - A seated user can **stand up** (become a spectator) or **leave** (go back to the main lobby, giving up their seats).
 - If players leave during a game and at least the minimum number remain, the game may continue (a per-game option). Otherwise the game pauses and the session goes back to the session lobby.
 - When a game is resumed, anyone who took a seat in the meantime continues the game in place of the previous user. Private game information is not sent while the session is in the lobby.
-- When a game ends (so far only The Gang ends), anyone seated can choose **Play again** while at least the minimum number of players are seated, or go **Back to the lobby** (for everyone). A new game is played by whoever is seated (any number between the minimum and the maximum). If fewer than the minimum remain, the session goes back to the session lobby automatically.
+- When a game ends (The Gang, and a backgammon match), anyone seated can choose **Play again** while at least the minimum number of players are seated, or go **Back to the lobby** (for everyone). A new game is played by whoever is seated (any number between the minimum and the maximum). If fewer than the minimum remain, the session goes back to the session lobby automatically.
 - Tic-tac-toe and rock-paper-scissors never end by themselves; players stand up or leave when they are done.
 
 A typical setup is a shared screen (such as a TV or laptop) connected as a spectator to show the board, while each player uses their own phone to view their hand and play.
@@ -81,6 +81,7 @@ GamesLane.Server/              ASP.NET Core backend
   Games/TicTacToe/             Tic-tac-toe rules
   Games/RockPaperScissors/     Rock-paper-scissors rules
   Games/TheGang/               The Gang rules: cards, poker hand ranking, heists
+  Games/Backgammon/            Backgammon rules: position, legal moves, turns, doubling cube, matches, options
   wwwroot/                     Web pages
     index.html, home.js        Main screen: start a session or join one by code
     common.js                  Shared: login dialog and account bar, hub connection, session lobby and page framework
@@ -89,6 +90,7 @@ GamesLane.Server/              ASP.NET Core backend
     tictactoe.html/.js         Tic-tac-toe page
     rock-paper-scissors.html/.js  Rock-paper-scissors page
     the-gang.html/.js          The Gang page
+    backgammon.html/.js        Backgammon page (the board is drawn as SVG)
     images/                    Logo, the GamesLane name for the header and the splash screens (web-sized copies of the originals in docs/), game pictures (SVG)
     images/the-gang/           A picture (SVG) for each challenge and specialist card, named by the card's key, e.g. quick-access.svg
 GamesLane.Server.Tests/        Unit tests
@@ -99,6 +101,13 @@ docs/                          Original logo, name and splash pictures (kept out
 
 - **Tic-tac-toe** (2 players): after each board, the wins and draws are kept and players start the next round. The starting player alternates: X starts the odd rounds, O the even ones.
 - **Rock-paper-scissors** (2 players): both players pick secretly. When both have picked, the picks are revealed and the winner scores a point. Play continues for as many rounds as you like.
+- **Backgammon** (2 players): standard rules. Seat 0 plays white, seat 1 black.
+  - **A match** to 1, 3, 5, 7 or 9 points (option **Match length**, default 5). A single game scores 1 point, a gammon (the loser bore off no checker) 2, a backgammon (and still has a checker on the bar or in the winner's home board) 3, times the cube. When the match ends, **Play again** starts a new one; between games, **Next game**.
+  - **Opening roll:** each player rolls one die (again on a tie); the higher die moves first, with both dice.
+  - **A turn:** press **Roll**, move the checkers, then press **Done**. **Undo** takes back the last checker moved in the turn. Tap a checker and then one of its highlighted destinations; a checker that can only go to one place moves at once. The rules are enforced: a checker on the bar must enter first, a point with two or more opposing checkers is blocked, a single opposing checker is hit, bearing off only once all checkers are home (with a higher number only when no checker is on a higher point), as many dice as possible must be used (all four with doubles), and if only one die can be used, it must be the larger one when possible.
+  - **Automatic turns:** if no checker can move, the turn passes; if there is only one way to play the dice, the game plays it and the turn ends. A message says so.
+  - **Doubling cube** (option, on by default; not in 1-point matches): before rolling, the player may **Double**; the other player **Take**s (the cube doubles and they own it) or **Drop**s (losing the game at the cube's value). Crawford rule: no doubling in the game after a player first comes within one point of winning the match.
+  - **The board** is seen from each player's own side (home board bottom right, bearing off into the tray on the right); spectators see white's side, and a user holding both seats sees the side of the seat that must act. It shows the dice on the mover's side (used dice faded), the cube, both pip counts and the match score. The previous turn's moves are highlighted, and so are the current turn's for everyone watching; the checker just moved drops into place. The board scales to fit the screen, in portrait or landscape, and on a TV.
 - **The Gang** (3–8 players), the cooperative poker game by John Cooper and Kory Heath. Each heist:
   - Every player gets 2 pocket cards, shown only on their own screen. Five shared cards are dealt: none at first, then 3, 4 and 5 as the stages go on.
   - Four betting stages (white, yellow, orange, red). In each, every player takes a numbered chip, from 1 (weakest hand) up to the number of players (strongest), from the middle or from another player. Tapping your own chip returns it to the middle. Players are numbered 1 to the number of players in seat order: each hand is titled "Player N", and the table's chip list shows the numbers. Next to the player's cards are the chips they took in this heist's earlier stages. Once every player holds a chip, the **Ready** button (👍) appears; the stage ends when everyone has pressed it. Any chip change clears everyone's Ready (and hides the button again while a chip is in the middle). A user with several seats presses Ready once, for all their hands.
@@ -121,7 +130,7 @@ docs/                          Original logo, name and splash pictures (kept out
 
 ### Game options
 
-A game can offer **options**, i.e. rule variants (so far only The Gang's). Each option has a key, a label and a list of choices with a default; `Games/GameOptions.cs` lists them per game. A **choice** option is one of its choices. A **set** option (e.g. The Gang's challenge cards) is a list of choices, all on by default (for cards, each with its picture: tap a card to turn it on or off; a card that is off is greyed out); its value lists the choices turned off, separated by commas, so cards added later are on by default. An option can apply only when another option has a certain value (`shownWhen`, e.g. the card options only in Advanced mode).
+A game can offer **options**, i.e. rule variants (so far The Gang's and backgammon's). Each option has a key, a label and a list of choices with a default; `Games/GameOptions.cs` lists them per game. A **choice** option is one of its choices. A **set** option (e.g. The Gang's challenge cards) is a list of choices, all on by default (for cards, each with its picture: tap a card to turn it on or off; a card that is off is greyed out); its value lists the choices turned off, separated by commas, so cards added later are on by default. An option can apply only when another option has a certain value (`shownWhen`, e.g. the card options only in Advanced mode).
 
 - In the session lobby, everyone sees the chosen options; seated players can change them with **Game options**. They apply to the next new game; a paused game keeps the options it started with.
 - Saved users (registered or Google, not guests) can **save** the options as their preferences for that game, and **load** them back in the dialog. A session starts with its creator's saved preferences.
@@ -133,7 +142,7 @@ Clients connect to the SignalR hub at `/hubs/game` and call these methods:
 
 | Method | Returns | Description |
 | --- | --- | --- |
-| `CreateSession(gameType)` | session code | Logged-in users only. Creates a session (`"TicTacToe"`, `"RockPaperScissors"` or `"TheGang"`) and returns its 6-character code. The creator is not seated. The session starts with the creator's saved options for the game, if any. |
+| `CreateSession(gameType)` | session code | Logged-in users only. Creates a session (`"TicTacToe"`, `"RockPaperScissors"`, `"TheGang"` or `"Backgammon"`) and returns its 6-character code. The creator is not seated. The session starts with the creator's saved options for the game, if any. |
 | `EnterSession(sessionId)` | `{ state, playerId, private }` | Subscribes to the session's updates. For a logged-in user, reconnects them to their seats, updates their name and icon on them, and returns their `playerId`; otherwise `playerId` is `null`. `private` is the user's private game information, or `null`. Pages call this when they open and after reconnecting. |
 | `TakeSeat(sessionId)` | — | Logged-in users only. Takes the next available seat (the first empty one, or while a game is paused, the first empty seat of its players) under the user's display name. Only in the session lobby. |
 | `LeaveSeat(sessionId, seat)` | — | Gives up one of the caller's seats (used for **Leave seat** and **Stand up**). |
@@ -145,7 +154,13 @@ Clients connect to the SignalR hub at `/hubs/game` and call these methods:
 | `ReturnToLobby(sessionId)` | — | Seated users only. After a game has ended, takes everyone back to the session lobby. |
 | `MakeMove(sessionId, seat, cell)` | — | Tic-tac-toe: places the mark of `seat` (0 is X, 1 is O), which the caller must hold. Cells are numbered 0–8, left to right, top to bottom. |
 | `Pick(sessionId, seat, choice)` | — | Rock-paper-scissors: picks `"Rock"`, `"Paper"` or `"Scissors"` for `seat`, which the caller must hold. |
-| `NextRound(sessionId, round)` | — | Rock-paper-scissors and tic-tac-toe: starts the round after `round`. If it has already started, nothing changes. |
+| `NextRound(sessionId, round)` | — | Rock-paper-scissors and tic-tac-toe: starts the round after `round`; backgammon: starts the game of the match after game `round`. If it has already started, nothing changes. |
+| `Roll(sessionId, seat)` | — | Backgammon: `seat`, which the caller must hold, rolls the dice. |
+| `MoveChecker(sessionId, seat, from, to)` | — | Backgammon: `seat` moves a checker. Points are numbered from that seat's side: 1 to 24 in the direction it moves, 25 for the bar, 0 for off the board. |
+| `UndoMove(sessionId, seat)` | — | Backgammon: takes back the last checker `seat` moved in this turn. |
+| `EndTurn(sessionId, seat)` | — | Backgammon: ends `seat`'s turn, once it has used as many dice as the rules require. |
+| `OfferDouble(sessionId, seat)` | — | Backgammon: `seat` offers to double before rolling. |
+| `TakeDouble(sessionId, seat)` / `DropDouble(sessionId, seat)` | — | Backgammon: `seat` takes the double (the cube doubles and it owns it) or drops it (losing the game at the cube's value). |
 | `TakeChip(sessionId, seat, chip)` | — | The Gang: `seat`, which the caller must hold, takes a chip of the current stage, from the middle or from another player. |
 | `ReturnChip(sessionId, seat)` | — | The Gang: puts `seat`'s chip back in the middle. |
 | `SetReady(sessionId, seat, ready)` | — | The Gang: marks `seat` ready (or not) to end the stage, together with the caller's other seats. |
@@ -176,7 +191,7 @@ After every change, the server sends a `StateUpdated` message with the public se
 | `optionList` | The game's options: `{ key, label, choices: [{ value, label, hint, image }], default, kind, shownWhen }`, where `image` is a picture's address or `null`, `kind` is `"Choice"` or `"Set"` and `shownWhen` is `{ key, value }` or `null` (empty for games without options) |
 | `options` | The chosen value of each option, e.g. `{ "mode": "Basic" }`, used by the next new game |
 
-In rock-paper-scissors, the game state only shows whether each seat has picked; the picks themselves are revealed once both have picked. Errors (e.g. "It is not your turn.") are returned as hub errors to the caller.
+In rock-paper-scissors, the game state only shows whether each seat has picked; the picks themselves are revealed once both have picked. In backgammon, the game state has the board from white's side (`points`: entry `i` is white's point `i + 1`, positive for white checkers and negative for black), `bar`, `off`, `pips` and `scores` by seat, the `phase` (`"Rolling"`, `"Doubled"`, `"Moving"`, `"GameOver"`, `"MatchOver"`), the seat to move (`turn`), the `dice` and `diceLeft`, the `legalMoves` and the moves `played` so far (in the mover's numbering), the `lastTurn`, the cube (`cubeValue`, `cubeOwner`, `canDouble`, `isCrawford`) and the last game's `result`. Errors (e.g. "It is not your turn.") are returned as hub errors to the caller.
 
 ### Rejoining
 
@@ -280,11 +295,12 @@ _Last updated: 2026-11-02. Keep this section current; it is the hand-off point b
 1. Linking a Google account to a registered user (deferred).
 2. Microsoft sign-in: app registration in the Entra admin center and the two environment variables on Render.
 3. Game history and stats (deferred).
+4. Backgammon: first play-test on phones and a TV; possible extras later (a move list, variants such as Nackgammon or Acey-deucey).
 
 ### Working conventions
 - Ask before adding or upgrading packages.
 - Interfaces go in an `Interfaces/` subfolder of each folder, in the parent folder's namespace.
-- When asked to "not commit", leave changes uncommitted for review.
+- When asked to "not commit", leave changes uncommitted for review. For larger features done unattended, commit and push each completed step.
 - Never put secrets in the repo, chat or commands; they live only in Render's Environment tab (or `dotnet user-secrets` locally).
 
 ### Known limitations
