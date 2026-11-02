@@ -34,11 +34,15 @@ async function startGame(gameType) {
     }
 }
 
-// The order of the games. Saved users can arrange it (Arrange: move games up and down); it is saved with their account
-// and applied whenever they open the main screen. Games not in a saved order keep their usual place after the others.
+// The order of the games. Logged-in users drag a game by its handle to move it. A saved user's order is kept with
+// their account; a guest's in this browser. It is applied whenever the main screen opens. Games not in the order (e.g.
+// new ones) keep their usual place after the others. Alt+Up and Alt+Down move the focused game with the keyboard.
+const GAME_ORDER_KEY = "gameOrder";
 const gameList = $("game-list");
 const gameTiles = () => [...gameList.querySelectorAll("[data-create]")];
-const usualOrder = gameTiles().map((tile) => tile.dataset.create);
+const currentOrder = () => gameTiles().map((tile) => tile.dataset.create);
+const usualOrder = currentOrder();
+const isSavedUser = () => account.signedIn && account.kind !== "Guest";
 
 function applyGameOrder(order) {
     const rank = (type) => (order.includes(type) ? order.indexOf(type) : order.length + usualOrder.indexOf(type));
@@ -48,55 +52,76 @@ function applyGameOrder(order) {
 }
 
 async function saveGameOrder() {
+    if (!isSavedUser()) {
+        localStorage.setItem(GAME_ORDER_KEY, JSON.stringify(currentOrder()));
+        return;
+    }
     const response = await authFetch("/api/game-order", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(gameTiles().map((tile) => tile.dataset.create)),
+        body: JSON.stringify(currentOrder()),
     }).catch(() => null);
     if (!response?.ok) {
         showError((await response?.json().catch(() => null))?.error ?? "The order of the games could not be saved.");
     }
 }
 
-// The list shown while arranging: each game's picture and name, with buttons to move it up or down.
-function renderArrangeList() {
-    const tiles = gameTiles();
-    $("arrange-list").replaceChildren(...tiles.map((tile, i) => {
-        const move = (delta, label, symbol) => {
-            const button = smallButton(symbol, () => {
-                const other = tiles[i + delta];
-                gameList.insertBefore(delta < 0 ? tile : other, delta < 0 ? other : tile);
-                renderArrangeList();
-                saveGameOrder();
+// Dragging a game by its handle: the game follows the pointer up and down the list, and the new order is saved when it
+// is dropped. Works with a mouse and with touch.
+function makeDraggable(tile) {
+    const handle = Object.assign(document.createElement("span"), { className: "game-handle", textContent: "⋮⋮", title: "Drag to move" });
+    handle.setAttribute("aria-hidden", "true");
+    tile.prepend(handle);
+    handle.addEventListener("click", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+    });
+    handle.addEventListener("pointerdown", (event) => {
+        event.preventDefault();
+        handle.setPointerCapture(event.pointerId);
+        const before = currentOrder().join();
+        tile.classList.add("dragging");
+        const move = (e) => {
+            const after = gameTiles().filter((t) => t !== tile).find((t) => {
+                const box = t.getBoundingClientRect();
+                return e.clientY < box.top + box.height / 2;
             });
-            button.disabled = !tiles[i + delta];
-            button.setAttribute("aria-label", `${label}: ${tile.querySelector(".game-title").textContent}`);
-            return button;
+            if (after !== tile.nextElementSibling) {
+                gameList.insertBefore(tile, after ?? null);
+            }
         };
-        const item = listItem(
-            Object.assign(document.createElement("img"), { src: tile.querySelector("img").src, alt: "" }),
-            Object.assign(document.createElement("span"), { className: "arrange-name", textContent: tile.querySelector(".game-title").textContent }),
-            move(-1, "Move up", "▲"),
-            move(1, "Move down", "▼"));
-        return item;
-    }));
+        const drop = () => {
+            handle.removeEventListener("pointermove", move);
+            tile.classList.remove("dragging");
+            if (currentOrder().join() !== before) {
+                saveGameOrder();
+            }
+        };
+        handle.addEventListener("pointermove", move);
+        handle.addEventListener("pointerup", drop, { once: true });
+        handle.addEventListener("pointercancel", drop, { once: true });
+    });
+    tile.addEventListener("keydown", (event) => {
+        if (!event.altKey || (event.key !== "ArrowUp" && event.key !== "ArrowDown")) return;
+        event.preventDefault();
+        const other = event.key === "ArrowUp" ? tile.previousElementSibling : tile.nextElementSibling;
+        if (!other) return;
+        gameList.insertBefore(event.key === "ArrowUp" ? tile : other, event.key === "ArrowUp" ? other : tile);
+        tile.focus();
+        saveGameOrder();
+    });
 }
 
-$("arrange-games").addEventListener("click", () => {
-    const arranging = $("arrange-list").hidden;
-    $("arrange-list").hidden = !arranging;
-    gameList.hidden = arranging;
-    $("arrange-games").textContent = arranging ? "Done" : "Arrange";
-    if (arranging) {
-        renderArrangeList();
-    }
-});
-
 accountReady.then(() => {
-    if (account.gameOrder) {
-        applyGameOrder(account.gameOrder);
+    const order = isSavedUser() ? account.gameOrder : JSON.parse(localStorage.getItem(GAME_ORDER_KEY) ?? "null");
+    if (Array.isArray(order)) {
+        applyGameOrder(order);
     }
-    $("arrange-games").hidden = !(account.signedIn && account.kind !== "Guest");
+    if (account.signedIn) {
+        gameTiles().forEach(makeDraggable);
+        gameList.classList.add("arrangeable");
+        $("arrange-hint").hidden = false;
+    }
 });
 
 document.querySelectorAll("[data-create]").forEach((button) => {
