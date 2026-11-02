@@ -153,6 +153,38 @@ public partial class TheGangGame
     private bool IsSkipped(Decision decision) =>
         IsScan(decision) && !decision.Done && Phase is (TheGangPhase.Reveal or TheGangPhase.HeistOver) && !AllHandsInOrder;
 
+    /// <inheritdoc />
+    public TheGangWeakness? Weakness(int index)
+    {
+        if (index <= 0 || index >= Revealed || !IsWeaker(_revealOrder[index], _revealOrder[index - 1]))
+        {
+            return null;
+        }
+
+        var (hand, before) = (Hand(_revealOrder[index]), Hand(_revealOrder[index - 1]));
+        var rankings = HandRankings.All.ToList();
+        if (rankings.IndexOf(HandRankings.Of(hand)) < rankings.IndexOf(HandRankings.Of(before)))
+        {
+            return new TheGangWeakness(true, []);
+        }
+
+        var (mine, theirs) = (hand.FiveRanks, before.FiveRanks);
+        var first = Enumerable.Range(0, mine.Count).FirstOrDefault(i => mine[i] != theirs[i], -1);
+        if (first < 0 || mine[first] > theirs[first])
+        {
+            // Only Muscle makes an equal or stronger hand of the same ranking weaker.
+            return new TheGangWeakness(true, []);
+        }
+
+        var last = first;
+        while (last + 1 < mine.Count && mine[last + 1] == mine[first])
+        {
+            last++;
+        }
+
+        return new TheGangWeakness(false, [.. Enumerable.Range(first, last - first + 1)]);
+    }
+
     /// <summary>
     /// Whether <paramref name="weaker"/>'s hand is weaker than <paramref name="stronger"/>'s. With Muscle, the chosen
     /// player's hand beats every other hand of the same ranking.

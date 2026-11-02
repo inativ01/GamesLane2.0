@@ -91,14 +91,39 @@ function chipElement(stage, number, content = number) {
     return chip;
 }
 
+// Motion Detector and Laser Tripwires: the white chip of the player who got new pocket cards no longer says anything
+// about their hand, so it is crossed out wherever it is shown.
+const isVoidChip = (game, stage, seat) => stage === 0 && seat === game.redrawnSeat;
+
+function voidChip(chip) {
+    chip.classList.add("void");
+    chip.title = "No longer counts: this player got new pocket cards";
+    return chip;
+}
+
+// The card that gave a player new pocket cards: Motion Detector if the first 3 shared cards include a J, Q or K,
+// otherwise Laser Tripwires.
+function redrawCardName(game) {
+    const hasFace = game.communityCards.slice(0, 3).flat().some((c) => /^[JQK]/.test(c));
+    return hasFace ? "Motion Detector" : "Laser Tripwires";
+}
+
+// The crossed-out white chip of the player who got new pocket cards, followed by a space, or nothing if it is not
+// shown (Blackout).
+function voidWhiteChip(game) {
+    const number = game.chips[0][game.redrawnSeat];
+    return number === null || number === undefined ? [] : [voidChip(chipElement(0, number)), " "];
+}
+
+// Whether the player who got new pocket cards has yet to confirm it (the stage can't end until they do).
+const awaitsRedraw = (game) => game.redrawnSeat !== null && !game.redrawConfirmed;
+
 function button(text, className, onClick) {
     const b = el("button", className, text);
     b.type = "button";
     b.addEventListener("click", onClick);
     return b;
 }
-
-const hasCard = (game, key) => game.cards.some((c) => c.key === key);
 
 // A shared slot: one card, or with jokers, the 2 or 3 cards that replaced a joker, side by side (each hand uses one).
 function slotElement(cards) {
@@ -135,10 +160,14 @@ function gangStatus(game, state, view) {
                 ?? "Con Artist: look at your cards";
             return `${step}. Waiting for: ${waiting.join(", ")}`;
         }
-        case "Betting":
-            return view.isPlayer
+        case "Betting": {
+            const status = view.isPlayer
                 ? `${STAGES[game.stage]} chips`
                 : `Players are taking ${STAGES[game.stage].toLowerCase()} chips…`;
+            return awaitsRedraw(game)
+                ? `${status} · Waiting for ${state.seats[game.redrawnSeat]?.name ?? ""} to confirm their new cards`
+                : status;
+        }
         case "Reveal":
             return awaitsScan(game)
                 ? "Before the strongest hand is revealed, the other players agree on the guess."
@@ -154,57 +183,133 @@ function gangStatus(game, state, view) {
     }
 }
 
-// The challenge and specialist cards in play, drawn as small cards on the table: kind, name, what they do, and what
-// they showed everyone. Cards added for this heist are marked "New". Open group decisions are shown to players next to
-// their hand instead (see myDecisions).
-function heistCards(game, state, view) {
+// The challenge and specialist cards in play, drawn as small cards on the table: kind and name. Tapping a card shows
+// what it does. Cards added for this heist are marked "New", and cards not used (yet) in this heist are faded. What the
+// cards did is shown in the chip table (see chipTable), and open group decisions are shown to players next to their
+// hand (see myDecisions).
+function heistCards(game) {
     return game.cards.map((card) => {
         const isNew = game.newCards.includes(card.key);
         const kind = el("span", "heist-card-kind", card.kind === "Challenge" ? "Challenge" : "Specialist");
         const item = el("li", `heist-card ${card.kind.toLowerCase()}${isNew ? " new" : ""}`,
             isNew ? el("span", "heist-card-top", kind, el("span", "heist-card-new", "New")) : kind,
-            el("strong", "heist-card-name", card.name),
-            el("span", "heist-card-text", card.text));
-        if (card.key === "motion-detector" || card.key === "laser-tripwires") {
-            if (game.cards.some((c) => c.key === "quick-access")) {
-                item.append(el("span", "heist-card-result", "No effect: there are no white chips in this heist (Quick Access)."));
-            } else if (game.redrawnSeat !== null) {
-                item.append(el("span", "heist-card-result", seatLabel(state, game.redrawnSeat, view), " got new private cards."));
+            el("strong", "heist-card-name", card.name));
+        const unused = isUnused(game, card);
+        item.classList.toggle("unused", unused);
+        item.tabIndex = 0;
+        item.setAttribute("role", "button");
+        item.title = unused ? `${card.name} (not used in this heist): tap for details` : `${card.name}: tap for details`;
+        item.addEventListener("click", () => showCardText(card));
+        item.addEventListener("keydown", (event) => {
+            if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                showCardText(card);
             }
-        }
-        // Investor and Math Whiz: what they showed about everyone's cards, under the first of them.
-        const announcer = game.cards.find((c) => c.key === "investor" || c.key === "math-whiz");
-        if (card === announcer && game.announcements.length) {
-            item.append(el("ul", "announcements", ...game.announcements.map((a) =>
-                el("li", null, seatLabel(state, a.seat, view), el("strong", null, a.text)))));
-        }
-        if (game.preparingCard === card.key) {
-            item.append(el("span", "heist-card-result", card.key === "coordinator"
-                ? "Everyone is picking a card to pass on."
-                : "Everyone is looking at their cards."));
-        }
-        const decision = game.decisions.find((d) => d.card === card.key);
-        const scanResult = game.results.find((r) => r.card === card.key && r.passed !== null);
-        if (scanResult) {
-            // A scan's guess: a big PASS or FAIL stamp across the card.
-            const stamp = el("span", scanResult.passed ? "scan-stamp pass" : "scan-stamp fail", scanResult.passed ? "PASS" : "FAIL");
-            stamp.setAttribute("role", "img");
-            stamp.setAttribute("aria-label", scanResult.passed ? "Scan passed" : "Scan failed");
-            item.classList.add("stamped");
-            item.append(stamp);
-        } else if (decision?.isSkipped) {
-            item.append(el("span", "heist-card-result optional", "Not needed: the heist already fails."));
-        } else if (decision?.isDone) {
-            item.append(decisionResult(game, state, view, decision));
-        } else if (decision?.isOpen && isUnderWay(decision)) {
-            const names = userNames(state, decision.agreed);
-            item.append(el("span", "heist-card-result", `Deciding: ${names.length} of ${userNames(state, decision.voters).length} agreed`
-                + (names.length ? ` (${names.join(", ")})` : "")));
-        } else if (decision && card.kind === "Specialist" && !decision.isDone) {
-            item.append(el("span", "heist-card-result optional", "Optional: not used in this heist yet"));
-        }
+        });
         return item;
     });
+}
+
+// A popup with a challenge or specialist card's kind, name and what it does.
+function showCardText(card) {
+    const dialog = createDialog(`
+        <span class="heist-card-kind"></span>
+        <h2></h2>
+        <p class="card-popup-text"></p>
+        <div class="actions"><button type="button" data-close>Close</button></div>`);
+    dialog.classList.add("card-popup", card.kind.toLowerCase());
+    dialog.querySelector(".heist-card-kind").textContent = card.kind;
+    dialog.querySelector("h2").textContent = card.name;
+    dialog.querySelector(".card-popup-text").textContent = card.text;
+    // Tapping outside the popup closes it too.
+    dialog.addEventListener("click", (event) => {
+        if (event.target === dialog) {
+            dialog.close();
+        }
+    });
+    dialog.addEventListener("close", () => dialog.remove());
+    dialog.showModal();
+}
+
+// Whether a card has not been used (yet) in this heist: Motion Detector or Laser Tripwires that did not go off (known
+// once the first 3 shared cards appear, or at once with Quick Access, which has no white chips), an optional specialist
+// card the group has not used yet, or a scan that is not needed.
+function isUnused(game, card) {
+    if (card.key === "motion-detector" || card.key === "laser-tripwires") {
+        const decided = game.communityCards.length >= 3 || game.cards.some((c) => c.key === "quick-access");
+        return decided && !(game.redrawnSeat !== null && redrawCardName(game) === card.name);
+    }
+    const decision = game.decisions.find((d) => d.card === card.key);
+    if (!decision) {
+        return false;
+    }
+    return card.kind === "Specialist" ? !decision.isDone : decision.isSkipped;
+}
+
+const cardName = (game, key) => game.cards.find((c) => c.key === key)?.name ?? key;
+
+// What the heist's cards did to or showed about one player, one line each starting with the card's name, for the
+// player's row in the chip table: Motion Detector or Laser Tripwires, Investor and Math Whiz, and the carried-out group
+// decisions (the scans with a PASS or FAIL badge).
+function playerFacts(game, state, seat) {
+    const facts = [];
+    const fact = (...content) => facts.push(el("span", "player-facts", ...content));
+    const nameOf = (s) => state.seats[s]?.name ?? `Player ${playerNumber(game, s)}`;
+    if (game.redrawnSeat === seat) {
+        fact(`${redrawCardName(game)}: new pocket cards were dealt`);
+    }
+    for (const announcement of game.announcements.filter((a) => a.seat === seat)) {
+        fact(`${cardName(game, announcement.card)}: ${announcement.text}`);
+    }
+    const discarding = game.pendingSeat === seat && game.pendingStep === "Discard";
+    for (const decision of game.decisions.filter((d) => d.isDone)) {
+        const name = cardName(game, decision.card);
+        const result = game.results.find((r) => r.card === decision.card);
+        switch (decision.card) {
+            case "informant":
+                if (decision.seat === seat) {
+                    fact(`${name}: `, game.shownFromSeat === null ? "choosing a card to show" : `showed a card to ${nameOf(game.shownToSeat)}`);
+                }
+                break;
+            case "hacker":
+                if (decision.seat === seat) {
+                    fact(`${name}: drew a card`, discarding ? ", choosing one to discard" : " and discarded one");
+                }
+                break;
+            case "jack":
+                if (decision.seat === seat) {
+                    fact(`${name}: got the Jack card`, discarding ? ", choosing one to discard" : " and discarded one");
+                }
+                break;
+            case "muscle":
+                if (decision.seat === seat) {
+                    fact(`${name}: beats every hand of the same ranking`);
+                }
+                break;
+            default:
+                if (result?.seat !== seat) {
+                    break;
+                }
+                if (result.passed === null) {
+                    fact(`${name}: ${result.text}`);
+                } else {
+                    fact(`${name}: guessed ${decision.value} `,
+                        el("span", result.passed ? "fact-badge pass" : "fact-badge fail", result.passed ? "PASS" : "FAIL"));
+                }
+        }
+    }
+    return facts;
+}
+
+// Lines under the chip table about the whole heist: group decisions under way.
+function tableNotes(game, state) {
+    return game.decisions
+        .filter((decision) => decision.isOpen && isUnderWay(decision))
+        .map((decision) => {
+            const names = userNames(state, decision.agreed);
+            return `${cardName(game, decision.card)}: deciding, ${names.length} of ${userNames(state, decision.voters).length} agreed`
+                + (names.length ? ` (${names.join(", ")})` : "");
+        });
 }
 
 // Whether someone has started a decision: proposed something or agreed.
@@ -238,28 +343,6 @@ const openSpecialists = new Set();
 const RANKS = ["2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A"];
 const RANKINGS = ["High card", "Pair", "Two pair", "Three of a kind", "Straight", "Flush", "Full house", "Four of a kind",
     "Straight flush", "Royal flush"];
-
-// What a carried-out decision did, for everyone to see.
-function decisionResult(game, state, view, decision) {
-    const who = decision.seat === null ? null : seatLabel(state, decision.seat, view);
-    const pending = game.pendingSeat !== null;
-    const result = game.results.find((r) => r.card === decision.card);
-    const line = (...content) => el("span", "heist-card-result", ...content);
-    switch (decision.card) {
-        case "informant":
-            return game.shownFromSeat === null
-                ? line(who, " is choosing a card to show someone.")
-                : line(seatLabel(state, game.shownFromSeat, view), " showed a card to ", seatLabel(state, game.shownToSeat, view), ".");
-        case "hacker":
-            return line(who, pending ? " drew a card and is choosing one to discard." : " drew a card and discarded one.");
-        case "jack":
-            return line(who, pending ? " got the Jack card and is choosing one to discard." : " got the Jack card and discarded one.");
-        case "muscle":
-            return line(who, " beats every hand of the same ranking.");
-        default:
-            return result ? line(seatLabel(state, result.seat, view), el("strong", null, result.text)) : line("Used in this heist.");
-    }
-}
 
 // The group's choice for a card: any voter proposes (a player and/or a value), everyone sees it, and it takes effect
 // once every voter has agreed. Changing the proposal clears the agreement. Each user agrees once, for all their seats.
@@ -345,10 +428,14 @@ function myHand(game, state, view, hand) {
     const info = el("div", "my-hand-info", el("span", "my-hand-title", `Player ${playerNumber(game, seat)}`));
     // The chips this seat took in this heist's stages so far.
     const taken = STAGES.map((_, s) => (s <= stage ? game.chips[s][seat] : null))
-        .map((number, s) => (number === null ? null : chipElement(s, number)))
+        .map((number, s) => (number === null ? null : isVoidChip(game, s, seat) ? voidChip(chipElement(s, number)) : chipElement(s, number)))
         .filter((chip) => chip !== null);
     if (taken.length) {
         info.append(el("span", "stage-pill", ...taken));
+    }
+
+    if (hasMuscle(game, seat)) {
+        info.append(muscleBadge(game));
     }
 
     if (hand.shownCard) {
@@ -400,6 +487,16 @@ function myHand(game, state, view, hand) {
                 ? "Keep the other card, or swap this joker for two more cards."
                 : "Choose one of these two cards to take the joker's place. The other is discarded."),
             offer));
+    }
+
+    // Motion Detector, Laser Tripwires: this seat got new pocket cards. It confirms with a button.
+    if (game.redrawnSeat === seat && !game.redrawConfirmed) {
+        box.append(el("div", "redraw-panel",
+            el("strong", "redraw-panel-title", `🔄 ${redrawCardName(game)}: you have new pocket cards`),
+            el("p", "redraw-panel-text",
+                "Your old cards are gone. Your white chip ", ...voidWhiteChip(game),
+                "no longer says anything about your hand. The stage can't end until you confirm."),
+            button("Got it", "", () => call("ConfirmRedraw", view.sessionId, seat).catch(() => {}))));
     }
 
     if (step === "ShowCard") {
@@ -468,7 +565,7 @@ function myActions(game, state, view) {
             () => call("ConfirmSeen", view.sessionId, seats[0]).catch(() => {}));
         seen.disabled = done;
         return el("div", null,
-            el("p", "hint", "Remember your cards: once everyone has seen theirs, all private cards are shuffled and dealt again."),
+            el("p", "hint", "Remember your cards: once everyone has seen theirs, all pocket cards are shuffled and dealt again."),
             el("div", "my-hand-actions", seen));
     }
     if (game.phase !== "Betting" || game.middleChips.length > 0) {
@@ -486,7 +583,7 @@ function myActions(game, state, view) {
 }
 
 // Every playing seat's chips from all stages, with ✓ for players who are ready. Skipped stages are struck out, and
-// with Blackout, earlier stages' chips show as "?" because they were removed.
+// with Blackout, earlier stages' chips show as chips of their colour with "?" because they were removed.
 function chipTable(game, state, view) {
     const blackout = game.cards.some((c) => c.key === "blackout");
     const skipped = (stage) => game.skippedStages.includes(stage);
@@ -507,27 +604,59 @@ function chipTable(game, state, view) {
         return [mark];
     };
     const rows = game.playingSeats.map((seat) => el("tr", null,
-        el("td", null, el("span", "player-number", String(playerNumber(game, seat))), seatLabel(state, seat, view), ...jokerMark(seat)),
+        el("td", null, el("span", "player-number", String(playerNumber(game, seat))), seatLabel(state, seat, view), ...jokerMark(seat),
+            ...playerFacts(game, state, seat)),
         ...STAGES.map((_, stage) => {
             const chip = game.chips[stage][seat];
             const removed = blackout && stage < game.stage && !skipped(stage);
-            const empty = skipped(stage) ? "" : removed ? "?" : stage <= game.stage ? "–" : "";
-            const cell = el("td", null, chip === null ? empty : chipElement(stage, chip));
-            cell.title = removed ? "Removed (Blackout)" : "";
+            const voided = isVoidChip(game, stage, seat);
+            // With Blackout, a removed chip is shown in its stage's colour with "?" instead of its number.
+            const content = chip !== null ? chipElement(stage, chip)
+                : removed ? Object.assign(chipElement(stage, "?"), { title: `${STAGES[stage]} chip removed (Blackout)` })
+                    : skipped(stage) ? "" : stage <= game.stage ? "–" : "";
+            const cell = el("td", null, voided && content instanceof Element ? voidChip(content) : content);
+            cell.title = voided ? "No longer counts: this player got new pocket cards" : removed ? "Removed (Blackout)" : "";
             if (stage === game.stage && game.phase === "Betting" && game.readySeats.includes(seat)) {
                 cell.append(el("span", "ready", " 👍"));
             }
             return cell;
         })));
-    return [el("thead", null, header), el("tbody", null, ...rows)];
+    const notes = tableNotes(game, state);
+    const caption = notes.length ? [el("caption", "chip-note", ...notes.map((note) => el("div", null, note)))] : [];
+    return [...caption, el("thead", null, header), el("tbody", null, ...rows)];
+}
+
+// Muscle: whether the group chose this seat, whose hand then beats every hand of the same ranking.
+const hasMuscle = (game, seat) => game.decisions.some((d) => d.card === "muscle" && d.isDone && d.seat === seat);
+
+function muscleBadge(game) {
+    const badge = el("span", "muscle-badge", `💪 ${cardName(game, "muscle")}`);
+    badge.title = "Beats every hand of the same ranking";
+    return badge;
 }
 
 function revealedHand(game, state, view, hand) {
-    return el("li", hand.inOrder ? "revealed-hand" : "revealed-hand wrong",
+    const name = handName(hand);
+    if (hasMuscle(game, hand.seat)) {
+        name.append(" ", muscleBadge(game));
+    }
+    const item = el("li", hand.inOrder ? "revealed-hand right" : "revealed-hand wrong",
         chipElement(3, game.chips[3][hand.seat]),
         seatLabel(state, hand.seat, view),
         el("span", "card-row", ...hand.cards.map(cardElement)),
-        el("span", "hand-name", hand.name + (hand.inOrder ? "" : " ✗ weaker than the hand before")));
+        name);
+    if (!hand.inOrder) {
+        item.title = "Weaker than the hand before";
+    }
+    return item;
+}
+
+// A revealed hand's ranking and five card values, e.g. "Two pair: 9, 9, 5, 5, K". If the hand is weaker than the one
+// before it, the first reason is in red: the ranking if it is lower, otherwise the first lower card values.
+function handName(hand) {
+    const wrong = (text) => el("span", "wrong-part", text);
+    const values = hand.values.flatMap((value, i) => [i ? ", " : "", hand.wrongValues.includes(i) ? wrong(value) : value]);
+    return el("strong", "hand-name", hand.wrongRanking ? wrong(hand.ranking) : hand.ranking, ": ", ...values);
 }
 
 // Observers see everything without scrolling: the table's font size is the largest (8 to 40 pixels) at which the page
@@ -563,7 +692,7 @@ const gang = startSessionPage("TheGang", (game, state, view) => {
 
     document.body.classList.toggle("observer", !view.isPlayer);
     $("heist-cards").hidden = game.cards.length === 0;
-    $("heist-cards").replaceChildren(...heistCards(game, state, view));
+    $("heist-cards").replaceChildren(...heistCards(game));
     const decisions = myDecisions(game, state, view);
     $("my-decisions").hidden = decisions.length === 0;
     $("my-decisions").replaceChildren(...decisions);

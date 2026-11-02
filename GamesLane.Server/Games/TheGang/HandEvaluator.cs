@@ -103,6 +103,41 @@ public sealed record HandValue(HandCategory Category, IReadOnlyList<int> Ranks) 
     }
 
     /// <summary>
+    /// The ranks of the hand's five cards, most important first, e.g. 9, 9, 5, 5, 13 for two pair, nines and fives
+    /// with a king, or 5, 4, 3, 2, 14 for a straight to the five. Hands of the same ranking compare rank by rank.
+    /// </summary>
+    public IReadOnlyList<int> FiveRanks
+    {
+        get
+        {
+            IEnumerable<int> Repeat(int rank, int count) => Enumerable.Repeat(rank, count);
+            IEnumerable<int> five = Category switch
+            {
+                HandCategory.Straight or HandCategory.StraightFlush =>
+                    Enumerable.Range(0, 5).Select(i => Ranks[0] - i).Select(r => r == 1 ? Card.Ace : r),
+                HandCategory.OnePair => [.. Repeat(Ranks[0], 2), .. Ranks.Skip(1)],
+                HandCategory.TwoPair => [.. Repeat(Ranks[0], 2), .. Repeat(Ranks[1], 2), .. Ranks.Skip(2)],
+                HandCategory.ThreeOfAKind => [.. Repeat(Ranks[0], 3), .. Ranks.Skip(1)],
+                HandCategory.FullHouse => [.. Repeat(Ranks[0], 3), .. Repeat(Ranks[1], 2)],
+                HandCategory.FourOfAKind => [.. Repeat(Ranks[0], 4), .. Ranks.Skip(1)],
+                _ => Ranks,
+            };
+            return [.. five];
+        }
+    }
+
+    /// <summary>
+    /// <see cref="FiveRanks"/> as "2" to "10", "J", "Q", "K" or "A".
+    /// </summary>
+    public IReadOnlyList<string> Values => [.. FiveRanks.Select(Symbol)];
+
+    /// <summary>
+    /// The hand ranking and its five cards' values, most important first, e.g. "Two pair: 9, 9, 5, 5, K" or
+    /// "Straight: 5, 4, 3, 2, A".
+    /// </summary>
+    public string Summary => $"{Ranking}: {string.Join(", ", Values)}";
+
+    /// <summary>
     /// "2" to "10", "J", "Q", "K" or "A".
     /// </summary>
     private static string Symbol(int rank) => rank switch { 11 => "J", 12 => "Q", 13 => "K", Card.Ace => "A", _ => rank.ToString() };
@@ -144,7 +179,7 @@ public static class HandRankings
         hand.Category == HandCategory.StraightFlush && hand.Ranks[0] == Card.Ace ? All[^1] : All[(int)hand.Category];
 
     /// <summary>
-    /// The best ranking a player's private cards make with the shared cards, where each shared slot (one card, or 2 to 3
+    /// The best ranking a player's pocket cards make with the shared cards, where each shared slot (one card, or 2 to 3
     /// cards that replaced a joker) gives one card of the player's choice.
     /// </summary>
     public static string OfCards(IReadOnlyList<Card> hole, IReadOnlyList<IReadOnlyList<Card>> slots) =>
@@ -175,7 +210,7 @@ public static class HandRankings
 }
 
 /// <summary>
-/// Finds the best poker hand that can be made from any number of cards (e.g. 2 private cards and 5 shared cards).
+/// Finds the best poker hand that can be made from any number of cards (e.g. 2 pocket cards and 5 shared cards).
 /// </summary>
 public static class HandEvaluator
 {
@@ -199,14 +234,14 @@ public static class HandEvaluator
     }
 
     /// <summary>
-    /// The best hand of a player's private cards and the shared cards (at least 5 cards in all), where each shared slot
+    /// The best hand of a player's pocket cards and the shared cards (at least 5 cards in all), where each shared slot
     /// (one card, or 2 to 3 cards that replaced a joker) gives one card of the player's choice.
     /// </summary>
     public static HandValue Best(IReadOnlyList<Card> hole, IReadOnlyList<IReadOnlyList<Card>> slots) =>
         Choices(hole, slots).Select(Best).Max()!;
 
     /// <summary>
-    /// Every set of cards a player can use: their private cards and one card from each shared slot.
+    /// Every set of cards a player can use: their pocket cards and one card from each shared slot.
     /// </summary>
     internal static IEnumerable<Card[]> Choices(IReadOnlyList<Card> hole, IReadOnlyList<IReadOnlyList<Card>> slots) =>
         slots.Aggregate(

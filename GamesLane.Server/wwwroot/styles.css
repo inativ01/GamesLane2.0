@@ -968,6 +968,60 @@ footer {
 .chip.stage-2 { background: #ec8a2c; color: var(--ink); }
 .chip.stage-3 { background: #b3261e; color: #fff; }
 
+/* A chip that no longer counts (Motion Detector, Laser Tripwires): faded and crossed out in red. */
+.chip.void {
+    position: relative;
+    opacity: 0.6;
+    vertical-align: middle;
+}
+
+.chip.void::after {
+    content: "";
+    position: absolute;
+    left: -15%;
+    right: -15%;
+    top: 50%;
+    height: 0.18em;
+    min-height: 2px;
+    border-radius: 2px;
+    background: #d32f2f;
+    transform: rotate(-45deg);
+}
+
+.chip-table .chip-note {
+    caption-side: bottom;
+    padding: 0.4em 0.25em 0;
+    color: #ffd7d2;
+    font-size: 0.9em;
+    text-align: left;
+}
+
+/* Motion Detector, Laser Tripwires: the player who got new pocket cards confirms it. */
+.redraw-panel {
+    margin-top: 0.7rem;
+    padding: 0.65rem 0.75rem 0.75rem;
+    border-radius: 10px;
+    background: #fff1e0;
+    box-shadow: inset 0 0 0 2px #d9822b;
+    text-align: center;
+}
+
+.redraw-panel-title {
+    display: block;
+    color: #9a4d00;
+    font-size: 1.05rem;
+}
+
+.redraw-panel-text {
+    margin: 0.2rem 0 0.6rem;
+    color: var(--ink);
+    font-size: 0.9rem;
+}
+
+.redraw-panel-text .chip {
+    font-size: 0.8rem;
+}
+
 /* My hand */
 
 .my-hand {
@@ -1061,12 +1115,6 @@ details.my-decision > .hint {
     margin: 0.3rem 0 0;
 }
 
-.heist-card-result.optional {
-    color: var(--muted);
-    font-weight: 400;
-    font-style: italic;
-}
-
 .my-hand-actions {
     display: flex;
     gap: 0.5rem;
@@ -1138,47 +1186,33 @@ button.ready-thumb.is-ready:not(:disabled):hover {
     flex: 0 1 11.5rem;
     flex-direction: column;
     gap: 0.2rem;
-    min-height: 8.5rem;
     padding: 0.5rem 0.6rem 0.6rem;
     border-radius: 10px;
     background: linear-gradient(170deg, #fff 55%, #f6efe3);
     color: var(--ink);
     box-shadow: inset 0 0 0 3px var(--red), inset 0 0 0 5px #fff, 0 3px 8px rgba(0, 0, 0, 0.35);
     transform: rotate(-1deg);
+    cursor: pointer;
 }
 
-/* A scan's result: a big rubber stamp across the card, green PASS or red FAIL. */
-.heist-card.stamped {
-    position: relative;
+.heist-card:focus-visible {
+    outline: 3px solid var(--gold);
+    outline-offset: 2px;
 }
 
-.scan-stamp {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    padding: 0.05em 0.35em;
-    border: 0.12em solid currentColor;
-    border-radius: 0.15em;
-    background: rgba(255, 255, 255, 0.82);
-    font-size: 2rem;
-    font-weight: 900;
-    letter-spacing: 0.1em;
-    line-height: 1.1;
-    transform: translate(-50%, -50%) rotate(-14deg);
-    box-shadow: inset 0 0 0 0.05em currentColor;
-    pointer-events: none;
+/* A card's popup: its kind, name and what it does. */
+.card-popup .heist-card-kind {
+    display: inline-block;
+    margin-bottom: 0.4rem;
 }
 
-.scan-stamp.pass {
-    color: #2f7d45;
+.card-popup.specialist .heist-card-kind {
+    background: #2f7d45;
 }
 
-.scan-stamp.fail {
-    color: #b3261e;
-}
-
-body.observer main.gang .scan-stamp {
-    font-size: 2em;
+.card-popup-text {
+    margin: 0.5rem 0 1rem;
+    line-height: 1.45;
 }
 
 .heist-card:nth-child(even) {
@@ -1226,19 +1260,6 @@ body.observer main.gang .scan-stamp {
 .heist-card-name {
     font-size: 0.95rem;
     line-height: 1.15;
-}
-
-.heist-card-text {
-    color: var(--muted);
-    font-size: 0.75rem;
-    line-height: 1.3;
-}
-
-.heist-card .heist-card-result,
-.heist-card .announcements {
-    margin-top: auto;
-    padding-top: 0.25rem;
-    font-size: 0.78rem;
 }
 
 /* Open group decisions, next to the player's hand. */
@@ -1355,32 +1376,6 @@ body.observer main.gang .scan-stamp {
     font-weight: 600;
 }
 
-.heist-card-result {
-    display: inline-flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0.3rem;
-    margin-top: 0.2rem;
-    font-size: 0.9rem;
-    font-weight: 700;
-}
-
-.announcements {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.3rem 0.9rem;
-    margin: 0.3rem 0 0;
-    padding: 0;
-    list-style: none;
-    font-size: 0.9rem;
-}
-
-.announcements li {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.35rem;
-}
-
 /* The table (everything observers see) */
 
 .table-view {
@@ -1484,6 +1479,28 @@ body.observer main.gang .scan-stamp {
     margin-left: 0.3em;
 }
 
+/* What the heist's cards did to or showed about the player, one line each under the name. */
+.player-facts {
+    display: block;
+    margin-left: 1.75em;
+    color: var(--gold);
+    font-size: 0.85em;
+    font-weight: 700;
+}
+
+/* A scan's result: a green PASS or red FAIL badge. */
+.fact-badge {
+    display: inline-block;
+    padding: 0 0.4em;
+    border-radius: 0.25em;
+    color: #fff;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+}
+
+.fact-badge.pass { background: #2f7d45; }
+.fact-badge.fail { background: #b3261e; }
+
 .chip-table .ready {
     color: #9fe3b0;
     font-weight: 700;
@@ -1517,8 +1534,29 @@ body.observer main.gang .scan-stamp {
     font-size: 0.9rem;
 }
 
+/* A hand at least as strong as the one before it is framed in green; a weaker one in red, with the first reason in red. */
+.revealed-hand.right {
+    box-shadow: inset 0 0 0 4px #4cd17a;
+}
+
 .revealed-hand.wrong {
-    background: rgba(179, 38, 30, 0.55);
+    box-shadow: inset 0 0 0 4px #ff6b5e;
+}
+
+.hand-name .wrong-part {
+    color: #ff6b5e;
+}
+
+/* Muscle: the chosen player's revealed hand beats every hand of the same ranking. */
+.muscle-badge {
+    display: inline-block;
+    margin-left: 0.3em;
+    padding: 0 0.45em;
+    border-radius: 999px;
+    background: #2f7d45;
+    color: #fff;
+    font-size: 0.85em;
+    white-space: nowrap;
 }
 
 .revealed-hand .card {
@@ -1526,7 +1564,7 @@ body.observer main.gang .scan-stamp {
 }
 
 .hand-name {
-    font-weight: 700;
+    font-weight: 800;
 }
 
 /* Session lobby: a tile per seat. Empty seats are dashed; the user's own seat is outlined in orange. */
@@ -2065,13 +2103,16 @@ body.observer main.gang .heist-cards {
     margin: 0.2em 0 0;
 }
 
+/* A card not used (yet) in this heist: faded and grey. */
+.heist-card.unused {
+    opacity: 0.35;
+    filter: grayscale(1);
+}
+
 body.observer main.gang .heist-card { min-height: 0; gap: 0.15em; padding: 0.45em 0.6em 0.55em; }
 body.observer main.gang .heist-card-kind,
 body.observer main.gang .heist-card-new { font-size: 0.6em; }
 body.observer main.gang .heist-card-name { font-size: 1em; }
-body.observer main.gang .heist-card-text { font-size: 0.78em; }
-body.observer main.gang .heist-card .heist-card-result,
-body.observer main.gang .heist-card .announcements { font-size: 0.8em; }
 
 /* Short screens, such as a phone on its side: a slimmer header and game banner. */
 @media (max-height: 500px) {

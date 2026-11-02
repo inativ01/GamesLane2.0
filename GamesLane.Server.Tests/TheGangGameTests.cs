@@ -193,6 +193,25 @@ public class TheGangGameTests
         RevealAll(game);
         Assert.Equal([true, false, true], game.RevealedInOrder);
         Assert.Equal((0, 1), (game.Vaults, game.Alarms));
+        Assert.Null(game.Weakness(0));
+        Assert.Equal((true, 0), (game.Weakness(1)!.Ranking, game.Weakness(1)!.Cards.Count));
+        Assert.Null(game.Weakness(2));
+    }
+
+    [Theory]
+    // Player 0: 9, 9, K, 5, 4 after player 1's 9, 9, K, 7, 5: the first lower card is the 5 (position 3).
+    [InlineData("9C 4S 9H 7S AS AD KS 9D 5H 2C 3D", new[] { 3 })]
+    // Player 0: 8, 8, K, 9, 5 after player 1's 9, 9, K, 7, 5: the lower pair (positions 0 and 1).
+    [InlineData("8C 4S 9H 7S AS AD KS 9D 5H 2C 8D", new[] { 0, 1 })]
+    public void A_weaker_hand_of_the_same_ranking_names_its_first_lower_cards(string deck, int[] cards)
+    {
+        var game = new TheGangGame(3, () => Cards(deck));
+        PlayAllStages(game, [2, 1, 3]);
+        RevealAll(game);
+
+        var weakness = game.Weakness(1)!;
+        Assert.False(weakness.Ranking);
+        Assert.Equal(cards, weakness.Cards);
     }
 
     [Fact]
@@ -376,6 +395,7 @@ public class TheGangGameTests
         PlayHeist(game, [3, 2, 1]);
 
         Assert.Equal("2 face cards · 20 total", game.Announcement(2));
+        Assert.Equal([new TheGangFact(TheGangCards.Investor, "2 face cards"), new TheGangFact(TheGangCards.MathWhiz, "20 total")], game.Facts(2));
     }
 
     [Fact]
@@ -473,6 +493,31 @@ public class TheGangGameTests
         {
             Assert.Equal(player == redrawn ? Cards("AS AD") : before[player], game.HoleCards(player));
         }
+    }
+
+    [Fact]
+    public void The_stage_after_new_private_cards_waits_until_their_player_confirms()
+    {
+        var game = new TheGangGame(3, () => Cards(RankedDeck + " AS AD"), Advanced(1, [TheGangCards.LaserTripwires]));
+        PlayStage(game, [1, 2, 3]);
+        Assert.Equal((2, false), (game.RedrawnPlayer, game.IsRedrawConfirmed));
+
+        Assert.False(game.TryConfirmRedraw(0, out _));
+        for (var player = 0; player < 3; player++)
+        {
+            Assert.True(game.TryTakeChip(player, player + 1, out _));
+        }
+
+        for (var player = 0; player < 3; player++)
+        {
+            Assert.True(game.TrySetReady(player, true, out _));
+        }
+
+        Assert.Equal(1, game.Stage);
+        Assert.True(game.TryConfirmRedraw(2, out var error), error);
+        Assert.True(game.IsRedrawConfirmed);
+        Assert.Equal(2, game.Stage);
+        Assert.False(game.TryConfirmRedraw(2, out _));
     }
 
     [Fact]
@@ -847,6 +892,20 @@ public class TheGangGameTests
         Assert.Equal(description, HandEvaluator.Evaluate(Cards(cards)).Description);
     }
 
+    [Theory]
+    [InlineData("9C 9D KH 5S 5C", "Two pair: 9, 9, 5, 5, K")]
+    [InlineData("9C 9D KH 7S 3C", "Pair: 9, 9, K, 7, 3")]
+    [InlineData("6C 6D 6H 4S 4C", "Full house: 6, 6, 6, 4, 4")]
+    [InlineData("QC QD QH QS 2C", "Four of a kind: Q, Q, Q, Q, 2")]
+    [InlineData("AC 2D 3H 4S 5C", "Straight: 5, 4, 3, 2, A")]
+    [InlineData("AD JD 9D 6D 2D", "Flush: A, J, 9, 6, 2")]
+    [InlineData("AH KH QH JH 10H", "Royal flush: A, K, Q, J, 10")]
+    [InlineData("AC QD 9H 5S 2C", "High card: A, Q, 9, 5, 2")]
+    public void A_hands_summary_gives_its_ranking_and_five_cards(string cards, string summary)
+    {
+        Assert.Equal(summary, HandEvaluator.Evaluate(Cards(cards)).Summary);
+    }
+
     // Jokers
 
     // Player 0: AH 3C; player 1: 5S 6D; player 2: 2C 7D. Shared: a joker, then 9H JS KC 4S.
@@ -1047,6 +1106,11 @@ public class TheGangGameTests
         for (var player = 0; player < chips.Length; player++)
         {
             Assert.True(game.TryTakeChip(player, chips[player], out var error), error);
+        }
+
+        if (game.RedrawnPlayer is { } redrawn && !game.IsRedrawConfirmed)
+        {
+            Assert.True(game.TryConfirmRedraw(redrawn, out var error), error);
         }
 
         // A user is ready once for all their players, so players already made ready are skipped.

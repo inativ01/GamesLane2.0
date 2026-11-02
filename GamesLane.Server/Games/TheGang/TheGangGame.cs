@@ -22,7 +22,7 @@ public enum TheGangPhase
 }
 
 /// <summary>
-/// The Gang rules. <c>newDeck</c> supplies a shuffled deck for each heist. With <c>n</c> private cards each (2, or 3 with
+/// The Gang rules. <c>newDeck</c> supplies a shuffled deck for each heist. With <c>n</c> pocket cards each (2, or 3 with
 /// Security Cameras), player <c>i</c> gets the deck's cards <c>n·i</c> to <c>n·i+n-1</c>; the five shared cards follow.
 /// In Advanced mode, the first heist gets the chosen number of challenge cards; after a successful heist, one challenge
 /// card is added, and after a failed one, one specialist card. Cards stay in play for the rest of the game; each card is
@@ -67,7 +67,7 @@ public partial class TheGangGame : ITheGangGame
     private Card?[] _passing = [];
     private bool[] _prepared = [];
     private string[] _newCards = [];
-    private string?[] _announcements = [];
+    private TheGangFact[][] _announcements = [];
 
     /// <summary>
     /// Starts the first heist. <paramref name="rules"/> defaults to the basic game; <paramref name="random"/> draws the cards.
@@ -111,6 +111,9 @@ public partial class TheGangGame : ITheGangGame
 
     /// <inheritdoc />
     public int? RedrawnPlayer { get; private set; }
+
+    /// <inheritdoc />
+    public bool IsRedrawConfirmed { get; private set; }
 
     /// <inheritdoc />
     public IReadOnlyList<int> SkippedStages =>
@@ -175,7 +178,11 @@ public partial class TheGangGame : ITheGangGame
     public bool AreChipsDiscarded(int stage) => Has(TheGangCards.Blackout) && stage < Stage;
 
     /// <inheritdoc />
-    public string? Announcement(int player) => _announcements.ElementAtOrDefault(player);
+    public string? Announcement(int player) =>
+        Facts(player) is { Count: > 0 } facts ? string.Join(" · ", facts.Select(f => f.Text)) : null;
+
+    /// <inheritdoc />
+    public IReadOnlyList<TheGangFact> Facts(int player) => _announcements.ElementAtOrDefault(player) ?? [];
 
     /// <inheritdoc />
     public HandValue Hand(int player) => HandEvaluator.Best(CountingCards(player), _slots);
@@ -332,12 +339,33 @@ public partial class TheGangGame : ITheGangGame
 
         if (_prepared.All(p => p))
         {
-            // All private cards are gathered, shuffled and dealt again, the same number to each player.
+            // All pocket cards are gathered, shuffled and dealt again, the same number to each player.
             var gathered = _holeCards.SelectMany(cards => cards).ToArray();
             _random.Shuffle(gathered);
             var perPlayer = _holeCards[0].Length;
             _holeCards = [.. Enumerable.Range(0, PlayerCount).Select(p => gathered.Skip(perPlayer * p).Take(perPlayer).ToArray())];
             FinishPreparing();
+        }
+
+        return true;
+    }
+
+    /// <inheritdoc />
+    public bool TryConfirmRedraw(int player, out string? error)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegative(player);
+        ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(player, PlayerCount);
+        if (RedrawnPlayer != player || IsRedrawConfirmed)
+        {
+            error = "That is not possible now.";
+            return false;
+        }
+
+        error = null;
+        IsRedrawConfirmed = true;
+        if (Phase == TheGangPhase.Betting && CanEndStage)
+        {
+            EndStage();
         }
 
         return true;
@@ -412,9 +440,11 @@ public partial class TheGangGame : ITheGangGame
     private const string LockedOwnChip = "Your chip is locked: you keep it for this stage.";
 
     /// <summary>
-    /// Whether the betting stage can end: everyone is ready, and no chosen player has a step or a joker waiting.
+    /// Whether the betting stage can end: everyone is ready, no chosen player has a step or a joker waiting, and a player
+    /// who got new pocket cards has confirmed it.
     /// </summary>
-    private bool CanEndStage => _ready.All(r => r) && MiddleChips.Count == 0 && PendingStep == TheGangStep.None && !AwaitsJokers;
+    private bool CanEndStage => _ready.All(r => r) && MiddleChips.Count == 0 && PendingStep == TheGangStep.None && !AwaitsJokers
+        && (RedrawnPlayer is null || IsRedrawConfirmed);
 
     /// <summary>
     /// Whether this heist has the card with this key.
@@ -423,7 +453,8 @@ public partial class TheGangGame : ITheGangGame
 
     /// <summary>
     /// When the first 3 shared cards appear: with Motion Detector, if any of them is a J, Q or K, the holder of the
-    /// 1-star white chip gets new private cards; with Laser Tripwires, if none is, the holder of the highest white chip.
+    /// 1-star white chip gets new pocket cards; with Laser Tripwires, if none is, the holder of the highest white chip.
+    /// That player must confirm before the stage can end; their white chip no longer says anything about their hand.
     /// </summary>
     private void CheckAlarmsOnTheFlop()
     {
@@ -537,7 +568,7 @@ public partial class TheGangGame : ITheGangGame
     }
 
     /// <summary>
-    /// Deals a new heist: two private cards each (three with Security Cameras), five shared cards, no chips taken.
+    /// Deals a new heist: two pocket cards each (three with Security Cameras), five shared cards, no chips taken.
     /// It starts at the first stage that is not skipped. Cards drawn later (jokers' replacements, Motion Detector,
     /// Hacker) come from the rest of the deck, in order.
     /// </summary>
@@ -550,6 +581,7 @@ public partial class TheGangGame : ITheGangGame
         _deck = deck;
         _nextCard = (perPlayer * PlayerCount) + 5;
         RedrawnPlayer = null;
+        IsRedrawConfirmed = false;
         Array.Clear(_chips);
         Array.Clear(_ready);
         _revealOrder = [];
@@ -598,26 +630,26 @@ public partial class TheGangGame : ITheGangGame
     }
 
     /// <summary>
-    /// Starts the betting. With Investor or Math Whiz in play, what they show about each player's private cards is
+    /// Starts the betting. With Investor or Math Whiz in play, what they show about each player's pocket cards is
     /// announced now, after the steps before the betting.
     /// </summary>
     private void StartBetting()
     {
         _announcements = [.. _holeCards.Select(cards =>
         {
-            var facts = new List<string>();
+            var facts = new List<TheGangFact>();
             if (Has(TheGangCards.Investor))
             {
                 var faces = cards.Count(c => c.Rank is >= 11 and <= 13);
-                facts.Add(faces == 1 ? "1 face card" : $"{faces} face cards");
+                facts.Add(new(TheGangCards.Investor, faces == 1 ? "1 face card" : $"{faces} face cards"));
             }
 
             if (Has(TheGangCards.MathWhiz))
             {
-                facts.Add($"{cards.Sum(c => c.Rank == Card.Ace ? 11 : Math.Min(c.Rank, 10))} total");
+                facts.Add(new(TheGangCards.MathWhiz, $"{cards.Sum(c => c.Rank == Card.Ace ? 11 : Math.Min(c.Rank, 10))} total"));
             }
 
-            return facts.Count == 0 ? null : string.Join(" · ", facts);
+            return facts.ToArray();
         })];
         PreparingCard = null;
         Phase = TheGangPhase.Betting;

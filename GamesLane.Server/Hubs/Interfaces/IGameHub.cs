@@ -136,6 +136,12 @@ public interface IGameHub
     Task ChooseJokerCard(string sessionId, int seat, int index);
 
     /// <summary>
+    /// The Gang, Motion Detector and Laser Tripwires: <paramref name="seat"/>, which the caller must hold, confirms it
+    /// got new pocket cards.
+    /// </summary>
+    Task ConfirmRedraw(string sessionId, int seat);
+
+    /// <summary>
     /// The Gang: reveals the next hand, if <paramref name="revealed"/> hands have been revealed so far.
     /// </summary>
     Task RevealNext(string sessionId, int revealed);

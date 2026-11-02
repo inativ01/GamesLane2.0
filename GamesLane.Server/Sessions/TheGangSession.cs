@@ -4,15 +4,25 @@ using GamesLane.Server.Games.TheGang;
 namespace GamesLane.Server.Sessions;
 
 /// <summary>
-/// A revealed hand: its private cards, its full value (e.g. "Pair of nines with K, 7, 3"), and whether it was at least as
-/// strong as the hand revealed before it.
+/// A revealed hand: its pocket cards, its ranking and five cards (e.g. "Two pair: 9, 9, 5, 5, K"), also as
+/// <see cref="Ranking"/> and <see cref="Values"/>, and whether it was at least as strong as the hand revealed before it.
+/// If not, <see cref="WrongRanking"/> or <see cref="WrongValues"/> (positions in <see cref="Values"/>) give the first
+/// reason: a lower ranking, or with the same ranking, the first lower card values.
 /// </summary>
-public record TheGangRevealedHand(int Seat, IReadOnlyList<string> Cards, string Name, bool InOrder);
+public record TheGangRevealedHand(
+    int Seat,
+    IReadOnlyList<string> Cards,
+    string Name,
+    bool InOrder,
+    string Ranking,
+    IReadOnlyList<string> Values,
+    bool WrongRanking,
+    IReadOnlyList<int> WrongValues);
 
 /// <summary>
-/// What a specialist card shows everyone about a seat's cards, e.g. "2 face cards".
+/// What a specialist card (Investor or Math Whiz, by key) shows everyone about a seat's cards, e.g. "2 face cards".
 /// </summary>
-public record TheGangAnnouncement(int Seat, string Text);
+public record TheGangAnnouncement(int Seat, string Card, string Text);
 
 /// <summary>
 /// A card's group decision, by seat: the proposed seat and value, the seats that vote and those that agreed, whether it
@@ -43,10 +53,11 @@ public record TheGangShownCard(int FromSeat, string Card);
 /// <summary>
 /// Public state of The Gang. <see cref="Chips"/> has one list per stage (white, yellow, orange, red), each with one
 /// entry per seat (null if the seat holds no chip in that stage, or does not play, or the stage's chips were removed by
-/// Blackout). Cards are short text such as "10♥". Private cards are not included until revealed.
+/// Blackout). Cards are short text such as "10♥". Pocket cards are not included until revealed.
 /// <see cref="Mode"/> is the mode this game is played in; <see cref="Cards"/> are the current heist's challenge or
 /// specialist cards, <see cref="SkippedStages"/> the stages it skips, <see cref="LockedChips"/> the current stage's
-/// locked chips, and <see cref="RedrawnSeat"/> the seat that got new private cards (Motion Detector, Laser Tripwires).
+/// locked chips, and <see cref="RedrawnSeat"/> the seat that got new pocket cards (Motion Detector, Laser Tripwires),
+/// whose white chip no longer counts; <see cref="RedrawConfirmed"/> tells whether that seat has confirmed it.
 /// <see cref="Decisions"/> are the cards' group decisions and <see cref="Results"/> what they showed;
 /// <see cref="PendingSeat"/> must take <see cref="PendingStep"/> before the stage can end; with Informant,
 /// <see cref="ShownFromSeat"/> showed a card to <see cref="ShownToSeat"/>. <see cref="CommunityCards"/> has one entry per
@@ -59,6 +70,7 @@ public record TheGangState(
     IReadOnlyList<string> NewCards,
     string? PreparingCard,
     int? RedrawnSeat,
+    bool RedrawConfirmed,
     IReadOnlyList<int> SkippedStages,
     IReadOnlyList<int> LockedChips,
     IReadOnlyList<TheGangAnnouncement> Announcements,
@@ -171,6 +183,10 @@ public class TheGangSession(string id, Func<IReadOnlyList<Card>>? newDeck = null
         WithPlayer(userKey, seat, (game, player) => (game.TryChooseJokerCard(player, index, out var e), e), out error);
 
     /// <inheritdoc />
+    public bool TryConfirmRedraw(string userKey, int seat, [NotNullWhen(false)] out string? error) =>
+        WithPlayer(userKey, seat, (game, player) => (game.TryConfirmRedraw(player, out var e), e), out error);
+
+    /// <inheritdoc />
     public bool TryRevealNext(string userKey, int revealed, [NotNullWhen(false)] out string? error) =>
         WithGame(userKey, game => (game.TryRevealNext(revealed, out var e), e), out error);
 
@@ -195,12 +211,11 @@ public class TheGangSession(string id, Func<IReadOnlyList<Card>>? newDeck = null
             game.NewCards,
             game.PreparingCard,
             game.RedrawnPlayer is { } redrawn ? bySeat[redrawn] : null,
+            game.IsRedrawConfirmed,
             game.SkippedStages,
             game.LockedChips,
-            Enumerable.Range(0, game.PlayerCount)
-                .Select(player => game.Announcement(player) is { } text ? new TheGangAnnouncement(bySeat[player], text) : null)
-                .OfType<TheGangAnnouncement>()
-                .ToArray(),
+            [.. Enumerable.Range(0, game.PlayerCount)
+                .SelectMany(player => game.Facts(player).Select(f => new TheGangAnnouncement(bySeat[player], f.Card, f.Text)))],
             [.. game.Decisions.Select(d => new TheGangDecisionState(
                 d.Card,
                 d.Choice,
@@ -236,8 +251,14 @@ public class TheGangSession(string id, Func<IReadOnlyList<Card>>? newDeck = null
             bySeat,
             game.RevealOrder.Select(p => bySeat[p]).ToArray(),
             showsAllCards
-                ? game.RevealOrder.Take(game.Revealed).Select((player, i) => new TheGangRevealedHand(
-                    bySeat[player], Text(game.HoleCards(player)), game.Hand(player).Description, game.RevealedInOrder[i])).ToArray()
+                ? game.RevealOrder.Take(game.Revealed).Select((player, i) =>
+                {
+                    var hand = game.Hand(player);
+                    var weakness = game.Weakness(i);
+                    return new TheGangRevealedHand(
+                        bySeat[player], Text(game.HoleCards(player)), hand.Summary, game.RevealedInOrder[i],
+                        hand.Ranking, hand.Values, weakness?.Ranking ?? false, weakness?.Cards ?? []);
+                }).ToArray()
                 : []);
     }
 

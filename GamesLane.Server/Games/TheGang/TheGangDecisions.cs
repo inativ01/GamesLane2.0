@@ -34,6 +34,20 @@ public record TheGangDecisionInfo(
 public record TheGangResult(int Player, string Card, string Text, bool? Passed = null);
 
 /// <summary>
+/// What a specialist card shows everyone about a player's pocket cards when the betting starts: the card's key
+/// (Investor or Math Whiz) and the fact, e.g. "2 face cards" or "17 total".
+/// </summary>
+public record TheGangFact(string Card, string Text);
+
+/// <summary>
+/// The first reason a revealed hand is weaker than the hand before it: its ranking is lower (<see cref="Ranking"/>), or
+/// with the same ranking, the first of its five cards that is lower (<see cref="Cards"/>: positions 0 to 4 in
+/// <see cref="HandValue.FiveRanks"/>, with all the cards of that value in a row, e.g. both cards of a lower pair).
+/// With Muscle, a hand of the same ranking as Muscle's hand before it is weaker because of its ranking.
+/// </summary>
+public record TheGangWeakness(bool Ranking, IReadOnlyList<int> Cards);
+
+/// <summary>
 /// The values players can name: card values ("2" to "10", "J", "Q", "K", "A") and hand rankings.
 /// </summary>
 public static class TheGangValues

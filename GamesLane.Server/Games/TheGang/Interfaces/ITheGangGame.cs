@@ -35,9 +35,20 @@ public interface ITheGangGame
     string? PreparingCard { get; }
 
     /// <summary>
-    /// The player who got new private cards in this heist (Motion Detector, Laser Tripwires), or null.
+    /// The player who got new pocket cards in this heist (Motion Detector, Laser Tripwires), or null. Their white chip
+    /// no longer says anything about their hand.
     /// </summary>
     int? RedrawnPlayer { get; }
+
+    /// <summary>
+    /// Whether <see cref="RedrawnPlayer"/> has confirmed they got new pocket cards. The stage cannot end until they have.
+    /// </summary>
+    bool IsRedrawConfirmed { get; }
+
+    /// <summary>
+    /// Motion Detector, Laser Tripwires: <see cref="RedrawnPlayer"/> confirms they got new pocket cards.
+    /// </summary>
+    bool TryConfirmRedraw(int player, out string? error);
 
     /// <summary>
     /// The stages the current heist skips (Quick Access: white; Hasty Getaway: orange).
@@ -55,10 +66,15 @@ public interface ITheGangGame
     bool AreChipsDiscarded(int stage);
 
     /// <summary>
-    /// What the specialist cards in play show everyone about a player's private cards when the betting starts, e.g.
+    /// What the specialist cards in play show everyone about a player's pocket cards when the betting starts, e.g.
     /// "2 face cards" (Investor) or "17 total" (Math Whiz), or null.
     /// </summary>
     string? Announcement(int player);
+
+    /// <summary>
+    /// The same as <see cref="Announcement"/>, one fact per card (Investor first, then Math Whiz). Empty if there are none.
+    /// </summary>
+    IReadOnlyList<TheGangFact> Facts(int player);
 
     /// <summary>
     /// The current heist, starting at 1.
@@ -102,7 +118,7 @@ public interface ITheGangGame
     IReadOnlyList<Card> VisibleCommunityCards { get; }
 
     /// <summary>
-    /// A player's private cards (two, or three with Security Cameras). A joker is kept in place until the player has
+    /// A player's pocket cards (two, or three with Security Cameras). A joker is kept in place until the player has
     /// swapped it.
     /// </summary>
     IReadOnlyList<Card> HoleCards(int player);
@@ -155,7 +171,13 @@ public interface ITheGangGame
     IReadOnlyList<bool> RevealedInOrder { get; }
 
     /// <summary>
-    /// A player's best hand from their private cards and the five shared slots (one card from each).
+    /// For the revealed hand at <paramref name="index"/> (in reveal order), the first reason it is weaker than the hand
+    /// before it, or null if it is not.
+    /// </summary>
+    TheGangWeakness? Weakness(int index);
+
+    /// <summary>
+    /// A player's best hand from their pocket cards and the five shared slots (one card from each).
     /// </summary>
     HandValue Hand(int player);
 
@@ -194,7 +216,7 @@ public interface ITheGangGame
 
     /// <summary>
     /// Con Artist: confirms the player, and the other players of the same user, have seen their cards. When everyone
-    /// has, all private cards are shuffled and dealt again, and the betting starts.
+    /// has, all pocket cards are shuffled and dealt again, and the betting starts.
     /// </summary>
     bool TryConfirmSeen(int player, out string? error);
 

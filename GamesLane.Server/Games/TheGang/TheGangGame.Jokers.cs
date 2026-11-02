@@ -139,7 +139,7 @@ public partial class TheGangGame
     }
 
     /// <summary>
-    /// A player's private cards that count in a hand (a joker they have not swapped yet does not).
+    /// A player's pocket cards that count in a hand (a joker they have not swapped yet does not).
     /// </summary>
     private Card[] CountingCards(int player) => [.. _holeCards[player].Where(c => !c.IsJoker)];
 }

@@ -63,6 +63,12 @@ public interface ITheGangSession : IGameSession
     bool TryChooseJokerCard(string userKey, int seat, int index, [NotNullWhen(false)] out string? error);
 
     /// <summary>
+    /// Motion Detector, Laser Tripwires: <paramref name="seat"/>, which <paramref name="userKey"/> must hold, confirms it
+    /// got new pocket cards.
+    /// </summary>
+    bool TryConfirmRedraw(string userKey, int seat, [NotNullWhen(false)] out string? error);
+
+    /// <summary>
     /// Reveals the next hand, if <paramref name="revealed"/> hands have been revealed so far. Players only.
     /// </summary>
     bool TryRevealNext(string userKey, int revealed, [NotNullWhen(false)] out string? error);
