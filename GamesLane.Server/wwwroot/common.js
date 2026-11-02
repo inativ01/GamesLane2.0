@@ -5,7 +5,9 @@
 const $ = (id) => document.getElementById(id);
 const params = new URLSearchParams(location.search);
 
-const GAME_PAGES = { TicTacToe: "/tictactoe.html", RockPaperScissors: "/rock-paper-scissors.html", TheGang: "/the-gang.html" };
+const GAME_PAGES = {
+    TicTacToe: "/tictactoe.html", RockPaperScissors: "/rock-paper-scissors.html", TheGang: "/the-gang.html", Backgammon: "/backgammon.html",
+};
 
 // The login token is kept per browser tab, so each tab can have its own user.
 // A new tab starts with the most recently logged-in user.

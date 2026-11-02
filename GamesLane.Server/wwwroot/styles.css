@@ -2193,6 +2193,131 @@ body.observer main.gang .heist-card-name { font-size: 1em; }
     body.observer main.gang .status { margin: 0.15rem 0; }
 }
 
+/* Backgammon: a wooden board with green felt, drawn as an SVG that scales to the screen. */
+main.backgammon {
+    max-width: 980px;
+}
+
+.bg-players {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.4rem 0.6rem;
+    margin: 0.4rem 0;
+    padding: 0;
+    list-style: none;
+}
+
+.bg-players li {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.3rem 0.7rem;
+    border-radius: 999px;
+    background: var(--surface);
+    box-shadow: var(--shadow);
+}
+
+.bg-players li.bg-match {
+    flex-basis: 100%;
+    justify-content: center;
+    background: none;
+    box-shadow: none;
+    color: var(--muted);
+    font-size: 0.9rem;
+}
+
+.bg-players li.acting {
+    box-shadow: inset 0 0 0 2px var(--primary), var(--shadow);
+}
+
+.bg-swatch {
+    width: 1rem;
+    height: 1rem;
+    border-radius: 50%;
+}
+
+.bg-swatch.white { background: #f4efe6; box-shadow: inset 0 0 0 1.5px #8a7f70; }
+.bg-swatch.black { background: #2b2420; }
+
+.bg-score {
+    font-size: 1.15rem;
+}
+
+.bg-pips {
+    color: var(--muted);
+    font-size: 0.85rem;
+}
+
+.bg-board {
+    margin: 0.4rem 0;
+}
+
+.bg-svg {
+    display: block;
+    width: 100%;
+    height: auto;
+    max-height: calc(100vh - 12rem);
+    margin: 0 auto;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.bg-wood { fill: #6b3f1f; }
+.bg-felt { fill: #1f5c3a; }
+.bg-tray { fill: #4a2a12; }
+.bg-point.light { fill: #e8d7b0; }
+.bg-point.dark { fill: #a3342a; }
+
+.bg-checker circle { fill: #f4efe6; stroke: #8a7f70; stroke-width: 2; }
+.bg-checker .bg-checker-ring { fill: none; stroke: #d6cbb8; stroke-width: 2; }
+.bg-checker.black circle { fill: #2b2420; stroke: #000; }
+.bg-checker.black .bg-checker-ring { fill: none; stroke: #4a403a; }
+.bg-checker-count { font: 700 20px Arial, sans-serif; fill: #2b2420; }
+.bg-checker.black .bg-checker-count { fill: #f4efe6; }
+
+/* The checker that has just moved drops into place. */
+.bg-checker.arrived {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: bg-arrive 0.35s ease-out;
+}
+
+@keyframes bg-arrive {
+    from { opacity: 0.2; transform: scale(1.35); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+.bg-off.white { fill: #f4efe6; }
+.bg-off.black { fill: #2b2420; stroke: #000; }
+
+.bg-die rect { fill: #fff; stroke: #2b2420; stroke-width: 2; }
+.bg-die circle { fill: #2b2420; }
+.bg-die.black rect { fill: #2b2420; stroke: #000; }
+.bg-die.black circle { fill: #f4efe6; }
+.bg-die.used { opacity: 0.3; }
+
+.bg-cube rect { fill: #f8f4ea; stroke: #2b2420; stroke-width: 2; }
+.bg-cube text { font: 800 20px Arial, sans-serif; fill: #2b2420; }
+
+/* The last turn's moves, this turn's moves, the checkers that can move, the selected one and its destinations. */
+.bg-last { fill: rgba(230, 169, 60, 0.35); }
+.bg-last.current { fill: rgba(120, 190, 255, 0.35); }
+.bg-movable { fill: none; stroke: #4cd17a; stroke-width: 4; }
+.bg-selected { fill: rgba(76, 209, 122, 0.35); stroke: #4cd17a; stroke-width: 4; }
+.bg-target { fill: rgba(76, 209, 122, 0.85); stroke: #fff; stroke-width: 3; }
+.bg-target-tray { fill: rgba(76, 209, 122, 0.45); stroke: #4cd17a; stroke-width: 4; }
+.bg-hit { fill: transparent; cursor: pointer; }
+
+.bg-message {
+    margin: 0.3rem 0;
+    color: var(--muted);
+}
+
+.bg-controls {
+    min-height: 2.75rem;
+}
+
 @media (max-width: 420px) {
     .brand-name {
         height: 40px;
