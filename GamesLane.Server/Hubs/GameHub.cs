@@ -229,16 +229,35 @@ public class GameHub(
         Act(sessionId, (IBackgammonSession s, out string? error) => s.TryDrop(UserKey, seat, out error));
 
     /// <inheritdoc />
-    public Task ThrowCards(string sessionId, int seat, int rank, int count) =>
-        Act(sessionId, (IRichManPoorManSession s, out string? error) => s.TryThrow(UserKey, seat, rank, count, out error));
+    public Task ThrowCards(string sessionId, int seat, string[]? cards) =>
+        Act(sessionId, (IRichManPoorManSession s, out string? error) => s.TryThrow(UserKey, seat, cards, out error));
 
     /// <inheritdoc />
     public Task Pass(string sessionId, int seat) =>
         Act(sessionId, (IRichManPoorManSession s, out string? error) => s.TryPass(UserKey, seat, out error));
 
     /// <inheritdoc />
-    public Task GiveCards(string sessionId, int seat, int[]? cards) =>
+    public Task GiveCards(string sessionId, int seat, string[]? cards) =>
         Act(sessionId, (IRichManPoorManSession s, out string? error) => s.TryGive(UserKey, seat, cards, out error));
+
+    /// <inheritdoc />
+    public Task RequestSeat(string sessionId)
+    {
+        var profile = RequireProfile("Log in to ask to join.");
+        return Act(sessionId, (IRichManPoorManSession s, out string? error) => s.TryRequestSeat(UserKey, profile, out error));
+    }
+
+    /// <inheritdoc />
+    public Task CancelSeatRequest(string sessionId) =>
+        Act(sessionId, (IRichManPoorManSession s, out string? error) => s.TryCancelSeatRequest(UserKey, out error));
+
+    /// <inheritdoc />
+    public Task AcceptSeat(string sessionId, string playerId, int place) =>
+        Act(sessionId, (IRichManPoorManSession s, out string? error) => s.TryAcceptSeat(UserKey, playerId, place, out error));
+
+    /// <inheritdoc />
+    public Task DeclineSeat(string sessionId, string playerId) =>
+        Act(sessionId, (IRichManPoorManSession s, out string? error) => s.TryDeclineSeat(UserKey, playerId, out error));
 
     /// <inheritdoc />
     public Task RevealNext(string sessionId, int revealed) =>

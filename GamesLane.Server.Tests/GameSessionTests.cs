@@ -1,4 +1,5 @@
 using GamesLane.Server.Games.Backgammon;
+using GamesLane.Server.Games.RichManPoorMan;
 using GamesLane.Server.Games.RockPaperScissors;
 using GamesLane.Server.Games.TheGang;
 using GamesLane.Server.Games.TicTacToe;
@@ -966,6 +967,135 @@ public class GameSessionTests
         var queue = new Queue<int>(numbers);
         return () => queue.Dequeue();
     }
+
+    // Rich man, poor man
+
+    private static readonly string[] Players = [.. Enumerable.Range(0, 9).Select(i => $"user:p{i}")];
+
+    [Fact]
+    public void Rich_man_poor_man_needs_6_seats_and_a_player_who_leaves_passes_automatically_until_someone_takes_their_seat()
+    {
+        var session = RichManPoorMan(5);
+        Assert.False(session.TryNewGame(Players[0], 0, out var error));
+        Assert.Equal("At least 6 players must be seated.", error);
+        Sit(session, 5);
+        Assert.True(session.TryNewGame(Players[0], 0, out error), error);
+        Assert.Equal(0, Rmpm(session).Turn);
+        Assert.True(session.TryThrow(Players[0], 0, ["2S"], out error), error);
+        Assert.Equal(5, Rmpm(session).Turn);
+
+        Assert.True(session.TryLeaveSeat(Players[5], 5, out error), error);
+        var left = Rmpm(session).Players.Single(p => p.Seat == 5);
+        Assert.Equal((false, 13), (left.IsActive, left.CardCount));
+        Assert.Equal(4, Rmpm(session).Turn);
+        Assert.Equal(SessionPhase.Playing, session.GetPublicState().Phase);
+
+        Sit(session, 6);
+        Assert.True(Rmpm(session).Players.Single(p => p.Seat == 5).IsActive);
+        var hand = Assert.IsType<RichManPoorManPrivateState>(session.GetPrivateState(Players[6])).Hands.Single();
+        Assert.Equal((5, 13), (hand.Seat, hand.Cards.Count));
+        Assert.False(session.TryTakeNextSeat(Players[7], new PlayerProfile("P7", "🙂"), "conn-7", out error));
+        Assert.Equal("Only the seat of a player who left can be taken during a game.", error);
+        Assert.False(session.TryThrow(Players[4], 4, ["XX"], out error));
+        Assert.Equal("Unknown card.", error);
+    }
+
+    [Fact]
+    public void Rich_man_poor_man_drops_players_who_left_at_the_exchange_and_goes_back_to_the_lobby_with_fewer_than_6()
+    {
+        var session = RichManPoorMan(7);
+        session.TryNewGame(Players[0], 0, out _);
+        PlayOut(session);
+        Assert.Equal(7, Rmpm(session).Ranking.Count);
+        Assert.True(session.TryLeaveSeat(Players[6], 6, out var error), error);
+
+        Assert.True(session.TryNextRound(Players[0], 1, out error), error);
+        var state = Rmpm(session);
+        Assert.Equal((2, RichManPoorManPhase.Exchanging, 6), (state.GameNumber, state.Phase, state.Players.Count));
+        Assert.DoesNotContain(state.Players, p => p.Seat == 6);
+        Assert.Equal([3, 2, 1, 1, 2, 3], state.Players.Select(p => p.ExchangeCount));
+        Assert.False(session.TryTakeNextSeat(Players[7], new PlayerProfile("P7", "🙂"), "conn-7", out error));
+        Assert.Equal("Ask to join: a player will choose your place.", error);
+
+        Assert.True(session.TryLeaveSeat(Players[5], 5, out error), error);
+        Assert.Equal(SessionPhase.Lobby, session.GetPublicState().Phase);
+        Assert.False(session.GetPublicState().CanResume);
+    }
+
+    [Fact]
+    public void Rich_man_poor_man_players_accept_a_request_to_join_at_a_place_and_the_cards_are_dealt_again()
+    {
+        var session = RichManPoorMan(6);
+        session.TryNewGame(Players[0], 0, out _);
+        session.Enter(Players[6], new PlayerProfile("P6", "🐙"), "conn-6");
+        session.Enter(Players[7], new PlayerProfile("P7", "🐼"), "conn-7");
+        Assert.False(session.TryRequestSeat(Players[6], new PlayerProfile("P6", "🐙"), out var error));
+        Assert.Equal("You can ask to join during the card exchange, between games.", error);
+        PlayOut(session);
+        session.TryNextRound(Players[0], 1, out _);
+
+        Assert.True(session.TryRequestSeat(Players[6], new PlayerProfile("P6", "🐙"), out error), error);
+        Assert.True(session.TryRequestSeat(Players[7], new PlayerProfile("P7", "🐼"), out error), error);
+        var requests = Rmpm(session).JoinRequests;
+        Assert.Equal(["P6", "P7"], requests.Select(r => r.Name));
+        Assert.False(session.TryAcceptSeat(Players[8], requests[0].PlayerId, 1, out error));
+        Assert.Equal("Only players in this game can do that.", error);
+        Assert.True(session.TryDeclineSeat(Players[1], requests[1].PlayerId, out error), error);
+
+        Assert.True(session.TryAcceptSeat(Players[1], requests[0].PlayerId, 1, out error), error);
+        var state = Rmpm(session);
+        Assert.Equal(7, state.Players.Count);
+        Assert.Equal(6, state.Players[0].Seat);
+        Assert.All(state.Players, p => Assert.Equal(13, p.CardCount));
+        Assert.Empty(state.JoinRequests);
+        Assert.Equal("P6", session.GetPublicState().Seats[6]!.Name);
+        Assert.Equal(13, Assert.IsType<RichManPoorManPrivateState>(session.GetPrivateState(Players[6])).Hands.Single().Cards.Count);
+    }
+
+    // Seats players 0 to count - 1, each in their own seat; the deck is dealt from low to high (#1 gets the lowest cards).
+    private static RichManPoorManSession RichManPoorMan(int count)
+    {
+        var session = new RichManPoorManSession("ABC123", deck => deck.OrderBy(c => c.Rank).ToArray().CopyTo(deck, 0));
+        for (var i = 0; i < count; i++)
+        {
+            Sit(session, i);
+        }
+
+        return session;
+    }
+
+    private static void Sit(RichManPoorManSession session, int player)
+    {
+        var profile = new PlayerProfile($"P{player}", "🙂");
+        session.Enter(Players[player], profile, $"conn-{player}");
+        Assert.True(session.TryTakeNextSeat(Players[player], profile, $"conn-{player}", out var error), error);
+    }
+
+    // Plays the game to its end: each round's starter throws all their cards of their lowest number, and everyone passes.
+    // Seat i must be held by player i.
+    private static void PlayOut(RichManPoorManSession session)
+    {
+        for (var moves = 0; moves < 1000 && Rmpm(session).Phase == RichManPoorManPhase.Playing; moves++)
+        {
+            var seat = Rmpm(session).Turn;
+            string? error;
+            if (Rmpm(session).CurrentThrow is null)
+            {
+                var cards = Assert.IsType<RichManPoorManPrivateState>(session.GetPrivateState(Players[seat])).Hands
+                    .Single(h => h.Seat == seat).Cards;
+                Assert.True(session.TryThrow(Players[seat], seat, [.. cards.Where(c => c[..^1] == cards[0][..^1])], out error), error);
+            }
+            else
+            {
+                Assert.True(session.TryPass(Players[seat], seat, out error), error);
+            }
+        }
+
+        Assert.Equal(RichManPoorManPhase.GameOver, Rmpm(session).Phase);
+    }
+
+    private static RichManPoorManState Rmpm(RichManPoorManSession session) =>
+        Assert.IsType<RichManPoorManState>(session.GetPublicState().Game);
 
     private static RockPaperScissorsSession StartedRpsSession() => Started(new RockPaperScissorsSession("ABC123"));
 

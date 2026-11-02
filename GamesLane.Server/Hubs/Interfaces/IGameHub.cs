@@ -116,10 +116,10 @@ public interface IGameHub
     Task DropDouble(string sessionId, int seat);
 
     /// <summary>
-    /// Rich man, poor man: <paramref name="seat"/>, which the caller must hold, throws <paramref name="count"/> cards of
-    /// number <paramref name="rank"/> (2 to 14, the Ace).
+    /// Rich man, poor man: <paramref name="seat"/>, which the caller must hold, throws <paramref name="cards"/> (short
+    /// text such as "10♥"), all of one number.
     /// </summary>
-    Task ThrowCards(string sessionId, int seat, int rank, int count);
+    Task ThrowCards(string sessionId, int seat, string[]? cards);
 
     /// <summary>
     /// Rich man, poor man: <paramref name="seat"/>, which the caller must hold, passes its turn.
@@ -127,10 +127,31 @@ public interface IGameHub
     Task Pass(string sessionId, int seat);
 
     /// <summary>
-    /// Rich man, poor man, between games: <paramref name="seat"/>, which the caller must hold, gives
-    /// <paramref name="cards"/> (numbers) to its exchange partner. The poorer player of a pair must give its highest cards.
+    /// Rich man, poor man, in the exchange: <paramref name="seat"/>, which the caller must hold, gives
+    /// <paramref name="cards"/> to its exchange partner. The poorer player of a pair must give its highest cards.
     /// </summary>
-    Task GiveCards(string sessionId, int seat, int[]? cards);
+    Task GiveCards(string sessionId, int seat, string[]? cards);
+
+    /// <summary>
+    /// Rich man, poor man, in the exchange: the logged-in caller asks to join the next game.
+    /// </summary>
+    Task RequestSeat(string sessionId);
+
+    /// <summary>
+    /// Rich man, poor man: the caller withdraws their request to join.
+    /// </summary>
+    Task CancelSeatRequest(string sessionId);
+
+    /// <summary>
+    /// Rich man, poor man, in the exchange: a player accepts the request of <paramref name="playerId"/>, who joins at
+    /// <paramref name="place"/> (1 for #1); the cards are dealt again for the new number of players.
+    /// </summary>
+    Task AcceptSeat(string sessionId, string playerId, int place);
+
+    /// <summary>
+    /// Rich man, poor man: a player declines the request of <paramref name="playerId"/>.
+    /// </summary>
+    Task DeclineSeat(string sessionId, string playerId);
 
     /// <summary>
     /// The Gang: <paramref name="seat"/> takes a chip of the current stage, from the middle or from another player.
