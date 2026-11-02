@@ -22,7 +22,7 @@ It is a complete reimplementation of the original [GamesLane](https://github.com
 - A splash screen (the portrait or landscape picture, to suit the screen) is shown for 5 seconds when the app is first opened in a browser tab and whenever the home icon is used; then the main screen appears. It is not shown again when the page reloads (e.g. after logging in).
 - The top bar of every page shows the GamesLane name picture and, on the right, a **Log in** button when no user is logged in, or the user's icon and name (which open their profile) and a **Log out** button.
 - A list of games. A new session can be started only when a user is logged in; choosing a game while logged out opens the login dialog, and the session is started once the user has logged in.
-- Saved users (registered or Google, not guests) can **Arrange** the games: a list with ▲/▼ buttons to move each game; every change is saved with their account and applied whenever they open the main screen. Games not in a saved order (e.g. new ones) keep their usual place after the others.
+- Logged-in users can reorder the games by dragging a game by its ⋮⋮ handle (mouse or touch; Alt+↑/↓ with the keyboard). A saved user's order (registered or Google) is saved with their account; a guest's is remembered in the browser. The order is applied whenever the main screen opens. Games not in a saved order (e.g. new ones) keep their usual place after the others.
 - A way to join a session by entering its code. This does not require a logged-in user.
 - A link to the privacy policy (`/privacy.html`).
 
@@ -108,7 +108,7 @@ docs/                          Original logo, name and splash pictures (kept out
   - **A turn:** tap the board (or press **Roll**) to roll, move the checkers, then press **Done**. The dice tumble for one second when rolled; between turns, the last roll stays on the board, faded. **Undo** takes back the last checker moved in the turn. Tap a checker and then one of its highlighted destinations; a checker that can only go to one place moves at once. The rules are enforced: a checker on the bar must enter first, a point with two or more opposing checkers is blocked, a single opposing checker is hit, bearing off only once all checkers are home (with a higher number only when no checker is on a higher point), as many dice as possible must be used (all four with doubles), and if only one die can be used, it must be the larger one when possible.
   - **Automatic turns:** if no checker can move, the turn passes; if there is only one way to play the dice, the game plays it and the turn ends. A message says so.
   - **Doubling cube** (option, on by default; not in 1-point matches): before rolling, the player may **Double** (or tap the cube, which is outlined when they may); the other player **Take**s (the cube doubles and they own it) or **Drop**s (losing the game at the cube's value). Crawford rule: no doubling in the game after a player first comes within one point of winning the match.
-  - **The board** is seen from each player's own side of the table: the board is turned around (rotated, not mirrored) between the players. Black's home board is at the bottom right, bearing off into the tray on the right, with its two back checkers at the top right; white's home board is at the bottom left, bearing off into the tray on the left, with its two back checkers at the top left. Spectators see white's side, and a user holding both seats sees the side of the seat that must act. It shows the dice on the mover's side (used dice faded), the cube, both pip counts and the match score. The previous turn's moves are highlighted, and so are the current turn's for everyone watching; the checker just moved drops into place. The board scales to fit the screen, in portrait or landscape, and on a TV.
+  - **The board** is seen from each player's own side of the table: the board is turned around (rotated, not mirrored) between the players. Black's home board is at the bottom right, bearing off into the tray on the right, with its two back checkers at the top right; white's home board is at the bottom left, bearing off into the tray on the left, with its two back checkers at the top left. Spectators see white's side, and a user holding both seats sees the side of the seat that must act. It shows the dice on the mover's side (used dice faded), the cube, both pip counts and the match score. The previous turn's moves are highlighted, and so are the current turn's for everyone watching; the checker just moved drops into place. The board scales to fit the screen, in portrait or landscape, and on a TV: it shrinks so that the whole page (scores, board and buttons) is visible without scrolling.
 - **The Gang** (3–8 players), the cooperative poker game by John Cooper and Kory Heath. Each heist:
   - Every player gets 2 pocket cards, shown only on their own screen. Five shared cards are dealt: none at first, then 3, 4 and 5 as the stages go on.
   - Four betting stages (white, yellow, orange, red). In each, every player takes a numbered chip, from 1 (weakest hand) up to the number of players (strongest), from the middle or from another player. Tapping your own chip returns it to the middle. Players are numbered 1 to the number of players in seat order: each hand is titled "Player N", and the table's chip list shows the numbers. Next to the player's cards are the chips they took in this heist's earlier stages. Once every player holds a chip, the **Ready** button (👍) appears; the stage ends when everyone has pressed it. Any chip change clears everyone's Ready (and hides the button again while a chip is in the middle). A user with several seats presses Ready once, for all their hands.
@@ -126,8 +126,46 @@ docs/                          Original logo, name and splash pictures (kept out
   - **What the cards did is shown in the chip table, not on the cards.** Under each player's name, one line per card, starting with the card's name: e.g. "Motion Detector: new pocket cards were dealt", "Investor: 2 face cards", "Math Whiz: 18 total", "Informant: showed a card to …", "Hacker: drew a card and discarded one", "Getaway Driver: High card", "Mastermind: one 9", and the scans' guesses about the strongest hand with a green **PASS** or red **FAIL** badge. A note under the chip table shows group decisions under way (e.g. "Mastermind: deciding, 1 of 3 agreed").
   - **Unused cards are faded** (grey and see-through): Motion Detector or Laser Tripwires once it is known that it did not go off (when the first 3 shared cards appear, or at once with Quick Access), optional specialist cards the group has not used yet in this heist, and scans that are not needed.
   - **Spectator screen** (e.g. a TV): the whole table fits on the screen without scrolling. The table is sized to the largest that fits, so it grows on large screens and shrinks on small ones; on landscape screens the heist's cards are in a column on the right, and on very wide screens (or without heist cards) the chips and the revealed hands sit side by side.
-  - Players can **Hide table** (and **Show table** again), e.g. when a shared screen shows it; the browser remembers the choice.
+  - Players can **Hide table** (and **Show table** again), e.g. when a shared screen shows it; the browser remembers the choice. Until they choose, the table is hidden on phones and tablets and shown on computers.
   - Not yet included: in-game chat.
+
+### Planned: Rich man, poor man (not implemented yet)
+
+A shedding card game for 6 to 12 players. The rules below are the ones to implement.
+
+- **Goal:** get rid of all your cards. A game does not have a single winner: it ends with a full ranking of the players, in the order they emptied their hands. A player may empty their hand in the middle of a round; their place in the ranking is kept and they take no further part in that game. The game ends when every player has emptied their hand (the last player keeps throwing alone until their hand is empty).
+- **The deck:** 13 cards per player, so one suit (2 to A) per player: 6 players use 6 suits (a full deck plus 2 extra suits), 9 players use 9 suits, 12 players use three full decks. **Suits do not matter** at all; only the numbers count. With more than 4 players, the same number appears more than 4 times (with 9 players, there are nine 7s).
+- **Order of strength:** 2 is the lowest, then 3, 4, … 10, J, Q, K, and A is the highest.
+- **Dealing:** the whole deck is shuffled and dealt; every player gets 13 cards.
+- **Rounds:** a game is played in rounds.
+  - The player who starts the round throws any number **N** of cards of one number (e.g. one 5, or three 9s). N stays the same until the round ends.
+  - In turn, each other player either throws N cards of a **strictly higher** number (not equal), or passes. A player may pass even if they could play. Passing is only for that turn: a player who passed may throw again when their turn comes round, if the round is still going.
+  - The round ends when the play comes back to the last player who threw cards, everyone else having passed since that throw. That player wins the round and starts the next one, choosing a new N.
+  - **Aces end the round at once:** nothing beats an A, so the player who throws Aces wins the round immediately.
+  - If the round winner has no cards left, the next player in turn who still has cards starts the next round.
+  - Players who have emptied their hands are skipped.
+- **Who starts:**
+  - **The very first round of the first game:** the player with the most 2s. On a tie, the one of them with the most 3s; then the most 4s; and so on (if two players have exactly the same cards, one of them at random).
+  - **The first round of every later game:** the poorest player (the last in the ranking).
+- **Direction of play, in every game (the first one too):** in descending player numbers, from the poor towards the rich, then from the richest player (#1) straight back to the poorest (the last).
+- **Between games:**
+  - A seated player presses **Next game** to start it; there is no long-term score: each game only decides the seats and the exchange of the next one.
+  1. **New seats:** the players are re-seated by the last game's ranking: the winner becomes player #1 (the rich man), the second becomes #2, and so on; the last is the poor man.
+  2. **Card exchange:** the cards are dealt again, then player #1 exchanges cards with the last player, #2 with the second-to-last, and so on:
+
+     | Players | Cards exchanged |
+     | --- | --- |
+     | 6 | #1↔#6: 3, #2↔#5: 2, #3↔#4: 1 |
+     | 7 | #1↔#7: 3, #2↔#6: 2, #3↔#5: 1; #4 does not exchange |
+     | 8 | #1↔#8: 4, #2↔#7: 3, #3↔#6: 2, #4↔#5: 1 |
+     | 9 | #1↔#9: 4, #2↔#8: 3, #3↔#7: 2, #4↔#6: 1; #5 does not exchange |
+     | 10 | #1↔#10: 4, #2↔#9: 3, #3↔#8: 2, #4↔#7: 1; #5 and #6 do not exchange |
+     | 11 | #1↔#11: 4, #2↔#10: 3, #3↔#9: 2, #4↔#8: 1, #5↔#7: 1; #6 does not exchange |
+     | 12 | #1↔#12: 4, #2↔#11: 3, #3↔#10: 2, #4↔#9: 1, #5↔#8: 1; #6 and #7 do not exchange |
+
+  3. **How each pair exchanges:** the poorer player must give their N highest cards: the game picks them, and the player confirms with a button. The richer player gives any N cards they choose. The exchange happens at the same moment for everyone, so nobody sees the cards they will receive before choosing the cards they give; once everyone has given their cards, they are exchanged and the poorest player starts.
+- **Players leaving and joining:** a player who leaves is dropped, and the others keep their relative order. A new player who wants to join asks to sit down; any seated player can accept and choose where the newcomer sits (no vote is needed).
+- **Screens:** each player's phone shows their hand sorted from low to high, with equal numbers together; they tap cards of one number, then **Throw**, or **Pass**. The shared screen (e.g. a TV) shows the table: the current throw, whose turn it is, who has passed in this round, each player's number of cards, and the finishing order so far. It can also say the last throw out loud (e.g. "Three nines"), using the browser's speech.
 
 ### Game options
 
@@ -298,6 +336,7 @@ _Last updated: 2026-11-02. Keep this section current; it is the hand-off point b
 2. Microsoft sign-in: app registration in the Entra admin center and the two environment variables on Render.
 3. Game history and stats (deferred).
 4. Backgammon: first play-test on phones and a TV; possible extras later (a move list, variants such as Nackgammon or Acey-deucey).
+5. Rich man, poor man: rules settled (see Games); implement when asked.
 
 ### Working conventions
 - Ask before adding or upgrading packages.
