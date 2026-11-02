@@ -8,6 +8,8 @@
     <link rel="apple-touch-icon" href="images/logo-180.png">
     <meta name="theme-color" content="#19285d">
     <link rel="stylesheet" href="styles.css">
+    <script src="lang/he.js"></script>
+    <script src="i18n.js"></script>
     <script>
         // The splash screen shows for 5 seconds when the app is first opened in this tab, and when the home icon is used
         // (/?splash). It runs on its own, so it ends even if the page's other scripts are slow or fail to load. The
@@ -40,42 +42,42 @@
 <main>
     <section id="home">
         <div class="panel">
-            <h2>Start a new game</h2>
-            <p id="arrange-hint" class="hint arrange-hint" hidden>Drag a game by its ⋮⋮ handle to change the order.</p>
+            <h2 data-i18n>Start a new game</h2>
+            <p id="arrange-hint" class="hint arrange-hint" hidden data-i18n>Drag a game by its ⋮⋮ handle to change the order.</p>
             <div id="game-list" class="game-list">
                 <button type="button" class="game-tile" data-create="TheGang">
                     <img src="images/games/the-gang.svg" alt="">
                     <span class="game-text">
-                        <span class="game-title">The Gang</span>
-                        <span class="game-desc">A team poker heist. Rank your hands in secret.</span>
-                        <span class="game-players">3–8 players</span>
+                        <span class="game-title" data-i18n>The Gang</span>
+                        <span class="game-desc" data-i18n>A team poker heist. Rank your hands in secret.</span>
+                        <span class="game-players" data-i18n>3–8 players</span>
                     </span>
                     <span class="game-go" aria-hidden="true">›</span>
                 </button>
                 <button type="button" class="game-tile" data-create="Backgammon">
                     <img src="images/games/backgammon.svg" alt="">
                     <span class="game-text">
-                        <span class="game-title">Backgammon</span>
-                        <span class="game-desc">Race your checkers home. Matches with the doubling cube.</span>
-                        <span class="game-players">2 players</span>
+                        <span class="game-title" data-i18n>Backgammon</span>
+                        <span class="game-desc" data-i18n>Race your checkers home. Matches with the doubling cube.</span>
+                        <span class="game-players" data-i18n>2 players</span>
                     </span>
                     <span class="game-go" aria-hidden="true">›</span>
                 </button>
                 <button type="button" class="game-tile" data-create="RockPaperScissors">
                     <img src="images/games/rock-paper-scissors.svg" alt="">
                     <span class="game-text">
-                        <span class="game-title">Rock-paper-scissors</span>
-                        <span class="game-desc">Pick in secret, keep score round after round.</span>
-                        <span class="game-players">2 players</span>
+                        <span class="game-title" data-i18n>Rock-paper-scissors</span>
+                        <span class="game-desc" data-i18n>Pick in secret, keep score round after round.</span>
+                        <span class="game-players" data-i18n>2 players</span>
                     </span>
                     <span class="game-go" aria-hidden="true">›</span>
                 </button>
                 <button type="button" class="game-tile" data-create="TicTacToe">
                     <img src="images/games/tictactoe.svg" alt="">
                     <span class="game-text">
-                        <span class="game-title">Tic-tac-toe</span>
-                        <span class="game-desc">The classic. Be first to get three in a row.</span>
-                        <span class="game-players">2 players</span>
+                        <span class="game-title" data-i18n>Tic-tac-toe</span>
+                        <span class="game-desc" data-i18n>The classic. Be first to get three in a row.</span>
+                        <span class="game-players" data-i18n>2 players</span>
                     </span>
                     <span class="game-go" aria-hidden="true">›</span>
                 </button>
@@ -83,19 +85,19 @@
         </div>
 
         <div class="panel">
-            <h2>Join a game</h2>
-            <p class="hint">Got a code from a friend? Anyone can join to watch; log in to take a seat.</p>
+            <h2 data-i18n>Join a game</h2>
+            <p class="hint" data-i18n>Got a code from a friend? Anyone can join to watch; log in to take a seat.</p>
             <form id="join-form">
                 <div class="join-row">
-                    <input id="code" maxlength="6" autocomplete="off" autocapitalize="characters" placeholder="CODE" aria-label="Game code">
-                    <button type="submit">Join</button>
+                    <input id="code" maxlength="6" autocomplete="off" autocapitalize="characters" placeholder="CODE" aria-label="Game code" data-i18n-attr="placeholder,aria-label">
+                    <button type="submit" data-i18n>Join</button>
                 </div>
             </form>
         </div>
     </section>
 
     <p id="error" class="error" role="alert"></p>
-    <footer class="hint"><a href="/privacy.html">Privacy policy</a></footer>
+    <footer class="hint"><a href="/privacy.html" data-i18n>Privacy policy</a></footer>
 </main>
 <script src="https://cdn.jsdelivr.net/npm/@microsoft/signalr@10.0.11/dist/browser/signalr.min.js"></script>
 <script src="common.js"></script>

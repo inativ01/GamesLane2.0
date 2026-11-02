@@ -222,7 +222,7 @@ function drawDice(game) {
 // are reported in the viewer's numbering. When mayDouble, the viewer may double with the cube.
 function drawGame(game, viewer, canMove, mayDouble) {
     turned = viewer === 0;
-    const root = svg("svg", { viewBox: `0 0 ${WIDTH} ${HEIGHT}`, class: "bg-svg", role: "img", "aria-label": "Backgammon board" });
+    const root = svg("svg", { viewBox: `0 0 ${WIDTH} ${HEIGHT}`, class: "bg-svg", role: "img", "aria-label": t("Backgammon board") });
     const board = svg("g", turned ? { transform: `rotate(180 ${WIDTH / 2} ${HEIGHT / 2})` } : {});
     root.append(board);
     board.append(...drawBoard());
@@ -331,64 +331,87 @@ function viewerSeat(game, view) {
 }
 
 // A move such as "13/7", "bar/22" or "6/off".
-const moveText = (m) => `${m.from === BAR ? "bar" : m.from}/${m.to === OFF ? "off" : m.to}`;
+const moveText = (m) => `${m.from === BAR ? t("bar") : m.from}/${m.to === OFF ? t("off") : m.to}`;
 const diceText = (dice) => dice.join("-");
-const pointsText = (n) => (n === 1 ? "1 point" : `${n} points`);
+const pointsText = (n) => (n === 1 ? t("1 point") : t("{n} points", { n }));
+const colorName = (seat) => t(COLORS[seat]);
 
+// The status line and the message under the board. Each text has a form for the viewer ("You rolled 5.") and one for a
+// named player ("Dana rolled 5."); a user holding both seats sees the named forms.
 function backgammonTexts(game, state, view) {
     const both = view.isMe(0) && view.isMe(1);
-    const name = (seat) => (view.isMe(seat) && !both ? "You" : state.seats[seat]?.name ?? COLORS[seat]);
+    const name = (seat) => state.seats[seat]?.name ?? colorName(seat);
+    const about = (seat, you, other, values = {}) =>
+        (view.isMe(seat) && !both ? t(you, values) : t(other, { name: name(seat), ...values }));
     const mine = (seat) => view.isMe(seat);
     const result = game.result;
-    const verb = (seat, you, other) => (name(seat) === "You" ? you : other);
     let status;
     switch (game.phase) {
         case "Opening": {
             const roller = openingRoller(game, view);
             const waiting = [0, 1].filter((s) => game.openingDice[s] === null || openingTie(game)).map(name);
             status = roller !== null
-                ? `${both ? `${COLORS[roller]}: t` : "T"}ap the board to roll your die: the higher die starts`
-                : `Waiting for ${waiting.join(" and ")} to roll ${waiting.length > 1 ? "their dice" : "a die"} to see who starts`;
+                ? both ? t("{color}: tap the board to roll your die: the higher die starts", { color: colorName(roller) })
+                    : t("Tap the board to roll your die: the higher die starts")
+                : waiting.length > 1 ? t("Waiting for {a} and {b} to roll their dice to see who starts", { a: waiting[0], b: waiting[1] })
+                    : t("Waiting for {name} to roll a die to see who starts", { name: waiting[0] });
             break;
         }
-        case "Rolling":
-            status = mine(game.turn)
-                ? `${both ? `${COLORS[game.turn]}: t` : "Your turn: t"}ap the board to roll${game.canDouble ? ", or the cube to double" : ""}`
-                : `${name(game.turn)} (${COLORS[game.turn]}) to roll`;
+        case "Rolling": {
+            const color = colorName(game.turn);
+            status = !mine(game.turn) ? t("{name} ({color}) to roll", { name: name(game.turn), color })
+                : both && game.canDouble ? t("{color}: tap the board to roll, or the cube to double", { color })
+                    : both ? t("{color}: tap the board to roll", { color })
+                        : game.canDouble ? t("Your turn: tap the board to roll, or the cube to double")
+                            : t("Your turn: tap the board to roll");
             break;
+        }
         case "Doubled":
-            status = `${name(game.turn)} ${verb(game.turn, "double", "doubles")} to ${game.cubeValue * 2}. `
-                + (mine(1 - game.turn) ? "Take or drop?" : `Waiting for ${name(1 - game.turn)}…`);
+            status = `${about(game.turn, "You double to {n}.", "{name} doubles to {n}.", { n: game.cubeValue * 2 })} `
+                + (mine(1 - game.turn) ? t("Take or drop?") : t("Waiting for {name}…", { name: name(1 - game.turn) }));
             break;
-        case "Moving":
-            status = !mine(game.turn) ? `${name(game.turn)} (${COLORS[game.turn]}) is moving: ${diceText(game.dice)}`
-                : !game.legalMoves.length ? "Press Done to end your turn"
-                    : `${both ? COLORS[game.turn] : "Your move"}: ${diceText(game.dice)}`;
+        case "Moving": {
+            const dice = diceText(game.dice);
+            status = !mine(game.turn) ? t("{name} ({color}) is moving: {dice}", { name: name(game.turn), color: colorName(game.turn), dice })
+                : !game.legalMoves.length ? t("Press Done to end your turn")
+                    : both ? `${colorName(game.turn)}: ${dice}` : t("Your move: {dice}", { dice });
             break;
+        }
         case "GameOver":
-            status = `Game ${game.gameNumber} is over. Next: game ${game.gameNumber + 1}.`;
+            status = t("Game {n} is over. Next: game {next}.", { n: game.gameNumber, next: game.gameNumber + 1 });
             break;
         default:
-            status = `${name(result.seat)} ${verb(result.seat, "win", "wins")} the match ${game.scores[result.seat]}–${game.scores[1 - result.seat]}!`;
+            status = about(result.seat, "You win the match {a}–{b}!", "{name} wins the match {a}–{b}!",
+                { a: game.scores[result.seat], b: game.scores[1 - result.seat] });
     }
 
     let message = "";
     if (game.phase === "Opening") {
-        message = openingTie(game) ? `Both rolled ${game.openingDice[0]}: roll again.`
+        message = openingTie(game) ? t("Both rolled {n}: roll again.", { n: game.openingDice[0] })
             : [0, 1].filter((s) => game.openingDice[s] !== null)
-                .map((s) => `${name(s)} rolled ${game.openingDice[s]}.`).join(" ");
+                .map((s) => about(s, "You rolled {n}.", "{name} rolled {n}.", { n: game.openingDice[s] })).join(" ");
     } else if (result) {
-        const kind = { Single: "the game", Gammon: "a gammon", Backgammon: "a backgammon" }[result.kind];
-        message = result.kind === "Dropped"
-            ? `${name(1 - result.seat)} dropped the double: ${name(result.seat)} ${verb(result.seat, "win", "wins")} ${pointsText(result.points)}.`
-            : `${name(result.seat)} ${verb(result.seat, "win", "wins")} ${kind}: ${pointsText(result.points)}.`;
+        const points = pointsText(result.points);
+        const loser = 1 - result.seat;
+        const wins = {
+            Single: ["You win the game: {points}.", "{name} wins the game: {points}."],
+            Gammon: ["You win a gammon: {points}.", "{name} wins a gammon: {points}."],
+            Backgammon: ["You win a backgammon: {points}.", "{name} wins a backgammon: {points}."],
+        }[result.kind];
+        message = result.kind !== "Dropped" ? about(result.seat, ...wins, { points })
+            : mine(result.seat) && !both ? t("{name} dropped the double: you win {points}.", { name: name(loser), points })
+                : mine(loser) && !both ? t("You dropped the double: {name} wins {points}.", { name: name(result.seat), points })
+                    : t("{loser} dropped the double: {winner} wins {points}.", { loser: name(loser), winner: name(result.seat), points });
     } else if (game.openingRoll && !game.played.length && game.phase === "Moving") {
-        message = `Opening roll: White ${game.openingRoll[0]}, Black ${game.openingRoll[1]}. ${name(game.turn)} ${verb(game.turn, "start", "starts")}.`;
+        message = about(game.turn, "Opening roll: White {white}, Black {black}. You start.",
+            "Opening roll: White {white}, Black {black}. {name} starts.", { white: game.openingRoll[0], black: game.openingRoll[1] });
     } else if (game.lastTurn && (game.lastTurn.seat !== game.turn || game.phase !== "Moving")) {
         const last = game.lastTurn;
-        message = !last.moves.length ? `${name(last.seat)} rolled ${diceText(last.dice)} and could not move.`
-            : last.forced ? `${name(last.seat)} rolled ${diceText(last.dice)}: the only possible move, ${last.moves.map(moveText).join(" ")}, was played.`
-                : `${name(last.seat)} played ${diceText(last.dice)}: ${last.moves.map(moveText).join(" ")}.`;
+        const values = { dice: diceText(last.dice), moves: last.moves.map(moveText).join(" ") };
+        message = !last.moves.length ? about(last.seat, "You rolled {dice} and could not move.", "{name} rolled {dice} and could not move.", values)
+            : last.forced ? about(last.seat, "You rolled {dice}: the only possible move, {moves}, was played.",
+                "{name} rolled {dice}: the only possible move, {moves}, was played.", values)
+                : about(last.seat, "You played {dice}: {moves}.", "{name} played {dice}: {moves}.", values);
     }
     return { status, message };
 }
@@ -396,14 +419,15 @@ function backgammonTexts(game, state, view) {
 // The two players: colour, name, match score and pip count, with the seat to act marked.
 function scoreboard(game, state, view) {
     const acting = game.phase === "GameOver" || game.phase === "MatchOver" ? null : actingSeat(game);
-    const header = listItem(`Match to ${pointsText(game.matchLength)} · Game ${game.gameNumber}${game.isCrawford ? " · Crawford game" : ""}`);
+    const header = listItem([t("Match to {points}", { points: pointsText(game.matchLength) }), t("Game {n}", { n: game.gameNumber }),
+        game.isCrawford && t("Crawford game")].filter(Boolean).join(" · "));
     header.className = "bg-match";
     return [header, ...[0, 1].map((seat) => {
         const item = listItem(
             Object.assign(document.createElement("span"), { className: `bg-swatch ${seat === 0 ? "white" : "black"}` }),
             seatLabel(state, seat, view),
             Object.assign(document.createElement("strong"), { className: "bg-score", textContent: String(game.scores[seat]) }),
-            Object.assign(document.createElement("span"), { className: "bg-pips", textContent: `${game.pips[seat]} pips` }));
+            Object.assign(document.createElement("span"), { className: "bg-pips", textContent: t("{n} pips", { n: game.pips[seat] }) }));
         item.classList.toggle("acting", seat === acting);
         return item;
     })];
@@ -443,7 +467,7 @@ const backgammon = startSessionPage("Backgammon", (game, state, view) => {
     const answering = game.phase === "Doubled" && view.isMe(1 - game.turn);
     $("bg-roll").hidden = !(rolling || openingRoller(game, view) !== null);
     $("bg-double").hidden = !(rolling && game.canDouble);
-    $("bg-double").textContent = `Double to ${game.cubeValue * 2}`;
+    $("bg-double").textContent = t("Double to {n}", { n: game.cubeValue * 2 });
     $("bg-take").hidden = !answering;
     $("bg-drop").hidden = !answering;
     $("bg-undo").hidden = !(canMove && game.played.length);

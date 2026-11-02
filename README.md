@@ -21,6 +21,7 @@ It is a complete reimplementation of the original [GamesLane](https://github.com
 ### Lobby (main screen)
 - A splash screen (the portrait or landscape picture, to suit the screen) is shown for 5 seconds when the app is first opened in a browser tab and whenever the home icon is used; then the main screen appears. It is not shown again when the page reloads (e.g. after logging in).
 - The top bar of every page shows the GamesLane name picture and, on the right, a **Log in** button when no user is logged in, or the user's icon and name (which open their profile) and a **Log out** button.
+- **Languages:** English and Hebrew. On pages that have a Hebrew translation (so far the main screen and Backgammon, including the login and profile dialogs, the session lobby and the server's messages), the top bar shows the current language's flag; tapping it opens a menu of the languages, and choosing one reloads the page in it. Hebrew pages read from right to left (the backgammon board stays as it is). The choice is remembered in the browser; until the user chooses, Hebrew if the browser prefers it, otherwise English. Pages without a translation (The Gang, Rock-paper-scissors, Tic-tac-toe) stay in English and show no flag.
 - A list of games. A new session can be started only when a user is logged in; choosing a game while logged out opens the login dialog, and the session is started once the user has logged in.
 - Logged-in users can reorder the games by dragging a game by its ⋮⋮ handle (mouse or touch; Alt+↑/↓ with the keyboard). A saved user's order (registered or Google) is saved with their account; a guest's is remembered in the browser. The order is applied whenever the main screen opens. Games not in a saved order (e.g. new ones) keep their usual place after the others.
 - A way to join a session by entering its code. This does not require a logged-in user.
@@ -86,6 +87,8 @@ GamesLane.Server/              ASP.NET Core backend
   wwwroot/                     Web pages
     index.html, home.js        Main screen: start a session or join one by code
     common.js                  Shared: login dialog and account bar, hub connection, session lobby and page framework
+    i18n.js                    Shared: languages. The English texts in the code are the keys: t("Log in") gives the chosen language's text. Also matches the server's English messages to their translations, and the language picker
+    lang/he.js                 Hebrew translations (a page offers Hebrew by loading this file before i18n.js)
     styles.css                 Styles for all pages
     privacy.html               Privacy policy
     tictactoe.html/.js         Tic-tac-toe page
@@ -94,6 +97,7 @@ GamesLane.Server/              ASP.NET Core backend
     backgammon.html/.js        Backgammon page (the board is drawn as SVG)
     images/                    Logo, the GamesLane name for the header and the splash screens (web-sized copies of the originals in docs/), game pictures (SVG)
     images/the-gang/           A picture (SVG) for each challenge and specialist card, named by the card's key, e.g. quick-access.svg
+    images/flags/              Flags for the language picker
 GamesLane.Server.Tests/        Unit tests
 docs/                          Original logo, name and splash pictures (kept out of git); docs/the-gang/: The Gang's card texts
 ```
@@ -131,7 +135,7 @@ docs/                          Original logo, name and splash pictures (kept out
 
 ### Planned: Rich man, poor man (not implemented yet)
 
-A shedding card game for 6 to 12 players. The rules below are the ones to implement.
+A shedding card game for 6 to 12 players. The rules below are the ones to implement. It is to be built in English and Hebrew from the start.
 
 - **Goal:** get rid of all your cards. A game does not have a single winner: it ends with a full ranking of the players, in the order they emptied their hands. A player may empty their hand in the middle of a round; their place in the ranking is kept and they take no further part in that game. The game ends when every player has emptied their hand (the last player keeps throwing alone until their hand is empty).
 - **The deck:** 13 cards per player, so one suit (2 to A) per player: 6 players use 6 suits (a full deck plus 2 extra suits), 9 players use 9 suits, 12 players use three full decks. **Suits do not matter** at all; only the numbers count. With more than 4 players, the same number appears more than 4 times (with 9 players, there are nine 7s).
@@ -336,7 +340,8 @@ _Last updated: 2026-11-02. Keep this section current; it is the hand-off point b
 2. Microsoft sign-in: app registration in the Entra admin center and the two environment variables on Render.
 3. Game history and stats (deferred).
 4. Backgammon: first play-test on phones and a TV; possible extras later (a move list, variants such as Nackgammon or Acey-deucey).
-5. Rich man, poor man: rules settled (see Games); implement when asked.
+5. Rich man, poor man: rules settled (see Games); implement when asked, in English and Hebrew.
+6. Hebrew: translate The Gang, Rock-paper-scissors and Tic-tac-toe (main screen and Backgammon are done).
 
 ### Working conventions
 - Ask before adding or upgrading packages.

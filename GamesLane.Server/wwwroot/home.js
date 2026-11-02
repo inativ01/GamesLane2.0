@@ -13,11 +13,11 @@ function goToSession(gameType, sessionId) {
 async function findSession(code) {
     const response = await fetch(`/api/sessions/${encodeURIComponent(code)}`).catch(() => null);
     if (response?.status === 404) {
-        showError(`No game with code ${code.toUpperCase()} was found.`);
+        showError(t("No game with code {code} was found.", { code: code.toUpperCase() }));
         return null;
     }
     if (!response?.ok) {
-        showError(response ? "Something went wrong." : "Could not reach the server. Check your connection and try again.");
+        showError(t(response ? "Something went wrong." : "Could not reach the server. Check your connection and try again."));
         return null;
     }
     return response.json();
@@ -25,7 +25,7 @@ async function findSession(code) {
 
 // Creates a game and opens its page. The overlay stays up until the game's page has loaded.
 async function startGame(gameType) {
-    showBusy("Starting your game…", 0);
+    showBusy(t("Starting your game…"), 0);
     try {
         const sessionId = await call("CreateSession", gameType);
         goToSession(gameType, sessionId);
@@ -62,7 +62,7 @@ async function saveGameOrder() {
         body: JSON.stringify(currentOrder()),
     }).catch(() => null);
     if (!response?.ok) {
-        showError((await response?.json().catch(() => null))?.error ?? "The order of the games could not be saved.");
+        showError(translateServerText((await response?.json().catch(() => null))?.error) ?? t("The order of the games could not be saved."));
     }
 }
 
@@ -70,7 +70,7 @@ async function saveGameOrder() {
 // is dropped. Works with a mouse and with touch. The other games move around the dragged one, which itself stays in
 // place in the page, so the browser keeps sending it the pointer's movements.
 function makeDraggable(tile) {
-    const handle = Object.assign(document.createElement("span"), { className: "game-handle", textContent: "⋮⋮", title: "Drag to move" });
+    const handle = Object.assign(document.createElement("span"), { className: "game-handle", textContent: "⋮⋮", title: t("Drag to move") });
     handle.setAttribute("aria-hidden", "true");
     tile.prepend(handle);
     handle.addEventListener("click", (event) => {
@@ -152,7 +152,7 @@ document.querySelectorAll("[data-create]").forEach((button) => {
 // After logging in, start the game the user clicked. A new Google user first sees the profile dialog.
 // Until we know whether the user is logged in (the server may be waking up), show that the game is on its way.
 if (sessionStorage.getItem(PENDING_GAME_KEY)) {
-    showBusy("Starting your game…", 0);
+    showBusy(t("Starting your game…"), 0);
 }
 
 accountReady.then(() => {
@@ -180,10 +180,10 @@ $("join-form").addEventListener("submit", async (event) => {
     event.preventDefault();
     const code = $("code").value.trim();
     if (!code) {
-        showError("Enter a game code.");
+        showError(t("Enter a game code."));
         return;
     }
-    showBusy("Finding the game…");
+    showBusy(t("Finding the game…"));
     const session = await findSession(code);
     if (session) {
         goToSession(session.gameType, session.sessionId);
@@ -196,8 +196,8 @@ if (params.get("session")) {
     $("code").value = params.get("session");
 }
 if (params.get("notfound")) {
-    showError(`No game with code ${params.get("session") ?? ""} was found. It may have ended.`);
+    showError(t("No game with code {code} was found. It may have ended.", { code: params.get("session") ?? "" }));
 }
 if (params.get("signin") === "failed") {
-    showError("Sign-in did not complete. Please try again.");
+    showError(t("Sign-in did not complete. Please try again."));
 }

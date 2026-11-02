@@ -1,9 +1,13 @@
 "use strict";
 
-// Shared by all pages: login, the hub connection, error display, and the game page framework.
+// Shared by all pages: login, the hub connection, error display, and the game page framework. Texts go through t()
+// (see i18n.js), so pages with translations show them in the chosen language.
 
 const $ = (id) => document.getElementById(id);
 const params = new URLSearchParams(location.search);
+
+translatePage();
+$("account").before(languagePicker() ?? "");
 
 const GAME_PAGES = {
     TicTacToe: "/tictactoe.html", RockPaperScissors: "/rock-paper-scissors.html", TheGang: "/the-gang.html", Backgammon: "/backgammon.html",
@@ -81,8 +85,8 @@ const connection = new signalR.HubConnectionBuilder()
     .withAutomaticReconnect()
     .build();
 
-connection.onreconnecting(() => showError("Connection lost. Reconnecting…"));
-connection.onclose(() => showError("Connection lost. Reload the page to reconnect."));
+connection.onreconnecting(() => showError(t("Connection lost. Reconnecting…")));
+connection.onclose(() => showError(t("Connection lost. Reload the page to reconnect.")));
 
 // Connects to the server. A failed attempt is retried a few times over about 10 seconds, since the server may be
 // waking up or a new version going live; only then is the error shown.
@@ -96,7 +100,7 @@ async function connect() {
             console.warn("Could not connect to the server; retrying.", err);
         }
     }
-    showError("Could not connect to the server. Reload the page to try again.");
+    showError(t("Could not connect to the server. Reload the page to try again."));
     return false;
 }
 
@@ -161,7 +165,7 @@ async function withBusyButton(button, text, action) {
 // HubException messages arrive as "An unexpected error occurred invoking '...' on the server. HubException: <message>"
 function errorText(err) {
     const match = /HubException: (.*)$/.exec(err?.message ?? "");
-    return match ? match[1] : "Something went wrong.";
+    return match ? translateServerText(match[1]) : t("Something went wrong.");
 }
 
 async function call(method, ...args) {
@@ -185,7 +189,7 @@ async function completeExternalSignIn() {
     url.searchParams.delete("signin");
     history.replaceState(null, "", url.pathname + url.search);
 
-    showBusy("Signing you in…", 0);
+    showBusy(t("Signing you in…"), 0);
     const response = await fetch("/auth/external", { method: "POST" }).catch(() => null);
     hideBusy();
     if (response?.ok) {
@@ -193,7 +197,7 @@ async function completeExternalSignIn() {
         saveToken(result.accessToken);
         isNewExternalUser = result.isNew;
     } else {
-        showError("Sign-in did not complete. Please try again.");
+        showError(t("Sign-in did not complete. Please try again."));
     }
 }
 
@@ -235,16 +239,16 @@ function renderAccount() {
         name.textContent = account.name;
         const profile = smallButton("", openProfileDialog);
         profile.classList.add("account-name");
-        profile.title = "Your profile";
+        profile.title = t("Your profile");
         profile.replaceChildren(iconElement(account.icon), name);
         bar.replaceChildren(
             profile,
-            smallButton("Log out", () => {
+            smallButton(t("Log out"), () => {
                 saveToken("");
                 location.reload();
             }));
     } else {
-        const login = smallButton("Log in", openLoginDialog);
+        const login = smallButton(t("Log in"), openLoginDialog);
         login.classList.remove("secondary");
         bar.replaceChildren(login);
     }
@@ -290,8 +294,8 @@ async function submitAccount(url, body, errorElement) {
     }
     const result = await response?.json().catch(() => null);
     errorElement.textContent = response?.status === 429
-        ? "Too many attempts. Wait a minute and try again."
-        : result?.error ?? (response ? "Something went wrong." : "Could not reach the server. Check your connection and try again.");
+        ? t("Too many attempts. Wait a minute and try again.")
+        : translateServerText(result?.error) ?? t(response ? "Something went wrong." : "Could not reach the server. Check your connection and try again.");
     return false;
 }
 
@@ -321,36 +325,36 @@ function openLoginDialog() {
 
 function createLoginDialog() {
     const dialog = createDialog(`
-        <h2>Log in</h2>
+        <h2>${t("Log in")}</h2>
         <div class="tabs" role="tablist">
-            <button type="button" role="tab" data-tab="guest">Guest</button>
-            <button type="button" role="tab" data-tab="login">Log in</button>
-            <button type="button" role="tab" data-tab="register">Create account</button>
+            <button type="button" role="tab" data-tab="guest">${t("Guest")}</button>
+            <button type="button" role="tab" data-tab="login">${t("Log in")}</button>
+            <button type="button" role="tab" data-tab="register">${t("Create account")}</button>
         </div>
         <form data-panel="guest">
-            <p class="hint">Play with just a name. Nothing is saved.</p>
-            <label>Your name <input name="name" maxlength="30" autocomplete="nickname" required></label>
+            <p class="hint">${t("Play with just a name. Nothing is saved.")}</p>
+            <label>${t("Your name")} <input name="name" maxlength="30" autocomplete="nickname" required></label>
             <div class="icon-picker"></div>
             <p class="error" role="alert"></p>
-            <div class="actions"><button type="submit">Play as guest</button><button type="button" class="secondary" data-close>Cancel</button></div>
+            <div class="actions"><button type="submit">${t("Play as guest")}</button><button type="button" class="secondary" data-close>${t("Cancel")}</button></div>
         </form>
         <form data-panel="login">
-            <label>Username <input name="username" maxlength="20" autocomplete="username" required></label>
-            <label>Password <input name="password" type="password" maxlength="100" autocomplete="current-password" required></label>
+            <label>${t("Username")} <input name="username" maxlength="20" autocomplete="username" required></label>
+            <label>${t("Password")} <input name="password" type="password" maxlength="100" autocomplete="current-password" required></label>
             <p class="error" role="alert"></p>
-            <div class="actions"><button type="submit">Log in</button><button type="button" class="secondary" data-close>Cancel</button></div>
+            <div class="actions"><button type="submit">${t("Log in")}</button><button type="button" class="secondary" data-close>${t("Cancel")}</button></div>
         </form>
         <form data-panel="register">
-            <label>Username <input name="username" maxlength="20" autocomplete="username" required pattern="[A-Za-z0-9_]{3,20}"></label>
-            <p class="hint">3 to 20 letters, digits or underscores. You log in with it; others see your display name.</p>
-            <label>Password <input name="password" type="password" minlength="8" maxlength="100" autocomplete="new-password" required></label>
-            <p class="hint">At least 8 characters. It cannot be reset, so keep it safe.</p>
-            <label>Display name <input name="name" maxlength="30" autocomplete="nickname" required></label>
+            <label>${t("Username")} <input name="username" maxlength="20" autocomplete="username" required pattern="[A-Za-z0-9_]{3,20}"></label>
+            <p class="hint">${t("3 to 20 letters, digits or underscores. You log in with it; others see your display name.")}</p>
+            <label>${t("Password")} <input name="password" type="password" minlength="8" maxlength="100" autocomplete="new-password" required></label>
+            <p class="hint">${t("At least 8 characters. It cannot be reset, so keep it safe.")}</p>
+            <label>${t("Display name")} <input name="name" maxlength="30" autocomplete="nickname" required></label>
             <div class="icon-picker"></div>
             <p class="error" role="alert"></p>
-            <div class="actions"><button type="submit">Create account</button><button type="button" class="secondary" data-close>Cancel</button></div>
+            <div class="actions"><button type="submit">${t("Create account")}</button><button type="button" class="secondary" data-close>${t("Cancel")}</button></div>
         </form>
-        <div class="login-providers"><p class="hint">Or</p></div>`);
+        <div class="login-providers"><p class="hint">${t("Or")}</p></div>`);
 
     const providers = dialog.querySelector(".login-providers");
     providers.hidden = account.providers.length === 0;
@@ -358,7 +362,7 @@ function createLoginDialog() {
         const link = document.createElement("a");
         link.className = "button secondary";
         link.href = externalSignInUrl(provider);
-        link.textContent = `Sign in with ${provider}`;
+        link.textContent = t("Sign in with {provider}", { provider });
         // The dialog stays open while the browser goes to the provider; the link shows a spinner meanwhile.
         link.addEventListener("click", (event) => {
             if (link.classList.contains("is-busy")) {
@@ -367,13 +371,13 @@ function createLoginDialog() {
             }
             link.classList.add("is-busy");
             link.setAttribute("aria-disabled", "true");
-            link.textContent = `Connecting to ${provider}…`;
+            link.textContent = t("Connecting to {provider}…", { provider });
         });
         // Coming back with the browser's Back button can restore the page with the spinner still showing.
         window.addEventListener("pageshow", () => {
             link.classList.remove("is-busy");
             link.removeAttribute("aria-disabled");
-            link.textContent = `Sign in with ${provider}`;
+            link.textContent = t("Sign in with {provider}", { provider });
         });
         providers.appendChild(link);
     }
@@ -392,9 +396,9 @@ function createLoginDialog() {
         event.preventDefault();
         submitAccountForm(event.target, busyText, url, body(new FormData(event.target)));
     });
-    onSubmit("guest", "Logging in…", "/auth/guest", (f) => ({ name: f.get("name"), icon: guestIcon.value }));
-    onSubmit("login", "Logging in…", "/auth/login", (f) => ({ username: f.get("username"), password: f.get("password") }));
-    onSubmit("register", "Creating account…", "/auth/register", (f) => ({
+    onSubmit("guest", t("Logging in…"), "/auth/guest", (f) => ({ name: f.get("name"), icon: guestIcon.value }));
+    onSubmit("login", t("Logging in…"), "/auth/login", (f) => ({ username: f.get("username"), password: f.get("password") }));
+    onSubmit("register", t("Creating account…"), "/auth/register", (f) => ({
         username: f.get("username"), password: f.get("password"), name: f.get("name"), icon: registerIcon.value,
     }));
     return dialog;
@@ -406,13 +410,13 @@ function openProfileDialog() {
     const icons = account.uploadedIcon ? [account.uploadedIcon, ...account.icons] : account.icons;
     const dialog = createDialog(`
         <form>
-            <h2>Your profile</h2>
-            <p class="hint" data-welcome hidden>Welcome! Choose how other players see you.</p>
-            <label>Display name <input name="name" maxlength="30" autocomplete="nickname" required></label>
+            <h2>${t("Your profile")}</h2>
+            <p class="hint" data-welcome hidden>${t("Welcome! Choose how other players see you.")}</p>
+            <label>${t("Display name")} <input name="name" maxlength="30" autocomplete="nickname" required></label>
             <div class="icon-picker"></div>
-            <label class="upload" ${canUpload ? "" : "hidden"}>Upload a picture <input name="picture" type="file" accept="image/*"></label>
+            <label class="upload" ${canUpload ? "" : "hidden"}>${t("Upload a picture")} <input name="picture" type="file" accept="image/*"></label>
             <p class="error" role="alert"></p>
-            <div class="actions"><button type="submit">Save</button><button type="button" class="secondary" data-close>Cancel</button></div>
+            <div class="actions"><button type="submit">${t("Save")}</button><button type="button" class="secondary" data-close>${t("Cancel")}</button></div>
         </form>`);
     const form = dialog.querySelector("form");
     const error = form.querySelector(".error");
@@ -423,12 +427,12 @@ function openProfileDialog() {
     form.elements.picture.addEventListener("change", async () => {
         const file = form.elements.picture.files[0];
         if (file) {
-            await withBusyButton(form.querySelector('[type="submit"]'), "Uploading…", () => uploadIcon(file, error));
+            await withBusyButton(form.querySelector('[type="submit"]'), t("Uploading…"), () => uploadIcon(file, error));
         }
     });
     form.addEventListener("submit", (event) => {
         event.preventDefault();
-        submitAccountForm(form, "Saving…", "/auth/profile", { name: form.elements.name.value, icon: picker.value });
+        submitAccountForm(form, t("Saving…"), "/auth/profile", { name: form.elements.name.value, icon: picker.value });
     });
     dialog.addEventListener("close", () => dialog.remove());
     dialog.showModal();
@@ -445,7 +449,7 @@ async function uploadIcon(file, errorElement) {
         canvas.getContext("2d").drawImage(image, (image.width - size) / 2, (image.height - size) / 2, size, size, 0, 0, 128, 128);
         blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/webp", 0.85));
     } catch {
-        errorElement.textContent = "That file could not be read as a picture.";
+        errorElement.textContent = t("That file could not be read as a picture.");
         return false;
     }
 
@@ -456,7 +460,7 @@ async function uploadIcon(file, errorElement) {
         return true;
     }
     const result = await response?.json().catch(() => null);
-    errorElement.textContent = result?.error ?? "The picture could not be uploaded.";
+    errorElement.textContent = translateServerText(result?.error) ?? t("The picture could not be uploaded.");
     return false;
 }
 
@@ -470,16 +474,16 @@ function setUpCodeCopy(sessionId) {
     code.classList.add("copyable");
     code.setAttribute("role", "button");
     code.tabIndex = 0;
-    code.title = "Copy the game code";
+    code.title = t("Copy the game code");
     let timer = 0;
     const copy = async () => {
         try {
             await navigator.clipboard.writeText(sessionId);
-            label.textContent = "Copied!";
+            label.textContent = t("Copied!");
             clearTimeout(timer);
-            timer = setTimeout(() => { label.textContent = "Game code"; }, 2000);
+            timer = setTimeout(() => { label.textContent = t("Game code"); }, 2000);
         } catch {
-            showError("Could not copy the game code.");
+            showError(t("Could not copy the game code."));
         }
     };
     code.addEventListener("click", copy);
@@ -497,10 +501,10 @@ function setUpInviteButtons(joinUrl) {
         $("copy-link").addEventListener("click", async () => {
             try {
                 await navigator.clipboard.writeText(joinUrl);
-                $("copy-link").textContent = "Copied!";
-                setTimeout(() => { $("copy-link").textContent = "Copy link"; }, 2000);
+                $("copy-link").textContent = t("Copied!");
+                setTimeout(() => { $("copy-link").textContent = t("Copy link"); }, 2000);
             } catch {
-                showError("Could not copy. Select the link and copy it manually.");
+                showError(t("Could not copy. Select the link and copy it manually."));
             }
         });
     }
@@ -508,7 +512,7 @@ function setUpInviteButtons(joinUrl) {
     if (navigator.share) {
         $("share-link").hidden = false;
         $("share-link").addEventListener("click", () => {
-            navigator.share({ title: "Join my GamesLane game", url: joinUrl }).catch(() => {});
+            navigator.share({ title: t("Join my GamesLane game"), url: joinUrl }).catch(() => {});
         });
     }
 }
@@ -524,9 +528,9 @@ function listItem(...content) {
 function seatName(state, seat, view) {
     const info = state.seats[seat];
     if (!info) {
-        return "Empty seat";
+        return t("Empty seat");
     }
-    return info.name + (view.isMe(seat) ? " (you)" : "") + (info.isConnected ? "" : " (disconnected)");
+    return info.name + (view.isMe(seat) ? ` ${t("(you)")}` : "") + (info.isConnected ? "" : ` ${t("(disconnected)")}`);
 }
 
 // A seat's icon and name, optionally after a prefix such as "X: ".
@@ -583,8 +587,8 @@ function startSessionPage(gameType, render) {
     // it; the empty seat is a button to sit there (the server gives the next available seat, which is this one).
     function seatItem(state, seat) {
         const info = state.seats[seat];
-        const action = view.isMe(seat) ? { text: "Leave seat", run: () => act("LeaveSeat", seat) }
-            : !info && account?.signedIn ? { text: "Sit here", run: () => act("TakeSeat") }
+        const action = view.isMe(seat) ? { text: t("Leave seat"), run: () => act("LeaveSeat", seat) }
+            : !info && account?.signedIn ? { text: t("Sit here"), run: () => act("TakeSeat") }
                 : null;
 
         const tile = document.createElement(action ? "button" : "div");
@@ -596,10 +600,10 @@ function startSessionPage(gameType, render) {
         const avatar = iconElement(info ? info.icon : "+", "seat-avatar");
         const name = document.createElement("span");
         name.className = "seat-name";
-        name.textContent = info ? info.name : "Empty seat";
+        name.textContent = info ? info.name : t("Empty seat");
         const note = document.createElement("span");
         note.className = "seat-note";
-        note.textContent = [`Seat ${seat + 1}`, view.isMe(seat) && "You", info && !info.isConnected && "Disconnected"]
+        note.textContent = [t("Seat {n}", { n: seat + 1 }), view.isMe(seat) && t("You"), info && !info.isConnected && t("Disconnected")]
             .filter(Boolean)
             .join(" · ");
         tile.append(avatar, name, note);
@@ -628,11 +632,12 @@ function startSessionPage(gameType, render) {
         return state.optionList
             .filter((option) => applies(option, state.options))
             .map((option) => {
+                const label = translateServerText(option.label);
                 if (option.kind === "Set") {
                     const on = option.choices.length - turnedOff(state.options[option.key]).length;
-                    return `${option.label}: ${on === option.choices.length ? "all" : `${on} of ${option.choices.length}`}`;
+                    return `${label}: ${on === option.choices.length ? t("all") : t("{on} of {total}", { on, total: option.choices.length })}`;
                 }
-                return `${option.label}: ${option.choices.find((c) => c.value === state.options[option.key])?.label ?? ""}`;
+                return `${label}: ${translateServerText(option.choices.find((c) => c.value === state.options[option.key])?.label) ?? ""}`;
             })
             .join(" · ");
     }
@@ -644,15 +649,15 @@ function startSessionPage(gameType, render) {
         const canSave = account?.signedIn && account.kind !== "Guest";
         const dialog = createDialog(`
             <form>
-                <h2>Game options</h2>
+                <h2>${t("Game options")}</h2>
                 <div class="option-list"></div>
                 <div class="actions option-prefs" ${canSave ? "" : "hidden"}>
-                    <button type="button" class="secondary small" data-save>Save as my preferences</button>
-                    <button type="button" class="secondary small" data-load>Load my preferences</button>
+                    <button type="button" class="secondary small" data-save>${t("Save as my preferences")}</button>
+                    <button type="button" class="secondary small" data-load>${t("Load my preferences")}</button>
                 </div>
                 <p class="hint" data-note role="status"></p>
                 <p class="error" role="alert"></p>
-                <div class="actions"><button type="submit">Apply</button><button type="button" class="secondary" data-close>Cancel</button></div>
+                <div class="actions"><button type="submit">${t("Apply")}</button><button type="button" class="secondary" data-close>${t("Cancel")}</button></div>
             </form>`);
         const form = dialog.querySelector("form");
         const note = form.querySelector("[data-note]");
@@ -666,7 +671,7 @@ function startSessionPage(gameType, render) {
             fieldset.dataset.key = option.key;
             fieldset.classList.toggle("inline", option.choices.every((c) => !c.hint));
             const legend = document.createElement("legend");
-            legend.textContent = option.label;
+            legend.textContent = translateServerText(option.label);
             fieldset.append(legend, ...option.choices.map((choice) => {
                 const label = document.createElement("label");
                 label.className = "option-choice";
@@ -676,9 +681,9 @@ function startSessionPage(gameType, render) {
                 input.value = choice.value;
                 const text = document.createElement("span");
                 text.className = "option-text";
-                text.append(Object.assign(document.createElement("strong"), { textContent: choice.label }));
+                text.append(Object.assign(document.createElement("strong"), { textContent: translateServerText(choice.label) }));
                 if (choice.hint) {
-                    text.append(Object.assign(document.createElement("small"), { textContent: choice.hint }));
+                    text.append(Object.assign(document.createElement("small"), { textContent: translateServerText(choice.hint) }));
                 }
                 if (choice.image) {
                     const picture = document.createElement("span");
@@ -716,34 +721,35 @@ function startSessionPage(gameType, render) {
         };
         form.addEventListener("change", showApplicable);
         const url = `/api/options/${state.gameType}`;
-        const unreachable = "Could not reach the server. Check your connection and try again.";
+        const unreachable = t("Could not reach the server. Check your connection and try again.");
         fill(state.options);
 
-        form.querySelector("[data-save]").addEventListener("click", (event) => withBusyButton(event.currentTarget, "Saving…", async () => {
+        form.querySelector("[data-save]").addEventListener("click", (event) => withBusyButton(event.currentTarget, t("Saving…"), async () => {
             note.textContent = error.textContent = "";
             const response = await authFetch(url, {
                 method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(chosen()),
             }).catch(() => null);
             if (response?.ok) {
-                note.textContent = "Saved. New games you start will use these options.";
+                note.textContent = t("Saved. New games you start will use these options.");
             } else {
-                error.textContent = (await response?.json().catch(() => null))?.error ?? (response ? "Something went wrong." : unreachable);
+                error.textContent = translateServerText((await response?.json().catch(() => null))?.error)
+                    ?? (response ? t("Something went wrong.") : unreachable);
             }
         }));
-        form.querySelector("[data-load]").addEventListener("click", (event) => withBusyButton(event.currentTarget, "Loading…", async () => {
+        form.querySelector("[data-load]").addEventListener("click", (event) => withBusyButton(event.currentTarget, t("Loading…"), async () => {
             note.textContent = error.textContent = "";
             const response = await authFetch(url).catch(() => null);
             if (!response?.ok) {
-                error.textContent = response ? "Something went wrong." : unreachable;
+                error.textContent = response ? t("Something went wrong.") : unreachable;
                 return;
             }
             const result = await response.json();
             fill(result.options);
-            note.textContent = result.saved ? "Your preferences are loaded. Press Apply to use them." : "You have no saved preferences yet.";
+            note.textContent = t(result.saved ? "Your preferences are loaded. Press Apply to use them." : "You have no saved preferences yet.");
         }));
         form.addEventListener("submit", (event) => {
             event.preventDefault();
-            withBusyButton(form.querySelector('[type="submit"]'), "Applying…", async () => {
+            withBusyButton(form.querySelector('[type="submit"]'), t("Applying…"), async () => {
                 error.textContent = "";
                 try {
                     await connection.invoke("SetOptions", sessionId, chosen());
@@ -760,14 +766,14 @@ function startSessionPage(gameType, render) {
     function lobbyStatus(state, taken) {
         if (state.canResume) {
             const toFill = state.vacantGameSeats.length;
-            return toFill
-                ? `Game paused: ${toFill === 1 ? "1 seat" : `${toFill} seats`} to fill to resume it, or end it to change players.`
-                : "Game paused. Resume it, or end it to change players.";
+            return toFill === 0 ? t("Game paused. Resume it, or end it to change players.")
+                : toFill === 1 ? t("Game paused: 1 seat to fill to resume it, or end it to change players.")
+                    : t("Game paused: {n} seats to fill to resume it, or end it to change players.", { n: toFill });
         }
         if (taken < state.minSeats) {
-            return `Waiting for players (${taken}/${state.minSeats} needed)…`;
+            return t("Waiting for players ({taken}/{needed} needed)…", { taken, needed: state.minSeats });
         }
-        return "Ready to start.";
+        return t("Ready to start.");
     }
 
     function update(state) {
@@ -792,7 +798,7 @@ function startSessionPage(gameType, render) {
             $("resume-game").hidden = !(view.isPlayer && state.canResume && state.vacantGameSeats.length === 0);
             $("end-game").hidden = !(view.isPlayer && state.canResume);
             $("start-game").hidden = !(view.isPlayer && !state.canResume && taken >= state.minSeats);
-            $("start-game").textContent = state.gameNumber > 0 ? "New game" : "Start";
+            $("start-game").textContent = t(state.gameNumber > 0 ? "New game" : "Start");
             return;
         }
 
@@ -803,7 +809,7 @@ function startSessionPage(gameType, render) {
 
     async function enter() {
         let entry;
-        showBusy("Opening the game…");
+        showBusy(t("Opening the game…"));
         try {
             entry = await call("EnterSession", sessionId);
         } catch {
@@ -842,7 +848,7 @@ function startSessionPage(gameType, render) {
     });
 
     $("end-game").addEventListener("click", () => {
-        if (confirm("End the paused game? Its progress is lost, and other players can then join for a new game.")) {
+        if (confirm(t("End the paused game? Its progress is lost, and other players can then join for a new game."))) {
             act("EndGame");
         }
     });
@@ -866,7 +872,7 @@ function startSessionPage(gameType, render) {
 
     setUpInviteButtons(joinUrl);
     setUpCodeCopy(sessionId);
-    showBusy("Opening the game…");
+    showBusy(t("Opening the game…"));
     ready.then((ok) => (ok ? enter() : hideBusy()));
     return view;
 }
