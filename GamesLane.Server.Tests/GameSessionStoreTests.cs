@@ -34,6 +34,8 @@ public class GameSessionStoreTests
         Assert.IsType<RockPaperScissorsSession>(store.Create(GameType.RockPaperScissors));
         Assert.IsType<BackgammonSession>(store.Create(GameType.Backgammon));
         Assert.Equal("/backgammon.html", GameSessionStore.PageFor(GameType.Backgammon));
+        Assert.IsType<RichManPoorManSession>(store.Create(GameType.RichManPoorMan));
+        Assert.Equal("/rich-man-poor-man.html", GameSessionStore.PageFor(GameType.RichManPoorMan));
     }
 
     [Fact]

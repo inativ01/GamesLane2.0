@@ -12,6 +12,7 @@ public enum GameType
     RockPaperScissors,
     TheGang,
     Backgammon,
+    RichManPoorMan,
 }
 
 /// <summary>

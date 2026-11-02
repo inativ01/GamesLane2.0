@@ -74,7 +74,8 @@ public interface IGameHub
 
     /// <summary>
     /// Rock-paper-scissors and tic-tac-toe: starts the round after <paramref name="round"/>; backgammon: the game of the
-    /// match after game <paramref name="round"/>. If it has already started, nothing changes.
+    /// match after game <paramref name="round"/>; rich man, poor man: the game after game <paramref name="round"/>.
+    /// If it has already started, nothing changes.
     /// </summary>
     Task NextRound(string sessionId, int round);
 
@@ -113,6 +114,23 @@ public interface IGameHub
     /// Backgammon: <paramref name="seat"/> drops the double and loses the game at the cube's value.
     /// </summary>
     Task DropDouble(string sessionId, int seat);
+
+    /// <summary>
+    /// Rich man, poor man: <paramref name="seat"/>, which the caller must hold, throws <paramref name="count"/> cards of
+    /// number <paramref name="rank"/> (2 to 14, the Ace).
+    /// </summary>
+    Task ThrowCards(string sessionId, int seat, int rank, int count);
+
+    /// <summary>
+    /// Rich man, poor man: <paramref name="seat"/>, which the caller must hold, passes its turn.
+    /// </summary>
+    Task Pass(string sessionId, int seat);
+
+    /// <summary>
+    /// Rich man, poor man, between games: <paramref name="seat"/>, which the caller must hold, gives
+    /// <paramref name="cards"/> (numbers) to its exchange partner. The poorer player of a pair must give its highest cards.
+    /// </summary>
+    Task GiveCards(string sessionId, int seat, int[]? cards);
 
     /// <summary>
     /// The Gang: <paramref name="seat"/> takes a chip of the current stage, from the middle or from another player.

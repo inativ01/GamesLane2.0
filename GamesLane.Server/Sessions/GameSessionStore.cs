@@ -26,6 +26,7 @@ public class GameSessionStore : IGameSessionStore
                 GameType.RockPaperScissors => new RockPaperScissorsSession(id),
                 GameType.TheGang => new TheGangSession(id),
                 GameType.Backgammon => new BackgammonSession(id),
+                GameType.RichManPoorMan => new RichManPoorManSession(id),
                 _ => throw new ArgumentOutOfRangeException(nameof(type), type, "Unknown game type."),
             };
 
@@ -55,6 +56,7 @@ public class GameSessionStore : IGameSessionStore
         GameType.RockPaperScissors => "/rock-paper-scissors.html",
         GameType.TheGang => "/the-gang.html",
         GameType.Backgammon => "/backgammon.html",
+        GameType.RichManPoorMan => "/rich-man-poor-man.html",
         _ => throw new ArgumentOutOfRangeException(nameof(type), type, "Unknown game type."),
     };
 }

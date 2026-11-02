@@ -229,6 +229,18 @@ public class GameHub(
         Act(sessionId, (IBackgammonSession s, out string? error) => s.TryDrop(UserKey, seat, out error));
 
     /// <inheritdoc />
+    public Task ThrowCards(string sessionId, int seat, int rank, int count) =>
+        Act(sessionId, (IRichManPoorManSession s, out string? error) => s.TryThrow(UserKey, seat, rank, count, out error));
+
+    /// <inheritdoc />
+    public Task Pass(string sessionId, int seat) =>
+        Act(sessionId, (IRichManPoorManSession s, out string? error) => s.TryPass(UserKey, seat, out error));
+
+    /// <inheritdoc />
+    public Task GiveCards(string sessionId, int seat, int[]? cards) =>
+        Act(sessionId, (IRichManPoorManSession s, out string? error) => s.TryGive(UserKey, seat, cards, out error));
+
+    /// <inheritdoc />
     public Task RevealNext(string sessionId, int revealed) =>
         Act(sessionId, (ITheGangSession s, out string? error) => s.TryRevealNext(UserKey, revealed, out error));
 
