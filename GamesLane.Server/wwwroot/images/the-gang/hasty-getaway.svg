@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Hasty Getaway">
+  <!-- A car speeding away -->
+  <path d="M4 22 H16 M2 30 H13 M6 38 H16" stroke="#2b2420" stroke-width="3" stroke-linecap="round"/>
+  <path d="M20 42 V33 L28 25 H46 L54 33 H60 V42 Z" fill="#c0392b" stroke="#2b2420" stroke-width="2.5" stroke-linejoin="round"/>
+  <path d="M30 28 H38 V33 H26 Z M41 28 H45 L50 33 H41 Z" fill="#cfe6f5" stroke="#2b2420" stroke-width="1.5" stroke-linejoin="round"/>
+  <circle cx="29" cy="44" r="5" fill="#2b2420"/>
+  <circle cx="29" cy="44" r="2" fill="#bbb"/>
+  <circle cx="51" cy="44" r="5" fill="#2b2420"/>
+  <circle cx="51" cy="44" r="2" fill="#bbb"/>
+  <path d="M12 54 H60" stroke="#2b2420" stroke-width="2" stroke-dasharray="6 4"/>
+</svg>

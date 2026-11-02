@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Investor">
+  <!-- A bag of money -->
+  <path d="M24 14 L19 5 H45 L40 14 Z" fill="#c9a25b" stroke="#2b2420" stroke-width="2" stroke-linejoin="round"/>
+  <path d="M24 14 C10 24 8 40 12 50 C15 57 22 59 32 59 C42 59 49 57 52 50 C56 40 54 24 40 14 Z" fill="#d9b46a" stroke="#2b2420" stroke-width="2.5" stroke-linejoin="round"/>
+  <path d="M22 15 H42" stroke="#2b2420" stroke-width="3" stroke-linecap="round"/>
+  <text x="32" y="48" font-family="Arial, sans-serif" font-size="24" font-weight="700" text-anchor="middle" fill="#2f7d45">$</text>
+</svg>

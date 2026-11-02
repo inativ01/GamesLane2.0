@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Laser Tripwires">
+  <!-- A dark corridor criss-crossed by laser beams -->
+  <rect x="4" y="8" width="56" height="48" rx="4" fill="#24303a"/>
+  <path d="M6 16 L58 44 M6 44 L58 20 M6 30 L58 30" stroke="#ff8a80" stroke-width="6" opacity="0.35"/>
+  <path d="M6 16 L58 44 M6 44 L58 20 M6 30 L58 30" stroke="#ff3b30" stroke-width="2.5"/>
+  <rect x="2" y="12" width="6" height="36" rx="1.5" fill="#9aa5ad" stroke="#2b2420" stroke-width="1.5"/>
+  <rect x="56" y="12" width="6" height="36" rx="1.5" fill="#9aa5ad" stroke="#2b2420" stroke-width="1.5"/>
+</svg>

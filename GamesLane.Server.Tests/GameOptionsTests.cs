@@ -26,6 +26,18 @@ public class GameOptionsTests
     }
 
     [Theory]
+    [InlineData(TheGangOptions.Challenges)]
+    [InlineData(TheGangOptions.Specialists)]
+    public void Every_card_choice_has_the_cards_picture(string key)
+    {
+        var option = GameOptions.For(GameType.TheGang).Single(o => o.Key == key);
+
+        Assert.All(option.Choices, c => Assert.Equal($"/images/the-gang/{c.Value}.svg", c.Image));
+        Assert.All(GameOptions.For(GameType.TheGang).Where(o => o.Kind == GameOptionKind.Choice).SelectMany(o => o.Choices),
+            c => Assert.Null(c.Image));
+    }
+
+    [Theory]
     [InlineData("blackout,noise-sensors", true)]
     [InlineData("", true)]
     [InlineData("investor", false)]

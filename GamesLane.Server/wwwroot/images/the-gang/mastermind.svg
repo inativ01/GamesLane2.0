@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Mastermind">
+  <!-- A chess king, with a spark of a bright idea -->
+  <g stroke="#e0a526" stroke-width="2.5" stroke-linecap="round">
+    <path d="M50 6 V10 M58 14 H54 M56 8 L53 11"/>
+  </g>
+  <circle cx="50" cy="15" r="3" fill="#e0a526"/>
+  <path d="M30 4 V14 M25 9 H35" stroke="#2b2420" stroke-width="3" stroke-linecap="round"/>
+  <path d="M20 23 C20 15 40 15 40 23 C40 29 35 31 35 35 H25 C25 31 20 29 20 23 Z" fill="#2b2420"/>
+  <path d="M24 35 H36 L39 49 H21 Z" fill="#2b2420"/>
+  <rect x="15" y="49" width="30" height="8" rx="2" fill="#2b2420"/>
+  <path d="M25 23 C25 20 28 19 30 19" fill="none" stroke="#6b7680" stroke-width="2" stroke-linecap="round"/>
+</svg>

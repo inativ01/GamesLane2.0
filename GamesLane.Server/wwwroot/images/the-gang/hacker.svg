@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Hacker">
+  <!-- A laptop full of code -->
+  <rect x="11" y="10" width="42" height="30" rx="2.5" fill="#1d2a24" stroke="#2b2420" stroke-width="2.5"/>
+  <path d="M16 17 H26 M16 22 H34 M16 27 H24 M27 27 H40 M16 32 H30" stroke="#4cd17a" stroke-width="2" stroke-linecap="round"/>
+  <path d="M43 32 H48" stroke="#4cd17a" stroke-width="2.5" stroke-linecap="round"/>
+  <path d="M5 44 H59 L54 51 H10 Z" fill="#9aa5ad" stroke="#2b2420" stroke-width="2.5" stroke-linejoin="round"/>
+  <path d="M27 47.5 H37" stroke="#2b2420" stroke-width="1.5" stroke-linecap="round"/>
+</svg>

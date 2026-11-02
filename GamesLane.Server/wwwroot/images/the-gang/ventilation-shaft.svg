@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Ventilation Shaft">
+  <!-- A vent cover with a fan behind it -->
+  <rect x="7" y="7" width="50" height="50" rx="4" fill="#9aa5ad" stroke="#2b2420" stroke-width="3"/>
+  <circle cx="32" cy="32" r="18" fill="#5b6770" stroke="#2b2420" stroke-width="2"/>
+  <g fill="#cfd6db" stroke="#2b2420" stroke-width="1.5" stroke-linejoin="round">
+    <path id="blade" d="M32 32 C29 23 34 16 40 17 C41 24 37 29 32 32 Z"/>
+    <use href="#blade" transform="rotate(90 32 32)"/>
+    <use href="#blade" transform="rotate(180 32 32)"/>
+    <use href="#blade" transform="rotate(270 32 32)"/>
+  </g>
+  <circle cx="32" cy="32" r="3.5" fill="#2b2420"/>
+  <g fill="#2b2420">
+    <circle cx="12" cy="12" r="1.8"/>
+    <circle cx="52" cy="12" r="1.8"/>
+    <circle cx="12" cy="52" r="1.8"/>
+    <circle cx="52" cy="52" r="1.8"/>
+  </g>
+</svg>

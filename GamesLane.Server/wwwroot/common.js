@@ -656,6 +656,7 @@ function startSessionPage(gameType, render) {
         const error = form.querySelector(".error");
 
         // One group per option: radio buttons for a choice, tick boxes for a set. Choices without hints sit in one row.
+        // A choice with a picture (e.g. a card) shows it before the text; its box is hidden behind the picture.
         form.querySelector(".option-list").replaceChildren(...state.optionList.map((option) => {
             const fieldset = document.createElement("fieldset");
             fieldset.className = "option";
@@ -676,7 +677,15 @@ function startSessionPage(gameType, render) {
                 if (choice.hint) {
                     text.append(Object.assign(document.createElement("small"), { textContent: choice.hint }));
                 }
-                label.append(input, text);
+                if (choice.image) {
+                    const picture = document.createElement("span");
+                    picture.className = "option-picture";
+                    picture.append(Object.assign(document.createElement("img"), { className: "option-image", src: choice.image, alt: "" }), input);
+                    label.append(picture);
+                } else {
+                    label.append(input);
+                }
+                label.append(text);
                 return label;
             }));
             return fieldset;

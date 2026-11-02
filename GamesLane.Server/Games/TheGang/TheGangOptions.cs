@@ -98,8 +98,11 @@ public static class TheGangOptions
             ShownWhen: WhenAdvanced),
     ];
 
+    /// <summary>
+    /// One choice per card, with its name, what it does, and its picture (<c>/images/the-gang/{key}.svg</c>).
+    /// </summary>
     private static GameOptionChoice[] CardChoices(IEnumerable<TheGangCard> cards) =>
-        [.. cards.Select(c => new GameOptionChoice(c.Key, c.Name, c.Text))];
+        [.. cards.Select(c => new GameOptionChoice(c.Key, c.Name, c.Text, $"/images/the-gang/{c.Key}.svg"))];
 
     /// <summary>
     /// The mode in <paramref name="options"/>, Basic if it is missing or unknown.

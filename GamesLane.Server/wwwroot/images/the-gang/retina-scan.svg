@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Retina Scan">
+  <!-- An eye in a scanner's frame, crossed by the scanning line -->
+  <path d="M6 32 Q32 8 58 32 Q32 56 6 32 Z" fill="#fff" stroke="#2b2420" stroke-width="3" stroke-linejoin="round"/>
+  <circle cx="32" cy="32" r="10" fill="#3a6ea5"/>
+  <circle cx="32" cy="32" r="4.5" fill="#2b2420"/>
+  <circle cx="35" cy="29" r="1.8" fill="#fff"/>
+  <path d="M4 11 V4 H11 M53 4 H60 V11 M60 53 V60 H53 M11 60 H4 V53" fill="none" stroke="#2f7d45" stroke-width="3" stroke-linecap="round"/>
+  <path d="M8 32 H56" stroke="#c0392b" stroke-width="2"/>
+</svg>

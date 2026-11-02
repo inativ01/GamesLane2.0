@@ -183,17 +183,22 @@ function gangStatus(game, state, view) {
     }
 }
 
-// The challenge and specialist cards in play, drawn as small cards on the table: kind and name. Tapping a card shows
-// what it does. Cards added for this heist are marked "New", and cards not used (yet) in this heist are faded. What the
-// cards did is shown in the chip table (see chipTable), and open group decisions are shown to players next to their
-// hand (see myDecisions).
+// The challenge and specialist cards in play, drawn as small cards on the table: a picture, the kind and the name.
+// Tapping a card shows what it does. Cards added for this heist are marked "New", and cards not used (yet) in this heist
+// are faded. What the cards did is shown in the chip table (see chipTable), and open group decisions are shown to
+// players next to their hand (see myDecisions).
 function heistCards(game) {
     return game.cards.map((card) => {
         const isNew = game.newCards.includes(card.key);
         const kind = el("span", "heist-card-kind", card.kind === "Challenge" ? "Challenge" : "Specialist");
+        const art = el("img", "heist-card-art");
+        art.src = `/images/the-gang/${card.key}.svg`;
+        art.alt = "";
         const item = el("li", `heist-card ${card.kind.toLowerCase()}${isNew ? " new" : ""}`,
-            isNew ? el("span", "heist-card-top", kind, el("span", "heist-card-new", "New")) : kind,
-            el("strong", "heist-card-name", card.name));
+            art,
+            el("span", "heist-card-body",
+                isNew ? el("span", "heist-card-top", kind, el("span", "heist-card-new", "New")) : kind,
+                el("strong", "heist-card-name", card.name)));
         const unused = isUnused(game, card);
         item.classList.toggle("unused", unused);
         item.tabIndex = 0;
@@ -210,14 +215,16 @@ function heistCards(game) {
     });
 }
 
-// A popup with a challenge or specialist card's kind, name and what it does.
+// A popup with a challenge or specialist card's picture, kind, name and what it does.
 function showCardText(card) {
     const dialog = createDialog(`
+        <img class="heist-card-art" alt="">
         <span class="heist-card-kind"></span>
         <h2></h2>
         <p class="card-popup-text"></p>
         <div class="actions"><button type="button" data-close>Close</button></div>`);
     dialog.classList.add("card-popup", card.kind.toLowerCase());
+    dialog.querySelector(".heist-card-art").src = `/images/the-gang/${card.key}.svg`;
     dialog.querySelector(".heist-card-kind").textContent = card.kind;
     dialog.querySelector("h2").textContent = card.name;
     dialog.querySelector(".card-popup-text").textContent = card.text;

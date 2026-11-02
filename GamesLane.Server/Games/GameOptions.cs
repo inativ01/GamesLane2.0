@@ -5,9 +5,10 @@ using GamesLane.Server.Sessions;
 namespace GamesLane.Server.Games;
 
 /// <summary>
-/// One of the values a game option can take, e.g. "Advanced". <see cref="Hint"/> is an optional short explanation.
+/// One of the values a game option can take, e.g. "Advanced". <see cref="Hint"/> is an optional short explanation, and
+/// <see cref="Image"/> the address of an optional picture (e.g. a card's).
 /// </summary>
-public record GameOptionChoice(string Value, string Label, string? Hint = null);
+public record GameOptionChoice(string Value, string Label, string? Hint = null, string? Image = null);
 
 /// <summary>
 /// How a game option is chosen.

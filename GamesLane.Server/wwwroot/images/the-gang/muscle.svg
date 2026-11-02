@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Muscle">
+  <!-- A heavy dumbbell -->
+  <rect x="15" y="29" width="34" height="6" rx="2" fill="#9aa5ad" stroke="#2b2420" stroke-width="1.5"/>
+  <rect x="8" y="16" width="9" height="32" rx="2.5" fill="#2b2420"/>
+  <rect x="2" y="22" width="7" height="20" rx="2" fill="#2b2420"/>
+  <rect x="47" y="16" width="9" height="32" rx="2.5" fill="#2b2420"/>
+  <rect x="55" y="22" width="7" height="20" rx="2" fill="#2b2420"/>
+  <path d="M11 20 V30" stroke="#6b7680" stroke-width="2" stroke-linecap="round"/>
+  <path d="M50 20 V30" stroke="#6b7680" stroke-width="2" stroke-linecap="round"/>
+</svg>

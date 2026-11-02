@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Blackout">
+  <!-- A light bulb gone dark, struck through -->
+  <path d="M32 6 A16 16 0 0 0 23 35 C25 37 26 39 26 42 H38 C38 39 39 37 41 35 A16 16 0 0 0 32 6 Z" fill="#3d4650" stroke="#2b2420" stroke-width="2.5" stroke-linejoin="round"/>
+  <path d="M28 30 L32 22 L36 30" fill="none" stroke="#6b7680" stroke-width="2" stroke-linejoin="round"/>
+  <rect x="25" y="44" width="14" height="5" rx="1.5" fill="#9aa5ad" stroke="#2b2420" stroke-width="1.5"/>
+  <rect x="26" y="50" width="12" height="5" rx="1.5" fill="#9aa5ad" stroke="#2b2420" stroke-width="1.5"/>
+  <path d="M8 56 L56 8" stroke="#c0392b" stroke-width="4.5" stroke-linecap="round"/>
+</svg>
