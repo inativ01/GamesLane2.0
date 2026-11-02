@@ -5,6 +5,9 @@ namespace GamesLane.Server.Games.Backgammon;
 /// </summary>
 public enum BackgammonPhase
 {
+    /// <summary>Each player rolls one die; the higher die moves first (both roll again on a tie).</summary>
+    Opening,
+
     /// <summary>The player to move rolls the dice, or first offers to double.</summary>
     Rolling,
 

@@ -11,6 +11,7 @@ public class BackgammonGame : IBackgammonGame
     private readonly Func<int> _rollDie;
     private readonly int[] _scores = new int[2];
     private readonly List<BackgammonStep> _played = [];
+    private readonly int?[] _openingDice = new int?[2];
     private BackgammonPosition _turnStart;
     private IReadOnlySet<string> _finals = new HashSet<string>();
     private int _diceToUse;
@@ -18,7 +19,7 @@ public class BackgammonGame : IBackgammonGame
     private bool _crawfordNext;
 
     /// <summary>
-    /// Starts the match with the first game's opening roll.
+    /// Starts the match; the first game waits for the opening roll.
     /// </summary>
     public BackgammonGame(BackgammonRules? rules = null, Func<int>? rollDie = null, BackgammonPosition? start = null)
     {
@@ -57,6 +58,12 @@ public class BackgammonGame : IBackgammonGame
     public IReadOnlyList<int>? OpeningRoll { get; private set; }
 
     /// <inheritdoc />
+    public IReadOnlyList<int?> OpeningDice => _openingDice;
+
+    /// <inheritdoc />
+    public int Rolls { get; private set; }
+
+    /// <inheritdoc />
     public IReadOnlyList<BackgammonStep> Played => _played;
 
     /// <inheritdoc />
@@ -90,12 +97,50 @@ public class BackgammonGame : IBackgammonGame
     /// <inheritdoc />
     public bool TryRoll(int player, out string? error)
     {
+        if (Phase == BackgammonPhase.Opening)
+        {
+            return TryRollOpening(player, out error);
+        }
+
         if (!TryCheckTurn(player, BackgammonPhase.Rolling, out error))
         {
             return false;
         }
 
+        Rolls++;
         StartTurn([_rollDie(), _rollDie()]);
+        return true;
+    }
+
+    /// <summary>
+    /// The opening roll: each player rolls one die. On a tie, both dice stay on view until a player rolls again; then
+    /// both roll again. Otherwise the higher die moves first, with both dice.
+    /// </summary>
+    private bool TryRollOpening(int player, out string? error)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegative(player);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(player, 1);
+        if (_openingDice is [{ } tiedWhite, { } tiedBlack] && tiedWhite == tiedBlack)
+        {
+            Array.Clear(_openingDice);
+        }
+
+        if (_openingDice[player] is not null)
+        {
+            error = "You have rolled your die. Waiting for the other player.";
+            return false;
+        }
+
+        error = null;
+        Rolls++;
+        _openingDice[player] = _rollDie();
+        if (_openingDice is [{ } white, { } black] && white != black)
+        {
+            Turn = white > black ? 0 : 1;
+            OpeningRoll = [white, black];
+            StartTurn([white, black]);
+        }
+
         return true;
     }
 
@@ -237,8 +282,7 @@ public class BackgammonGame : IBackgammonGame
     }
 
     /// <summary>
-    /// Starts a game: the cube in the middle, then the opening roll (one die each, again on a tie). The player with the
-    /// higher die moves first, with both dice.
+    /// Starts a game: the cube in the middle, and both players to roll their opening die.
     /// </summary>
     private void StartGame(BackgammonPosition start)
     {
@@ -249,16 +293,13 @@ public class BackgammonGame : IBackgammonGame
         LastTurn = null;
         IsCrawford = _crawfordNext;
         _crawfordNext = false;
-        int white, black;
-        do
-        {
-            (white, black) = (_rollDie(), _rollDie());
-        }
-        while (white == black);
-
-        Turn = white > black ? 0 : 1;
-        OpeningRoll = [white, black];
-        StartTurn([white, black]);
+        Phase = BackgammonPhase.Opening;
+        Turn = 0;
+        Dice = [];
+        DiceLeft = [];
+        LegalMoves = [];
+        OpeningRoll = null;
+        Array.Clear(_openingDice);
     }
 
     /// <summary>
@@ -349,6 +390,7 @@ public class BackgammonGame : IBackgammonGame
         ArgumentOutOfRangeException.ThrowIfNegative(player);
         ArgumentOutOfRangeException.ThrowIfGreaterThan(player, 1);
         error = Phase is BackgammonPhase.GameOver or BackgammonPhase.MatchOver ? "The game is over."
+            : Phase == BackgammonPhase.Opening ? "First roll your die to see who starts."
             : Phase == BackgammonPhase.Doubled ? "Waiting for the answer to the double."
             : player != Turn ? "It is not your turn."
             : Phase == phase ? null

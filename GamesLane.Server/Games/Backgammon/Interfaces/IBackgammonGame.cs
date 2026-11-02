@@ -2,8 +2,9 @@ namespace GamesLane.Server.Games.Backgammon;
 
 /// <summary>
 /// A backgammon match between player 0 (white) and player 1 (black), to <see cref="BackgammonRules.MatchLength"/>
-/// points. Each game starts with an opening roll (one die each, again on a tie); the higher die moves first with both
-/// dice. A turn: roll (or first offer to double), move checkers by the dice as the rules require, then end the turn.
+/// points. Each game starts with the opening roll: each player rolls one die (both again on a tie), and the higher die
+/// moves first with both dice. A turn: roll (or first offer to double), move checkers by the dice as the rules require,
+/// then end the turn.
 /// Points are each player's own numbering (see <see cref="BackgammonPosition"/>).
 /// </summary>
 public interface IBackgammonGame
@@ -52,6 +53,17 @@ public interface IBackgammonGame
     /// The opening roll of the current game (white's die, black's die) while its first turn is played, or null.
     /// </summary>
     IReadOnlyList<int>? OpeningRoll { get; }
+
+    /// <summary>
+    /// Each player's opening die (white's, black's) in the current game, null until rolled. After a tie both stay on
+    /// view until a player rolls again.
+    /// </summary>
+    IReadOnlyList<int?> OpeningDice { get; }
+
+    /// <summary>
+    /// How many times dice have been rolled in the match (an opening die counts as a roll), so pages can tell a new roll.
+    /// </summary>
+    int Rolls { get; }
 
     /// <summary>
     /// The checkers moved so far in the current turn.
@@ -106,7 +118,8 @@ public interface IBackgammonGame
 
     /// <summary>
     /// Rolls the dice for <paramref name="player"/>, whose turn it is. If no checker can move, the turn passes; if there
-    /// is only one way to play the dice, it is played and the turn ends.
+    /// is only one way to play the dice, it is played and the turn ends. During the opening roll, rolls the player's one
+    /// die.
     /// </summary>
     bool TryRoll(int player, out string? error);
 

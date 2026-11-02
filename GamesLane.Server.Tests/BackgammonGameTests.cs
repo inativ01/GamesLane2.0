@@ -24,20 +24,33 @@ public class BackgammonGameTests
     }
 
     [Fact]
-    public void The_opening_roll_is_rolled_again_on_a_tie_and_the_higher_die_moves_first_with_both()
+    public void Each_player_rolls_one_die_to_start_again_on_a_tie_and_the_higher_die_moves_first_with_both()
     {
-        var game = new BackgammonGame(rollDie: Dice(4, 4, 2, 5));
+        var game = new BackgammonGame(rollDie: Dice(4, 4, 5, 2));
+        Assert.Equal(BackgammonPhase.Opening, game.Phase);
+        Assert.False(game.TryMove(White, 13, 9, out var error));
+        Assert.Equal("First roll your die to see who starts.", error);
 
-        Assert.Equal(Black, game.Turn);
-        Assert.Equal(BackgammonPhase.Moving, game.Phase);
+        Assert.True(game.TryRoll(White, out error), error);
+        Assert.False(game.TryRoll(White, out error));
+        Assert.Equal("You have rolled your die. Waiting for the other player.", error);
+        Assert.True(game.TryRoll(Black, out error), error);
+        Assert.Equal((BackgammonPhase.Opening, 4, 4), (game.Phase, game.OpeningDice[0], game.OpeningDice[1]));
+
+        Assert.True(game.TryRoll(Black, out error), error);
+        Assert.Equal([null, 5], game.OpeningDice);
+        Assert.True(game.TryRoll(White, out error), error);
+
+        Assert.Equal((Black, BackgammonPhase.Moving), (game.Turn, game.Phase));
         Assert.Equal([2, 5], game.Dice);
         Assert.Equal([2, 5], game.OpeningRoll);
+        Assert.Equal(4, game.Rolls);
     }
 
     [Fact]
     public void Checkers_cannot_land_on_a_point_with_two_opponent_checkers()
     {
-        var game = new BackgammonGame(rollDie: Dice(5, 2));
+        var game = Opened(rollDie: Dice(5, 2));
 
         Assert.Contains(game.LegalMoves, m => (m.From, m.To) == (13, 8));
         Assert.Contains(game.LegalMoves, m => (m.From, m.To) == (24, 22));
@@ -49,7 +62,7 @@ public class BackgammonGameTests
     [Fact]
     public void A_turn_ends_once_both_dice_are_used_and_the_other_player_rolls_next()
     {
-        var game = new BackgammonGame(rollDie: Dice(6, 1));
+        var game = Opened(rollDie: Dice(6, 1));
 
         Assert.True(game.TryMove(White, 13, 7, out var error), error);
         Assert.False(game.TryEndTurn(White, out _));
@@ -65,7 +78,7 @@ public class BackgammonGameTests
     [Fact]
     public void Moves_can_be_undone_before_the_turn_ends()
     {
-        var game = new BackgammonGame(rollDie: Dice(6, 1));
+        var game = Opened(rollDie: Dice(6, 1));
         game.TryMove(White, 13, 7, out _);
 
         Assert.True(game.TryUndo(White, out var error), error);
@@ -78,7 +91,7 @@ public class BackgammonGameTests
     [Fact]
     public void Only_the_player_to_move_can_act_and_only_in_the_right_order()
     {
-        var game = new BackgammonGame(rollDie: Dice(6, 1, 3, 3));
+        var game = Opened(rollDie: Dice(6, 1, 3, 3));
 
         Assert.False(game.TryMove(Black, 13, 7, out var error));
         Assert.Equal("It is not your turn.", error);
@@ -96,7 +109,7 @@ public class BackgammonGameTests
     [Fact]
     public void Doubles_are_played_four_times()
     {
-        var game = new BackgammonGame(rollDie: Dice(6, 1, 3, 3));
+        var game = Opened(rollDie: Dice(6, 1, 3, 3));
         PlayOpening(game);
 
         Assert.True(game.TryRoll(Black, out var error), error);
@@ -114,7 +127,7 @@ public class BackgammonGameTests
         var start = BackgammonPosition.Create(
             new Dictionary<int, int> { [10] = 2, [13] = 3 },
             new Dictionary<int, int> { [18] = 1, [6] = 5 });
-        var game = new BackgammonGame(rollDie: Dice(3, 1, 4, 2), start: start);
+        var game = Opened(rollDie: Dice(3, 1, 4, 2), start: start);
 
         Assert.True(game.TryMove(White, 10, 7, out var error), error);
         Assert.Equal(1, game.Position.Count(Black, Bar));
@@ -134,7 +147,7 @@ public class BackgammonGameTests
             new Dictionary<int, int> { [1] = 2, [2] = 2, [3] = 2, [4] = 2, [5] = 2, [6] = 2, [13] = 3 },
             new Dictionary<int, int> { [6] = 5 },
             blackBar: 1);
-        var game = new BackgammonGame(rollDie: Dice(1, 2), start: start);
+        var game = Opened(rollDie: Dice(1, 2), start: start);
 
         Assert.Equal((White, BackgammonPhase.Rolling), (game.Turn, game.Phase));
         Assert.Equal(Black, game.LastTurn!.Player);
@@ -179,7 +192,7 @@ public class BackgammonGameTests
             new Dictionary<int, int> { [10] = 1, [12] = 1 },
             new Dictionary<int, int> { [22] = 2, [21] = 2, [19] = 2 });
 
-        var game = new BackgammonGame(rollDie: Dice(6, 3), start: start);
+        var game = Opened(rollDie: Dice(6, 3), start: start);
 
         Assert.Equal((Black, BackgammonPhase.Rolling), (game.Turn, game.Phase));
         Assert.True(game.LastTurn!.Forced);
@@ -219,7 +232,7 @@ public class BackgammonGameTests
             black[20] = blackInWhitesHome;
         }
 
-        var game = new BackgammonGame(rollDie: Dice(2, 1), start: BackgammonPosition.Create(new Dictionary<int, int> { [1] = 1 }, black));
+        var game = Opened(rollDie: Dice(2, 1), start: BackgammonPosition.Create(new Dictionary<int, int> { [1] = 1 }, black));
 
         Assert.Equal(BackgammonPhase.GameOver, game.Phase);
         Assert.Equal(new BackgammonResult(White, points, kind), game.Result);
@@ -230,7 +243,7 @@ public class BackgammonGameTests
     public void Reaching_the_match_length_ends_the_match()
     {
         var start = BackgammonPosition.Create(new Dictionary<int, int> { [1] = 1 }, new Dictionary<int, int> { [6] = 14 });
-        var game = new BackgammonGame(new BackgammonRules(MatchLength: 1), Dice(2, 1), start);
+        var game = Opened(new BackgammonRules(MatchLength: 1), Dice(2, 1), start);
 
         Assert.True(game.IsMatchOver);
         Assert.False(game.TryNextGame(1, out var error));
@@ -238,15 +251,16 @@ public class BackgammonGameTests
     }
 
     [Fact]
-    public void The_next_game_starts_from_the_starting_position_once()
+    public void The_next_game_starts_once_from_the_starting_position_with_a_new_opening_roll()
     {
         var start = BackgammonPosition.Create(new Dictionary<int, int> { [1] = 1 }, new Dictionary<int, int> { [6] = 14 });
-        var game = new BackgammonGame(rollDie: Dice(2, 1, 6, 1), start: start);
+        var game = Opened(rollDie: Dice(2, 1), start: start);
 
         Assert.True(game.TryNextGame(1, out var error), error);
         Assert.True(game.TryNextGame(1, out _));
 
-        Assert.Equal(2, game.GameNumber);
+        Assert.Equal((2, BackgammonPhase.Opening), (game.GameNumber, game.Phase));
+        Assert.Equal([null, null], game.OpeningDice);
         Assert.Equal(BackgammonPosition.Start.Key, game.Position.Key);
         Assert.Equal([1, 0], game.Scores);
     }
@@ -256,7 +270,7 @@ public class BackgammonGameTests
     [Fact]
     public void A_taken_double_doubles_the_cube_and_gives_it_to_the_taker()
     {
-        var game = new BackgammonGame(rollDie: Dice(3, 1));
+        var game = Opened(rollDie: Dice(3, 1));
         PlayOpening(game);
 
         Assert.True(game.TryDouble(Black, out var error), error);
@@ -274,7 +288,7 @@ public class BackgammonGameTests
     [Fact]
     public void A_dropped_double_loses_the_game_at_the_cubes_value()
     {
-        var game = new BackgammonGame(rollDie: Dice(3, 1));
+        var game = Opened(rollDie: Dice(3, 1));
         PlayOpening(game);
 
         game.TryDouble(Black, out _);
@@ -288,7 +302,7 @@ public class BackgammonGameTests
     [Fact]
     public void Without_the_cube_nobody_can_double()
     {
-        var game = new BackgammonGame(new BackgammonRules(Cube: false), Dice(3, 1));
+        var game = Opened(new BackgammonRules(Cube: false), Dice(3, 1));
         PlayOpening(game);
 
         Assert.False(game.CanDouble);
@@ -299,7 +313,7 @@ public class BackgammonGameTests
     [Fact]
     public void Nobody_may_double_in_the_game_after_a_player_first_comes_within_one_point()
     {
-        var game = new BackgammonGame(new BackgammonRules(MatchLength: 3), Dice(3, 1, 3, 1, 3, 1));
+        var game = Opened(new BackgammonRules(MatchLength: 3), Dice(3, 1, 3, 1, 3, 1));
         for (var g = 1; g <= 2; g++)
         {
             Assert.False(game.IsCrawford);
@@ -307,6 +321,7 @@ public class BackgammonGameTests
             game.TryDouble(Black, out _);
             game.TryDrop(White, out _);
             game.TryNextGame(g, out _);
+            Open(game);
         }
 
         Assert.Equal([0, 2], game.Scores);
@@ -327,7 +342,11 @@ public class BackgammonGameTests
             {
                 Assert.True(actions < 5000, $"Game {seed} did not end.");
                 var player = game.Turn;
-                if (game.Phase == BackgammonPhase.Rolling)
+                if (game.Phase == BackgammonPhase.Opening)
+                {
+                    Open(game);
+                }
+                else if (game.Phase == BackgammonPhase.Rolling)
                 {
                     Assert.True(game.TryRoll(player, out var error), error);
                 }
@@ -346,6 +365,24 @@ public class BackgammonGameTests
             }
 
             Assert.Equal(game.Result!.Winner, game.Turn);
+        }
+    }
+
+    // A new match whose opening roll both players have rolled.
+    private static BackgammonGame Opened(BackgammonRules? rules = null, Func<int>? rollDie = null, BackgammonPosition? start = null)
+    {
+        var game = new BackgammonGame(rules, rollDie, start);
+        Open(game);
+        return game;
+    }
+
+    // Rolls the opening dice, white first (and again after a tie), until a player starts.
+    private static void Open(BackgammonGame game)
+    {
+        while (game.Phase == BackgammonPhase.Opening)
+        {
+            var player = game.OpeningDice[0] is null || game.OpeningDice[1] is not null ? White : Black;
+            Assert.True(game.TryRoll(player, out var error), error);
         }
     }
 

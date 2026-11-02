@@ -24,7 +24,9 @@ public record BackgammonResultState(int Seat, int Points, BackgammonResultKind K
 /// point <c>i + 1</c>, positive for white checkers and negative for black. <see cref="Bar"/>, <see cref="Off"/>,
 /// <see cref="Pips"/> and <see cref="Scores"/> are by seat. <see cref="Turn"/> is the seat to move (after a game, the
 /// winner). <see cref="LegalMoves"/>, <see cref="Played"/> and the moves of <see cref="LastTurn"/> use the moving seat's
-/// numbering. <see cref="CubeOwner"/> is a seat, or null while the cube is in the middle.
+/// numbering. <see cref="CubeOwner"/> is a seat, or null while the cube is in the middle. <see cref="OpeningDice"/> are
+/// each seat's opening die (null until rolled); <see cref="Rolls"/> counts the rolls in the match, so a page can tell a
+/// new roll.
 /// </summary>
 public record BackgammonState(
     int MatchLength,
@@ -40,6 +42,8 @@ public record BackgammonState(
     IReadOnlyList<int> Dice,
     IReadOnlyList<int> DiceLeft,
     IReadOnlyList<int>? OpeningRoll,
+    IReadOnlyList<int?> OpeningDice,
+    int Rolls,
     IReadOnlyList<BackgammonMoveState> Played,
     IReadOnlyList<BackgammonMoveState> LegalMoves,
     bool CanEndTurn,
@@ -140,6 +144,8 @@ public class BackgammonSession(string id, Func<int>? rollDie = null) : GameSessi
             [.. game.Dice],
             [.. game.DiceLeft],
             game.OpeningRoll is { } opening ? [.. opening] : null,
+            [.. game.OpeningDice],
+            game.Rolls,
             Moves(game.Played),
             Moves(game.LegalMoves),
             game.CanEndTurn,
