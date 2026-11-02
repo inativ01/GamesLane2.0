@@ -1,3 +1,5 @@
+using GamesLane.Server.Games.TheGang;
+
 namespace GamesLane.Server.Games.RichManPoorMan;
 
 /// <summary>
@@ -8,22 +10,29 @@ public enum RichManPoorManPhase
     /// <summary>After a new deal (from the second game on), the pairs of players exchange cards.</summary>
     Exchanging,
 
-    /// <summary>The rounds are played until every player has emptied their hand.</summary>
+    /// <summary>The rounds are played until every active player has emptied their hand.</summary>
     Playing,
 
-    /// <summary>Every player has emptied their hand; the ranking is complete and the next game can start.</summary>
+    /// <summary>Every active player has emptied their hand; the ranking is complete and the next game can start.</summary>
     GameOver,
 }
 
 /// <summary>
-/// Cards thrown together: who threw them, their number (2 to 14, the Ace) and how many.
+/// Cards thrown together, all of one number: who threw them, and the cards.
 /// </summary>
-public record RichManPoorManThrow(int Player, int Rank, int Count);
+public record RichManPoorManThrow(int Player, IReadOnlyList<Card> Cards)
+{
+    /// <summary>The number thrown (2 to 14, the Ace).</summary>
+    public int Rank => Cards[0].Rank;
+
+    /// <summary>How many cards were thrown.</summary>
+    public int Count => Cards.Count;
+}
 
 /// <summary>
-/// The fixed rules of rich man, poor man. Suits do not matter, so a card is just its number: 2 is the lowest, then 3 to
-/// 10, J (11), Q (12), K (13), and A (14) is the highest. The deck has one suit (2 to A) per player, so every player is
-/// dealt 13 cards.
+/// The fixed rules of rich man, poor man. Suits do not matter, only the numbers: 2 is the lowest, then 3 to 10, J (11),
+/// Q (12), K (13), and A (14) is the highest. The deck has one set of 2 to A per player, so every player is dealt 13
+/// cards and each number appears once per player. The sets take the suits ♠, ♥, ♦, ♣ in turn.
 /// </summary>
 public static class RichManPoorManRules
 {
@@ -66,13 +75,27 @@ public static class RichManPoorManRules
     }
 
     /// <summary>
-    /// The deck for <paramref name="players"/> players, unshuffled: every number from 2 to A once per player.
+    /// The suits of the sets of 2 to A, in turn: the fifth set is ♠ again, and so on.
     /// </summary>
-    public static int[] Deck(int players)
+    public static IReadOnlyList<Suit> Suits => SuitOrder;
+
+    private static readonly Suit[] SuitOrder = [Suit.Spades, Suit.Hearts, Suit.Diamonds, Suit.Clubs];
+
+    /// <summary>
+    /// The deck for <paramref name="players"/> players, unshuffled: one set of 2 to A per player, set by set.
+    /// </summary>
+    public static Card[] Deck(int players)
     {
         CheckPlayers(players);
-        return [.. Enumerable.Range(Two, CardsPerPlayer).SelectMany(rank => Enumerable.Repeat(rank, players))];
+        return [.. Enumerable.Range(0, players).SelectMany(set =>
+            Enumerable.Range(Two, CardsPerPlayer).Select(rank => new Card(rank, SuitOrder[set % SuitOrder.Length])))];
     }
+
+    /// <summary>
+    /// Cards in the order a hand shows them: from low to high, equal numbers together (by suit, ♠ ♥ ♦ ♣).
+    /// </summary>
+    public static IEnumerable<Card> Sorted(IEnumerable<Card> cards) =>
+        cards.OrderBy(c => c.Rank).ThenBy(c => Array.IndexOf(SuitOrder, c.Suit));
 
     /// <summary>
     /// Throws unless rich man, poor man can be played by <paramref name="players"/> players.

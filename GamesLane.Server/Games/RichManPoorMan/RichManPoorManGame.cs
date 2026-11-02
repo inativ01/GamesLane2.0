@@ -1,45 +1,40 @@
+using GamesLane.Server.Games.TheGang;
+
 namespace GamesLane.Server.Games.RichManPoorMan;
 
 /// <summary>
-/// Rich man, poor man, game after game. <c>shuffle</c> shuffles the deck before each deal, which gives player 0 the
-/// first 13 cards, player 1 the next 13, and so on (for tests); <c>random</c> breaks a tie between identical hands when
-/// choosing who starts the first game.
+/// Rich man, poor man, game after game. <c>shuffle</c> shuffles the deck before each deal, which gives #1 the first 13
+/// cards, #2 the next 13, and so on (for tests); <c>random</c> breaks a tie between identical hands when choosing who
+/// starts the first game.
 /// </summary>
 public class RichManPoorManGame : IRichManPoorManGame
 {
-    private readonly Action<int[]> _shuffle;
+    private readonly Action<Card[]> _shuffle;
     private readonly Random _random;
-    private readonly List<int>[] _hands;
-    private readonly int[] _order;
-    private readonly int[] _place;
-    private readonly bool[] _passed;
+    private readonly Dictionary<int, PlayerState> _players = [];
+    private readonly List<int> _order = [];
     private readonly HashSet<int> _passedSinceThrow = [];
     private readonly List<int> _ranking = [];
-    private readonly int[]?[] _gifts;
-    private readonly int[]?[] _received;
 
     /// <summary>
-    /// Deals the first game, in the players' own order. Its first round is started by the player with the most 2s.
+    /// Deals the first game, with the players at the places in <paramref name="order"/>. Its first round is started by
+    /// the player with the most 2s.
     /// </summary>
-    public RichManPoorManGame(int players, Action<int[]>? shuffle = null, Random? random = null)
+    public RichManPoorManGame(IReadOnlyList<int> order, Action<Card[]>? shuffle = null, Random? random = null)
     {
-        RichManPoorManRules.CheckPlayers(players);
-        PlayerCount = players;
+        RichManPoorManRules.CheckPlayers(order.Count);
+        if (order.Distinct().Count() != order.Count)
+        {
+            throw new ArgumentException("Each player can play only once.", nameof(order));
+        }
+
         _random = random ?? Random.Shared;
         _shuffle = shuffle ?? _random.Shuffle;
-        _hands = [.. Enumerable.Range(0, players).Select(_ => new List<int>())];
-        _order = [.. Enumerable.Range(0, players)];
-        _place = [.. _order];
-        _passed = new bool[players];
-        _gifts = new int[]?[players];
-        _received = new int[]?[players];
+        SetPlayers(order);
         Deal();
         Phase = RichManPoorManPhase.Playing;
         Turn = FirstStarter();
     }
-
-    /// <inheritdoc />
-    public int PlayerCount { get; }
 
     /// <inheritdoc />
     public int GameNumber { get; private set; } = 1;
@@ -49,9 +44,6 @@ public class RichManPoorManGame : IRichManPoorManGame
 
     /// <inheritdoc />
     public IReadOnlyList<int> Order => _order;
-
-    /// <inheritdoc />
-    public IReadOnlyList<IReadOnlyList<int>> Hands => _hands;
 
     /// <inheritdoc />
     public int Turn { get; private set; }
@@ -66,85 +58,93 @@ public class RichManPoorManGame : IRichManPoorManGame
     public int Throws { get; private set; }
 
     /// <inheritdoc />
-    public IReadOnlyList<bool> Passed => _passed;
-
-    /// <inheritdoc />
     public int? LastRoundWinner { get; private set; }
 
     /// <inheritdoc />
     public IReadOnlyList<int> Ranking => _ranking;
 
     /// <inheritdoc />
+    public IReadOnlyList<int> NextOrder => [.. _ranking, .. _order.Where(p => !_ranking.Contains(p))];
+
+    /// <inheritdoc />
+    public IReadOnlyList<Card> Hand(int player) => Player(player).Hand;
+
+    /// <inheritdoc />
+    public bool HasPassed(int player) => Player(player).Passed;
+
+    /// <inheritdoc />
+    public bool IsActive(int player) => Player(player).Active;
+
+    /// <inheritdoc />
     public int? ExchangePartner(int player)
     {
         var place = PlaceOf(player);
-        return ExchangeCountAt(place) > 0 ? _order[PlayerCount - 1 - place] : null;
+        return ExchangeCountAt(place) > 0 ? _order[_order.Count - 1 - place] : null;
     }
 
     /// <inheritdoc />
     public int ExchangeCount(int player) => ExchangeCountAt(PlaceOf(player));
 
     /// <inheritdoc />
-    public IReadOnlyList<int>? RequiredGift(int player)
+    public IReadOnlyList<Card>? RequiredGift(int player)
     {
         var count = ExchangeCount(player);
-        var hand = _hands[player];
+        var hand = Player(player).Hand;
         return count > 0 && IsPoorer(player) ? hand.GetRange(hand.Count - count, count) : null;
     }
 
     /// <inheritdoc />
-    public IReadOnlyList<int>? Gift(int player) => _gifts[PlayerIndex(player)];
+    public IReadOnlyList<Card>? Gift(int player) => Player(player).Gift;
 
     /// <inheritdoc />
-    public IReadOnlyList<int>? Received(int player) => _received[PlayerIndex(player)];
+    public IReadOnlyList<Card>? Received(int player) => Player(player).Received;
 
     /// <inheritdoc />
-    public bool TryThrow(int player, int rank, int count, out string? error)
+    public bool TryThrow(int player, IReadOnlyList<Card> cards, out string? error)
     {
         if (!TryCheckTurn(player, out error))
         {
             return false;
         }
 
-        var hand = _hands[player];
-        error = rank < RichManPoorManRules.Two || rank > RichManPoorManRules.Ace || count < 1 ? "Choose the cards to throw."
-            : hand.Count(c => c == rank) < count ? "You do not have those cards."
-            : CurrentThrow is { } current && count != current.Count
+        var hand = Player(player).Hand;
+        error = cards.Count == 0 ? "Choose the cards to throw."
+            : cards.Any(c => c.Rank != cards[0].Rank) ? "Throw cards of one number only."
+            : !Holds(hand, cards) ? "You do not have those cards."
+            : CurrentThrow is { } current && cards.Count != current.Count
                 ? current.Count == 1 ? "Throw exactly 1 card." : $"Throw exactly {current.Count} cards."
-            : CurrentThrow is { } beat && rank <= beat.Rank ? "Throw a higher number than the cards on the table."
+            : CurrentThrow is { } beat && cards[0].Rank <= beat.Rank ? "Throw a higher number than the cards on the table."
             : null;
         if (error is not null)
         {
             return false;
         }
 
-        for (var i = 0; i < count; i++)
+        foreach (var card in cards)
         {
-            hand.Remove(rank);
+            hand.Remove(card);
         }
 
         Throws++;
-        CurrentThrow = LastThrow = new RichManPoorManThrow(player, rank, count);
-        _passed[player] = false;
+        CurrentThrow = LastThrow = new RichManPoorManThrow(player, [.. RichManPoorManRules.Sorted(cards)]);
+        Player(player).Passed = false;
         _passedSinceThrow.Clear();
         if (hand.Count == 0)
         {
             _ranking.Add(player);
         }
 
-        if (_ranking.Count == PlayerCount)
+        if (EndIfNobodyPlays())
         {
             LastRoundWinner = player;
-            CurrentThrow = null;
-            Phase = RichManPoorManPhase.GameOver;
         }
-        else if (rank == RichManPoorManRules.Ace || NextWithCards(player) == player)
+        else if (cards[0].Rank == RichManPoorManRules.Ace)
         {
             EndRound(player);
         }
         else
         {
-            Turn = NextWithCards(player);
+            PassTurn(player);
         }
 
         return true;
@@ -158,49 +158,40 @@ public class RichManPoorManGame : IRichManPoorManGame
             return false;
         }
 
-        if (CurrentThrow is not { } current)
+        if (CurrentThrow is null)
         {
             error = "You start this round: throw cards of one number.";
             return false;
         }
 
-        _passed[player] = true;
+        Player(player).Passed = true;
         _passedSinceThrow.Add(player);
-        var waiting = Enumerable.Range(0, PlayerCount)
-            .Where(p => p != current.Player && _hands[p].Count > 0 && !_passedSinceThrow.Contains(p));
-        if (waiting.Any())
-        {
-            Turn = NextWithCards(player);
-        }
-        else
-        {
-            EndRound(current.Player);
-        }
-
+        PassTurn(player);
         return true;
     }
 
     /// <inheritdoc />
-    public bool TryGive(int player, IReadOnlyList<int> cards, out string? error)
+    public bool TryGive(int player, IReadOnlyList<Card> cards, out string? error)
     {
         var count = ExchangeCount(player);
-        var given = cards.Order().ToArray();
-        var hand = _hands[player];
+        var given = RichManPoorManRules.Sorted(cards).ToArray();
+        var state = Player(player);
         error = Phase != RichManPoorManPhase.Exchanging ? "The cards are not being exchanged now."
             : count == 0 ? "You do not exchange cards in this game."
-            : _gifts[player] is not null ? "You have already given your cards."
+            : state.Gift is not null ? "You have already given your cards."
             : given.Length != count ? count == 1 ? "Give exactly 1 card." : $"Give exactly {count} cards."
-            : given.GroupBy(c => c).Any(g => hand.Count(c => c == g.Key) < g.Count()) ? "You do not have those cards."
-            : RequiredGift(player) is { } required && !required.SequenceEqual(given) ? "You must give your highest cards."
+            : !Holds(state.Hand, given) ? "You do not have those cards."
+            : RequiredGift(player) is { } required && !required.Select(c => c.Rank).SequenceEqual(given.Select(c => c.Rank))
+                ? "You must give your highest cards."
             : null;
         if (error is not null)
         {
             return false;
         }
 
-        _gifts[player] = given;
-        var givers = Enumerable.Range(0, PlayerCount).Where(p => ExchangeCount(p) > 0).ToArray();
-        if (givers.All(p => _gifts[p] is not null))
+        state.Gift = given;
+        var givers = _order.Where(p => ExchangeCount(p) > 0).ToArray();
+        if (givers.All(p => _players[p].Gift is not null))
         {
             Exchange(givers);
         }
@@ -209,7 +200,33 @@ public class RichManPoorManGame : IRichManPoorManGame
     }
 
     /// <inheritdoc />
-    public bool TryNextGame(int game, out string? error)
+    public void SetActive(int player, bool active)
+    {
+        var state = Player(player);
+        if (state.Active == active)
+        {
+            return;
+        }
+
+        state.Active = active;
+        if (active || Phase != RichManPoorManPhase.Playing || EndIfNobodyPlays() || Turn != player)
+        {
+            return;
+        }
+
+        if (CurrentThrow is null)
+        {
+            Turn = NextInPlay(player) ?? player;
+        }
+        else
+        {
+            _passedSinceThrow.Add(player);
+            PassTurn(player);
+        }
+    }
+
+    /// <inheritdoc />
+    public bool TryNextGame(int game, IReadOnlyList<int> order, out string? error)
     {
         error = null;
         if (game != GameNumber)
@@ -217,45 +234,103 @@ public class RichManPoorManGame : IRichManPoorManGame
             return true;
         }
 
-        if (Phase != RichManPoorManPhase.GameOver)
+        error = Phase != RichManPoorManPhase.GameOver ? "This game is not over yet."
+            : order.Count < RichManPoorManRules.MinPlayers ? $"At least {RichManPoorManRules.MinPlayers} players are needed for the exchange."
+            : order.Count > RichManPoorManRules.MaxPlayers ? $"At most {RichManPoorManRules.MaxPlayers} players can play."
+            : order.Distinct().Count() != order.Count ? "Each player can play only once."
+            : null;
+        if (error is not null)
         {
-            error = "This game is not over yet.";
             return false;
-        }
-
-        _ranking.CopyTo(_order);
-        for (var place = 0; place < PlayerCount; place++)
-        {
-            _place[_order[place]] = place;
         }
 
         GameNumber++;
         _ranking.Clear();
-        Array.Clear(_gifts);
-        Array.Clear(_received);
         LastThrow = null;
         LastRoundWinner = null;
-        Deal();
-        Phase = RichManPoorManPhase.Exchanging;
-        Turn = _order[^1];
+        SetPlayers(order);
+        StartExchange();
+        return true;
+    }
+
+    /// <inheritdoc />
+    public bool TryAddPlayer(int player, int place, out string? error)
+    {
+        error = Phase != RichManPoorManPhase.Exchanging ? "Players can join only during the exchange."
+            : _players.ContainsKey(player) ? "That player is already playing."
+            : _order.Count >= RichManPoorManRules.MaxPlayers ? "The table is full."
+            : place < 0 || place > _order.Count ? "There is no such place."
+            : null;
+        if (error is not null)
+        {
+            return false;
+        }
+
+        SetPlayers([.. _order.Take(place), player, .. _order.Skip(place)]);
+        StartExchange();
+        return true;
+    }
+
+    /// <inheritdoc />
+    public bool TryRemovePlayer(int player, out string? error)
+    {
+        error = Phase != RichManPoorManPhase.Exchanging ? "Players can be dropped only during the exchange."
+            : !_players.ContainsKey(player) ? "That player is not playing."
+            : _order.Count <= RichManPoorManRules.MinPlayers ? $"At least {RichManPoorManRules.MinPlayers} players are needed for the exchange."
+            : null;
+        if (error is not null)
+        {
+            return false;
+        }
+
+        SetPlayers([.. _order.Where(p => p != player)]);
+        StartExchange();
         return true;
     }
 
     /// <summary>
-    /// Shuffles a new deck and deals 13 cards to every player, sorted from low to high.
+    /// Makes <paramref name="order"/> the players, at those places, all active and with no cards yet.
+    /// </summary>
+    private void SetPlayers(IReadOnlyList<int> order)
+    {
+        _order.Clear();
+        _order.AddRange(order);
+        _players.Clear();
+        foreach (var player in order)
+        {
+            _players[player] = new PlayerState();
+        }
+    }
+
+    /// <summary>
+    /// Deals the cards for the current players and waits for every pair to give; gifts already given are cancelled.
+    /// </summary>
+    private void StartExchange()
+    {
+        Deal();
+        Phase = RichManPoorManPhase.Exchanging;
+        Turn = _order[^1];
+    }
+
+    /// <summary>
+    /// Shuffles a new deck (one set of 2 to A per player) and deals 13 cards to every player, sorted from low to high.
     /// </summary>
     private void Deal()
     {
-        var deck = RichManPoorManRules.Deck(PlayerCount);
+        var deck = RichManPoorManRules.Deck(_order.Count);
         _shuffle(deck);
-        for (var player = 0; player < PlayerCount; player++)
+        for (var place = 0; place < _order.Count; place++)
         {
-            _hands[player].Clear();
-            _hands[player].AddRange(deck.Skip(player * RichManPoorManRules.CardsPerPlayer).Take(RichManPoorManRules.CardsPerPlayer).Order());
+            var state = _players[_order[place]];
+            state.Hand.Clear();
+            state.Hand.AddRange(RichManPoorManRules.Sorted(
+                deck.Skip(place * RichManPoorManRules.CardsPerPlayer).Take(RichManPoorManRules.CardsPerPlayer)));
+            state.Passed = false;
+            state.Gift = null;
+            state.Received = null;
         }
 
         CurrentThrow = null;
-        Array.Clear(_passed);
         _passedSinceThrow.Clear();
     }
 
@@ -265,73 +340,136 @@ public class RichManPoorManGame : IRichManPoorManGame
     /// </summary>
     private int FirstStarter()
     {
-        var candidates = Enumerable.Range(0, PlayerCount).ToList();
+        var candidates = _order.ToList();
         for (var rank = RichManPoorManRules.Two; rank <= RichManPoorManRules.Ace && candidates.Count > 1; rank++)
         {
-            var most = candidates.Max(p => _hands[p].Count(c => c == rank));
-            candidates.RemoveAll(p => _hands[p].Count(c => c == rank) < most);
+            var most = candidates.Max(p => _players[p].Hand.Count(c => c.Rank == rank));
+            candidates.RemoveAll(p => _players[p].Hand.Count(c => c.Rank == rank) < most);
         }
 
         return candidates[_random.Next(candidates.Count)];
     }
 
     /// <summary>
-    /// Every pair has given: each player's gift goes to their partner, and the poorest player starts.
+    /// Every pair has given: all the gifts go to the partners at once, and the poorest player starts.
     /// </summary>
-    private void Exchange(IEnumerable<int> givers)
+    private void Exchange(IReadOnlyList<int> givers)
     {
         foreach (var player in givers)
         {
-            var partner = ExchangePartner(player)!.Value;
-            foreach (var card in _gifts[player]!)
+            var state = _players[player];
+            foreach (var card in state.Gift!)
             {
-                _hands[player].Remove(card);
+                state.Hand.Remove(card);
             }
 
-            _received[partner] = _gifts[player];
+            _players[ExchangePartner(player)!.Value].Received = state.Gift;
         }
 
         foreach (var player in givers)
         {
-            _hands[player].AddRange(_received[player]!);
-            _hands[player].Sort();
+            var state = _players[player];
+            var hand = RichManPoorManRules.Sorted([.. state.Hand, .. state.Received!]).ToList();
+            state.Hand.Clear();
+            state.Hand.AddRange(hand);
+            state.Gift = null;
         }
 
-        Array.Clear(_gifts);
         Phase = RichManPoorManPhase.Playing;
-        Turn = _order[^1];
+        var poorest = _order[^1];
+        Turn = _players[poorest].Active ? poorest : NextInPlay(poorest) ?? poorest;
     }
 
     /// <summary>
-    /// Ends the round won by <paramref name="winner"/>, who starts the next one, or if their hand is empty, the next
-    /// player in turn who still has cards.
+    /// After <paramref name="player"/> has thrown or passed: the turn goes to the next player in turn who has cards, and
+    /// players who left pass automatically. The round ends once everyone else with cards has passed since the last throw.
+    /// </summary>
+    private void PassTurn(int player)
+    {
+        var next = player;
+        while (true)
+        {
+            var thrower = CurrentThrow!.Player;
+            if (!_order.Any(p => p != thrower && _players[p].Hand.Count > 0 && !_passedSinceThrow.Contains(p)))
+            {
+                EndRound(thrower);
+                return;
+            }
+
+            next = NextWithCards(next);
+            if (next == thrower || _passedSinceThrow.Contains(next))
+            {
+                continue;
+            }
+
+            if (_players[next].Active)
+            {
+                Turn = next;
+                return;
+            }
+
+            _passedSinceThrow.Add(next);
+        }
+    }
+
+    /// <summary>
+    /// Ends the round won by <paramref name="winner"/>, who starts the next one; if their hand is empty or they left, the
+    /// next active player in turn who still has cards starts it.
     /// </summary>
     private void EndRound(int winner)
     {
         LastRoundWinner = winner;
         CurrentThrow = null;
-        Array.Clear(_passed);
         _passedSinceThrow.Clear();
-        Turn = _hands[winner].Count > 0 ? winner : NextWithCards(winner);
+        foreach (var state in _players.Values)
+        {
+            state.Passed = false;
+        }
+
+        var starter = _players[winner];
+        Turn = starter.Active && starter.Hand.Count > 0 ? winner : NextInPlay(winner) ?? winner;
+    }
+
+    /// <summary>
+    /// Ends the game once no active player has cards left. Returns whether it ended.
+    /// </summary>
+    private bool EndIfNobodyPlays()
+    {
+        if (_players.Values.Any(s => s.Active && s.Hand.Count > 0))
+        {
+            return false;
+        }
+
+        CurrentThrow = null;
+        Phase = RichManPoorManPhase.GameOver;
+        return true;
     }
 
     /// <summary>
     /// The next player after <paramref name="player"/> in the direction of play (one place richer, and from #1 back to
     /// the last) who still has cards; <paramref name="player"/> itself if nobody else has.
     /// </summary>
-    private int NextWithCards(int player)
+    private int NextWithCards(int player) => NextWhere(player, s => s.Hand.Count > 0) ?? player;
+
+    /// <summary>
+    /// The next active player after <paramref name="player"/> in the direction of play who still has cards, or null.
+    /// </summary>
+    private int? NextInPlay(int player) => NextWhere(player, s => s.Active && s.Hand.Count > 0);
+
+    private int? NextWhere(int player, Func<PlayerState, bool> condition)
     {
-        var place = _place[player];
-        for (var step = 1; step < PlayerCount; step++)
+        var place = PlaceOf(player);
+        var count = _order.Count;
+        for (var step = 1; step < count; step++)
         {
-            var next = _order[(place - step + PlayerCount) % PlayerCount];
-            if (_hands[next].Count > 0)
+            var next = _order[(place - step + count) % count];
+            if (condition(_players[next]))
             {
                 return next;
             }
         }
 
-        return player;
+        return null;
     }
 
     /// <summary>
@@ -339,32 +477,66 @@ public class RichManPoorManGame : IRichManPoorManGame
     /// </summary>
     private int ExchangeCountAt(int place)
     {
-        var counts = RichManPoorManRules.ExchangeCounts(PlayerCount);
-        var pair = Math.Min(place, PlayerCount - 1 - place);
-        return GameNumber > 1 && pair < counts.Count ? counts[pair] : 0;
+        if (GameNumber == 1)
+        {
+            return 0;
+        }
+
+        var counts = RichManPoorManRules.ExchangeCounts(_order.Count);
+        var pair = Math.Min(place, _order.Count - 1 - place);
+        return pair < counts.Count ? counts[pair] : 0;
     }
 
-    private bool IsPoorer(int player) => PlaceOf(player) >= PlayerCount - PlayerCount / 2;
+    private bool IsPoorer(int player) => PlaceOf(player) >= _order.Count - _order.Count / 2;
 
-    private int PlaceOf(int player) => _place[PlayerIndex(player)];
-
-    private int PlayerIndex(int player)
+    private int PlaceOf(int player)
     {
-        ArgumentOutOfRangeException.ThrowIfNegative(player);
-        ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(player, PlayerCount);
-        return player;
+        Player(player);
+        return _order.IndexOf(player);
     }
+
+    private PlayerState Player(int player) =>
+        _players.TryGetValue(player, out var state)
+            ? state
+            : throw new ArgumentOutOfRangeException(nameof(player), player, "Not a player in this game.");
+
+    /// <summary>
+    /// Whether <paramref name="hand"/> holds all of <paramref name="cards"/> (a card may appear more than once).
+    /// </summary>
+    private static bool Holds(List<Card> hand, IEnumerable<Card> cards) =>
+        cards.GroupBy(c => c).All(g => hand.Count(c => c == g.Key) >= g.Count());
 
     /// <summary>
     /// Checks that the game is waiting for <paramref name="player"/> to throw or pass.
     /// </summary>
     private bool TryCheckTurn(int player, out string? error)
     {
-        PlayerIndex(player);
+        Player(player);
         error = Phase == RichManPoorManPhase.Exchanging ? "Wait until the cards have been exchanged."
             : Phase == RichManPoorManPhase.GameOver ? "The game is over."
             : player != Turn ? "It is not your turn."
             : null;
         return error is null;
+    }
+
+    /// <summary>
+    /// A player's cards and state in the current game.
+    /// </summary>
+    private sealed class PlayerState
+    {
+        /// <summary>The cards in hand, from low to high.</summary>
+        public List<Card> Hand { get; } = [];
+
+        /// <summary>Whether the player's last action in this round was to pass.</summary>
+        public bool Passed { get; set; }
+
+        /// <summary>Whether the player is still playing (has not left).</summary>
+        public bool Active { get; set; } = true;
+
+        /// <summary>The cards given in this exchange, until all are exchanged.</summary>
+        public Card[]? Gift { get; set; }
+
+        /// <summary>The cards received in this game's exchange.</summary>
+        public Card[]? Received { get; set; }
     }
 }
