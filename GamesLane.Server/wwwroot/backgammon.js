@@ -409,6 +409,18 @@ function scoreboard(game, state, view) {
     })];
 }
 
+// The whole page fits the screen without scrolling: the board shrinks by however much the page is too tall (down to
+// 160 pixels high).
+function fitBoard() {
+    const board = document.querySelector("#bg-board .bg-svg");
+    if (!board || $("game-screen").hidden) return;
+    board.style.maxHeight = "none";
+    const overflow = document.documentElement.scrollHeight - innerHeight;
+    if (overflow > 0) {
+        board.style.maxHeight = `${Math.max(160, board.getBoundingClientRect().height - overflow)}px`;
+    }
+}
+
 let current = null;
 
 const backgammon = startSessionPage("Backgammon", (game, state, view) => {
@@ -437,7 +449,10 @@ const backgammon = startSessionPage("Backgammon", (game, state, view) => {
     $("bg-undo").hidden = !(canMove && game.played.length);
     $("bg-done").hidden = !(canMove && game.canEndTurn);
     $("next-round").hidden = !(view.isPlayer && game.phase === "GameOver");
+    fitBoard();
 });
+
+addEventListener("resize", () => requestAnimationFrame(fitBoard));
 
 // Tapping the board: a checker that can go to only one place moves there; otherwise it is selected and its
 // destinations are marked. Tapping a marked destination moves the selected checker there.
