@@ -67,7 +67,8 @@ async function saveGameOrder() {
 }
 
 // Dragging a game by its handle: the game follows the pointer up and down the list, and the new order is saved when it
-// is dropped. Works with a mouse and with touch.
+// is dropped. Works with a mouse and with touch. The other games move around the dragged one, which itself stays in
+// place in the page, so the browser keeps sending it the pointer's movements.
 function makeDraggable(tile) {
     const handle = Object.assign(document.createElement("span"), { className: "game-handle", textContent: "⋮⋮", title: "Drag to move" });
     handle.setAttribute("aria-hidden", "true");
@@ -81,25 +82,33 @@ function makeDraggable(tile) {
         handle.setPointerCapture(event.pointerId);
         const before = currentOrder().join();
         tile.classList.add("dragging");
+        const middle = (t) => {
+            const box = t.getBoundingClientRect();
+            return box.top + box.height / 2;
+        };
         const move = (e) => {
-            const after = gameTiles().filter((t) => t !== tile).find((t) => {
-                const box = t.getBoundingClientRect();
-                return e.clientY < box.top + box.height / 2;
-            });
-            if (after !== tile.nextElementSibling) {
-                gameList.insertBefore(tile, after ?? null);
+            if (e.pointerId !== event.pointerId) return;
+            let other;
+            while ((other = tile.previousElementSibling) && e.clientY < middle(other)) {
+                gameList.insertBefore(other, tile.nextElementSibling);
+            }
+            while ((other = tile.nextElementSibling) && e.clientY > middle(other)) {
+                gameList.insertBefore(other, tile);
             }
         };
-        const drop = () => {
-            handle.removeEventListener("pointermove", move);
+        const drop = (e) => {
+            if (e.pointerId !== event.pointerId) return;
+            removeEventListener("pointermove", move);
+            removeEventListener("pointerup", drop);
+            removeEventListener("pointercancel", drop);
             tile.classList.remove("dragging");
             if (currentOrder().join() !== before) {
                 saveGameOrder();
             }
         };
-        handle.addEventListener("pointermove", move);
-        handle.addEventListener("pointerup", drop, { once: true });
-        handle.addEventListener("pointercancel", drop, { once: true });
+        addEventListener("pointermove", move);
+        addEventListener("pointerup", drop);
+        addEventListener("pointercancel", drop);
     });
     tile.addEventListener("keydown", (event) => {
         if (!event.altKey || (event.key !== "ArrowUp" && event.key !== "ArrowDown")) return;
