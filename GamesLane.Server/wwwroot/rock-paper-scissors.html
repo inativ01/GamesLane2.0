@@ -8,6 +8,8 @@
     <link rel="apple-touch-icon" href="images/logo-180.png">
     <meta name="theme-color" content="#19285d">
     <link rel="stylesheet" href="styles.css">
+    <!-- SignalR sets a global "t" while it loads, so it comes before i18n.js, which defines t(). -->
+    <script src="https://cdn.jsdelivr.net/npm/@microsoft/signalr@10.0.11/dist/browser/signalr.min.js"></script>
     <script src="i18n.js"></script>
 </head>
 <body>
@@ -76,7 +78,6 @@
 
     <p id="error" class="error" role="alert"></p>
 </main>
-<script src="https://cdn.jsdelivr.net/npm/@microsoft/signalr@10.0.11/dist/browser/signalr.min.js"></script>
 <script src="common.js"></script>
 <script src="rock-paper-scissors.js"></script>
 </body>

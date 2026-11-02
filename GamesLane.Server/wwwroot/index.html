@@ -8,8 +8,6 @@
     <link rel="apple-touch-icon" href="images/logo-180.png">
     <meta name="theme-color" content="#19285d">
     <link rel="stylesheet" href="styles.css">
-    <script src="lang/he.js"></script>
-    <script src="i18n.js"></script>
     <script>
         // The splash screen shows for 5 seconds when the app is first opened in this tab, and when the home icon is used
         // (/?splash). It runs on its own, so it ends even if the page's other scripts are slow or fail to load. The
@@ -27,6 +25,10 @@
             setTimeout(() => root.classList.remove("splashing", "splash-done"), 5500);
         }
     </script>
+    <!-- SignalR sets a global "t" while it loads, so it comes before i18n.js, which defines t(). -->
+    <script src="https://cdn.jsdelivr.net/npm/@microsoft/signalr@10.0.11/dist/browser/signalr.min.js"></script>
+    <script src="lang/he.js"></script>
+    <script src="i18n.js"></script>
 </head>
 <body>
 <div id="splash" class="splash" aria-hidden="true">
@@ -99,7 +101,6 @@
     <p id="error" class="error" role="alert"></p>
     <footer class="hint"><a href="/privacy.html" data-i18n>Privacy policy</a></footer>
 </main>
-<script src="https://cdn.jsdelivr.net/npm/@microsoft/signalr@10.0.11/dist/browser/signalr.min.js"></script>
 <script src="common.js"></script>
 <script src="home.js"></script>
 </body>
