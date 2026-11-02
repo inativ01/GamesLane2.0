@@ -22,6 +22,7 @@ It is a complete reimplementation of the original [GamesLane](https://github.com
 - A splash screen (the portrait or landscape picture, to suit the screen) is shown for 5 seconds when the app is first opened in a browser tab and whenever the home icon is used; then the main screen appears. It is not shown again when the page reloads (e.g. after logging in).
 - The top bar of every page shows the GamesLane name picture and, on the right, a **Log in** button when no user is logged in, or the user's icon and name (which open their profile) and a **Log out** button.
 - A list of games. A new session can be started only when a user is logged in; choosing a game while logged out opens the login dialog, and the session is started once the user has logged in.
+- Saved users (registered or Google, not guests) can **Arrange** the games: a list with ▲/▼ buttons to move each game; every change is saved with their account and applied whenever they open the main screen. Games not in a saved order (e.g. new ones) keep their usual place after the others.
 - A way to join a session by entering its code. This does not require a logged-in user.
 - A link to the privacy policy (`/privacy.html`).
 
@@ -103,11 +104,11 @@ docs/                          Original logo, name and splash pictures (kept out
 - **Rock-paper-scissors** (2 players): both players pick secretly. When both have picked, the picks are revealed and the winner scores a point. Play continues for as many rounds as you like.
 - **Backgammon** (2 players): standard rules. Seat 0 plays white, seat 1 black.
   - **A match** to 1, 3, 5, 7 or 9 points (option **Match length**, default 5). A single game scores 1 point, a gammon (the loser bore off no checker) 2, a backgammon (and still has a checker on the bar or in the winner's home board) 3, times the cube. When the match ends, **Play again** starts a new one; between games, **Next game**.
-  - **Opening roll:** each player rolls one die (again on a tie); the higher die moves first, with both dice.
-  - **A turn:** press **Roll**, move the checkers, then press **Done**. **Undo** takes back the last checker moved in the turn. Tap a checker and then one of its highlighted destinations; a checker that can only go to one place moves at once. The rules are enforced: a checker on the bar must enter first, a point with two or more opposing checkers is blocked, a single opposing checker is hit, bearing off only once all checkers are home (with a higher number only when no checker is on a higher point), as many dice as possible must be used (all four with doubles), and if only one die can be used, it must be the larger one when possible.
+  - **Opening roll:** at the start of each game, each player rolls their own die (tap the board, or **Roll**); each die stays on its player's side. On a tie, both dice stay on view until a player rolls again, and both roll again. The higher die moves first, with both dice.
+  - **A turn:** tap the board (or press **Roll**) to roll, move the checkers, then press **Done**. The dice tumble for one second when rolled; between turns, the last roll stays on the board, faded. **Undo** takes back the last checker moved in the turn. Tap a checker and then one of its highlighted destinations; a checker that can only go to one place moves at once. The rules are enforced: a checker on the bar must enter first, a point with two or more opposing checkers is blocked, a single opposing checker is hit, bearing off only once all checkers are home (with a higher number only when no checker is on a higher point), as many dice as possible must be used (all four with doubles), and if only one die can be used, it must be the larger one when possible.
   - **Automatic turns:** if no checker can move, the turn passes; if there is only one way to play the dice, the game plays it and the turn ends. A message says so.
-  - **Doubling cube** (option, on by default; not in 1-point matches): before rolling, the player may **Double**; the other player **Take**s (the cube doubles and they own it) or **Drop**s (losing the game at the cube's value). Crawford rule: no doubling in the game after a player first comes within one point of winning the match.
-  - **The board** is seen from each player's own side (home board bottom right, bearing off into the tray on the right); spectators see white's side, and a user holding both seats sees the side of the seat that must act. It shows the dice on the mover's side (used dice faded), the cube, both pip counts and the match score. The previous turn's moves are highlighted, and so are the current turn's for everyone watching; the checker just moved drops into place. The board scales to fit the screen, in portrait or landscape, and on a TV.
+  - **Doubling cube** (option, on by default; not in 1-point matches): before rolling, the player may **Double** (or tap the cube, which is outlined when they may); the other player **Take**s (the cube doubles and they own it) or **Drop**s (losing the game at the cube's value). Crawford rule: no doubling in the game after a player first comes within one point of winning the match.
+  - **The board** is seen from each player's own side of the table: the board is turned around (rotated, not mirrored) between the players. Black's home board is at the bottom right, bearing off into the tray on the right, with its two back checkers at the top right; white's home board is at the bottom left, bearing off into the tray on the left, with its two back checkers at the top left. Spectators see white's side, and a user holding both seats sees the side of the seat that must act. It shows the dice on the mover's side (used dice faded), the cube, both pip counts and the match score. The previous turn's moves are highlighted, and so are the current turn's for everyone watching; the checker just moved drops into place. The board scales to fit the screen, in portrait or landscape, and on a TV.
 - **The Gang** (3–8 players), the cooperative poker game by John Cooper and Kory Heath. Each heist:
   - Every player gets 2 pocket cards, shown only on their own screen. Five shared cards are dealt: none at first, then 3, 4 and 5 as the stages go on.
   - Four betting stages (white, yellow, orange, red). In each, every player takes a numbered chip, from 1 (weakest hand) up to the number of players (strongest), from the middle or from another player. Tapping your own chip returns it to the middle. Players are numbered 1 to the number of players in seat order: each hand is titled "Player N", and the table's chip list shows the numbers. Next to the player's cards are the chips they took in this heist's earlier stages. Once every player holds a chip, the **Ready** button (👍) appears; the stage ends when everyone has pressed it. Any chip change clears everyone's Ready (and hides the button again while a chip is in the middle). A user with several seats presses Ready once, for all their hands.
@@ -155,7 +156,7 @@ Clients connect to the SignalR hub at `/hubs/game` and call these methods:
 | `MakeMove(sessionId, seat, cell)` | — | Tic-tac-toe: places the mark of `seat` (0 is X, 1 is O), which the caller must hold. Cells are numbered 0–8, left to right, top to bottom. |
 | `Pick(sessionId, seat, choice)` | — | Rock-paper-scissors: picks `"Rock"`, `"Paper"` or `"Scissors"` for `seat`, which the caller must hold. |
 | `NextRound(sessionId, round)` | — | Rock-paper-scissors and tic-tac-toe: starts the round after `round`; backgammon: starts the game of the match after game `round`. If it has already started, nothing changes. |
-| `Roll(sessionId, seat)` | — | Backgammon: `seat`, which the caller must hold, rolls the dice. |
+| `Roll(sessionId, seat)` | — | Backgammon: `seat`, which the caller must hold, rolls the dice; during the opening roll, its one die. |
 | `MoveChecker(sessionId, seat, from, to)` | — | Backgammon: `seat` moves a checker. Points are numbered from that seat's side: 1 to 24 in the direction it moves, 25 for the bar, 0 for off the board. |
 | `UndoMove(sessionId, seat)` | — | Backgammon: takes back the last checker `seat` moved in this turn. |
 | `EndTurn(sessionId, seat)` | — | Backgammon: ends `seat`'s turn, once it has used as many dice as the rules require. |
@@ -191,7 +192,7 @@ After every change, the server sends a `StateUpdated` message with the public se
 | `optionList` | The game's options: `{ key, label, choices: [{ value, label, hint, image }], default, kind, shownWhen }`, where `image` is a picture's address or `null`, `kind` is `"Choice"` or `"Set"` and `shownWhen` is `{ key, value }` or `null` (empty for games without options) |
 | `options` | The chosen value of each option, e.g. `{ "mode": "Basic" }`, used by the next new game |
 
-In rock-paper-scissors, the game state only shows whether each seat has picked; the picks themselves are revealed once both have picked. In backgammon, the game state has the board from white's side (`points`: entry `i` is white's point `i + 1`, positive for white checkers and negative for black), `bar`, `off`, `pips` and `scores` by seat, the `phase` (`"Rolling"`, `"Doubled"`, `"Moving"`, `"GameOver"`, `"MatchOver"`), the seat to move (`turn`), the `dice` and `diceLeft`, the `legalMoves` and the moves `played` so far (in the mover's numbering), the `lastTurn`, the cube (`cubeValue`, `cubeOwner`, `canDouble`, `isCrawford`) and the last game's `result`. Errors (e.g. "It is not your turn.") are returned as hub errors to the caller.
+In rock-paper-scissors, the game state only shows whether each seat has picked; the picks themselves are revealed once both have picked. In backgammon, the game state has the board from white's side (`points`: entry `i` is white's point `i + 1`, positive for white checkers and negative for black), `bar`, `off`, `pips` and `scores` by seat, the `phase` (`"Opening"`, `"Rolling"`, `"Doubled"`, `"Moving"`, `"GameOver"`, `"MatchOver"`), the seat to move (`turn`), each seat's opening die (`openingDice`, `null` until rolled) and the decided `openingRoll`, the `dice` and `diceLeft`, the number of rolls so far (`rolls`, so a page can tell a new roll), the `legalMoves` and the moves `played` so far (in the mover's numbering), the `lastTurn`, the cube (`cubeValue`, `cubeOwner`, `canDouble`, `isCrawford`) and the last game's `result`. Errors (e.g. "It is not your turn.") are returned as hub errors to the caller.
 
 ### Rejoining
 
@@ -215,7 +216,7 @@ PostgreSQL on Neon, accessed with EF Core. Tables (created and updated automatic
 
 | Table | Contents |
 | --- | --- |
-| `Users` | `Id`, `Username` / `NormalizedUsername` (registered users; unique regardless of case), `PasswordHash`, `DisplayName`, `Icon`, `CreatedAt`, `LastActiveAt` |
+| `Users` | `Id`, `Username` / `NormalizedUsername` (registered users; unique regardless of case), `PasswordHash`, `DisplayName`, `Icon`, `CreatedAt`, `LastActiveAt`, `GameOrder` (the order of the games on the main screen, e.g. `Backgammon,TheGang`, or null) |
 | `ExternalLogins` | `Provider` + `ProviderKey` (unique), `UserId` |
 | `UserIcons` | Uploaded pictures: `Id`, `UserId`, `ContentType`, `Data`, `CreatedAt`. Served at `/api/icons/{id}`; a new upload gets a new ID |
 | `UserGameOptions` | Saved game options: `UserId` + `GameType` (key), `Options` (JSON, e.g. `{"mode":"Advanced"}`), `UpdatedAt` |
@@ -231,7 +232,7 @@ To browse the database, use the Neon console's SQL Editor, pgAdmin, DBeaver, or 
 | --- | --- |
 | `GET /api/sessions/{code}` | `{ sessionId, gameType, page }` for an existing session, or 404 |
 | `GET /join/{code}` | Shareable join link; redirects to the session's page (`<page>?session=CODE`), or if there is no such session, to the main screen with the code filled in and a message |
-| `GET /auth/me` | `{ signedIn, kind, name, icon, uploadedIcon, accessToken, providers, icons }`. `accessToken` is a renewed login token; `providers` lists the external sign-in options that are configured; `icons` lists the built-in icons |
+| `GET /auth/me` | `{ signedIn, kind, name, icon, uploadedIcon, gameOrder, accessToken, providers, icons }`. `gameOrder` is a saved user's order of the games (game names), or `null`; `accessToken` is a renewed login token; `providers` lists the external sign-in options that are configured; `icons` lists the built-in icons |
 | `POST /auth/guest` | Body `{ name, icon }`. Logs in as a guest |
 | `POST /auth/register` | Body `{ username, password, name, icon }`. Creates a registered user and logs in. Rate-limited |
 | `POST /auth/login` | Body `{ username, password }`. Logs in a registered user. Rate-limited (10 attempts per minute per address) |
@@ -242,6 +243,7 @@ To browse the database, use the Neon console's SQL Editor, pgAdmin, DBeaver, or 
 | `POST /auth/external` | Exchanges the result of an external sign-in for `{ accessToken, isNew }` |
 | `GET /api/options/{gameType}` | Saved users only. `{ saved, options }`: the user's saved options for the game, or its defaults (`saved: false`) |
 | `PUT /api/options/{gameType}` | Saved users only. Body: the options, e.g. `{ "mode": "Advanced" }`. Saves them as the user's preferences (204), or `{ error }` (400) |
+| `PUT /api/game-order` | Saved users only. Body: game names in the order to show them, e.g. `["Backgammon", "TheGang"]`, each existing and listed once. Saves the order (204), or `{ error }` (400) |
 | `GET /health` | Health check |
 
 All the `POST /auth/...` endpoints except `/auth/external` return `{ accessToken }` on success, or `{ error }` (status 400) with a message to show.
