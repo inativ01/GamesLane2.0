@@ -73,10 +73,46 @@ public interface IGameHub
     Task Pick(string sessionId, int seat, Choice choice);
 
     /// <summary>
-    /// Rock-paper-scissors and tic-tac-toe: starts the round after <paramref name="round"/>. If it has already started,
-    /// nothing changes.
+    /// Rock-paper-scissors and tic-tac-toe: starts the round after <paramref name="round"/>; backgammon: the game of the
+    /// match after game <paramref name="round"/>. If it has already started, nothing changes.
     /// </summary>
     Task NextRound(string sessionId, int round);
+
+    /// <summary>
+    /// Backgammon: <paramref name="seat"/>, which the caller must hold, rolls the dice.
+    /// </summary>
+    Task Roll(string sessionId, int seat);
+
+    /// <summary>
+    /// Backgammon: <paramref name="seat"/> moves a checker from <paramref name="from"/> to <paramref name="to"/>, in its
+    /// own point numbering (1 to 24, 25 for the bar, 0 for off the board).
+    /// </summary>
+    Task MoveChecker(string sessionId, int seat, int from, int to);
+
+    /// <summary>
+    /// Backgammon: <paramref name="seat"/> takes back the last checker it moved in this turn.
+    /// </summary>
+    Task UndoMove(string sessionId, int seat);
+
+    /// <summary>
+    /// Backgammon: <paramref name="seat"/> ends its turn, once it has used as many dice as the rules require.
+    /// </summary>
+    Task EndTurn(string sessionId, int seat);
+
+    /// <summary>
+    /// Backgammon: <paramref name="seat"/> offers to double before rolling.
+    /// </summary>
+    Task OfferDouble(string sessionId, int seat);
+
+    /// <summary>
+    /// Backgammon: <paramref name="seat"/> takes the double; the cube doubles and it owns the cube.
+    /// </summary>
+    Task TakeDouble(string sessionId, int seat);
+
+    /// <summary>
+    /// Backgammon: <paramref name="seat"/> drops the double and loses the game at the cube's value.
+    /// </summary>
+    Task DropDouble(string sessionId, int seat);
 
     /// <summary>
     /// The Gang: <paramref name="seat"/> takes a chip of the current stage, from the middle or from another player.

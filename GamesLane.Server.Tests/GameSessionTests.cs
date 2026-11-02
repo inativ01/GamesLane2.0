@@ -1,3 +1,4 @@
+using GamesLane.Server.Games.Backgammon;
 using GamesLane.Server.Games.RockPaperScissors;
 using GamesLane.Server.Games.TheGang;
 using GamesLane.Server.Games.TicTacToe;
@@ -892,6 +893,67 @@ public class GameSessionTests
         var dan = Assert.IsType<TheGangPrivateState>(session.GetPrivateState("user:dan")).Hands.Single();
         Assert.Equal(["3♦", "4♥"], dan.Cards);
         Assert.Null(session.GetPrivateState(Alice));
+    }
+
+    // Backgammon
+
+    [Fact]
+    public void Backgammon_seat_0_plays_white_and_seat_1_black_with_the_chosen_options()
+    {
+        var session = Seated(new BackgammonSession("ABC123", Dice(6, 1)));
+        session.TrySetOptions(Alice, new Dictionary<string, string> { [BackgammonOptions.MatchLength] = "1", [BackgammonOptions.Cube] = "No" }, out _);
+        session.TryNewGame(Alice, 0, out _);
+
+        var state = Backgammon(session);
+        Assert.Equal((1, false), (state.MatchLength, state.CubeEnabled));
+        Assert.Equal((0, BackgammonPhase.Moving), (state.Turn, state.Phase));
+        Assert.Contains(new BackgammonMoveState(13, 7), state.LegalMoves);
+        Assert.False(session.TryMove(Bob, 0, 13, 7, out var error));
+        Assert.Equal("Only players in this game can make moves.", error);
+        Assert.False(session.TryMove(Bob, 1, 13, 7, out error));
+        Assert.Equal("It is not your turn.", error);
+
+        Assert.True(session.TryMove(Alice, 0, 13, 7, out error), error);
+        Assert.True(session.TryMove(Alice, 0, 8, 7, out error), error);
+        Assert.True(session.TryEndTurn(Alice, 0, out error), error);
+        state = Backgammon(session);
+        Assert.Equal((1, BackgammonPhase.Rolling), (state.Turn, state.Phase));
+        Assert.Equal(2, state.Points[6]);
+        Assert.Equal([new BackgammonMoveState(13, 7), new BackgammonMoveState(8, 7)], state.LastTurn!.Moves);
+    }
+
+    [Fact]
+    public void Backgammon_players_start_the_next_game_of_the_match()
+    {
+        var session = Started(new BackgammonSession("ABC123", Dice(3, 1, 6, 1)));
+        session.TryMove(Alice, 0, 8, 5, out _);
+        session.TryMove(Alice, 0, 6, 5, out _);
+        session.TryEndTurn(Alice, 0, out _);
+        Assert.True(session.TryDouble(Bob, 1, out var error), error);
+        Assert.True(session.TryDrop(Alice, 0, out error), error);
+
+        var state = Backgammon(session);
+        Assert.Equal(BackgammonPhase.GameOver, state.Phase);
+        Assert.Equal(new BackgammonResultState(1, 1, BackgammonResultKind.Dropped), state.Result);
+        Assert.False(session.GetPublicState().IsGameOver);
+        Assert.False(session.TryNextRound("connection:tv", 1, out _));
+        Assert.True(session.TryNextRound(Alice, 1, out error), error);
+        Assert.True(session.TryNextRound(Bob, 1, out error), error);
+
+        state = Backgammon(session);
+        Assert.Equal(2, state.GameNumber);
+        Assert.Equal([0, 1], state.Scores);
+        Assert.Equal([6, 1], state.OpeningRoll);
+    }
+
+    private static BackgammonState Backgammon(BackgammonSession session) =>
+        Assert.IsType<BackgammonState>(session.GetPublicState().Game);
+
+    // A die that rolls the given numbers in order.
+    private static Func<int> Dice(params int[] numbers)
+    {
+        var queue = new Queue<int>(numbers);
+        return () => queue.Dequeue();
     }
 
     private static RockPaperScissorsSession StartedRpsSession() => Started(new RockPaperScissorsSession("ABC123"));

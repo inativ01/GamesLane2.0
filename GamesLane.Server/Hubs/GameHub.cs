@@ -201,6 +201,34 @@ public class GameHub(
         Act(sessionId, (ITheGangSession s, out string? error) => s.TryConfirmRedraw(UserKey, seat, out error));
 
     /// <inheritdoc />
+    public Task Roll(string sessionId, int seat) =>
+        Act(sessionId, (IBackgammonSession s, out string? error) => s.TryRoll(UserKey, seat, out error));
+
+    /// <inheritdoc />
+    public Task MoveChecker(string sessionId, int seat, int from, int to) =>
+        Act(sessionId, (IBackgammonSession s, out string? error) => s.TryMove(UserKey, seat, from, to, out error));
+
+    /// <inheritdoc />
+    public Task UndoMove(string sessionId, int seat) =>
+        Act(sessionId, (IBackgammonSession s, out string? error) => s.TryUndo(UserKey, seat, out error));
+
+    /// <inheritdoc />
+    public Task EndTurn(string sessionId, int seat) =>
+        Act(sessionId, (IBackgammonSession s, out string? error) => s.TryEndTurn(UserKey, seat, out error));
+
+    /// <inheritdoc />
+    public Task OfferDouble(string sessionId, int seat) =>
+        Act(sessionId, (IBackgammonSession s, out string? error) => s.TryDouble(UserKey, seat, out error));
+
+    /// <inheritdoc />
+    public Task TakeDouble(string sessionId, int seat) =>
+        Act(sessionId, (IBackgammonSession s, out string? error) => s.TryTake(UserKey, seat, out error));
+
+    /// <inheritdoc />
+    public Task DropDouble(string sessionId, int seat) =>
+        Act(sessionId, (IBackgammonSession s, out string? error) => s.TryDrop(UserKey, seat, out error));
+
+    /// <inheritdoc />
     public Task RevealNext(string sessionId, int revealed) =>
         Act(sessionId, (ITheGangSession s, out string? error) => s.TryRevealNext(UserKey, revealed, out error));
 

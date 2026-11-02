@@ -1,4 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
+using GamesLane.Server.Games.Backgammon;
 using GamesLane.Server.Games.TheGang;
 using GamesLane.Server.Sessions;
 
@@ -70,6 +71,7 @@ public static class GameOptions
     public static IReadOnlyList<GameOption> For(GameType type) => type switch
     {
         GameType.TheGang => TheGangOptions.All,
+        GameType.Backgammon => BackgammonOptions.All,
         _ => [],
     };
 

@@ -3,7 +3,8 @@ using System.Diagnostics.CodeAnalysis;
 namespace GamesLane.Server.Sessions;
 
 /// <summary>
-/// A match that continues round after round, keeping score (rock-paper-scissors, tic-tac-toe).
+/// A match that continues round after round, keeping score (rock-paper-scissors, tic-tac-toe, and backgammon, whose
+/// rounds are the games of a match).
 /// </summary>
 public interface IRoundBasedSession : IGameSession
 {
