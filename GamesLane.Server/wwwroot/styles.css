@@ -2299,6 +2299,8 @@ main.backgammon {
 
 .bg-cube rect { fill: #f8f4ea; stroke: #2b2420; stroke-width: 2; }
 .bg-cube text { font: 800 20px Arial, sans-serif; fill: #2b2420; }
+.bg-cube.can-double { cursor: pointer; }
+.bg-cube.can-double rect { stroke: #e6a93c; stroke-width: 4; }
 
 /* The last turn's moves, this turn's moves, the checkers that can move, the selected one and its destinations. */
 .bg-last { fill: rgba(230, 169, 60, 0.35); }
