@@ -10,7 +10,7 @@
 var TRANSLATIONS = window.TRANSLATIONS ?? {};
 
 const LANGUAGES = [
-    { code: "en", name: "English", flag: "images/flags/gb.svg" },
+    { code: "en", name: "English", flag: "images/flags/us.svg" },
     { code: "he", name: "עברית", flag: "images/flags/il.svg", rtl: true },
 ];
 const LANGUAGE_KEY = "language";
