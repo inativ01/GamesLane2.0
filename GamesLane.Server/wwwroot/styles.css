@@ -2433,6 +2433,152 @@ main.backgammon {
     min-height: 2.75rem;
 }
 
+/* Rich man, poor man: the user's own hands on top, and the table (the cards to beat and the players) on green felt. */
+main.rich-poor {
+    max-width: 980px;
+}
+
+.rp-hand .rp-cards {
+    justify-content: flex-start;
+    gap: 0.25rem;
+    margin: 0.4rem 0;
+}
+
+.rp-card {
+    padding: 0;
+    border: 0;
+    border-radius: 0.3em;
+    background: none;
+    cursor: pointer;
+}
+
+.rp-card:hover,
+.rp-card:focus-visible {
+    background: none;
+}
+
+.card.chosen {
+    transform: translateY(-0.45em);
+    box-shadow: 0 0 0 3px var(--gold), 0 4px 10px rgba(0, 0, 0, 0.3);
+}
+
+.card-row.small .card {
+    font-size: 0.8rem;
+}
+
+.rp-join {
+    text-align: center;
+}
+
+.rp-request {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0.4rem 0;
+}
+
+.rp-table {
+    margin: 0.75rem 0;
+    padding: 0.75rem;
+    border-radius: var(--radius);
+    background: radial-gradient(circle at 50% 30%, #2f6b45, #173f27);
+    color: #fff;
+}
+
+.rp-table-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 700;
+}
+
+.rp-pile {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.4rem;
+    min-height: 6.5rem;
+    padding: 0.5rem 0;
+}
+
+.rp-pile .hint,
+.rp-pile-who {
+    margin: 0;
+    color: #e9f2ea;
+}
+
+.rp-pile-cards .card {
+    font-size: clamp(1.2rem, 5vw, 1.8rem);
+}
+
+.rp-pile-cards.faded {
+    opacity: 0.45;
+}
+
+.rp-ranking {
+    margin: 0;
+    padding: 0.4rem 1rem 0.4rem 2.2rem;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.92);
+    color: var(--ink);
+    text-align: start;
+}
+
+.rp-players {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+    gap: 0.4rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.rp-players li {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.35rem 0.6rem;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.92);
+    color: var(--ink);
+}
+
+.rp-players li.turn {
+    box-shadow: inset 0 0 0 3px var(--gold);
+}
+
+.rp-players li.left {
+    opacity: 0.65;
+}
+
+.rp-place {
+    min-width: 2.2em;
+    font-weight: 800;
+}
+
+.rp-count {
+    margin-inline-start: auto;
+    color: var(--muted);
+    white-space: nowrap;
+}
+
+.rp-tag {
+    padding: 0 0.45em;
+    border-radius: 999px;
+    background: var(--surface-soft);
+    font-size: 0.8rem;
+    white-space: nowrap;
+}
+
+.rp-tag.rich { background: var(--gold); }
+.rp-tag.poor { background: #d9d2c6; }
+.rp-tag.away { background: #f3d3cc; color: var(--red); }
+.rp-tag.finished { background: #d6efd9; color: #1f6b35; }
+
 @media (max-width: 420px) {
     .brand-name {
         height: 40px;
