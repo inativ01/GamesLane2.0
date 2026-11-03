@@ -107,8 +107,8 @@ function gangStatus(game, state, view) {
     }
 }
 
-// The challenge and specialist cards in play, drawn as small cards on the table: a picture, the kind and the name.
-// Tapping a card shows what it does. Cards added for this heist are marked "New", and cards not used (yet) in this heist
+// The challenge and specialist cards in play, drawn as small cards on the table: a picture, the kind and the name, and
+// with the "Card descriptions" option, what the card does. Tapping a card shows what it does. Cards added for this heist are marked "New", and cards not used (yet) in this heist
 // are faded. What the cards did is shown in the chip table (see chipTable), and open group decisions are shown to
 // players next to their hand (see myDecisions).
 function heistCards(game) {
@@ -122,7 +122,8 @@ function heistCards(game) {
             art,
             el("span", "heist-card-body",
                 isNew ? el("span", "heist-card-top", kind, el("span", "heist-card-new", "New")) : kind,
-                el("strong", "heist-card-name", card.name)));
+                el("strong", "heist-card-name", card.name),
+                ...(game.showCardTexts ? [el("span", "heist-card-text", card.text)] : [])));
         const unused = isUnused(game, card);
         item.classList.toggle("unused", unused);
         item.tabIndex = 0;
@@ -357,6 +358,12 @@ function myHand(game, state, view, hand) {
     const keepsLockedChip = myChip !== null && isLocked(myChip);
 
     const info = el("div", "my-hand-info", el("span", "my-hand-title", `Player ${playerNumber(game, seat)}`));
+    // With the "My hand's ranking" option: what the cards make with the shared cards so far.
+    if (hand.ranking) {
+        const ranking = el("span", "hand-ranking", hand.ranking);
+        ranking.title = "Your hand so far";
+        info.append(ranking);
+    }
     // The chips this seat took in this heist's stages so far.
     const taken = STAGES.map((_, s) => (s <= stage ? game.chips[s][seat] : null))
         .map((number, s) => (number === null ? null : isVoidChip(game, s, seat) ? voidChip(chipElement(s, number)) : chipElement(s, number)))
@@ -614,6 +621,55 @@ function fitTable() {
     }
 }
 
+// A sound when another player takes one of this user's chips: a short falling two-note alert, made by the browser.
+// Browsers only allow sound after the user has tapped the page, so the sound is set up on the first tap.
+let audio = null;
+addEventListener("pointerdown", () => {
+    audio ??= new AudioContext();
+    audio.resume().catch(() => {});
+}, { capture: true });
+
+function playStolenSound() {
+    if (!audio || audio.state !== "running") return;
+    const start = audio.currentTime;
+    [[880, 0], [587, 0.14]].forEach(([frequency, delay]) => {
+        const tone = audio.createOscillator();
+        const volume = audio.createGain();
+        tone.type = "triangle";
+        tone.frequency.value = frequency;
+        volume.gain.setValueAtTime(0.0001, start + delay);
+        volume.gain.exponentialRampToValueAtTime(0.35, start + delay + 0.02);
+        volume.gain.exponentialRampToValueAtTime(0.0001, start + delay + 0.22);
+        tone.connect(volume).connect(audio.destination);
+        tone.start(start + delay);
+        tone.stop(start + delay + 0.25);
+    });
+}
+
+// The chip each of this user's seats held at the last update, as "heist:stage:chip". If another player's seat now
+// holds that chip in the same heist and stage, it was taken from this user.
+let myChips = {};
+
+function noticeStolenChips(game, view) {
+    const now = {};
+    let stolen = false;
+    for (const seat of view.mySeats) {
+        const chip = game.chips[game.stage]?.[seat];
+        if (chip !== null && chip !== undefined) {
+            now[seat] = `${game.heist}:${game.stage}:${chip}`;
+        }
+        const before = myChips[seat];
+        if (before && game.phase === "Betting" && now[seat] !== before) {
+            const [heist, stage, number] = before.split(":").map(Number);
+            stolen ||= heist === game.heist && stage === game.stage && game.chips[stage].some((c, s) => c === number && !view.isMe(s));
+        }
+    }
+    myChips = now;
+    if (stolen) {
+        playStolenSound();
+    }
+}
+
 let gangState = null;
 // Players on a phone or tablet (a touch screen without a mouse) start with the table hidden, as a shared screen usually
 // shows it; on a computer it is shown. Once a player hides or shows it, their choice is remembered on this device.
@@ -624,6 +680,7 @@ let tableHidden = savedTableHidden === null
 
 const gang = startSessionPage("TheGang", (game, state, view) => {
     gangState = game;
+    noticeStolenChips(game, view);
     $("status").textContent = gangStatus(game, state, view);
 
     document.body.classList.toggle("observer", !view.isPlayer);

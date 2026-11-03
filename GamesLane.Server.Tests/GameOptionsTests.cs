@@ -21,6 +21,8 @@ public class GameOptionsTests
         Assert.Equal("1", defaults[TheGangOptions.FirstChallenges]);
         Assert.Equal("", defaults[TheGangOptions.Challenges]);
         Assert.Equal("", defaults[TheGangOptions.Specialists]);
+        Assert.Equal("No", defaults[TheGangOptions.ShowHandRanking]);
+        Assert.Equal("No", defaults[TheGangOptions.ShowCardTexts]);
         Assert.Empty(GameOptions.For(GameType.TicTacToe));
         Assert.Empty(GameOptions.Defaults(GameType.RockPaperScissors));
     }

@@ -63,6 +63,7 @@ public record TheGangShownCard(int FromSeat, string Card);
 /// <see cref="ShownFromSeat"/> showed a card to <see cref="ShownToSeat"/>. <see cref="CommunityCards"/> has one entry per
 /// visible shared slot: one card, or with jokers, the 2 or 3 cards that replaced a joker. <see cref="JokerSwaps"/> has a
 /// seat for each joker swapped in this heist, and <see cref="JokerSeats"/> the seats choosing a card for a joker now.
+/// <see cref="ShowCardTexts"/> tells whether the cards on the table show what they do (an option).
 /// </summary>
 public record TheGangState(
     TheGangMode Mode,
@@ -95,19 +96,22 @@ public record TheGangState(
     IReadOnlyList<int> PreparedSeats,
     IReadOnlyList<int> PlayingSeats,
     IReadOnlyList<int> RevealOrder,
-    IReadOnlyList<TheGangRevealedHand> Revealed);
+    IReadOnlyList<TheGangRevealedHand> Revealed,
+    bool ShowCardTexts);
 
 /// <summary>
 /// A player's own cards in The Gang, with Coordinator, the card they picked to pass on, with Informant, a card another
-/// seat showed them, and with jokers, the two cards offered for a joker in the hand. The hand's name is only shown when
-/// hands are revealed.
+/// seat showed them, and with jokers, the two cards offered for a joker in the hand. <see cref="Ranking"/> is the ranking
+/// the cards make with the shared cards so far (e.g. "Two pair"), only with the option that shows it; otherwise the
+/// hand's value is only shown when hands are revealed.
 /// </summary>
 public record TheGangHand(
     int Seat,
     IReadOnlyList<string> Cards,
     string? PassingCard,
     TheGangShownCard? ShownCard,
-    IReadOnlyList<string>? JokerOffer);
+    IReadOnlyList<string>? JokerOffer,
+    string? Ranking);
 
 /// <summary>
 /// Private state of The Gang, sent only to the user holding these seats.
@@ -125,6 +129,7 @@ public class TheGangSession(string id, Func<IReadOnlyList<Card>>? newDeck = null
     private readonly Func<IReadOnlyList<Card>> _newDeck = newDeck ?? (() => Deck.Shuffled(Random.Shared));
     private readonly Random _random = random ?? Random.Shared;
     private TheGangGame? _game;
+    private TheGangRules _rules = TheGangRules.Basic;
 
     /// <inheritdoc />
     public override GameType Type => GameType.TheGang;
@@ -195,9 +200,12 @@ public class TheGangSession(string id, Func<IReadOnlyList<Card>>? newDeck = null
         WithGame(userKey, game => (game.TryNextHeist(heist, out var e), e), out error);
 
     /// <inheritdoc />
-    protected override void StartNewGame(IReadOnlyList<int> seats) =>
-        _game = new TheGangGame(seats.Count, _newDeck, TheGangRules.FromOptions(Options), _random,
+    protected override void StartNewGame(IReadOnlyList<int> seats)
+    {
+        _rules = TheGangRules.FromOptions(Options);
+        _game = new TheGangGame(seats.Count, _newDeck, _rules, _random,
             (a, b) => HolderOf(GameSeats[a]) is { } holder && holder == HolderOf(GameSeats[b]));
+    }
 
     /// <inheritdoc />
     protected override object GetGameState()
@@ -259,7 +267,8 @@ public class TheGangSession(string id, Func<IReadOnlyList<Card>>? newDeck = null
                         bySeat[player], Text(game.HoleCards(player)), hand.Summary, game.RevealedInOrder[i],
                         hand.Ranking, hand.Values, weakness?.Ranking ?? false, weakness?.Cards ?? []);
                 }).ToArray()
-                : []);
+                : [],
+            _rules.ShowCardTexts);
     }
 
     /// <inheritdoc />
@@ -274,7 +283,11 @@ public class TheGangSession(string id, Func<IReadOnlyList<Card>>? newDeck = null
                 ? new TheGangShownCard(bySeat[between.From], card.ToString())
                 : null;
             var offer = game.JokerOffer(player) is { } cards ? Text(cards) : null;
-            return new TheGangHand(seat, Text(game.HoleCards(player)), game.PassingCard(player)?.ToString(), shown, offer);
+            var counting = game.HoleCards(player).Where(c => !c.IsJoker).ToArray();
+            var ranking = _rules.ShowHandRanking && counting.Length > 0
+                ? HandRankings.OfCards(counting, game.VisibleCommunity)
+                : null;
+            return new TheGangHand(seat, Text(game.HoleCards(player)), game.PassingCard(player)?.ToString(), shown, offer, ranking);
         }).ToArray());
     }
 

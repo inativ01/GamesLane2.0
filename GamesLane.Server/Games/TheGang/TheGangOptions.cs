@@ -45,6 +45,16 @@ public static class TheGangOptions
     public const string Jokers = "jokers";
 
     /// <summary>
+    /// The key of the option that shows each player the ranking of their own hand next to their cards (off by default).
+    /// </summary>
+    public const string ShowHandRanking = "showHandRanking";
+
+    /// <summary>
+    /// The key of the option that shows what each challenge and specialist card does on the card itself (off by default).
+    /// </summary>
+    public const string ShowCardTexts = "showCardTexts";
+
+    /// <summary>
     /// The values of yes/no options.
     /// </summary>
     public const string Yes = "Yes";
@@ -80,6 +90,15 @@ public static class TheGangOptions
             ],
             No),
         new GameOption(
+            ShowHandRanking,
+            "My hand's ranking",
+            [
+                new GameOptionChoice(No, "Hidden", "As in the original game: players work out their hands themselves."),
+                new GameOptionChoice(Yes, "Shown",
+                    "Each player sees the ranking their own cards make with the shared cards so far (e.g. Two pair), next to their cards."),
+            ],
+            No),
+        new GameOption(
             FirstChallenges,
             "Challenge cards on the first heist",
             [.. Enumerable.Range(0, 4).Select(n => new GameOptionChoice(n.ToString(), n.ToString()))],
@@ -93,6 +112,15 @@ public static class TheGangOptions
             [
                 new GameOptionChoice(No, "Allow", "As in the original game. E.g. with Quick Access, Motion Detector and Laser Tripwires have no effect."),
                 new GameOptionChoice(Yes, "Avoid", "Never draw them for the same heist."),
+            ],
+            No,
+            ShownWhen: WhenAdvanced),
+        new GameOption(
+            ShowCardTexts,
+            "Card descriptions",
+            [
+                new GameOptionChoice(No, "Tap to read", "The cards on the table show their name; tap a card to read what it does."),
+                new GameOptionChoice(Yes, "On the cards", "The cards on the table also show what they do."),
             ],
             No,
             ShownWhen: WhenAdvanced),

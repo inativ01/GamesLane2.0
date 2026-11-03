@@ -1173,6 +1173,16 @@ footer {
     color: var(--muted);
 }
 
+/* With the "My hand's ranking: Shown" option. */
+.hand-ranking {
+    align-self: flex-start;
+    padding: 0.1rem 0.55rem;
+    border-radius: 999px;
+    background: var(--surface-soft);
+    font-weight: 700;
+    font-size: 0.9rem;
+}
+
 .my-chips {
     display: flex;
     flex-wrap: wrap;
@@ -1401,6 +1411,13 @@ button.ready-thumb.is-ready:not(:disabled):hover {
 .heist-card-name {
     font-size: 0.95rem;
     line-height: 1.15;
+}
+
+/* With the "Card descriptions: On the cards" option. */
+.heist-card-text {
+    font-size: 0.78em;
+    line-height: 1.25;
+    color: var(--muted);
 }
 
 /* Open group decisions, next to the player's hand. */
