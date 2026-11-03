@@ -36,32 +36,54 @@ It is a complete reimplementation of the original [GamesLane](https://github.com
 ### Sessions
 - A **session** is one instance of a specific game, identified by a unique code.
 - A session can be created from the lobby, joined by entering its code, or opened directly from its URL. Joining does not require a logged-in user.
-- A session is either **inactive** (showing the session lobby) or **active** (showing the game screen).
+- A session's status is **Lobby** (the session lobby), **Playing** (the game screen), **Paused** (the game screen, waiting for an absent player) or **Over** (the game has ended by itself and shows its result). Each game also has its own phases inside Playing, e.g. the exchange in Rich man, poor man or the reveal in The Gang. See **Disconnections and seats** below.
 - The game code is shown in the game's banner at the top of the session's page; clicking it copies it to the clipboard.
-- Once nobody has the session open (players or spectators) and no seat is taken, the session is deleted after 30 seconds. Its code then no longer works.
+- Sessions are saved in the database and kept for 30 days after their last activity, so players can come back to a game later, even after the server restarts. Its code then no longer works.
 
 ### Session lobby (inactive session)
 - A screen shared by all games, showing the game's **seats**.
 - Only a logged-in user can take a seat. Users do not choose a seat: the taken seats are always the first ones, followed by a single empty seat (**Sit here**), until all seats are taken. A user may take more than one seat (and then sees the private information of all of them).
 - A user can leave a seat by tapping it. The seats after it then move up one, so there are no gaps.
 - On every page except the main screen, a home icon in the top bar goes back to the main screen (for players, this gives up their seats).
-- A user who loses their connection (closed tab, phone asleep, network lost) keeps their seats for 30 seconds and gets them back if they return in time. After that, the seats are freed, as if they had left. A disconnected user's seat cannot be taken by someone else before then.
+- A user who loses their connection (closed tab, phone asleep, network lost) keeps their seats for 60 seconds, and gets them back if they return in time; their seat shows a spinner meanwhile. In the lobby, the seats are then freed, as if they had left. During a game, see **Disconnections and seats** below.
 - Creating a session does not seat the creator; they join the session and can then take a seat.
 - Each game defines its maximum number of seats (up to 12) and the minimum needed to start (which may equal the maximum). Tic-tac-toe, rock-paper-scissors and backgammon have 2 seats, both required; The Gang has 8 seats, at least 3 required; Rich man, poor man has 12 seats, at least 6 required.
 - When the minimum number of seats is taken, a **Start** button appears (**New game** after the first game). Any seated user can start the game.
 - While the session is in the lobby, an **Invite friends** panel shows the join link (`/join/{code}`), with **Copy link** and **Share…** buttons where the browser supports them.
-- **Paused game:** if an unfinished game was interrupted (players left or stayed disconnected), the lobby says it is paused and how many seats must be filled to resume it. Its players' seats stay where they are, and only those empty seats can be taken (one **Sit here** at a time, lowest first); the newcomer continues that player's hand. No other players can join. Once all its seats are taken, seated users can **Resume** it. At any time, a seated user can **End game** (after confirming): the seats then move up, others can join, and **Start** begins a new game with however many are seated (at least the minimum).
 - Anyone not seated (logged in or not) is a **spectator**.
 
 ### Game screen (active session)
 - Once the game starts, the session lobby is replaced by a game-specific screen.
 - Seated players may see a different version of the screen than spectators (for example, their own cards in hand). Spectators never see any player's private information.
-- Anyone can watch an active game. Taking a seat in an active game is normally not allowed, but a game may allow it (Rich man, poor man: the seat of a player who left).
+- Anyone can watch an active game. During a game, the only seats that can be taken are those of absent players (see below).
 - A seated user can **stand up** (become a spectator) or **leave** (go back to the main lobby, giving up their seats).
-- If players leave during a game and at least the minimum number remain, the game may continue (a per-game option; Rich man, poor man continues with any number). Otherwise the game pauses and the session goes back to the session lobby.
-- When a game is resumed, anyone who took a seat in the meantime continues the game in place of the previous user. Private game information is not sent while the session is in the lobby.
+- A player can **End game** at any time during a game (after confirming): everyone goes back to the session lobby, the seats move up, others can join, and **Start** begins a new game. Private game information is not sent while the session is in the lobby.
 - When a game ends (The Gang, and a backgammon match), anyone seated can choose **Play again** while at least the minimum number of players are seated, or go **Back to the lobby** (for everyone). A new game is played by whoever is seated (any number between the minimum and the maximum). If fewer than the minimum remain, the session goes back to the session lobby automatically.
 - Tic-tac-toe and rock-paper-scissors never end by themselves; players stand up or leave when they are done.
+
+### Disconnections and seats
+- **Seat states:**
+
+  | State | Meaning | Starts | Ends |
+  | --- | --- | --- | --- |
+  | **Present** | The holder is connected | Taking the seat, or reconnecting | The holder disconnects or leaves |
+  | **Reconnecting** | The holder lost their connection less than 60 seconds ago; the seat shows a spinner. For the game, the seat is still present: nothing else changes | Disconnecting | Coming back (Present), or 60 seconds (Away) |
+  | **Away** | The holder has been disconnected for 60 seconds or more; the seat is still theirs | 60 seconds after disconnecting | The holder comes back (at any time), someone takes the seat, or the game ends |
+  | **Vacant** | Nobody holds the seat | **Stand up**, the home icon, or an Away seat freed (below) | Someone takes it |
+
+  An **absent** seat is one that is Away or Vacant.
+- **Only while a game is in progress** (Playing or Paused) are Away seats kept. In the session lobby, and once a game is Over, an Away seat is freed.
+- **Taking an absent seat:** during a game, anyone logged in can take an absent seat of the game with **Take this seat**, and continues that player's game (their cards, checkers or chips). If the seat was Away, its holder loses it: when they come back, they are a spectator.
+- **What a game does with absent seats** depends on the game:
+
+  | Game | With an absent seat | Effect |
+  | --- | --- | --- |
+  | Tic-tac-toe, Rock-paper-scissors, Backgammon, The Gang | **Wait:** the session is Paused | The game screen shows "Waiting for …" with **Take this seat** and **End game**. Present players can still do what does not need the absent seat (e.g. finish their own turn, pick, move their chip); the game stops where it needs the absent player |
+  | Rich man, poor man | **Act automatically:** the seat passes | The game goes on and never pauses; the seat keeps its cards. At the card exchange, absent seats are removed (see the game's rules) |
+
+- **Ending:** any one present player can **End game** during a game (after confirming), which takes everyone back to the session lobby. The session also goes back to the lobby with **Back to the lobby** after a game is Over, and when there are too few players for the next game (**Play again** with fewer than the minimum seated, or Rich man, poor man's exchange with fewer than 6).
+- **Saving and loading:** a session is saved in the database after every change. Once nobody has had it open for 5 minutes, it is removed from memory; it is loaded again when someone opens it (by its link or code, or when a player reconnects). The server loads nothing when it starts. A session loaded again starts with every holder Away (nobody is connected yet), counted from when they disconnected; in the lobby, their seats are freed. A session that never had a seat taken is deleted instead of saved when it is removed from memory.
+- **Expiry:** sessions are deleted 30 days after their last activity, by a job that runs once a day.
 
 A typical setup is a shared screen (such as a TV or laptop) connected as a spectator to show the board, while each player uses their own phone to view their hand and play.
 
@@ -82,7 +104,7 @@ GamesLane.Server/              ASP.NET Core backend
   Data/                        Database (EF Core + PostgreSQL): tables, migrations, connection setup
   Users/                       User rules, user service, saved game options, and deletion of inactive users
   Hubs/GameHub.cs              SignalR hub for creating, joining and playing sessions
-  Hubs/DisconnectedSeatsMonitor.cs  Frees the seats of users disconnected for over 30 seconds; deletes abandoned sessions
+  Hubs/DisconnectedSeatsMonitor.cs  Marks users disconnected for 60 seconds as Away; removes sessions nobody has open from memory
   Sessions/GameSession.cs      Seats, session lobby and game flow shared by all games
   Sessions/                    Game-specific sessions and the in-memory session store
   Games/GameOptions.cs         Game options (rule variants): each game's options, and checking chosen values
@@ -124,14 +146,15 @@ docs/                          Original logo, name and splash pictures (kept out
 - **The Gang** (3–8 players), the cooperative poker game by John Cooper and Kory Heath. Each heist:
   - Every player gets 2 pocket cards, shown only on their own screen. Five shared cards are dealt: none at first, then 3, 4 and 5 as the stages go on.
   - Four betting stages (white, yellow, orange, red). In each, every player takes a numbered chip, from 1 (weakest hand) up to the number of players (strongest), from the middle or from another player. Tapping your own chip returns it to the middle. Players are numbered 1 to the number of players in seat order: each hand is titled "Player N", and the table's chip list shows the numbers. Next to the player's cards are the chips they took in this heist's earlier stages. Once every player holds a chip, the **Ready** button (👍) appears; the stage ends when everyone has pressed it. Any chip change clears everyone's Ready (and hides the button again while a chip is in the middle). A user with several seats presses Ready once, for all their hands.
-  - Players work out their hand's strength themselves; its value is only shown when the hands are revealed.
+  - **Chip taken:** when another player takes one of your chips, your device plays a short alert sound (after you have tapped the page once, as browsers require). Nothing plays when you take a chip between your own seats.
+  - Players work out their hand's strength themselves; its value is only shown when the hands are revealed. With the option **My hand's ranking** (Hidden by default, or Shown), each player sees next to their own cards the ranking their pocket cards make with the shared cards so far (e.g. "Pair", then "Two pair" once more shared cards appear); nobody else sees it.
   - Hands are then revealed one at a time, from the lowest red chip to the highest, each with its ranking and its five cards, most important first, in bold (e.g. "Two pair: 9, 9, 5, 5, K"). A hand at least as strong as the one before it has a thick green frame; a weaker one has a thick red frame, with the first reason in red: the ranking if it is lower, otherwise the first lower card values (e.g. "Two pair: 9, 9, 5, 5, **7**" after "Two pair: 9, 9, 5, 5, K"). If any hand is weaker than the one before it, the alarm goes off; otherwise the vault opens. Equal hands may be in either order.
   - 3 vaults win the game; 3 alarms lose it.
   - **Jokers** (option, off by default, in both modes): the deck has two jokers.
     - **In a hand:** before the betting, a player dealt a joker gets two cards and taps the one to keep; the other is discarded. If one of the two is a joker, they either keep the other card, or tap the joker to swap it for two more cards (each choice is between two cards). With two jokers in hand, they are swapped one after the other. The betting starts once every joker is swapped. Everyone sees that a player swapped a joker (🃏 next to their name in the chip table), but not which cards.
     - **Cards drawn later** (Motion Detector, Laser Tripwires, Hacker): a joker is swapped the same way, and the stage cannot end until it is.
     - **On the table:** a joker is replaced by two cards, shown side by side in a frame; if one of them is the other joker, it is replaced too, and all three cards show. Each hand uses at most one card of the frame; the game always counts the best hand it allows.
-  - **Advanced mode** (option **Mode**; Basic is the default) adds challenge and specialist cards. The first heist gets 0–3 challenge cards (option, default 1); after a successful heist, one challenge card is added, and after a failed heist, one specialist card. Cards stay in play for the rest of the game. They are drawn at random from the enabled ones (all by default; players can turn cards off), each at most once per game. As in the original game, any combination can come up; with Quick Access (no white chips), Motion Detector and Laser Tripwires have no effect. The option **Cards that cancel each other** (Allow by default, or Avoid) keeps such pairs from being in play together. The cards in play lie on the right of the table (at the bottom on narrow screens), each showing a picture (drawn for this site from the card's name, not taken from the original game), its kind and its name, with the ones added for this heist marked **New**; tapping a card shows its picture and what it does in a popup. With both Investor and Math Whiz in play, both facts are shown. The full card texts are in `docs/the-gang/`.
+  - **Advanced mode** (option **Mode**; Basic is the default) adds challenge and specialist cards. The first heist gets 0–3 challenge cards (option, default 1); after a successful heist, one challenge card is added, and after a failed heist, one specialist card. Cards stay in play for the rest of the game. They are drawn at random from the enabled ones (all by default; players can turn cards off), each at most once per game. As in the original game, any combination can come up; with Quick Access (no white chips), Motion Detector and Laser Tripwires have no effect. The option **Cards that cancel each other** (Allow by default, or Avoid) keeps such pairs from being in play together. The cards in play lie on the right of the table (at the bottom on narrow screens), each showing a picture (drawn for this site from the card's name, not taken from the original game), its kind and its name, with the ones added for this heist marked **New**; tapping a card shows its picture and what it does in a popup. With the option **Card descriptions** (Tap to read by default, or On the cards), each card on the table also shows what it does. With both Investor and Math Whiz in play, both facts are shown. The full card texts are in `docs/the-gang/`.
   - All 10 challenge cards and all 10 specialist cards are included. Motion Detector and Laser Tripwires are checked when the first 3 shared cards appear; the player who gets new pocket cards is shown to everyone. That player gets a panel saying their cards were replaced, with a **Got it** button; the stage cannot end until they press it. Their white chip no longer counts: it is crossed out in red wherever it is shown (the chip table, next to their hand). Locked chips (Noise Sensors, Ventilation Shaft) stay with whoever takes them first: they cannot be taken, swapped or returned. With Blackout, earlier stages' chips are hidden: the chip table shows each as a chip of its stage's colour with "?" instead of the number. The specialist cards that start "Once the pocket cards have been dealt" (Coordinator, Con Artist, Investor, Math Whiz) are not optional and happen by themselves in every heist, before the betting: first Coordinator (everyone picks a card to pass to the next player; it moves once all have picked), then Con Artist (everyone confirms they have seen their cards, then all pocket cards are shuffled and dealt again), then Investor and Math Whiz show every player's count or total to everyone, in the chip table.
   - **The "Decide which of you…" specialist cards are optional.** The group may use any of them, in any order, at any time during the betting, each at most once per heist; when everyone is ready in the red stage, the hands are revealed however many are left unused. Next to a player's hand, each unused one is a folded panel.
   - **Group decisions** (Informant, Getaway Driver, Mastermind, Hacker, Jack, Muscle, Retina Scan, Fingerprint Scan): any player proposes a player and/or a value; everyone sees it, and it takes effect once every voter has pressed the 👍 (any change clears the agreement). Each user votes once, for all their seats, and the count is per user (e.g. "👍 1 of 3" with 3 users); the same goes for Con Artist's "I've seen my cards". Informant's player then secretly shows one card to one other player; Hacker's player draws a card and Jack's player gets the suitless Jack card (never part of a flush), and each then discards one; the stage cannot end until they have. Getaway Driver and Mastermind show the answer to everyone. Muscle's hand beats every hand of the same ranking at the reveal; a green **💪 Muscle** badge marks that player's own hand (next to their pocket cards) and, at the reveal, their revealed hand. The scans are decided just before the strongest hand is revealed, by everyone except the user who holds that hand's seat, for all of their seats, since that hand is on their screen (if one user plays every seat, only the strongest hand's seat sits out); a wrong guess fails the heist. If the hands are already out of order (including the strongest hand, not yet revealed), the heist fails anyway, so the scans are skipped.
@@ -174,7 +197,7 @@ docs/                          Original logo, name and splash pictures (kept out
      | 12 | #1↔#12: 4, #2↔#11: 3, #3↔#10: 2, #4↔#9: 1, #5↔#8: 1; #6 and #7 do not exchange |
 
   3. **How each pair exchanges:** the poorer player must give their N highest cards: the game picks them, and the player confirms with **Give these cards**. The richer player taps any N cards and presses **Give**. Nobody gets any cards until every pair has given: then all the cards are exchanged at once, everyone gets their new cards together, and the poorest player starts. Nobody sees the cards they will receive before choosing the cards they give.
-- **A player who leaves during a game** (stands up, goes back to the main screen, or stays disconnected for 30 seconds): their cards are held until the end of the game. They become inactive and pass automatically; if they are to start a round, the next active player in turn starts it. Anyone can take their seat (**Take this seat** in the player list, no approval needed) and continue the game in their place, with their cards and their place; a player who left can also come back to their own seat this way. An inactive player gets no finishing place. When the game ends and **Next game** is pressed, players whose seat is still empty are out, and the exchange is for the remaining number of players (the others keep their order, by the ranking).
+- **An absent player during a game** (Away or Vacant, see **Disconnections and seats**): their cards are held until the end of the game. They become inactive and pass automatically; if they are to start a round, the next active player in turn starts it. An Away player who comes back plays on. Anyone can take an absent seat (**Take this seat** in the player list, no approval needed) and continue the game in their place, with their cards and their place. An inactive player gets no finishing place. When the game ends and **Next game** is pressed, absent seats are removed, and the exchange is for the remaining number of players (the others keep their order, by the ranking); a player who becomes absent during the exchange is removed too.
 - **Fewer than 6 players:** a game in progress continues with however many active players are left, but there can be no exchange with fewer than 6 players: **Next game** then takes everyone back to the session lobby (a new game can start there once 6 are seated). Likewise, if players leave during the exchange and fewer than 6 remain, everyone goes back to the lobby.
 - **Joining:** during a game, nobody can take a seat other than a seat whose player left. During the exchange, an observer who is logged in can **Ask to join**; any player sees the request and can **Accept** it, choosing the newcomer's place (#1 to the last; the players from that place down move down one), or **Decline** it. A player who leaves during the exchange is dropped at once. Each time a player is added or dropped, one set of 2 to A is added to or removed from the deck (so each number still appears once per player), all the cards are shuffled and dealt again, any cards already given are cancelled, and the exchange starts again for the new number of players.
 - **Screens:** each player's phone shows their hand sorted from low to high, with equal numbers together; they tap cards of one number, then **Throw**, or **Pass**. Tapping a card when there is a throw to beat picks as many cards of that number as are needed. A user holding several seats sees one hand per seat. The table (shown to everyone, and to observers such as a TV) shows the cards to beat and who threw them, then the round's winner; and the players in place order (#1, the rich man, to the last, the poor man), each with their number of cards, whose turn it is, who has passed in this round, who left, the finishing places so far, and during the exchange, who has given their cards. After a game, it shows the next game's places. On a screen without a seat, **Read throws aloud** says each throw out loud (e.g. "3 nines"), in the page's language, using the browser's speech; the choice is remembered in the browser.
@@ -195,13 +218,12 @@ Clients connect to the SignalR hub at `/hubs/game` and call these methods:
 | --- | --- | --- |
 | `CreateSession(gameType)` | session code | Logged-in users only. Creates a session (`"TicTacToe"`, `"RockPaperScissors"`, `"TheGang"`, `"Backgammon"` or `"RichManPoorMan"`) and returns its 6-character code. The creator is not seated. The session starts with the creator's saved options for the game, if any. |
 | `EnterSession(sessionId)` | `{ state, playerId, private }` | Subscribes to the session's updates. For a logged-in user, reconnects them to their seats, updates their name and icon on them, and returns their `playerId`; otherwise `playerId` is `null`. `private` is the user's private game information, or `null`. Pages call this when they open and after reconnecting. |
-| `TakeSeat(sessionId)` | — | Logged-in users only. Takes the next available seat (the first empty one, or while a game is paused, the first empty seat of its players) under the user's display name. Only in the session lobby, except in Rich man, poor man, where during a game it takes the first seat of a player who left. |
+| `TakeSeat(sessionId)` | — | Logged-in users only. Takes the next available seat under the user's display name: in the session lobby, the first empty one; during a game, the first absent seat of the game (Away or Vacant), whose game the user continues. Not while a game is Over, nor during Rich man, poor man's exchange (use `RequestSeat`). |
 | `LeaveSeat(sessionId, seat)` | — | Gives up one of the caller's seats (used for **Leave seat** and **Stand up**). |
 | `LeaveSession(sessionId)` | — | Stops receiving updates and gives up all the caller's seats (used when going back to the main screen). |
 | `NewGame(sessionId, gameNumber)` | — | Seated users only. Starts a new game for everyone seated, replacing game `gameNumber` (0 before the first game). Refused while a game is in progress. If that game was already replaced, nothing changes. |
 | `SetOptions(sessionId, options)` | — | Seated users only, in the session lobby. Sets the options for the next new game, e.g. `{ "mode": "Advanced" }`. Options left out get their default. |
-| `ResumeGame(sessionId)` | — | Seated users only. Continues the paused game; whoever now holds each of its seats plays that seat. |
-| `EndGame(sessionId)` | — | Seated users only. Ends the paused game, however many of its seats are taken; the seats move up, others can join, and a new game can be started. |
+| `EndGame(sessionId)` | — | Seated users only. During a game (Playing or Paused), ends it and takes everyone back to the session lobby; the seats move up, others can join, and a new game can be started. |
 | `ReturnToLobby(sessionId)` | — | Seated users only. After a game has ended, takes everyone back to the session lobby. |
 | `MakeMove(sessionId, seat, cell)` | — | Tic-tac-toe: places the mark of `seat` (0 is X, 1 is O), which the caller must hold. Cells are numbered 0–8, left to right, top to bottom. |
 | `Pick(sessionId, seat, choice)` | — | Rock-paper-scissors: picks `"Rock"`, `"Paper"` or `"Scissors"` for `seat`, which the caller must hold. |
@@ -236,13 +258,11 @@ After every change, the server sends a `StateUpdated` message with the public se
 | Field | Description |
 | --- | --- |
 | `sessionId`, `gameType` | The session code and which game it is |
-| `phase` | `"Lobby"` (session lobby) or `"Playing"` (game screen) |
+| `phase` | `"Lobby"` (session lobby), `"Playing"` (game screen), `"Paused"` (game screen, waiting for an absent player) or `"Over"` (the game has ended by itself) |
 | `minSeats`, `maxSeats` | Seats needed to start, and the number of seats |
-| `seats` | One entry per seat: `{ playerId, name, icon, isConnected }`, or `null` when empty. `icon` is an emoji or a picture address starting with `/`. A page finds its user's seats by comparing `playerId` |
+| `seats` | One entry per seat: `{ playerId, name, icon, status }`, or `null` when empty (Vacant). `status` is `"Present"`, `"Reconnecting"` or `"Away"`. `icon` is an emoji or a picture address starting with `/`. A page finds its user's seats by comparing `playerId` |
 | `gameNumber` | 0 until the first game starts, then counts games |
-| `isGameOver` | The current game has ended |
-| `canResume` | In the lobby with an unfinished, paused game |
-| `vacantGameSeats` | While a game is paused, its players' seats that are empty (they must be taken to resume it), in order; otherwise empty |
+| `absentSeats` | During a game, its seats that are absent (Away or Vacant), in order: they can be taken with **Take this seat**; otherwise empty |
 | `game` | Game-specific state, or `null` before the first game |
 | `optionList` | The game's options: `{ key, label, choices: [{ value, label, hint, image }], default, kind, shownWhen }`, where `image` is a picture's address or `null`, `kind` is `"Choice"` or `"Set"` and `shownWhen` is `{ key, value }` or `null` (empty for games without options) |
 | `options` | The chosen value of each option, e.g. `{ "mode": "Basic" }`, used by the next new game |
@@ -251,7 +271,7 @@ In rock-paper-scissors, the game state only shows whether each seat has picked; 
 
 ### Rejoining
 
-Players are identified by their user ID. After a refresh or dropped connection, the page reconnects and calls `EnterSession`, and the player keeps their seats, as long as they return within 30 seconds.
+Players are identified by their user ID. After a refresh or dropped connection, the page reconnects and calls `EnterSession`, and the player keeps their seats: in the session lobby, as long as they return within 60 seconds; during a game, at any time, unless someone has taken their seat.
 
 ### Login
 
@@ -363,11 +383,11 @@ _Last updated: 2026-11-02. Keep this section current; it is the hand-off point b
 - Never put secrets in the repo, chat or commands; they live only in Render's Environment tab (or `dotnet user-secrets` locally).
 
 ### Known limitations
-- Games are in memory only and are lost on restart.
+- Sessions are kept in memory by one server, and saved in the database; running more than one server instance would need a shared store.
 - A guest exists only in the browser where they logged in; logging in again as a guest creates a new user.
 - Forgotten passwords cannot be reset (no email is collected).
 - The login-token keys are stored unencrypted in the database (the server logs a warning about this at startup), so the connection string must be kept secret.
-- Logging in or out mid-game loses your seat (it is freed 30 seconds later, and the game pauses).
+- Logging in or out mid-game leaves your seat Away (the game pauses, or in Rich man, poor man passes for you) until you log in again as the same user.
 - One server instance only (no scale-out).
 
 ## Running Locally
