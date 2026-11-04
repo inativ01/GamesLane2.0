@@ -65,6 +65,11 @@ public interface IRichManPoorManGame
     bool HasPassed(int player);
 
     /// <summary>
+    /// The cards <paramref name="player"/> last threw in this round, or null if they have not thrown in it.
+    /// </summary>
+    IReadOnlyList<Card>? RoundThrow(int player);
+
+    /// <summary>
     /// Whether <paramref name="player"/> is active, i.e. has not left the game (see <see cref="SetActive"/>).
     /// </summary>
     bool IsActive(int player);

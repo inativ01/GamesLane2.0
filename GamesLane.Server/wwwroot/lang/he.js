@@ -228,7 +228,6 @@ TRANSLATIONS.he = {
     "No cards on the table yet.": "עדיין אין קלפים על השולחן.",
     "Rich man": "עשיר",
     "Poor man": "עני",
-    "Passed": "פס",
     "Gave {n} ✓": "מסירה: {n} ✓",
     "Gives {n}…": "מסירה: {n}…",
     "Take this seat": "לשבת במקום הזה",
