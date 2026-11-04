@@ -12,7 +12,7 @@ function ticTacToeStatus(game, state, view) {
         if (view.isMe(seatOf(game.currentTurn))) {
             return both ? `👉 Your turn (${game.currentTurn})` : "👉 Your turn";
         }
-        return `⏳ ${nameOf(game.currentTurn)} (${game.currentTurn})`;
+        return `⏳ Waiting for ${nameOf(game.currentTurn)} (${game.currentTurn})`;
     }
     if (game.isDraw) {
         return `🤝 Round ${game.round} is a draw`;

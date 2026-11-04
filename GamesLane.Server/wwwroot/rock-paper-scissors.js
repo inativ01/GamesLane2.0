@@ -14,7 +14,7 @@ function rpsStatus(game, state, view) {
         if (pickSeat !== null) {
             return "👉 Make your pick";
         }
-        return view.isPlayer ? "⏳ The other player" : "⏳ Picking…";
+        return view.isPlayer ? "⏳ Waiting for the other player" : "⏳ Waiting for the picks";
     }
 
     if (game.roundWinner === null) {

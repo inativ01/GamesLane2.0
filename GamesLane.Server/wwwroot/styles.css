@@ -603,6 +603,7 @@ footer {
    it takes two: the game's picture and name on the first, the rest on the second. The picture and name keep to the start
    (left, or right in Hebrew) and the name grows to fill its line, so the other items keep to the end on every line. */
 .session-bar {
+    position: relative;
     display: flex;
     flex-wrap: wrap;
     align-items: center;
@@ -648,30 +649,54 @@ footer {
     white-space: nowrap;
 }
 
-.session-actions {
-    display: flex;
+/* The menu (☰) at the end of the session bar, and its panel: the game code and invite link, the players seated, and
+   the players' Leave my seat and End game for everyone. */
+button.session-menu-button {
+    width: 38px;
+    height: 38px;
     flex: none;
-    gap: 0.3rem;
-}
-
-.session-actions:not(:has(:not([hidden]))) {
-    display: none;
-}
-
-button.session-action {
-    width: 34px;
-    height: 34px;
     padding: 0;
     background: rgba(255, 255, 255, 0.1);
     box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.2);
-    font-size: 1.05rem;
+    font-size: 1.3rem;
     line-height: 1;
 }
 
-button.session-action:not(:disabled):hover {
+button.session-menu-button:not(:disabled):hover,
+button.session-menu-button[aria-expanded="true"] {
     background: rgba(255, 255, 255, 0.22);
 }
 
+.session-menu {
+    position: absolute;
+    top: calc(100% + 0.3rem);
+    inset-inline-end: max(0.75rem, calc((100% - 680px) / 2 + 0.75rem));
+    z-index: 15;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    width: min(20rem, calc(100% - 1.5rem));
+    padding: 0.8rem;
+    border-radius: 12px;
+    background: var(--surface);
+    color: var(--ink);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    text-align: start;
+}
+
+.session-menu-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4rem 0.5rem;
+    font-weight: 600;
+}
+
+.session-menu-row > span {
+    flex: 1;
+}
+
+/* The game code in the session bar, as a gold ticket; clicking it copies it. */
 .code {
     display: flex;
     flex: none;
@@ -692,6 +717,44 @@ button.session-action:not(:disabled):hover {
     color: var(--gold);
     font-size: 1.15rem;
     letter-spacing: 0.12em;
+}
+
+.code.copyable {
+    cursor: pointer;
+    transition: background-color 0.15s;
+}
+
+.code.copyable:hover {
+    background: rgba(255, 255, 255, 0.14);
+}
+
+.code.copyable:focus-visible {
+    outline: 3px solid var(--focus);
+    outline-offset: 2px;
+}
+
+.session-menu-value {
+    font-weight: 400;
+}
+
+.session-menu-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    padding-top: 0.6rem;
+    border-top: 1px solid var(--line);
+}
+
+.session-menu-actions:not(:has(:not([hidden]))) {
+    display: none;
+}
+
+button.session-menu-action.danger {
+    background: var(--red);
+}
+
+button.session-menu-action.danger:not(:disabled):hover {
+    background: #8a2718;
 }
 
 /* While the user waits for others: a grey bar. */
@@ -726,6 +789,13 @@ button.session-action:not(:disabled):hover {
 
 .status-actions:not(:has(:not([hidden]))) {
     display: none;
+}
+
+/* A button showing only an icon, e.g. Backgammon's 🎲 Roll. */
+button.icon-button {
+    padding: 0.2rem 0.9rem;
+    font-size: 1.25rem;
+    line-height: 1;
 }
 
 /* The score row, on its own line under the status, in the status bar's colour: the match facts (round, game, draws) and
@@ -806,20 +876,6 @@ button.session-action:not(:disabled):hover {
     .status-bar.act {
         animation: none;
     }
-}
-
-.code.copyable {
-    cursor: pointer;
-    transition: background-color 0.15s;
-}
-
-.code.copyable:hover {
-    background: rgba(255, 255, 255, 0.14);
-}
-
-.code.copyable:focus-visible {
-    outline: 3px solid var(--focus);
-    outline-offset: 2px;
 }
 
 .invite {
@@ -1929,6 +1985,7 @@ button.lobby-options::after {
 }
 
 .option-choice {
+    position: relative;
     flex-direction: row;
     align-items: flex-start;
     gap: 0.6rem;
@@ -1949,6 +2006,27 @@ button.lobby-options::after {
     margin: 0.2rem 0 0;
     padding: 0;
     accent-color: var(--primary);
+}
+
+/* A choice of one (radio buttons): the highlighted row shows the choice, so the button itself is hidden. It still
+   works with the keyboard, and the row is outlined when it has the focus. */
+.option-choice input[type="radio"] {
+    position: absolute;
+    inset: 0;
+    width: 1px;
+    height: 1px;
+    margin: 0;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.option-choice:has(> input[type="radio"]) {
+    gap: 0;
+}
+
+.option-choice:has(input[type="radio"]:focus-visible) {
+    outline: 3px solid var(--primary);
+    outline-offset: 2px;
 }
 
 .option-text {
@@ -2478,7 +2556,7 @@ body.observer main.gang .heist-card-name { font-size: 1em; }
     .session-bar { min-height: calc(30px + 0.4rem); padding-top: 0.1rem; padding-bottom: 0.1rem; }
     .session-art { width: 26px; height: 26px; border-radius: 7px; }
     .session-name { font-size: 1rem; }
-    button.session-action { width: 28px; height: 28px; }
+    button.session-menu-button { width: 30px; height: 30px; }
     .status-bar { padding-top: 0.1rem; padding-bottom: 0.1rem; }
     body.observer main.gang { padding-top: 0.25rem; }
 }
@@ -2525,7 +2603,7 @@ main.backgammon {
 
 .bg-checker circle { fill: #f4efe6; stroke: #8a7f70; stroke-width: 2; }
 .bg-checker .bg-checker-ring { fill: none; stroke: #d6cbb8; stroke-width: 2; }
-.bg-checker.black circle { fill: #2b2420; stroke: #000; }
+.bg-checker.black circle { fill: #2b2420; stroke: #f4efe6; }
 .bg-checker.black .bg-checker-ring { fill: none; stroke: #4a403a; }
 .bg-checker-count { font: 700 20px Arial, sans-serif; fill: #2b2420; }
 .bg-checker.black .bg-checker-count { fill: #f4efe6; }
@@ -2543,7 +2621,7 @@ main.backgammon {
 }
 
 .bg-off.white { fill: #f4efe6; }
-.bg-off.black { fill: #2b2420; stroke: #000; }
+.bg-off.black { fill: #2b2420; stroke: #f4efe6; }
 
 .bg-die rect { fill: #fff; stroke: #2b2420; stroke-width: 2; }
 .bg-die circle { fill: #2b2420; }

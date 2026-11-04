@@ -465,6 +465,25 @@ async function uploadIcon(file, errorElement) {
     return false;
 }
 
+// A button that copies `text`; it says "Copied!" for a moment, or shows `failure` if copying fails.
+function copyButton(text, failure) {
+    const button = el("button", "secondary small", t("Copy"));
+    button.type = "button";
+    button.hidden = !navigator.clipboard;
+    let timer = 0;
+    button.addEventListener("click", async () => {
+        try {
+            await navigator.clipboard.writeText(text);
+            button.textContent = t("Copied!");
+            clearTimeout(timer);
+            timer = setTimeout(() => { button.textContent = t("Copy"); }, 2000);
+        } catch {
+            showError(failure);
+        }
+    });
+    return button;
+}
+
 // Clicking the game code in the session bar copies it; its icon turns into a tick for a moment.
 function setUpCodeCopy(sessionId) {
     const code = $("session-code").closest(".code");
@@ -666,10 +685,10 @@ function showScores(state, view, facts, players) {
  * played, the game screen (#game-screen) is shown and render(game, state, view) is called on every update.
  * view.mySeats lists the seats this tab's user holds; view.isMe(seat) tells whether they hold a seat.
  * view.private is this user's private game information (e.g. their cards), for games that have it, or null.
- * The session bar shows the user's role: seatRole(seat, state) gives a seat's short name (by default its number), or
- * 👁 for an observer. While a game is on, the status bar under it shows #status and the absent players' banner.
+ * The session bar shows the user's role ("You: …"): seatRole(seat, state) gives a seat's name (by default "Seat 2"), or
+ * "Watching" for an observer. While a game is on, the status bar under it shows #status and the absent players' banner.
  */
-function startSessionPage(gameType, render, seatRole = (seat) => String(seat + 1)) {
+function startSessionPage(gameType, render, seatRole = (seat) => t("Seat {n}", { n: seat + 1 })) {
     const sessionId = (params.get("session") ?? "").toUpperCase();
     let lastState = null;
 
@@ -699,23 +718,53 @@ function startSessionPage(gameType, render, seatRole = (seat) => String(seat + 1
     const nextSeat = (state) => state.seats.findIndex((s) => !s);
 
     // In the status bar: a banner while the game waits for absent players, or has absent seats that can be taken, with
-    // Take this seat for logged-in users. In the session bar, for players during a game: Stand up and End game icons.
+    // Take this seat for logged-in users.
     const banner = el("div", "absent-banner");
     banner.hidden = true;
     banner.setAttribute("role", "status");
     $("status-bar").append(banner);
-    const iconButton = (id, icon, label) => {
-        const button = el("button", "session-action", icon);
+
+    // The session bar's menu (☰), during a game: the invite link to copy or share, how many players are seated, and for
+    // players, Leave my seat and End game for everyone.
+    const menuButton = el("button", "session-menu-button", "☰");
+    menuButton.type = "button";
+    menuButton.title = t("Game menu");
+    menuButton.setAttribute("aria-label", t("Game menu"));
+    menuButton.setAttribute("aria-haspopup", "true");
+    menuButton.setAttribute("aria-expanded", "false");
+    const menuAction = (text, className) => {
+        const button = el("button", `session-menu-action ${className}`, text);
         button.type = "button";
-        button.id = id;
-        button.title = label;
-        button.setAttribute("aria-label", label);
         button.hidden = true;
         return button;
     };
-    const standUp = iconButton("stand-up", "🧍", t("Stand up"));
-    const endGame = iconButton("end-game", "⏹", t("End game"));
-    $("session-info").after(el("span", "session-actions", standUp, endGame));
+    const share = el("button", "secondary small", t("Share"));
+    share.type = "button";
+    share.hidden = !navigator.share;
+    share.addEventListener("click", () => navigator.share({ title: t("Join my GamesLane game"), url: joinUrl }).catch(() => {}));
+    const seatedCount = el("span", "session-menu-value");
+    const standUp = menuAction(t("Leave my seat (watch)"), "secondary");
+    const endGame = menuAction(t("End game for everyone"), "danger");
+    const menu = el("div", "session-menu",
+        el("div", "session-menu-row", el("span", null, t("Invite link")),
+            copyButton(joinUrl, t("Could not copy. Select the link and copy it manually.")), share),
+        el("div", "session-menu-row", el("span", null, t("Players:")), seatedCount),
+        el("div", "session-menu-actions", standUp, endGame));
+    menu.hidden = true;
+    menu.setAttribute("role", "menu");
+    const showMenu = (open) => {
+        menu.hidden = !open;
+        menuButton.setAttribute("aria-expanded", String(open));
+    };
+    menuButton.addEventListener("click", () => showMenu(menu.hidden));
+    document.addEventListener("click", (event) => {
+        if (!menu.contains(event.target) && event.target !== menuButton) showMenu(false);
+    });
+    document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape") showMenu(false);
+    });
+    $("session-code").closest(".code").after(menuButton);
+    $("session-info").closest(".session-bar").append(menu);
 
     function updateBanner(state) {
         const absent = state.phase === "Paused" || state.phase === "Playing" ? state.absentSeats : [];
@@ -727,11 +776,12 @@ function startSessionPage(gameType, render, seatRole = (seat) => String(seat + 1
         const away = absent.filter((seat) => state.seats[seat]).map((seat) => state.seats[seat].name);
         const empty = absent.length - away.length;
         const names = [...away, ...(empty === 1 ? [t("1 empty seat")] : empty > 1 ? [t("{n} empty seats", { n: empty })] : [])].join(", ");
-        const text = state.phase === "Paused" ? `⏸ ⏳ ${names}` : `🪑 ${t("Free seats: {names}", { names })}`;
+        const text = state.phase === "Paused" ? t("Game paused: {names}", { names }) : t("Free seats: {names}", { names });
         const items = [el("span", null, text)];
-        // Anyone not seated can take a seat, after logging in.
-        if (!view.isPlayer) {
-            const take = el("button", "small", account?.signedIn ? t("Take this seat") : t("Log in to take a seat"));
+        // Anyone can take a seat, after logging in; a player takes it as a second seat.
+        {
+            const label = !account?.signedIn ? t("Log in to take a seat") : view.isPlayer ? t("Take it as a second seat") : t("Take this seat");
+            const take = el("button", "small", label);
             take.type = "button";
             take.addEventListener("click", () => (account?.signedIn ? act("TakeSeat") : openLoginDialog()));
             items.push(take);
@@ -739,21 +789,14 @@ function startSessionPage(gameType, render, seatRole = (seat) => String(seat + 1
         banner.replaceChildren(...items);
     }
 
-    // The session bar's facts: the user's role (🪑 and their seats, or 👁 when watching) and 👥 the players present
-    // out of the seats.
+    // The session bar's role ("You: ⚪ White", or "👁 Watching") and, in its menu, how many players are seated.
     function updateSessionInfo(state) {
-        const fact = (text, title) => {
-            const span = el("span", "session-fact", text);
-            span.title = title;
-            span.setAttribute("aria-label", `${title}: ${text}`);
-            return span;
-        };
-        const present = state.seats.filter((s) => s && s.status === "Present").length;
-        $("session-info").replaceChildren(
-            view.isPlayer
-                ? fact(`🪑 ${view.mySeats.map((seat) => seatRole(seat, state)).join(", ")}`, t("Your seats"))
-                : fact("👁", t("Watching")),
-            fact(`👥 ${present}/${state.seats.length}`, t("Players present")));
+        const role = view.isPlayer
+            ? t("You: {seats}", { seats: view.mySeats.map((seat) => seatRole(seat, state)).join(", ") })
+            : `👁 ${t("Watching")}`;
+        $("session-info").replaceChildren(el("span", "session-fact", role));
+        seatedCount.textContent = t("{taken} of {total} seated",
+            { taken: state.seats.filter(Boolean).length, total: state.seats.length });
     }
 
     // A seat tile: a big icon, the name, and a note such as "Seat 2 · You". The user's own seat is a button to leave
@@ -961,6 +1004,8 @@ function startSessionPage(gameType, render, seatRole = (seat) => String(seat + 1
         $("status-bar").hidden = inLobby;
         $("invite").hidden = !inLobby;
         updateSessionInfo(state);
+        menuButton.hidden = inLobby;
+        if (inLobby) showMenu(false);
         standUp.hidden = inLobby || !view.isPlayer;
         endGame.hidden = inLobby || !view.isPlayer || state.phase === "Over";
 
@@ -980,8 +1025,12 @@ function startSessionPage(gameType, render, seatRole = (seat) => String(seat + 1
         $("play-again").hidden = $("to-lobby").hidden = !(view.isPlayer && state.phase === "Over");
         updateBanner(state);
         render(state.game, state, view);
-        const mustAct = $("status").textContent.includes("👉")
+        // Games mark their status with 👉 (the user has to act) or ⏳ (waiting for others). The marks only choose the
+        // bar's colour (gold or grey) and are not shown.
+        const status = $("status");
+        const mustAct = status.textContent.includes("👉")
             || [...$("status-bar").querySelectorAll(".status-actions button")].some((b) => !b.hidden && !b.classList.contains("secondary"));
+        status.textContent = status.textContent.replace(/[👉⏳]\uFE0F?\s*/gu, "").trim();
         $("status-bar").classList.toggle("act", mustAct);
     }
 
@@ -1026,6 +1075,7 @@ function startSessionPage(gameType, render, seatRole = (seat) => String(seat + 1
     });
 
     endGame.addEventListener("click", () => {
+        showMenu(false);
         if (confirm(t("End the game? Its progress is lost, and everyone goes back to the lobby."))) {
             act("EndGame");
         }
@@ -1035,9 +1085,8 @@ function startSessionPage(gameType, render, seatRole = (seat) => String(seat + 1
     $("play-again").addEventListener("click", () => act("NewGame", lastState?.gameNumber ?? 0));
     $("to-lobby").addEventListener("click", () => act("ReturnToLobby"));
     standUp.addEventListener("click", () => {
-        if (confirm(t("Stand up? You give up your seat and watch the game."))) {
-            view.mySeats.forEach((seat) => act("LeaveSeat", seat));
-        }
+        showMenu(false);
+        view.mySeats.forEach((seat) => act("LeaveSeat", seat));
     });
 
     // Going back to the main screen gives up this user's seats.

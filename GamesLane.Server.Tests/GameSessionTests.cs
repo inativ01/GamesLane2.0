@@ -268,6 +268,20 @@ public class GameSessionTests
     }
 
     [Fact]
+    public void A_player_can_take_an_empty_seat_of_the_game_as_a_second_seat_and_play_both()
+    {
+        var session = Started(new TicTacToeSession("ABC123"));
+        session.TryLeaveSeat(Bob, 1, out _);
+
+        Assert.True(session.TryTakeNextSeat(Alice, AliceProfile, "conn-a", out var error), error);
+
+        Assert.Equal(SessionPhase.Playing, session.GetPublicState().Phase);
+        Assert.Equal(["Alice", "Alice"], session.GetPublicState().Seats.Select(s => s!.Name));
+        Assert.True(session.TryMove(Alice, 0, 0, out error), error);
+        Assert.True(session.TryMove(Alice, 1, 4, out error), error);
+    }
+
+    [Fact]
     public void A_new_user_in_the_empty_seat_continues_the_paused_game()
     {
         var session = Started(new TicTacToeSession("ABC123"));

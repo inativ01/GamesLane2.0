@@ -151,7 +151,7 @@ function statusText(game, state, view) {
     }
     const mine = view.isMe(game.turn) && view.mySeats.length === 1;
     return mine ? `👉 ${t(game.currentThrow ? "Beat the cards on the table, or pass" : "You start the round")}`
-        : `⏳ ${playerName(state, game.turn)}`;
+        : `⏳ ${t("Waiting for {name}", { name: playerName(state, game.turn) })}`;
 }
 
 // The middle of the table: the throw to beat, or the last throw (faded) and who won its round. After a game, the ranking.

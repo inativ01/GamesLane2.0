@@ -396,23 +396,24 @@ function backgammonTexts(game, state, view) {
             const roller = openingRoller(game, view);
             const waiting = [0, 1].filter((s) => game.openingDice[s] === null || openingTie(game)).map(name);
             status = roller !== null
-                ? `👉 🎲 ${both ? `${colorName(roller)}: ` : ""}${t("The higher die starts")}`
-                : `⏳ 🎲 ${waiting.join(", ")}`;
+                ? `👉 ${both ? `${colorName(roller)}: ` : ""}${t("The higher die starts")}`
+                : `⏳ ${t("Waiting for {name}", { name: waiting.join(t(" and ")) })}`;
             break;
         }
         case "Rolling": {
             const color = colorName(game.turn);
-            status = !mine(game.turn) ? `⏳ 🎲 ${name(game.turn)} (${color})` : `👉 🎲 ${both ? color : t("Your turn")}`;
+            status = !mine(game.turn) ? `⏳ ${t("Waiting for {name}", { name: `${name(game.turn)} (${color})` })}`
+                : `👉 ${both ? color : t("Your turn")}`;
             break;
         }
         case "Doubled":
             status = `${about(game.turn, "You double to {n}.", "{name} doubles to {n}.", { n: game.cubeValue * 2 })} `
-                + (mine(1 - game.turn) ? `👉 ${t("Take or drop?")}` : `⏳ ${name(1 - game.turn)}`);
+                + (mine(1 - game.turn) ? `👉 ${t("Take or drop?")}` : `⏳ ${t("Waiting for {name}", { name: name(1 - game.turn) })}`);
             break;
         case "Moving": {
             const dice = diceText(game.dice);
-            status = !mine(game.turn) ? `⏳ ${name(game.turn)} (${colorName(game.turn)}): ${dice}`
-                : !game.legalMoves.length ? `👉 ${t("Press Done to end your turn")}`
+            status = !mine(game.turn) ? `⏳ ${t("Waiting for {name}", { name: `${name(game.turn)} (${colorName(game.turn)})` })}: ${dice}`
+                : !game.legalMoves.length ? `👉 ${t("No more moves")}`
                     : `👉 ${both ? colorName(game.turn) : t("Your move")}: ${dice}`;
             break;
         }
@@ -506,7 +507,7 @@ const backgammon = startSessionPage("Backgammon", (game, state, view) => {
     $("bg-last-move").hidden = !game.lastTurn?.moves.length || game.played.length > 0;
     $("bg-last-move").setAttribute("aria-pressed", String(showLast));
     fitBoard();
-}, (seat) => ["⚪", "⚫"][seat]);
+}, (seat) => `${["⚪", "⚫"][seat]} ${colorName(seat)}`);
 
 addEventListener("resize", () => requestAnimationFrame(fitBoard));
 

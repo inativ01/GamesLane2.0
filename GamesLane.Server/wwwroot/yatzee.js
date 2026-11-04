@@ -77,7 +77,7 @@ function yatzeeTexts(game, state, view) {
             : game.winners.length === 1 ? `🏆 ${about(game.winners[0], "You win with {n} points!", "{name} wins with {n} points!", { n: best })}`
                 : `🤝 ${t("A tie at {n} points: {names}.", { n: best, names: game.winners.map(name).join(", ") })}`;
     } else if (!view.isMe(game.turn)) {
-        status = `⏳ 🎲 ${name(game.turn)}`;
+        status = `⏳ ${t("Waiting for {name}", { name: name(game.turn) })}`;
     } else {
         const action = game.rollsLeft === ROLLS ? t("Roll the dice")
             : game.rollsLeft > 0 ? t("Keep dice and roll again, or choose a box")

@@ -83,13 +83,13 @@ function gangStatus(game, state, view) {
             const step = { jokers: "Jokers: swap your jokers", coordinator: "Coordinator: pass on a card" }[game.preparingCard]
                 ?? "Con Artist: look at your cards";
             const mine = game.playingSeats.some((s) => view.isMe(s) && !game.preparedSeats.includes(s));
-            return `${mine ? "👉 " : ""}${step} · ⏳ ${waiting.join(", ")}`;
+            return `${mine ? "👉 " : ""}${step} · Waiting for ${waiting.join(", ")}`;
         }
         case "Betting": {
             const mine = game.playingSeats.some((s) => view.isMe(s) && !game.readySeats.includes(s));
             const status = `${mine ? "👉" : "⏳"} ${STAGES[game.stage]} chips`;
             return awaitsRedraw(game)
-                ? `${status} · ⏳ ${state.seats[game.redrawnSeat]?.name ?? ""}: confirm new cards`
+                ? `${status} · Waiting for ${state.seats[game.redrawnSeat]?.name ?? ""} to confirm new cards`
                 : status;
         }
         case "Reveal":
@@ -712,7 +712,7 @@ const gang = startSessionPage("TheGang", (game, state, view) => {
     $("chip-table").replaceChildren(...chipTable(game, state, view));
     $("revealed").replaceChildren(...game.revealed.map((hand) => revealedHand(game, state, view, hand)));
     fitTable();
-}, (seat, state) => String((state.game && playerNumber(state.game, seat)) || seat + 1));
+}, (seat, state) => `Player ${(state.game && playerNumber(state.game, seat)) || seat + 1}`);
 
 addEventListener("resize", () => requestAnimationFrame(fitTable));
 $("toggle-table").addEventListener("click", () => {
