@@ -279,13 +279,9 @@ function drawGame(game, viewer, canMove, mayDouble) {
     root.append(board);
     board.append(...drawBoard());
 
-    // The last turn's moves (faint) and this turn's moves so far.
-    const marked = (seat, moves, className) => moves.forEach((m) =>
-        [m.from, m.to].forEach((p) => board.append(highlight(toBlack(p, seat), className))));
-    if (game.lastTurn && !game.played.length) {
-        marked(game.lastTurn.seat, game.lastTurn.moves, "bg-last");
-    }
-    marked(game.turn, game.played, "bg-last current");
+    // This turn's moves so far (the last turn's are shown only with Last move).
+    game.played.forEach((m) =>
+        [m.from, m.to].forEach((p) => board.append(highlight(toBlack(p, game.turn), "bg-current"))));
 
     const moves = canMove ? game.legalMoves : [];
     const mover = (p) => toBlack(p, game.turn);
@@ -456,21 +452,19 @@ function backgammonTexts(game, state, view) {
     return { status, message };
 }
 
-// The two players: colour, name, match score and pip count, with the seat to act marked.
-function scoreboard(game, state, view) {
+// The score row in the status bar: the match length, the game number and the Crawford game, then each player's colour,
+// name, match score and pip count, with the seat to act outlined.
+function showScoreboard(game, state, view) {
     const acting = game.phase === "GameOver" || game.phase === "MatchOver" ? null : actingSeat(game);
-    const header = listItem([t("Match to {points}", { points: pointsText(game.matchLength) }), t("Game {n}", { n: game.gameNumber }),
-        game.isCrawford && t("Crawford game")].filter(Boolean).join(" · "));
-    header.className = "bg-match";
-    return [header, ...[0, 1].map((seat) => {
-        const item = listItem(
-            Object.assign(document.createElement("span"), { className: `bg-swatch ${seat === 0 ? "white" : "black"}` }),
-            seatLabel(state, seat, view),
-            Object.assign(document.createElement("strong"), { className: "bg-score", textContent: String(game.scores[seat]) }),
-            Object.assign(document.createElement("span"), { className: "bg-pips", textContent: t("{n} pips", { n: game.pips[seat] }) }));
-        item.classList.toggle("acting", seat === acting);
-        return item;
-    })];
+    showScores(state, view,
+        [t("Match to {points}", { points: pointsText(game.matchLength) }), t("Game {n}", { n: game.gameNumber }), game.isCrawford && t("Crawford game")],
+        [0, 1].map((seat) => ({
+            seat,
+            before: el("span", `bg-swatch ${seat === 0 ? "white" : "black"}`),
+            score: game.scores[seat],
+            extra: t("{n} pips", { n: game.pips[seat] }),
+            acting: seat === acting,
+        })));
 }
 
 // The whole page fits the screen without scrolling: the board shrinks by however much the page is too tall (down to
@@ -496,7 +490,7 @@ const backgammon = startSessionPage("Backgammon", (game, state, view) => {
     }
     current = { game, view, viewer, canMove };
 
-    $("bg-players").replaceChildren(...scoreboard(game, state, view));
+    showScoreboard(game, state, view);
     $("bg-board").replaceChildren(drawGame(game, viewer, canMove, game.canDouble && view.isMe(game.turn)));
     const { status, message } = backgammonTexts(game, state, view);
     $("status").textContent = status;

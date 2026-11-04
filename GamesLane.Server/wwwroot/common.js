@@ -642,6 +642,24 @@ function seatLabel(state, seat, view, prefix = "") {
     return label;
 }
 
+// The score row in the status bar (#scores), for games that keep a score: the match facts (e.g. "Round 3"), then a chip
+// per player with what comes before the name (e.g. a mark), the name, the score and any extra (e.g. a pip count), and
+// the seat to act outlined. Players: [{ seat, before, score, extra, acting }].
+function showScores(state, view, facts, players) {
+    const chip = (player) => {
+        const item = el("li", "score-chip", player.before ?? "", seatLabel(state, player.seat, view),
+            el("strong", "score-value", String(player.score)));
+        if (player.extra) {
+            item.append(el("span", "score-extra", player.extra));
+        }
+        item.classList.toggle("acting", Boolean(player.acting));
+        return item;
+    };
+    $("scores").replaceChildren(
+        ...(facts.length ? [el("li", "score-facts", facts.filter(Boolean).join(" · "))] : []),
+        ...players.map(chip));
+}
+
 /**
  * Runs a session page. The page URL is <page>?session=CODE. Anyone can watch; logged-in users can take seats.
  * While the session is in its lobby, the shared session lobby (#session-lobby) is shown; while a game is being

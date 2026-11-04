@@ -8,20 +8,19 @@ const isRoundOver = (game) => game.isDraw || game.winner !== "None";
 function ticTacToeStatus(game, state, view) {
     const nameOf = (mark) => state.seats[seatOf(mark)]?.name ?? mark;
     const both = view.isMe(0) && view.isMe(1);
-    const round = `R${game.round}`;
     if (!isRoundOver(game)) {
         if (view.isMe(seatOf(game.currentTurn))) {
-            return both ? `${round} · 👉 Your turn (${game.currentTurn})` : `${round} · 👉 Your turn`;
+            return both ? `👉 Your turn (${game.currentTurn})` : "👉 Your turn";
         }
-        return `${round} · ⏳ ${nameOf(game.currentTurn)} (${game.currentTurn})`;
+        return `⏳ ${nameOf(game.currentTurn)} (${game.currentTurn})`;
     }
     if (game.isDraw) {
-        return `${round} · 🤝 Draw`;
+        return `🤝 Round ${game.round} is a draw`;
     }
     if (view.isMe(seatOf(game.winner)) && !both) {
-        return `${round} · 🏆 You win!`;
+        return `🏆 You win round ${game.round}!`;
     }
-    return `${round} · 🏆 ${nameOf(game.winner)} (${game.winner}) wins`;
+    return `🏆 ${nameOf(game.winner)} (${game.winner}) wins round ${game.round}`;
 }
 
 let turnSeat = 0;
@@ -51,9 +50,9 @@ const ticTacToe = startSessionPage("TicTacToe", (game, state, view) => {
 
     $("status").textContent = ticTacToeStatus(game, state, view);
     $("next-round").hidden = !(view.isPlayer && isRoundOver(game));
-    $("players").replaceChildren(
-        ...MARKS.map((mark, seat) => listItem(seatLabel(state, seat, view, `${mark} · `), `: ${game.scores[seat]}`)),
-        listItem(`Draws: ${game.draws}`));
+    showScores(state, view, [`Round ${game.round}`, `Draws: ${game.draws}`], MARKS.map((mark, seat) => ({
+        seat, before: el("span", "score-mark", mark), score: game.scores[seat], acting: !isRoundOver(game) && seat === turnSeat,
+    })));
 }, (seat) => MARKS[seat]);
 
 $("next-round").addEventListener("click", () => {
