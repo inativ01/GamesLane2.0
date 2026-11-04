@@ -9,8 +9,8 @@ namespace GamesLane.Server.Games.RichManPoorMan;
 /// </summary>
 public class RichManPoorManGame : IRichManPoorManGame
 {
-    private readonly Action<Card[]> _shuffle;
-    private readonly Random _random;
+    private Action<Card[]> _shuffle;
+    private Random _random;
     private readonly Dictionary<int, PlayerState> _players = [];
     private readonly List<int> _order = [];
     private readonly HashSet<int> _passedSinceThrow = [];
@@ -34,6 +34,15 @@ public class RichManPoorManGame : IRichManPoorManGame
         Deal();
         Phase = RichManPoorManPhase.Playing;
         Turn = FirstStarter();
+    }
+
+    /// <summary>
+    /// Gives a game loaded from a save its shuffle and random draws again (see the constructor).
+    /// </summary>
+    internal void Reattach(Action<Card[]>? shuffle, Random? random)
+    {
+        _random = random ?? Random.Shared;
+        _shuffle = shuffle ?? _random.Shuffle;
     }
 
     /// <inheritdoc />

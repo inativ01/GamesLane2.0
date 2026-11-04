@@ -203,9 +203,16 @@ public class TheGangSession(string id, Func<IReadOnlyList<Card>>? newDeck = null
     protected override void StartNewGame(IReadOnlyList<int> seats)
     {
         _rules = TheGangRules.FromOptions(Options);
-        _game = new TheGangGame(seats.Count, _newDeck, _rules, _random,
-            (a, b) => HolderOf(GameSeats[a]) is { } holder && holder == HolderOf(GameSeats[b]));
+        _game = new TheGangGame(seats.Count, _newDeck, _rules, _random, SameHolder);
     }
+
+    /// <inheritdoc />
+    protected override void OnRestored() => _game?.Reattach(_newDeck, _random, SameHolder);
+
+    /// <summary>
+    /// Whether players <paramref name="a"/> and <paramref name="b"/> are held by the same user.
+    /// </summary>
+    private bool SameHolder(int a, int b) => HolderOf(GameSeats[a]) is { } holder && holder == HolderOf(GameSeats[b]);
 
     /// <inheritdoc />
     protected override object GetGameState()

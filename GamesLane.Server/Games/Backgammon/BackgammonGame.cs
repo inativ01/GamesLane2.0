@@ -8,7 +8,7 @@ public class BackgammonGame : IBackgammonGame
 {
     private const int MaxCube = 64;
 
-    private readonly Func<int> _rollDie;
+    private Func<int> _rollDie;
     private readonly int[] _scores = new int[2];
     private readonly List<BackgammonStep> _played = [];
     private readonly int?[] _openingDice = new int?[2];
@@ -29,6 +29,11 @@ public class BackgammonGame : IBackgammonGame
         _turnStart = Position = start ?? BackgammonPosition.Start;
         StartGame(Position);
     }
+
+    /// <summary>
+    /// Gives a match loaded from a save its die again (see the constructor).
+    /// </summary>
+    internal void Reattach(Func<int>? rollDie) => _rollDie = rollDie ?? (() => Random.Shared.Next(1, 7));
 
     /// <inheritdoc />
     public BackgammonRules Rules { get; }

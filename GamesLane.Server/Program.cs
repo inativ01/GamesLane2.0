@@ -19,6 +19,7 @@ builder.Services.AddHttpClient();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IGameOptionsService, GameOptionsService>();
 builder.Services.AddHostedService<InactiveUserCleanup>();
+builder.Services.AddSingleton<ISessionRepository, SessionRepository>();
 builder.Services.AddSingleton<IGameSessionStore, GameSessionStore>();
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddHostedService<DisconnectedSeatsMonitor>();
@@ -41,11 +42,11 @@ app.MapGet("/health", () => Results.Ok("Healthy"));
 app.MapAccountEndpoints();
 app.MapExternalSignInEndpoints();
 
-app.MapGet("/api/sessions/{code}", (string code, IGameSessionStore store) =>
-    store.Get(code) is { } session ? Results.Ok(SessionInfo(session)) : Results.NotFound());
+app.MapGet("/api/sessions/{code}", async (string code, IGameSessionStore store) =>
+    await store.GetAsync(code) is { } session ? Results.Ok(SessionInfo(session)) : Results.NotFound());
 
-app.MapGet("/join/{code}", (string code, IGameSessionStore store) =>
-    store.Get(code) is { } session
+app.MapGet("/join/{code}", async (string code, IGameSessionStore store) =>
+    await store.GetAsync(code) is { } session
         ? Results.Redirect($"{GameSessionStore.PageFor(session.Type)}?session={session.Id}")
         : Results.Redirect($"/?session={Uri.EscapeDataString(code.ToUpperInvariant())}&notfound=1"));
 

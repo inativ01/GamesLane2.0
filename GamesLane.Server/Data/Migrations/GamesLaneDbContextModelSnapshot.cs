@@ -42,6 +42,36 @@ namespace GamesLane.Server.Data.Migrations
                     b.ToTable("ExternalLogins");
                 });
 
+            modelBuilder.Entity("GamesLane.Server.Data.SavedSession", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasMaxLength(6)
+                        .HasColumnType("character varying(6)");
+
+                    b.Property<string>("Data")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("GameType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Version")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UpdatedAt");
+
+                    b.ToTable("Sessions");
+                });
+
             modelBuilder.Entity("GamesLane.Server.Data.User", b =>
                 {
                     b.Property<Guid>("Id")

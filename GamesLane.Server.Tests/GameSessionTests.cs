@@ -439,56 +439,89 @@ public class GameSessionTests
         Assert.False(session.Disconnect("spectator", Now));
     }
 
-    // Abandoned sessions
+    // Idle sessions (removed from memory, but saved)
 
-    private static readonly TimeSpan Grace = TimeSpan.FromSeconds(30);
-
-    [Fact]
-    public void A_session_nobody_opens_is_abandoned_after_the_grace_period()
-    {
-        var session = new TicTacToeSession("ABC123");
-
-        Assert.False(session.IsAbandoned(Now, Grace));
-        Assert.False(session.IsAbandoned(Now.AddSeconds(29), Grace));
-        Assert.True(session.IsAbandoned(Now.AddSeconds(30), Grace));
-    }
+    private static readonly TimeSpan Idle = TimeSpan.FromMinutes(5);
 
     [Fact]
-    public void A_session_with_a_spectator_is_not_abandoned()
-    {
-        var session = new TicTacToeSession("ABC123");
-        session.Enter("connection:tv", null, "tv");
-
-        Assert.False(session.IsAbandoned(Now, Grace));
-        Assert.False(session.IsAbandoned(Now.AddMinutes(5), Grace));
-    }
-
-    [Fact]
-    public void A_disconnected_player_in_the_lobby_keeps_the_session_until_their_seat_is_freed()
+    public void A_session_nobody_has_open_is_idle_after_the_idle_time_even_with_seats_taken()
     {
         var session = Seated(new TicTacToeSession("ABC123"));
         session.Disconnect("conn-a", Now);
         session.Disconnect("conn-b", Now);
 
-        Assert.False(session.IsAbandoned(Now.AddMinutes(5), Grace));
-
-        session.UpdateAwaySeats(Now.AddMinutes(5));
-        Assert.False(session.IsAbandoned(Now.AddMinutes(5), Grace));
-        Assert.True(session.IsAbandoned(Now.AddMinutes(5).AddSeconds(30), Grace));
+        Assert.False(session.IsIdle(Now, Idle));
+        Assert.False(session.IsIdle(Now.AddMinutes(4), Idle));
+        Assert.True(session.IsIdle(Now.AddMinutes(5), Idle));
+        Assert.True(session.HasHadSeats);
+        Assert.False(new TicTacToeSession("XYZ789").HasHadSeats);
     }
 
     [Fact]
-    public void Coming_back_restarts_the_wait()
+    public void A_session_with_a_spectator_is_not_idle_and_coming_back_restarts_the_wait()
     {
         var session = new TicTacToeSession("ABC123");
-        session.IsAbandoned(Now, Grace);
-        session.Enter("connection:x", null, "x");
-        Assert.False(session.IsAbandoned(Now.AddSeconds(20), Grace));
-        session.Disconnect("x", Now.AddSeconds(20));
+        session.Enter("connection:tv", null, "tv");
+        Assert.False(session.IsIdle(Now, Idle));
+        Assert.False(session.IsIdle(Now.AddMinutes(10), Idle));
 
-        Assert.False(session.IsAbandoned(Now.AddSeconds(40), Grace));
-        Assert.True(session.IsAbandoned(Now.AddSeconds(70), Grace));
+        session.Disconnect("tv", Now.AddMinutes(10));
+        Assert.False(session.IsIdle(Now.AddMinutes(10), Idle));
+        Assert.True(session.IsIdle(Now.AddMinutes(15), Idle));
     }
+
+    // Saving and loading
+
+    [Fact]
+    public void Every_game_plays_on_the_same_after_being_saved_and_loaded()
+    {
+        var gang = StartedTheGang();
+        gang.TryTakeChip(Alice, 0, 2, out _);
+        AssertSameAfterReload(gang, () => new TheGangSession("ABC123"),
+            s => s.TryTakeChip(Bob, 1, 3, out var e) ? null : e);
+
+        var backgammon = Started(new BackgammonSession("ABC123", Dice(6, 1, 3, 2)));
+        backgammon.TryRoll(Alice, 0, out _);
+        backgammon.TryRoll(Bob, 1, out _);
+        AssertSameAfterReload(backgammon, () => new BackgammonSession("ABC123", Dice(3, 2)),
+            s => s.TryMove(Alice, 0, 13, 7, out var e) ? null : e);
+
+        var rps = StartedRpsSession();
+        rps.TryPick(Alice, 0, Choice.Rock, out _);
+        AssertSameAfterReload(rps, () => new RockPaperScissorsSession("ABC123"),
+            s => s.TryPick(Bob, 1, Choice.Paper, out var e) ? null : e);
+
+        var tictactoe = Started(new TicTacToeSession("ABC123"));
+        tictactoe.TryMove(Alice, 0, 4, out _);
+        AssertSameAfterReload(tictactoe, () => new TicTacToeSession("ABC123"),
+            s => s.TryMove(Bob, 1, 0, out var e) ? null : e);
+
+        var rich = RichManPoorMan(6);
+        rich.TryNewGame(Players[0], 0, out _);
+        rich.TryThrow(Players[0], 0, ["2S"], out _);
+        AssertSameAfterReload(rich, () => new RichManPoorManSession("ABC123"),
+            s => s.TryThrow(Players[5], 5, ["AS"], out var e) ? null : e);
+    }
+
+    // Saves the session, loads it into a new one, reconnects its users, and checks both give the same public state, and
+    // the same result for the next action.
+    private static void AssertSameAfterReload<T>(T session, Func<T> create, Func<T, string?> nextAction) where T : GameSession
+    {
+        var loaded = create();
+        loaded.Restore(session.Save(), Now);
+        var users = new[] { Alice, Bob, Carol }.Concat(Players).ToArray();
+        foreach (var userKey in users)
+        {
+            loaded.Enter(userKey, null, $"re-{userKey}");
+        }
+
+        Assert.Equal(Json(session.GetPublicState()), Json(loaded.GetPublicState()));
+        Assert.Equal(nextAction(session), nextAction(loaded));
+        Assert.Equal(Json(session.GetPublicState()), Json(loaded.GetPublicState()));
+        Assert.Equal(Json(users.Select(session.GetPrivateState)), Json(users.Select(loaded.GetPrivateState)));
+    }
+
+    private static string Json(object? value) => System.Text.Json.JsonSerializer.Serialize(value);
 
     // Tic-tac-toe
 

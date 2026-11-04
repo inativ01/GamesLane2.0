@@ -299,6 +299,9 @@ public class RichManPoorManSession(string id, Action<Card[]>? shuffle = null, Ra
     }
 
     /// <inheritdoc />
+    protected override void OnRestored() => _game?.Reattach(shuffle, random);
+
+    /// <inheritdoc />
     protected override void StartNewGame(IReadOnlyList<int> seats)
     {
         _requests.Clear();

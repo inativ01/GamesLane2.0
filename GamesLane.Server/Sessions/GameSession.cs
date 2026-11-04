@@ -117,13 +117,16 @@ public abstract class GameSession : IGameSession
     protected readonly object Sync = new();
 
     private readonly Seat?[] _seats;
+    [NotSaved]
     private readonly Dictionary<string, string> _connections = [];
     private readonly Dictionary<string, DateTimeOffset> _disconnectedSince = [];
     private readonly HashSet<string> _away = [];
     private readonly Dictionary<string, string> _playerIds = [];
     private int[] _gameSeats = [];
     private bool _onGameScreen;
-    private DateTimeOffset? _emptySince;
+    private bool _everSeated;
+    [NotSaved]
+    private DateTimeOffset? _idleSince;
     private IReadOnlyDictionary<string, string> _options;
 
     /// <summary>
@@ -174,6 +177,58 @@ public abstract class GameSession : IGameSession
     /// </summary>
     protected virtual void OnSeatsChanged()
     {
+    }
+
+    /// <summary>
+    /// Called after the session was loaded from a save (see <see cref="Restore"/>), while holding <see cref="Sync"/>:
+    /// a session gives its game again what is not saved, such as its dice or deck.
+    /// </summary>
+    protected virtual void OnRestored()
+    {
+    }
+
+    /// <summary>
+    /// The session's state as JSON, to be loaded again with <see cref="Restore"/> (see <see cref="SessionSnapshot"/>).
+    /// Open connections are not saved.
+    /// </summary>
+    public string Save()
+    {
+        lock (Sync)
+        {
+            return SessionSnapshot.Save(this);
+        }
+    }
+
+    /// <summary>
+    /// Loads a state saved at <paramref name="savedAt"/> into this new session. Nobody is connected yet: users who were
+    /// connected then count as disconnected since then.
+    /// </summary>
+    public void Restore(string data, DateTimeOffset savedAt)
+    {
+        lock (Sync)
+        {
+            SessionSnapshot.Restore(this, data);
+            foreach (var userKey in _seats.OfType<Seat>().Select(s => s.UserKey).Distinct())
+            {
+                _disconnectedSince.TryAdd(userKey, savedAt);
+            }
+
+            OnRestored();
+        }
+    }
+
+    /// <summary>
+    /// Whether a seat has ever been taken in this session.
+    /// </summary>
+    public bool HasHadSeats
+    {
+        get
+        {
+            lock (Sync)
+            {
+                return _everSeated;
+            }
+        }
     }
 
     /// <summary>
@@ -301,21 +356,21 @@ public abstract class GameSession : IGameSession
     }
 
     /// <summary>
-    /// Whether nobody has had the session open, and no seat has been taken, for at least <paramref name="gracePeriod"/>.
-    /// The time is measured from the first call that finds the session empty, so call this regularly.
+    /// Whether nobody has had the session open for at least <paramref name="idleTime"/>. The time is measured from the
+    /// first call that finds nobody connected, so call this regularly.
     /// </summary>
-    public bool IsAbandoned(DateTimeOffset now, TimeSpan gracePeriod)
+    public bool IsIdle(DateTimeOffset now, TimeSpan idleTime)
     {
         lock (Sync)
         {
-            if (_connections.Count > 0 || _seats.Any(s => s is not null))
+            if (_connections.Count > 0)
             {
-                _emptySince = null;
+                _idleSince = null;
                 return false;
             }
 
-            _emptySince ??= now;
-            return now - _emptySince >= gracePeriod;
+            _idleSince ??= now;
+            return now - _idleSince >= idleTime;
         }
     }
 
@@ -352,6 +407,8 @@ public abstract class GameSession : IGameSession
 
             var previous = _seats[seat]?.UserKey;
             _seats[seat] = new Seat(userKey, profile);
+            _everSeated = true;
+            PlayerIdFor(userKey);
             if (previous is not null && !HoldsSeat(previous))
             {
                 _disconnectedSince.Remove(previous);
@@ -653,6 +710,8 @@ public abstract class GameSession : IGameSession
         }
 
         _seats[seat] = new Seat(userKey, profile);
+        _everSeated = true;
+        PlayerIdFor(userKey);
         MarkConnected(userKey);
         return seat;
     }

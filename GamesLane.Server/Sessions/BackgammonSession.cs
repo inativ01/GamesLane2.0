@@ -125,6 +125,9 @@ public class BackgammonSession(string id, Func<int>? rollDie = null) : GameSessi
         _game = new BackgammonGame(BackgammonOptions.RulesFrom(Options), rollDie);
 
     /// <inheritdoc />
+    protected override void OnRestored() => _game?.Reattach(rollDie);
+
+    /// <inheritdoc />
     protected override object GetGameState()
     {
         var game = Game;

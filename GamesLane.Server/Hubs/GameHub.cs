@@ -48,7 +48,7 @@ public class GameHub(
     /// <inheritdoc />
     public async Task<SessionEntry> EnterSession(string sessionId)
     {
-        var session = GetSession(sessionId);
+        var session = await GetSession(sessionId);
         await Groups.AddToGroupAsync(Context.ConnectionId, SessionGroup(session.Id));
         var playerId = session.Enter(UserKey, AuthSetup.GetProfile(Context.User), Context.ConnectionId);
         if (playerId is not null)
@@ -85,7 +85,7 @@ public class GameHub(
             throw new HubException("Unknown game type.");
         }
 
-        var session = store.Create(gameType);
+        var session = await store.CreateAsync(gameType);
         if (AuthSetup.GetSavedUserId(Context.User) is { } userId)
         {
             try
@@ -97,6 +97,8 @@ public class GameHub(
                 // The game still starts, with the default options.
                 logger.LogWarning(ex, "Could not load the saved options for {GameType}.", gameType);
             }
+
+            await store.SaveAsync(session);
         }
 
         return session.Id;
@@ -116,7 +118,7 @@ public class GameHub(
     /// <inheritdoc />
     public async Task LeaveSession(string sessionId)
     {
-        var session = GetSession(sessionId);
+        var session = await GetSession(sessionId);
         await Groups.RemoveFromGroupAsync(Context.ConnectionId, SessionGroup(session.Id));
         if (session.LeaveAllSeats(UserKey))
         {
@@ -265,15 +267,17 @@ public class GameHub(
 
     /// <summary>
     /// Sends the session's public state to everyone in the session, and each player's private information to their
-    /// own connections only. Also used outside the hub, by <see cref="DisconnectedSeatsMonitor"/>.
+    /// own connections only, then saves the session. Also used outside the hub, by <see cref="DisconnectedSeatsMonitor"/>.
     /// </summary>
-    internal static async Task BroadcastState(IHubClients<IClientProxy> clients, IGameSession session)
+    internal static async Task BroadcastState(IHubClients<IClientProxy> clients, IGameSessionStore store, IGameSession session)
     {
         await clients.Group(SessionGroup(session.Id)).SendAsync(StateUpdated, session.GetPublicState());
         foreach (var update in session.GetPrivateUpdates())
         {
             await clients.Client(update.ConnectionId).SendAsync(PrivateStateUpdated, update.State);
         }
+
+        await store.SaveAsync(session);
     }
 
     /// <summary>
@@ -291,7 +295,7 @@ public class GameHub(
     /// </summary>
     private async Task Act<T>(string sessionId, SessionAction<T> action) where T : class, IGameSession
     {
-        var session = GetSession(sessionId) as T ?? throw new HubException("That action is not available in this game.");
+        var session = await GetSession(sessionId) as T ?? throw new HubException("That action is not available in this game.");
         if (!action(session, out var error))
         {
             throw new HubException(error);
@@ -303,11 +307,12 @@ public class GameHub(
     /// <summary>
     /// The session with the given code; throws an error to the caller if there is none.
     /// </summary>
-    private IGameSession GetSession(string sessionId) =>
-        store.Get(sessionId) ?? throw new HubException($"No game with code {sessionId.ToUpperInvariant()} was found. It may have ended.");
+    private async Task<IGameSession> GetSession(string sessionId) =>
+        await store.GetAsync(sessionId)
+        ?? throw new HubException($"No game with code {sessionId.ToUpperInvariant()} was found. It may have ended.");
 
     /// <summary>
-    /// Sends the session's public state to everyone in the session.
+    /// Sends the session's public state to everyone in the session, and saves it.
     /// </summary>
-    private Task BroadcastState(IGameSession session) => BroadcastState(Clients, session);
+    private Task BroadcastState(IGameSession session) => BroadcastState(Clients, store, session);
 }

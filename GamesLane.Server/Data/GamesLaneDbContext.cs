@@ -4,7 +4,8 @@ using Microsoft.EntityFrameworkCore;
 namespace GamesLane.Server.Data;
 
 /// <summary>
-/// The GamesLane database: saved users, their external accounts, icons and game options, and the keys that sign login tokens.
+/// The GamesLane database: saved users, their external accounts, icons and game options, saved game sessions, and the
+/// keys that sign login tokens.
 /// </summary>
 public class GamesLaneDbContext(DbContextOptions<GamesLaneDbContext> options) : DbContext(options), IDataProtectionKeyContext
 {
@@ -27,6 +28,11 @@ public class GamesLaneDbContext(DbContextOptions<GamesLaneDbContext> options) : 
     /// Users' preferred options per game.
     /// </summary>
     public DbSet<UserGameOptions> UserGameOptions => Set<UserGameOptions>();
+
+    /// <summary>
+    /// Game sessions, saved after every change.
+    /// </summary>
+    public DbSet<SavedSession> Sessions => Set<SavedSession>();
 
     /// <summary>
     /// The keys ASP.NET Core uses to encrypt and sign login tokens, so tokens stay valid after a restart.
@@ -69,6 +75,14 @@ public class GamesLaneDbContext(DbContextOptions<GamesLaneDbContext> options) : 
             options.Property(o => o.GameType).HasMaxLength(50);
             options.Property(o => o.Options).HasMaxLength(4000);
             options.HasOne<User>().WithMany().HasForeignKey(o => o.UserId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<SavedSession>(session =>
+        {
+            session.Property(s => s.Id).HasMaxLength(6);
+            session.Property(s => s.GameType).HasMaxLength(50);
+            session.Property(s => s.Version).HasMaxLength(64);
+            session.HasIndex(s => s.UpdatedAt);
         });
     }
 }

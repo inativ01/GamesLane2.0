@@ -36,10 +36,25 @@ public interface IGameSession
     bool UpdateAwaySeats(DateTimeOffset now);
 
     /// <summary>
-    /// Whether nobody has had the session open, and no seat has been taken, for at least <paramref name="gracePeriod"/>.
-    /// The time is measured from the first call that finds the session empty, so call this regularly.
+    /// Whether nobody has had the session open for at least <paramref name="idleTime"/>. The time is measured from the
+    /// first call that finds nobody connected, so call this regularly.
     /// </summary>
-    bool IsAbandoned(DateTimeOffset now, TimeSpan gracePeriod);
+    bool IsIdle(DateTimeOffset now, TimeSpan idleTime);
+
+    /// <summary>
+    /// Whether a seat has ever been taken in this session.
+    /// </summary>
+    bool HasHadSeats { get; }
+
+    /// <summary>
+    /// The session's state as JSON, to be loaded again with <see cref="Restore"/>. Open connections are not saved.
+    /// </summary>
+    string Save();
+
+    /// <summary>
+    /// Loads a state saved at <paramref name="savedAt"/> into this new session; nobody is connected yet.
+    /// </summary>
+    void Restore(string data, DateTimeOffset savedAt);
 
     /// <summary>
     /// Takes a seat, showing the user's name and icon on it: in the lobby, an empty seat; during a game, an absent seat

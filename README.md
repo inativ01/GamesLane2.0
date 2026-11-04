@@ -106,7 +106,7 @@ GamesLane.Server/              ASP.NET Core backend
   Hubs/GameHub.cs              SignalR hub for creating, joining and playing sessions
   Hubs/DisconnectedSeatsMonitor.cs  Marks users disconnected for 60 seconds as Away; removes sessions nobody has open from memory
   Sessions/GameSession.cs      Seats, session lobby and game flow shared by all games
-  Sessions/                    Game-specific sessions and the in-memory session store
+  Sessions/                    Game-specific sessions; the session store (memory, and the database through SessionRepository); SessionSnapshot, which saves a session as JSON
   Games/GameOptions.cs         Game options (rule variants): each game's options, and checking chosen values
   Games/TicTacToe/             Tic-tac-toe rules
   Games/RockPaperScissors/     Rock-paper-scissors rules
@@ -295,7 +295,10 @@ PostgreSQL on Neon, accessed with EF Core. Tables (created and updated automatic
 | `ExternalLogins` | `Provider` + `ProviderKey` (unique), `UserId` |
 | `UserIcons` | Uploaded pictures: `Id`, `UserId`, `ContentType`, `Data`, `CreatedAt`. Served at `/api/icons/{id}`; a new upload gets a new ID |
 | `UserGameOptions` | Saved game options: `UserId` + `GameType` (key), `Options` (JSON, e.g. `{"mode":"Advanced"}`), `UpdatedAt` |
+| `Sessions` | Saved game sessions: `Id` (the code), `GameType`, `Version`, `Data` (JSON), `UpdatedAt` (the last activity) |
 | `DataProtectionKeys` | The keys that encrypt and sign login tokens |
+
+**Saved sessions** (`Sessions/SessionSnapshot.cs`): a session is saved as JSON holding every field of the session and of what it holds (seats, options, the game with its cards, checkers or chips), public or private, except open connections (marked `[NotSaved]`) and the games' dice, shuffles and random draws, which a session gives back to its game after loading (`OnRestored`). Cards are saved as text such as `"10♥"`. `Version` is a fingerprint of all those fields' names and types: after a change to the fields of a game or session, saves made by the old code are no longer loaded (that session's code then says "not found"). A new field therefore needs no other work, but changing fields ends the saved games of that type.
 
 Deleting a user also deletes their external logins, icons and saved game options. To change the tables, edit the classes in `Data/` and run `dotnet ef migrations add <Name> --project GamesLane.Server --output-dir Data/Migrations` (first `dotnet tool restore`, and set `$env:ASPNETCORE_ENVIRONMENT = "Development"` so the connection string is read from user secrets).
 

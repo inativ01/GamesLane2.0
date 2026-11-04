@@ -51,10 +51,10 @@ public partial class TheGangGame : ITheGangGame
     /// </summary>
     public const int HeistsToFinish = 3;
 
-    private readonly Func<IReadOnlyList<Card>> _newDeck;
     private readonly TheGangRules _rules;
-    private readonly Random _random;
-    private readonly Func<int, int, bool> _sameHolder;
+    private Func<IReadOnlyList<Card>> _newDeck;
+    private Random _random;
+    private Func<int, int, bool> _sameHolder;
     private readonly int?[,] _chips;
     private readonly bool[] _ready;
     private readonly HashSet<string> _usedCards = [];
@@ -93,6 +93,13 @@ public partial class TheGangGame : ITheGangGame
         DrawCards(TheGangCardKind.Challenge, _rules.FirstHeistChallenges);
         Deal();
     }
+
+    /// <summary>
+    /// Gives a game loaded from a save what is not saved: the deck, the random draws and who holds which seats (see the
+    /// constructor).
+    /// </summary>
+    internal void Reattach(Func<IReadOnlyList<Card>> newDeck, Random random, Func<int, int, bool> sameHolder) =>
+        (_newDeck, _random, _sameHolder) = (newDeck, random, sameHolder);
 
     /// <inheritdoc />
     public int PlayerCount { get; }
