@@ -690,13 +690,17 @@ function startSessionPage(gameType, render) {
         if (banner.hidden) {
             return;
         }
-        const names = absent.map((seat) => state.seats[seat]?.name ?? t("a new player")).join(", ");
-        const text = state.phase === "Paused" ? t("Paused: waiting for {names}.", { names }) : t("Away: {names}.", { names });
+        // Away players by name, then the empty seats as a count.
+        const away = absent.filter((seat) => state.seats[seat]).map((seat) => state.seats[seat].name);
+        const empty = absent.length - away.length;
+        const names = [...away, ...(empty === 1 ? [t("1 empty seat")] : empty > 1 ? [t("{n} empty seats", { n: empty })] : [])].join(", ");
+        const text = state.phase === "Paused" ? t("Paused: waiting for {names}.", { names }) : t("Seats anyone can take: {names}.", { names });
         const items = [el("span", null, text)];
-        if (account?.signedIn) {
-            const take = el("button", "small", t("Take this seat"));
+        // Anyone not seated can take a seat, after logging in.
+        if (!view.isPlayer) {
+            const take = el("button", "small", account?.signedIn ? t("Take this seat") : t("Log in to take a seat"));
             take.type = "button";
-            take.addEventListener("click", () => act("TakeSeat"));
+            take.addEventListener("click", () => (account?.signedIn ? act("TakeSeat") : openLoginDialog()));
             items.push(take);
         }
         banner.replaceChildren(...items);

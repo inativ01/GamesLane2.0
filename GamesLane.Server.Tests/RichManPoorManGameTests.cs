@@ -130,6 +130,25 @@ public class RichManPoorManGameTests
     }
 
     [Fact]
+    public void When_everyone_leaves_the_game_waits_and_goes_on_when_a_player_comes_back()
+    {
+        var game = new RichManPoorManGame(Six, RankSorted);
+        Throw(game, 0, "2S");
+        foreach (var player in Six)
+        {
+            game.SetActive(player, false);
+        }
+
+        Assert.Equal(RichManPoorManPhase.Playing, game.Phase);
+        Assert.Empty(game.Ranking);
+
+        game.SetActive(3, true);
+        Assert.Equal(RichManPoorManPhase.Playing, game.Phase);
+        Assert.Equal(3, game.Turn);
+        Assert.True(game.TryThrow(3, Cards(game.Hand(3)[0].ToString()), out var error), error);
+    }
+
+    [Fact]
     public void The_game_ends_once_every_active_player_has_emptied_their_hand_and_leavers_get_no_place()
     {
         var game = FinishedBySeat0();

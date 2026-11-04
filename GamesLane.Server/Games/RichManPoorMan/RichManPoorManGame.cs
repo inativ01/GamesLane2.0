@@ -218,19 +218,33 @@ public class RichManPoorManGame : IRichManPoorManGame
         }
 
         state.Active = active;
-        if (active || Phase != RichManPoorManPhase.Playing || EndIfNobodyPlays() || Turn != player)
+        if (Phase != RichManPoorManPhase.Playing || EndIfNobodyPlays())
+        {
+            return;
+        }
+
+        SkipInactiveTurn();
+    }
+
+    /// <summary>
+    /// If the player to act is not active, the next active player in turn acts instead: a round's starter is replaced,
+    /// and anyone else passes. While no active player has cards, the turn waits.
+    /// </summary>
+    private void SkipInactiveTurn()
+    {
+        if (_players[Turn].Active || !_players.Values.Any(s => s.Active && s.Hand.Count > 0))
         {
             return;
         }
 
         if (CurrentThrow is null)
         {
-            Turn = NextInPlay(player) ?? player;
+            Turn = NextInPlay(Turn) ?? Turn;
         }
         else
         {
-            _passedSinceThrow.Add(player);
-            PassTurn(player);
+            _passedSinceThrow.Add(Turn);
+            PassTurn(Turn);
         }
     }
 
@@ -440,11 +454,12 @@ public class RichManPoorManGame : IRichManPoorManGame
     }
 
     /// <summary>
-    /// Ends the game once no active player has cards left. Returns whether it ended.
+    /// Ends the game once no active player has cards left, while at least one player is active. With nobody active at
+    /// all (everyone left), the game waits for players to come back or take the seats. Returns whether it ended.
     /// </summary>
     private bool EndIfNobodyPlays()
     {
-        if (_players.Values.Any(s => s.Active && s.Hand.Count > 0))
+        if (_players.Values.Any(s => s.Active && s.Hand.Count > 0) || !_players.Values.Any(s => s.Active))
         {
             return false;
         }

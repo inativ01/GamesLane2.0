@@ -161,10 +161,10 @@ function pile(game, state, view) {
     if (game.phase === "GameOver") {
         const left = game.players.filter((p) => !state.seats[p.seat] || state.seats[p.seat].status === "Away").length;
         const staying = game.players.length - left;
+        const ranked = game.ranking.filter((seat) => state.seats[seat]);
         return [
-            el("p", "rp-pile-who", t("The next game's places:")),
-            el("ol", "rp-ranking", ...game.ranking.filter((seat) => state.seats[seat])
-                .map((seat) => el("li", null, seatLabel(state, seat, view)))),
+            ...(ranked.length ? [el("p", "rp-pile-who", t("The next game's places:")),
+                el("ol", "rp-ranking", ...ranked.map((seat) => el("li", null, seatLabel(state, seat, view))))] : []),
             ...(staying < 6 ? [el("p", "hint", t("Fewer than 6 players are left: Next game goes back to the lobby."))] : []),
         ];
     }
