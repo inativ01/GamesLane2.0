@@ -600,11 +600,13 @@ footer {
 }
 
 /* As tall as the header above it (the GamesLane name's height and padding). When everything does not fit on one line,
-   it takes two: the game's picture and name on the first, the rest on the second. */
+   it takes two: the game's picture and name on the first, the rest on the second. The picture and name keep to the start
+   (left, or right in Hebrew) and the name grows to fill its line, so the other items keep to the end on every line. */
 .session-bar {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
+    justify-content: flex-end;
     gap: 0.4rem 0.6rem;
     min-height: calc(46px + 0.8rem);
     padding: 0.25rem max(0.75rem, calc((100% - 680px) / 2 + 0.75rem));
