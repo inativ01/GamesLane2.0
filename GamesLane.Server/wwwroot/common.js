@@ -780,7 +780,7 @@ function startSessionPage(gameType, render, seatRole = (seat) => t("Seat {n}", {
         const items = [el("span", null, text)];
         // Anyone can take a seat, after logging in; a player takes it as a second seat.
         {
-            const label = !account?.signedIn ? t("Log in to take a seat") : view.isPlayer ? t("Take it as a second seat") : t("Take this seat");
+            const label = !account?.signedIn ? t("Log in to take a seat") : view.isPlayer ? t("Take additional seat") : t("Take this seat");
             const take = el("button", "small", label);
             take.type = "button";
             take.addEventListener("click", () => (account?.signedIn ? act("TakeSeat") : openLoginDialog()));

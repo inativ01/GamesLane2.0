@@ -105,10 +105,10 @@ function handPanel(game, state, view, hand) {
         const current = game.currentThrow;
         const valid = picks.length > 0 && (!current
             || (picks.length === current.cards.length && rankOf(picks[0]) > rankOf(current.cards[0])));
-        hint.textContent = !current ? t("You start this round: tap cards of one number, then Throw.")
+        hint.textContent = !current ? t("You start this round: tap one or more cards of the same value to place on the table.")
             : current.cards.length === 1 ? t("Throw 1 card higher than the table, or pass.")
                 : t("Throw {n} cards of one number higher than the table, or pass.", { n: current.cards.length });
-        button(t("Throw"), () => send("ThrowCards", picks), valid);
+        button(t("Select"), () => send("ThrowCards", picks), valid);
         if (current) {
             button(t("Pass"), () => send("Pass"), true, true);
         }
