@@ -73,6 +73,7 @@ GamesLane.Server/              ASP.NET Core backend
   Games/TheGang/               The Gang rules: cards, poker hand ranking, heists
   Games/Backgammon/            Backgammon rules: position, legal moves, turns, doubling cube, matches, options
   Games/RichManPoorMan/        Rich man, poor man rules: the deck (one set of 2 to A per player), rounds, players who left, the exchange
+  Games/Yatzee/                Yatzee rules: scoring each box (with the joker rule), scorecards and bonuses, turns
   wwwroot/                     Web pages
     index.html, home.js        Main screen: start a session or join one by code
     common.js                  Shared: login dialog and account bar, hub connection, session lobby and page framework, playing cards
@@ -85,6 +86,7 @@ GamesLane.Server/              ASP.NET Core backend
     the-gang.html/.js          The Gang page
     backgammon.html/.js        Backgammon page (the board is drawn as SVG)
     rich-man-poor-man.html/.js Rich man, poor man page
+    yatzee.html/.js            Yatzee page
     images/                    Logo, the GamesLane name for the header and the splash screens (web-sized copies of the originals in docs/), game pictures (SVG)
     images/the-gang/           A picture (SVG) for each challenge and specialist card, named by the card's key, e.g. quick-access.svg
     images/flags/              Flags for the language picker
@@ -125,7 +127,7 @@ The texts in the pages and scripts are in English, and they are also the keys of
 - Texts from the server (error messages, option names) go through `translateServerText()`, which finds their translation by their English text. **Changing an English message on the server means changing its key in `lang/he.js` too.**
 - Hebrew style: instructions in the plural (e.g. הקישו על הלוח), so they suit everyone. A text about the viewer has its own "you" form (e.g. "You rolled {n}." / "{name} rolled {n}."; see `about()` in `backgammon.js`). Texts about other players avoid male and female verb forms (e.g. "ל־{name} יצא {n}").
 - Spoken texts (Rich man, poor man's **Read throws aloud**): a translation can say a count as `{n}` (digits) or as words, `{m}` or `{f}` (masculine or feminine, from the keys `"2 (masculine)"`, `"2 (feminine)"`, … up to 12), e.g. `"{n} aces": "{m} אסים"`. Without a Hebrew voice on the device, the English text is spoken.
-- Terms still to be confirmed by the user: צעדים (pips), משחק קרופורד (Crawford game), גמון / בקגמון (gammon / backgammon), "(אני)" for the viewer's own seat; game names שש־בש, הכנופיה, איקס־עיגול, אבן, נייר ומספריים; in Rich man, poor man: זריקה / פס (Throw / Pass), מסירה (Give), עשיר / עני (rich man / poor man), נסיך (jack) and the spoken numbers (e.g. "שלוש תשיעיות"). Confirmed: משחקון (match), עשיר ועני (the game's name).
+- Terms still to be confirmed by the user: צעדים (pips), משחק קרופורד (Crawford game), גמון / בקגמון (gammon / backgammon), "(אני)" for the viewer's own seat; game names שש־בש, הכנופיה, איקס־עיגול, אבן, נייר ומספריים; in Rich man, poor man: זריקה / פס (Throw / Pass), מסירה (Give), עשיר / עני (rich man / poor man), נסיך (jack) and the spoken numbers (e.g. "שלוש תשיעיות"); in Yatzee: the name יאצי, the boxes (אחדות … שישיות, שלישייה, רביעייה, פול האוס, רצף קטן / גדול, צ'אנס), משבצת (box), כרטיס הניקוד (scorecard) and נשמרה (a kept die). Confirmed: משחקון (match), עשיר ועני (the game's name).
 
 ## Game Hub API
 
@@ -133,7 +135,7 @@ Clients connect to the SignalR hub at `/hubs/game` and call these methods:
 
 | Method | Returns | Description |
 | --- | --- | --- |
-| `CreateSession(gameType)` | session code | Logged-in users only. Creates a session (`"TicTacToe"`, `"RockPaperScissors"`, `"TheGang"`, `"Backgammon"` or `"RichManPoorMan"`) and returns its 6-character code. The creator is not seated. The session starts with the creator's saved options for the game, if any. |
+| `CreateSession(gameType)` | session code | Logged-in users only. Creates a session (`"TicTacToe"`, `"RockPaperScissors"`, `"TheGang"`, `"Backgammon"`, `"RichManPoorMan"` or `"Yatzee"`) and returns its 6-character code. The creator is not seated. The session starts with the creator's saved options for the game, if any. |
 | `EnterSession(sessionId)` | `{ state, playerId, private }` | Subscribes to the session's updates. For a logged-in user, reconnects them to their seats, updates their name and icon on them, and returns their `playerId`; otherwise `playerId` is `null`. `private` is the user's private game information, or `null`. Pages call this when they open and after reconnecting. |
 | `TakeSeat(sessionId)` | — | Logged-in users only. Takes the next available seat under the user's display name: in the session lobby, the first empty one; during a game, the first absent seat of the game (Away or Vacant), whose game the user continues. Not while a game is Over, nor during Rich man, poor man's exchange (use `RequestSeat`). |
 | `LeaveSeat(sessionId, seat)` | — | Gives up one of the caller's seats (used for **Leave seat** and **Stand up**). |
@@ -169,6 +171,9 @@ Clients connect to the SignalR hub at `/hubs/game` and call these methods:
 | `GiveCards(sessionId, seat, cards)` | — | Rich man, poor man, in the exchange: `seat` gives `cards` to its partner; the poorer player of a pair must give its highest cards. |
 | `RequestSeat(sessionId)` / `CancelSeatRequest(sessionId)` | — | Rich man, poor man, in the exchange: the logged-in caller asks to join the next game, or withdraws the request. |
 | `AcceptSeat(sessionId, playerId, place)` / `DeclineSeat(sessionId, playerId)` | — | Rich man, poor man, in the exchange: a player accepts the request of `playerId` at `place` (1 for #1), which deals the cards again for the new number of players, or declines it. |
+| `RollDice(sessionId, seat)` | — | Yatzee: `seat`, which the caller must hold, rolls the dice that are not kept (all five on the turn's first roll), up to three times per turn. |
+| `HoldDie(sessionId, seat, die, held)` | — | Yatzee: between rolls, `seat` keeps (`held` true) or lets go of die `die` (0 to 4). |
+| `Score(sessionId, seat, category)` | — | Yatzee: `seat` scores the dice in box `category` (`"Ones"` … `"Sixes"`, `"ThreeOfAKind"`, `"FourOfAKind"`, `"FullHouse"`, `"SmallStraight"`, `"LargeStraight"`, `"Yatzee"`, `"Chance"`), which ends its turn. |
 
 Seats are numbered from 0 in the API. Errors (e.g. "It is not your turn.") are returned as hub errors to the caller.
 
@@ -193,6 +198,7 @@ Game-specific state:
 - **Rock-paper-scissors:** only whether each seat has picked; the picks themselves are revealed once both have picked.
 - **Backgammon:** the board from white's side (`points`: entry `i` is white's point `i + 1`, positive for white checkers and negative for black), `bar`, `off`, `pips` and `scores` by seat, the `phase` (`"Opening"`, `"Rolling"`, `"Doubled"`, `"Moving"`, `"GameOver"`, `"MatchOver"`), the seat to move (`turn`), each seat's opening die (`openingDice`, `null` until rolled) and the decided `openingRoll`, the `dice` and `diceLeft`, the number of rolls so far (`rolls`, so a page can tell a new roll), the `legalMoves` (moves by one die, then the combined moves of one checker by several dice; see `IBackgammonGame.CombinedMoves`) and the moves `played` so far (one per die, in the mover's numbering), the `lastTurn`, the cube (`cubeValue`, `cubeOwner`, `canDouble`, `isCrawford`) and the last game's `result`.
 - **Rich man, poor man** (`RichManPoorManState` in `Sessions/RichManPoorManSession.cs`): the `players` in place order, each with `seat`, `place`, `cardCount`, `passed`, `roundThrow` (the cards they last threw in this round, or `null`), `finished`, `isActive`, `exchangeCount` and `hasGiven`; the `turn`, `currentThrow` and `lastThrow` (`{ seat, cards }`), the number of `throws` so far (so a page can tell a new throw), `lastRoundWinner`, `ranking` and the `joinRequests`. Each hand's private state (`RichManPoorManHand`) has its `cards`, and for the exchange its `partnerSeat`, the `requiredGift` (the poorer player's highest cards), the `gift` it has given (until all have given) and the cards it `received`.
+- **Yatzee** (`YatzeeState` in `Sessions/YatzeeSession.cs`): the `round`, the seat to play (`turn`), the `dice` (all 0 before the turn's first roll), which are `held`, the `rollsLeft` in the turn, the number of rolls so far (`rolls`, so a page can tell a new roll), the `possibleScores` of the seat to play (one per box in the order of `Score` above, `null` where it cannot score), the `players` in seat order (`seat`, `scores` per box, `upperTotal`, `upperBonus`, `lowerTotal`, `yatzeeBonus`, `total`), the `lastTurn` (`seat`, `category`, `points`, `bonus`, `dice`), `isOver` and the `winners` (seats).
 
 ### Rejoining
 
@@ -333,6 +339,7 @@ _Last updated: 2026-11-04. Keep this section current; it is the hand-off point b
 4. Backgammon: first play-test on phones and a TV; possible extras later (a move list, variants such as Nackgammon or Acey-deucey).
 5. Rich man, poor man: first play-test with real players on phones and a TV.
 6. Hebrew: translate The Gang, Rock-paper-scissors and Tic-tac-toe (main screen and Backgammon are done; first check on Render, and the user to review the terms listed under [Translations](#translations)).
+7. Yatzee: built on the `Yatzee` branch (not yet merged into `main`, so not on the live site); first play-test, then merge.
 
 ## Working conventions
 - Ask before adding or upgrading packages.

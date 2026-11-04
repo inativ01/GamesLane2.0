@@ -11,7 +11,7 @@ How to use GamesLane and the rules of each game. For how it is built, see the [d
 - [Game screen](#game-screen)
 - [Disconnections and seats](#disconnections-and-seats)
 - [Game options](#game-options)
-- [Games](#games): [Tic-tac-toe](#tic-tac-toe), [Rock-paper-scissors](#rock-paper-scissors), [Backgammon](#backgammon), [The Gang](#the-gang), [Rich man, poor man](#rich-man-poor-man)
+- [Games](#games): [Tic-tac-toe](#tic-tac-toe), [Rock-paper-scissors](#rock-paper-scissors), [Backgammon](#backgammon), [The Gang](#the-gang), [Rich man, poor man](#rich-man-poor-man), [Yatzee](#yatzee)
 
 ## Getting started
 
@@ -47,7 +47,7 @@ A typical setup is a shared screen (such as a TV or laptop) connected as a spect
 
 ## Languages
 
-- English and Hebrew. On pages that have a Hebrew translation (so far the main screen, Backgammon and Rich man, poor man, including the login and profile dialogs, the session lobby and the server's messages), the top bar shows the current language's flag; tapping it opens a menu of the languages, and choosing one reloads the page in it.
+- English and Hebrew. On pages that have a Hebrew translation (so far the main screen, Backgammon, Rich man, poor man and Yatzee, including the login and profile dialogs, the session lobby and the server's messages), the top bar shows the current language's flag; tapping it opens a menu of the languages, and choosing one reloads the page in it.
 - Hebrew pages read from right to left (the backgammon board stays as it is).
 - The choice is remembered in the browser; until the user chooses, Hebrew if the browser prefers it, otherwise English.
 - Pages without a translation (The Gang, Rock-paper-scissors, Tic-tac-toe) stay in English and show no flag.
@@ -57,7 +57,7 @@ A typical setup is a shared screen (such as a TV or laptop) connected as a spect
 - A **session** is one instance of a specific game, identified by a unique code.
 - A session can be created from the main screen, joined by entering its code, or opened directly from its URL. Joining does not require a logged-in user.
 - A session's status is **Lobby** (the session lobby), **Playing** (the game screen), **Paused** (the game screen, waiting for an absent player) or **Over** (the game has ended by itself and shows its result). Each game also has its own phases inside Playing, e.g. the exchange in Rich man, poor man or the reveal in The Gang. See [Disconnections and seats](#disconnections-and-seats).
-- The top of a session's page stays in place while the page scrolls. Under the top bar, the **session bar** (as tall as the top bar) shows the game's picture and name, the user's role (🪑 and their seats, e.g. X in Tic-tac-toe or ⚪ in Backgammon, or 👁 when watching), the players present out of the seats (👥), during a game the players' **Stand up** (🧍) and **End game** (⏹) icons, and the game code (🔑); clicking the code copies it to the clipboard. When it does not all fit on one line (e.g. on a phone), the session bar takes two: the game's picture and name, then the rest. The picture and name are on the left (on the right in Hebrew), and the other items on the right (on the left in Hebrew), on either line. During a game, a **status bar** under it shows the game's status and messages to the user, with the buttons of the turn where the game has them (e.g. Backgammon's **Roll** and **Done**). While the user waits for others, the status bar is grey; when they have something to do (👉, e.g. their move, or a button waiting for them such as **Next round**, **Next game**, **Next heist** or **Play again**), it turns gold, with a larger text, and flashes once. The buttons between rounds and games (**Next round**, **Next game**, **Next heist**, **Play again**, **Back to the lobby**) are in the status bar. In games that keep a score (Tic-tac-toe, Rock-paper-scissors, Backgammon), a score row under the status, in the same colour, shows the round or game number (and the draws, or the match length), and each player's score (and pip count in Backgammon), with the player to act outlined. The round or match line is on its own; the players share the line under it when both fit, otherwise each has a line. The game options are shown and changed only in the session lobby.
+- The top of a session's page stays in place while the page scrolls. Under the top bar, the **session bar** (as tall as the top bar) shows the game's picture and name, the user's role (🪑 and their seats, e.g. X in Tic-tac-toe or ⚪ in Backgammon, or 👁 when watching), the players present out of the seats (👥), during a game the players' **Stand up** (🧍) and **End game** (⏹) icons, and the game code (🔑); clicking the code copies it to the clipboard. When it does not all fit on one line (e.g. on a phone), the session bar takes two: the game's picture and name, then the rest. The picture and name are on the left (on the right in Hebrew), and the other items on the right (on the left in Hebrew), on either line. During a game, a **status bar** under it shows the game's status and messages to the user, with the buttons of the turn where the game has them (e.g. Backgammon's **Roll** and **Done**). While the user waits for others, the status bar is grey; when they have something to do (👉, e.g. their move, or a button waiting for them such as **Next round**, **Next game**, **Next heist** or **Play again**), it turns gold, with a larger text, and flashes once. The buttons between rounds and games (**Next round**, **Next game**, **Next heist**, **Play again**, **Back to the lobby**) are in the status bar. In games that keep a score (Tic-tac-toe, Rock-paper-scissors, Backgammon, Yatzee), a score row under the status, in the same colour, shows the round or game number (and the draws, or the match length), and each player's score (and pip count in Backgammon), with the player to act outlined. The round or match line is on its own; the players share the line under it when both fit, otherwise each has a line. The game options are shown and changed only in the session lobby.
 - Sessions are saved and kept for 30 days after their last activity, so players can come back to a game later, even after the server restarts. After that, its code no longer works.
 
 ## Session lobby
@@ -75,6 +75,7 @@ A typical setup is a shared screen (such as a TV or laptop) connected as a spect
   | Tic-tac-toe, Rock-paper-scissors, Backgammon | 2 | 2 |
   | The Gang | 8 | 3 |
   | Rich man, poor man | 12 | 6 |
+  | Yatzee | 8 | 1 (it can be played alone) |
 
 - When the minimum number of seats is taken, a **Start** button appears (**New game** after the first game). Any seated user can start the game.
 - While the session is in the lobby, an **Invite friends** panel shows the join link (`/join/{code}`), with **Copy link** and **Share…** buttons where the browser supports them.
@@ -88,7 +89,7 @@ A typical setup is a shared screen (such as a TV or laptop) connected as a spect
 - Anyone can watch an active game. During a game, the only seats that can be taken are those of absent players (see below).
 - A seated user can **stand up** (🧍, after confirming; they become a spectator) or **leave** (go back to the main screen, giving up their seats).
 - A player can **End game** (⏹) at any time during a game (after confirming): everyone goes back to the session lobby, the seats move up, others can join, and **Start** begins a new game.
-- When a game ends (The Gang, and a backgammon match), anyone seated can choose **Play again** while at least the minimum number of players are seated, or go **Back to the lobby** (for everyone). A new game is played by whoever is seated (any number between the minimum and the maximum). If fewer than the minimum remain, the session goes back to the session lobby automatically.
+- When a game ends (The Gang, a backgammon match, and Yatzee), anyone seated can choose **Play again** while at least the minimum number of players are seated, or go **Back to the lobby** (for everyone). A new game is played by whoever is seated (any number between the minimum and the maximum). If fewer than the minimum remain, the session goes back to the session lobby automatically.
 - Tic-tac-toe and rock-paper-scissors never end by themselves; players stand up or leave when they are done.
 
 ## Disconnections and seats
@@ -110,7 +111,7 @@ A typical setup is a shared screen (such as a TV or laptop) connected as a spect
 
   | Game | With an absent seat | Effect |
   | --- | --- | --- |
-  | Tic-tac-toe, Rock-paper-scissors, Backgammon, The Gang | **Wait:** the session is Paused | The status bar shows "⏸ ⏳ …" (the players waited for) with **Take this seat** and **End game**. Present players can still do what does not need the absent seat (e.g. finish their own turn, pick, move their chip); the game stops where it needs the absent player |
+  | Tic-tac-toe, Rock-paper-scissors, Backgammon, The Gang, Yatzee | **Wait:** the session is Paused | The status bar shows "⏸ ⏳ …" (the players waited for) with **Take this seat** and **End game**. Present players can still do what does not need the absent seat (e.g. finish their own turn, pick, move their chip); the game stops where it needs the absent player |
   | Rich man, poor man | **Act automatically:** the seat passes | The game goes on and never pauses; the seat keeps its cards. If every seat is absent, the game waits for a player to come back or take a seat. At the card exchange, absent seats are removed (see the game's rules) |
 
 - **Ending:** any one present player can **End game** during a game (after confirming), which takes everyone back to the session lobby. The session also goes back to the lobby with **Back to the lobby** after a game is Over, and when there are too few players for the next game (**Play again** with fewer than the minimum seated, or Rich man, poor man's exchange with fewer than 6).
@@ -211,3 +212,14 @@ A game can offer **options**, i.e. rule variants (so far The Gang's and backgamm
   - **A player's phone** shows their hand sorted from low to high, with equal numbers together, overlapping as needed so the whole hand and the table fit on the screen without scrolling. They tap cards of one number, then **Throw**, or **Pass**. Tapping a card when there is a throw to beat picks as many cards of that number as are needed. A user holding several seats sees one hand per seat.
   - **The table** (shown to everyone, and to observers such as a TV) shows the cards to beat and who threw them, then the round's winner; and the players in place order (#1, the rich man, to the last, the poor man), each with their number of cards, whose turn it is, their last call in this round (**Pass**, or what they threw, e.g. "2×9"), who left, the finishing places so far, and during the exchange, who has given their cards. After a game, it shows the next game's places.
   - **Read throws aloud:** on a screen without a seat, this button says each throw out loud (e.g. "3 nines"), in the page's language, using the browser's speech; the choice is remembered in the browser. Hebrew needs a Hebrew voice on the device: without one, the throws are read in English (on Windows, add a Hebrew voice in Settings > Time & language > Speech).
+
+### Yatzee
+
+יאצי, 1–8 players. The classic dice game, in English and Hebrew. Players take turns in seat order for 13 rounds.
+
+- **A turn:** press **Roll** (in the status bar) to roll the five dice, up to three times; the button then says how many rolls are left. Between rolls, tap dice to keep them (a kept die is lifted, outlined in gold and marked **Kept**); tap again to let it go. Then tap an open box of your scorecard to score the dice there, which ends the turn. The dice tumble for a moment when rolled.
+- **The boxes:** Ones to Sixes score the dice of that number. Three of a kind and Four of a kind score the total of all the dice; a full house (three of one number and two of another) scores 25, a small straight (four in a row) 30, a large straight (five in a row) 40, a Yatzee (five of a kind) 50, and Chance the total of all the dice. A box whose pattern is not there scores 0 (the page asks before scoring 0).
+- **Bonuses:** 35 when Ones to Sixes add up to 63 or more; 100 for each extra Yatzee rolled while the Yatzee box holds 50.
+- **Joker rule** (official): a Yatzee rolled once the Yatzee box is filled (with 50 or 0) must go in the upper box of its number if that box is open; otherwise in any open lower box, where a full house and the straights score in full; otherwise in any open upper box, for 0.
+- **The end:** once every box is filled, the highest total wins (several players on a tie); alone, the status bar shows the final score. **Play again** starts a new game with clean scorecards.
+- **Screens:** everyone sees the dice and the scorecard, with a column per player, the section totals and bonuses, and the player to play highlighted. Their open boxes show what the dice would score there (on their own screen, as buttons to tap). The status bar's score row shows the round and each player's total; a message under the dice says what the last player scored.

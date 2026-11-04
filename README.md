@@ -8,7 +8,7 @@ It is a complete reimplementation of the original [GamesLane](https://github.com
 
 ## Features
 
-- **Games:** Tic-tac-toe, Rock-paper-scissors, Backgammon (matches with a doubling cube), The Gang (the cooperative poker game, 3–8 players, with its challenge and specialist cards) and Rich man, poor man (a shedding card game, 6–12 players).
+- **Games:** Tic-tac-toe, Rock-paper-scissors, Backgammon (matches with a doubling cube), The Gang (the cooperative poker game, 3–8 players, with its challenge and specialist cards) Rich man, poor man (a shedding card game, 6–12 players) and Yatzee (the classic dice game, 1–8 players).
 - **Play together in real time:** each game is a session with a code and a join link. A typical setup is a shared screen (a TV or laptop) showing the table, while each player plays on their own phone.
 - **Accounts:** log in as a guest, with a username and password, or with Google.
 - **Never lose a game:** players who drop out get their seat back when they return, others can take over an absent seat, and sessions are saved for 30 days.

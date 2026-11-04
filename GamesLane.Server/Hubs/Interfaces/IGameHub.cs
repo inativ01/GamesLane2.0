@@ -1,4 +1,5 @@
 using GamesLane.Server.Games.RockPaperScissors;
+using GamesLane.Server.Games.Yatzee;
 using GamesLane.Server.Sessions;
 
 namespace GamesLane.Server.Hubs;
@@ -210,6 +211,24 @@ public interface IGameHub
     /// got new pocket cards.
     /// </summary>
     Task ConfirmRedraw(string sessionId, int seat);
+
+    /// <summary>
+    /// Yatzee: <paramref name="seat"/>, which the caller must hold, rolls the dice that are not held (all five on the
+    /// turn's first roll), up to three times per turn.
+    /// </summary>
+    Task RollDice(string sessionId, int seat);
+
+    /// <summary>
+    /// Yatzee: <paramref name="seat"/>, which the caller must hold, holds (or releases) die <paramref name="die"/>
+    /// (0 to 4) between rolls.
+    /// </summary>
+    Task HoldDie(string sessionId, int seat, int die, bool held);
+
+    /// <summary>
+    /// Yatzee: <paramref name="seat"/>, which the caller must hold, scores the dice in <paramref name="category"/>,
+    /// which ends its turn.
+    /// </summary>
+    Task Score(string sessionId, int seat, YatzeeCategory category);
 
     /// <summary>
     /// The Gang: reveals the next hand, if <paramref name="revealed"/> hands have been revealed so far.

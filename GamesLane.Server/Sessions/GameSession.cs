@@ -13,6 +13,7 @@ public enum GameType
     TheGang,
     Backgammon,
     RichManPoorMan,
+    Yatzee,
 }
 
 /// <summary>
