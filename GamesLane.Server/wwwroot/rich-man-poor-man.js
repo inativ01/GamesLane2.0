@@ -66,6 +66,7 @@ function handPanel(game, state, view, hand) {
     const picks = chosenCards(hand);
     const highlight = required ? [...required] : [...picks];
 
+    // Each card sits in a slot that narrows when the hand is wider than the screen, so the cards overlap to fit.
     const cards = el("div", "card-row rp-cards", ...hand.cards.map((card, index) => {
         const face = cardElement(card);
         const marked = highlight.indexOf(card);
@@ -74,13 +75,13 @@ function handPanel(game, state, view, hand) {
         }
         face.classList.toggle("chosen", marked >= 0);
         if (!canChoose) {
-            return face;
+            return el("span", "rp-slot", face);
         }
         const button = el("button", "rp-card", face);
         button.type = "button";
         button.setAttribute("aria-pressed", String(marked >= 0));
         button.addEventListener("click", () => pickCard(game, hand, index));
-        return button;
+        return el("span", "rp-slot", button);
     }));
 
     const title = myHands(view).length > 1 ? playerName(state, hand.seat) : t("Your cards");
@@ -142,15 +143,15 @@ function about(state, view, seat, you, other, values = {}) {
 function statusText(game, state, view) {
     if (game.phase === "Exchanging") {
         const givers = game.players.filter((p) => p.exchangeCount > 0);
-        return t("Card exchange: {given} of {total} have given their cards.",
-            { given: givers.filter((p) => p.hasGiven).length, total: givers.length });
+        const mine = givers.some((p) => view.isMe(p.seat) && !p.hasGiven);
+        return `${mine ? "👉 " : ""}🔄 ${t("Card exchange: {given}/{total} given", { given: givers.filter((p) => p.hasGiven).length, total: givers.length })}`;
     }
     if (game.phase === "GameOver") {
-        return t("Game {n} is over.", { n: game.gameNumber });
+        return `🏁 ${t("Game {n} is over.", { n: game.gameNumber })}`;
     }
-    return game.currentThrow
-        ? about(state, view, game.turn, "Your turn: beat the cards on the table, or pass.", "{name}'s turn.")
-        : about(state, view, game.turn, "Your turn: you start the round.", "{name} starts the round.");
+    const mine = view.isMe(game.turn) && view.mySeats.length === 1;
+    return mine ? `👉 ${t(game.currentThrow ? "Beat the cards on the table, or pass" : "You start the round")}`
+        : `⏳ ${playerName(state, game.turn)}`;
 }
 
 // The middle of the table: the throw to beat, or the last throw (faded) and who won its round. After a game, the ranking.
@@ -184,8 +185,8 @@ function pile(game, state, view) {
     return [el("p", "hint", t("No cards on the table yet."))];
 }
 
-// A player in the list: place, name, cards left, and what they did. An absent player shows "Away" (their seat can be
-// taken from the banner at the top of the game screen).
+// A player in the list: place, name, cards left, and their last call in this round (Pass, or what they threw, e.g.
+// "2×9"). An absent player shows "Away" (their seat can be taken from the banner in the status bar).
 function playerItem(game, state, view, player) {
     const item = el("li", null, el("span", "rp-place", `#${player.place}`));
     item.classList.toggle("turn", game.phase === "Playing" && game.turn === player.seat);
@@ -197,7 +198,11 @@ function playerItem(game, state, view, player) {
     if (player.place === game.players.length) tag(t("Poor man"), "poor");
     item.append(el("span", "rp-count", `🂠 ${player.cardCount}`));
     if (player.finished !== null) tag(`🏁 ${player.finished}`, "finished");
-    if (player.passed) tag(t("Passed"));
+    if (game.phase === "Playing" && player.passed) {
+        tag(t("Pass"), "call pass");
+    } else if (game.phase === "Playing" && player.roundThrow) {
+        tag(`${player.roundThrow.length}×${player.roundThrow[0].slice(0, -1)}`, "call");
+    }
     if (!player.isActive) tag(t("Away"), "away");
     if (game.phase === "Exchanging" && player.exchangeCount > 0) {
         tag(player.hasGiven ? t("Gave {n} ✓", { n: player.exchangeCount }) : t("Gives {n}…", { n: player.exchangeCount }));
@@ -324,6 +329,9 @@ const rich = startSessionPage("RichManPoorMan", (game, state, view) => {
     $("rp-players").replaceChildren(...game.players.map((p) => playerItem(game, state, view, p)));
     $("next-round").hidden = !(view.isPlayer && game.phase === "GameOver");
     updateSpeech(game, view);
+}, (seat, state) => {
+    const place = state.game && placeOf(state.game, seat)?.place;
+    return place ? `#${place}` : String(seat + 1);
 });
 
 $("next-round").addEventListener("click", () => call("NextRound", rich.sessionId, currentGame?.gameNumber ?? 0).catch(() => {}));

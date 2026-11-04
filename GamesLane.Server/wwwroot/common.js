@@ -232,7 +232,7 @@ function iconElement(icon, className = "icon") {
     return span;
 }
 
-// Shows the user's icon and name (which open their profile) and Log out, or a Log in button.
+// Shows the user's icon and name (which open their profile, with Log out), or a Log in button.
 function renderAccount() {
     const bar = $("account");
     if (account.signedIn) {
@@ -242,12 +242,7 @@ function renderAccount() {
         profile.classList.add("account-name");
         profile.title = t("Your profile");
         profile.replaceChildren(iconElement(account.icon), name);
-        bar.replaceChildren(
-            profile,
-            smallButton(t("Log out"), () => {
-                saveToken("");
-                location.reload();
-            }));
+        bar.replaceChildren(profile);
     } else {
         const login = smallButton(t("Log in"), openLoginDialog);
         login.classList.remove("secondary");
@@ -405,7 +400,7 @@ function createLoginDialog() {
     return dialog;
 }
 
-// Change the display name and icon. Saved users can also upload a picture as their icon.
+// Change the display name and icon, or log out. Saved users can also upload a picture as their icon.
 function openProfileDialog() {
     const canUpload = account.kind !== "Guest";
     const icons = account.uploadedIcon ? [account.uploadedIcon, ...account.icons] : account.icons;
@@ -418,9 +413,14 @@ function openProfileDialog() {
             <label class="upload" ${canUpload ? "" : "hidden"}>${t("Upload a picture")} <input name="picture" type="file" accept="image/*"></label>
             <p class="error" role="alert"></p>
             <div class="actions"><button type="submit">${t("Save")}</button><button type="button" class="secondary" data-close>${t("Cancel")}</button></div>
+            <div class="actions profile-logout"><button type="button" class="secondary small" data-logout>${t("Log out")}</button></div>
         </form>`);
     const form = dialog.querySelector("form");
     const error = form.querySelector(".error");
+    form.querySelector("[data-logout]").addEventListener("click", () => {
+        saveToken("");
+        location.reload();
+    });
     form.elements.name.value = account.name;
     form.querySelector("[data-welcome]").hidden = !isNewExternalUser;
     const picker = iconPicker(form.querySelector(".icon-picker"), icons, account.icon);
@@ -465,24 +465,30 @@ async function uploadIcon(file, errorElement) {
     return false;
 }
 
-// Clicking the game code in the game's banner copies it; its label says "Copied!" for a moment.
+// Clicking the game code in the session bar copies it; its icon turns into a tick for a moment.
 function setUpCodeCopy(sessionId) {
     const code = $("session-code").closest(".code");
     if (!navigator.clipboard || !code) {
         return;
     }
-    const label = code.querySelector("span");
+    const icon = code.querySelector("span");
+    const iconText = icon.textContent;
     code.classList.add("copyable");
     code.setAttribute("role", "button");
     code.tabIndex = 0;
     code.title = t("Copy the game code");
+    code.setAttribute("aria-label", `${t("Copy the game code")}: ${sessionId}`);
     let timer = 0;
     const copy = async () => {
         try {
             await navigator.clipboard.writeText(sessionId);
-            label.textContent = t("Copied!");
+            icon.textContent = "✅";
+            code.title = t("Copied!");
             clearTimeout(timer);
-            timer = setTimeout(() => { label.textContent = t("Game code"); }, 2000);
+            timer = setTimeout(() => {
+                icon.textContent = iconText;
+                code.title = t("Copy the game code");
+            }, 2000);
         } catch {
             showError(t("Could not copy the game code."));
         }
@@ -636,14 +642,34 @@ function seatLabel(state, seat, view, prefix = "") {
     return label;
 }
 
+// The score row in the status bar (#scores), for games that keep a score: the match facts (e.g. "Round 3"), then a chip
+// per player with what comes before the name (e.g. a mark), the name, the score and any extra (e.g. a pip count), and
+// the seat to act outlined. Players: [{ seat, before, score, extra, acting }].
+function showScores(state, view, facts, players) {
+    const chip = (player) => {
+        const item = el("li", "score-chip", player.before ?? "", seatLabel(state, player.seat, view),
+            el("strong", "score-value", String(player.score)));
+        if (player.extra) {
+            item.append(el("span", "score-extra", player.extra));
+        }
+        item.classList.toggle("acting", Boolean(player.acting));
+        return item;
+    };
+    $("scores").replaceChildren(
+        ...(facts.length ? [el("li", "score-facts", facts.filter(Boolean).join(" · "))] : []),
+        ...players.map(chip));
+}
+
 /**
  * Runs a session page. The page URL is <page>?session=CODE. Anyone can watch; logged-in users can take seats.
  * While the session is in its lobby, the shared session lobby (#session-lobby) is shown; while a game is being
  * played, the game screen (#game-screen) is shown and render(game, state, view) is called on every update.
  * view.mySeats lists the seats this tab's user holds; view.isMe(seat) tells whether they hold a seat.
  * view.private is this user's private game information (e.g. their cards), for games that have it, or null.
+ * The session bar shows the user's role: seatRole(seat, state) gives a seat's short name (by default its number), or
+ * 👁 for an observer. While a game is on, the status bar under it shows #status and the absent players' banner.
  */
-function startSessionPage(gameType, render) {
+function startSessionPage(gameType, render, seatRole = (seat) => String(seat + 1)) {
     const sessionId = (params.get("session") ?? "").toUpperCase();
     let lastState = null;
 
@@ -672,17 +698,24 @@ function startSessionPage(gameType, render) {
     // The one empty seat shown in the lobby: the next available one, or -1 if there is none.
     const nextSeat = (state) => state.seats.findIndex((s) => !s);
 
-    // On the game screen: a banner while the game waits for absent players, or has absent seats that can be taken, with
-    // Take this seat for logged-in users and End game for players; and an End game button for players during a game.
+    // In the status bar: a banner while the game waits for absent players, or has absent seats that can be taken, with
+    // Take this seat for logged-in users. In the session bar, for players during a game: Stand up and End game icons.
     const banner = el("div", "absent-banner");
     banner.hidden = true;
     banner.setAttribute("role", "status");
-    $("game-screen").prepend(banner);
-    const endGame = el("button", "secondary small", t("End game"));
-    endGame.type = "button";
-    endGame.id = "end-game";
-    endGame.hidden = true;
-    $("stand-up").after(endGame);
+    $("status-bar").append(banner);
+    const iconButton = (id, icon, label) => {
+        const button = el("button", "session-action", icon);
+        button.type = "button";
+        button.id = id;
+        button.title = label;
+        button.setAttribute("aria-label", label);
+        button.hidden = true;
+        return button;
+    };
+    const standUp = iconButton("stand-up", "🧍", t("Stand up"));
+    const endGame = iconButton("end-game", "⏹", t("End game"));
+    $("session-info").after(el("span", "session-actions", standUp, endGame));
 
     function updateBanner(state) {
         const absent = state.phase === "Paused" || state.phase === "Playing" ? state.absentSeats : [];
@@ -694,7 +727,7 @@ function startSessionPage(gameType, render) {
         const away = absent.filter((seat) => state.seats[seat]).map((seat) => state.seats[seat].name);
         const empty = absent.length - away.length;
         const names = [...away, ...(empty === 1 ? [t("1 empty seat")] : empty > 1 ? [t("{n} empty seats", { n: empty })] : [])].join(", ");
-        const text = state.phase === "Paused" ? t("Paused: waiting for {names}.", { names }) : t("Seats anyone can take: {names}.", { names });
+        const text = state.phase === "Paused" ? `⏸ ⏳ ${names}` : `🪑 ${t("Free seats: {names}", { names })}`;
         const items = [el("span", null, text)];
         // Anyone not seated can take a seat, after logging in.
         if (!view.isPlayer) {
@@ -704,6 +737,23 @@ function startSessionPage(gameType, render) {
             items.push(take);
         }
         banner.replaceChildren(...items);
+    }
+
+    // The session bar's facts: the user's role (🪑 and their seats, or 👁 when watching) and 👥 the players present
+    // out of the seats.
+    function updateSessionInfo(state) {
+        const fact = (text, title) => {
+            const span = el("span", "session-fact", text);
+            span.title = title;
+            span.setAttribute("aria-label", `${title}: ${text}`);
+            return span;
+        };
+        const present = state.seats.filter((s) => s && s.status === "Present").length;
+        $("session-info").replaceChildren(
+            view.isPlayer
+                ? fact(`🪑 ${view.mySeats.map((seat) => seatRole(seat, state)).join(", ")}`, t("Your seats"))
+                : fact("👁", t("Watching")),
+            fact(`👥 ${present}/${state.seats.length}`, t("Players present")));
     }
 
     // A seat tile: a big icon, the name, and a note such as "Seat 2 · You". The user's own seat is a button to leave
@@ -770,21 +820,24 @@ function startSessionPage(gameType, render) {
     }
 
     // Seated players choose the options for the next game. Saved users can also save them as their preferences
-    // (used automatically when they create a game) and load them back.
+    // (used automatically when they create a game) and load them back. Everyone else sees the options without changing
+    // them.
     function openOptionsDialog() {
         const state = lastState;
-        const canSave = account?.signedIn && account.kind !== "Guest";
+        const canEdit = view.isPlayer;
+        const canSave = canEdit && account?.signedIn && account.kind !== "Guest";
         const dialog = createDialog(`
             <form>
                 <h2>${t("Game options")}</h2>
-                <div class="option-list"></div>
+                <p class="hint" ${canEdit ? "hidden" : ""}>${t("Only seated players can change the options.")}</p>
+                <fieldset class="option-list" ${canEdit ? "" : "disabled"}></fieldset>
                 <div class="actions option-prefs" ${canSave ? "" : "hidden"}>
                     <button type="button" class="secondary small" data-save>${t("Save as my preferences")}</button>
                     <button type="button" class="secondary small" data-load>${t("Load my preferences")}</button>
                 </div>
                 <p class="hint" data-note role="status"></p>
                 <p class="error" role="alert"></p>
-                <div class="actions"><button type="submit">${t("Apply")}</button><button type="button" class="secondary" data-close>${t("Cancel")}</button></div>
+                <div class="actions"><button type="submit" ${canEdit ? "" : "hidden"}>${t("Apply")}</button><button type="button" class="secondary" data-close>${t(canEdit ? "Cancel" : "Close")}</button></div>
             </form>`);
         const form = dialog.querySelector("form");
         const note = form.querySelector("[data-note]");
@@ -905,7 +958,11 @@ function startSessionPage(gameType, render) {
 
         $("session-lobby").hidden = !inLobby;
         $("game-screen").hidden = inLobby;
+        $("status-bar").hidden = inLobby;
         $("invite").hidden = !inLobby;
+        updateSessionInfo(state);
+        standUp.hidden = inLobby || !view.isPlayer;
+        endGame.hidden = inLobby || !view.isPlayer || state.phase === "Over";
 
         if (inLobby) {
             $("lobby-status").textContent = lobbyStatus(state, taken);
@@ -913,19 +970,19 @@ function startSessionPage(gameType, render) {
             const next = nextSeat(state);
             $("seats").replaceChildren(...state.seats.flatMap((info, seat) => (info || seat === next ? [seatItem(state, seat)] : [])));
             $("lobby-options").hidden = state.optionList.length === 0;
-            $("options-summary").textContent = optionsSummary(state);
-            $("edit-options").hidden = !view.isPlayer;
+            $("options-summary").textContent = `${t("Game options:")} ${optionsSummary(state)}`;
             $("login-to-play").hidden = Boolean(account?.signedIn);
             $("start-game").hidden = !(view.isPlayer && taken >= state.minSeats);
             $("start-game").textContent = t(state.gameNumber > 0 ? "New game" : "Start");
             return;
         }
 
-        $("game-over-actions").hidden = !(view.isPlayer && state.phase === "Over");
-        $("stand-up").hidden = !view.isPlayer;
-        endGame.hidden = !(view.isPlayer && state.phase !== "Over");
+        $("play-again").hidden = $("to-lobby").hidden = !(view.isPlayer && state.phase === "Over");
         updateBanner(state);
         render(state.game, state, view);
+        const mustAct = $("status").textContent.includes("👉")
+            || [...$("status-bar").querySelectorAll(".status-actions button")].some((b) => !b.hidden && !b.classList.contains("secondary"));
+        $("status-bar").classList.toggle("act", mustAct);
     }
 
     async function enter() {
@@ -974,11 +1031,13 @@ function startSessionPage(gameType, render) {
         }
     });
     $("start-game").addEventListener("click", () => act("NewGame", lastState?.gameNumber ?? 0));
-    $("edit-options").addEventListener("click", openOptionsDialog);
+    $("lobby-options").addEventListener("click", openOptionsDialog);
     $("play-again").addEventListener("click", () => act("NewGame", lastState?.gameNumber ?? 0));
     $("to-lobby").addEventListener("click", () => act("ReturnToLobby"));
-    $("stand-up").addEventListener("click", () => {
-        view.mySeats.forEach((seat) => act("LeaveSeat", seat));
+    standUp.addEventListener("click", () => {
+        if (confirm(t("Stand up? You give up your seat and watch the game."))) {
+            view.mySeats.forEach((seat) => act("LeaveSeat", seat));
+        }
     });
 
     // Going back to the main screen gives up this user's seats.

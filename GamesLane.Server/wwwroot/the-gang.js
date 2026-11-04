@@ -80,28 +80,28 @@ function gangStatus(game, state, view) {
     switch (game.phase) {
         case "Preparing": {
             const waiting = userNames(state, game.playingSeats.filter((s) => !game.preparedSeats.includes(s)));
-            const step = { jokers: "Jokers: swap the jokers you were dealt", coordinator: "Coordinator: pick a card to pass on" }[game.preparingCard]
+            const step = { jokers: "Jokers: swap your jokers", coordinator: "Coordinator: pass on a card" }[game.preparingCard]
                 ?? "Con Artist: look at your cards";
-            return `${step}. Waiting for: ${waiting.join(", ")}`;
+            const mine = game.playingSeats.some((s) => view.isMe(s) && !game.preparedSeats.includes(s));
+            return `${mine ? "👉 " : ""}${step} · ⏳ ${waiting.join(", ")}`;
         }
         case "Betting": {
-            const status = view.isPlayer
-                ? `${STAGES[game.stage]} chips`
-                : `Players are taking ${STAGES[game.stage].toLowerCase()} chips…`;
+            const mine = game.playingSeats.some((s) => view.isMe(s) && !game.readySeats.includes(s));
+            const status = `${mine ? "👉" : "⏳"} ${STAGES[game.stage]} chips`;
             return awaitsRedraw(game)
-                ? `${status} · Waiting for ${state.seats[game.redrawnSeat]?.name ?? ""} to confirm their new cards`
+                ? `${status} · ⏳ ${state.seats[game.redrawnSeat]?.name ?? ""}: confirm new cards`
                 : status;
         }
         case "Reveal":
             return awaitsScan(game)
-                ? "Before the strongest hand is revealed, the other players agree on the guess."
-                : "Revealing hands, lowest red chip first…";
+                ? "🔍 Agree on the guess before the strongest hand is revealed"
+                : view.isPlayer ? "👉 🃏 Reveal the hands, lowest red chip first" : "🃏 Revealing, lowest red chip first…";
         default:
             if (game.vaults >= TO_FINISH) {
-                return "🎉 Three vaults cracked: the gang wins!";
+                return "🎉 Three vaults: the gang wins!";
             }
             if (game.alarms >= TO_FINISH) {
-                return "🚨 Three alarms: the gang is caught. Game over.";
+                return "🚨 Three alarms: game over";
             }
             return game.succeeded ? "💰 The vault is open!" : "🚨 The alarm went off!";
     }
@@ -712,7 +712,7 @@ const gang = startSessionPage("TheGang", (game, state, view) => {
     $("chip-table").replaceChildren(...chipTable(game, state, view));
     $("revealed").replaceChildren(...game.revealed.map((hand) => revealedHand(game, state, view, hand)));
     fitTable();
-});
+}, (seat, state) => String((state.game && playerNumber(state.game, seat)) || seat + 1));
 
 addEventListener("resize", () => requestAnimationFrame(fitTable));
 $("toggle-table").addEventListener("click", () => {

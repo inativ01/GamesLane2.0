@@ -23,8 +23,8 @@ public record BackgammonResultState(int Seat, int Points, BackgammonResultKind K
 /// Public backgammon state. <see cref="Points"/> is the board from white's (seat 0's) side: entry <c>i</c> is white's
 /// point <c>i + 1</c>, positive for white checkers and negative for black. <see cref="Bar"/>, <see cref="Off"/>,
 /// <see cref="Pips"/> and <see cref="Scores"/> are by seat. <see cref="Turn"/> is the seat to move (after a game, the
-/// winner). <see cref="LegalMoves"/>, <see cref="Played"/> and the moves of <see cref="LastTurn"/> use the moving seat's
-/// numbering. <see cref="CubeOwner"/> is a seat, or null while the cube is in the middle. <see cref="OpeningDice"/> are
+/// winner). <see cref="LegalMoves"/> are the moves by one die, then the combined moves of one checker by several dice;
+/// they, <see cref="Played"/> and the moves of <see cref="LastTurn"/> use the moving seat's numbering. <see cref="CubeOwner"/> is a seat, or null while the cube is in the middle. <see cref="OpeningDice"/> are
 /// each seat's opening die (null until rolled); <see cref="Rolls"/> counts the rolls in the match, so a page can tell a
 /// new roll.
 /// </summary>
@@ -150,7 +150,7 @@ public class BackgammonSession(string id, Func<int>? rollDie = null) : GameSessi
             [.. game.OpeningDice],
             game.Rolls,
             Moves(game.Played),
-            Moves(game.LegalMoves),
+            [.. Moves(game.LegalMoves), .. game.CombinedMoves.Select(m => new BackgammonMoveState(m.From, m.To))],
             game.CanEndTurn,
             game.LastTurn is { } last ? new BackgammonTurnState(last.Player, [.. last.Dice], Moves(last.Steps), last.Forced) : null,
             game.CubeValue,

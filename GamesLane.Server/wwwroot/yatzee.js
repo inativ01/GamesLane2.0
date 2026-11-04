@@ -62,8 +62,9 @@ function noticeRoll(game) {
     seenRolls = game.rolls;
 }
 
-// The status line and the message about the last turn. Each text has a form for the viewer ("You scored…") and one for
-// a named player ("Dana scored…"); a user holding several seats sees the named forms.
+// The status line and the message about the last turn. The status starts with 👉 when the viewer must act (the status bar
+// then turns gold), ⏳ while they wait, and 🏆 or 🤝 for the result. Each message has a form for the viewer ("You
+// scored…") and one for a named player ("Dana scored…"); a user holding several seats sees the named forms.
 function yatzeeTexts(game, state, view) {
     const name = (seat) => state.seats[seat]?.name ?? t("Seat {n}", { n: seat + 1 });
     const several = view.mySeats.length > 1;
@@ -72,16 +73,16 @@ function yatzeeTexts(game, state, view) {
     let status;
     if (game.isOver) {
         const best = game.players.find((p) => p.seat === game.winners[0]).total;
-        status = game.players.length === 1 ? t("Game over: {n} points.", { n: best })
-            : game.winners.length === 1 ? about(game.winners[0], "You win with {n} points!", "{name} wins with {n} points!", { n: best })
-                : t("A tie at {n} points: {names}.", { n: best, names: game.winners.map(name).join(", ") });
+        status = game.players.length === 1 ? `🏆 ${t("Game over: {n} points.", { n: best })}`
+            : game.winners.length === 1 ? `🏆 ${about(game.winners[0], "You win with {n} points!", "{name} wins with {n} points!", { n: best })}`
+                : `🤝 ${t("A tie at {n} points: {names}.", { n: best, names: game.winners.map(name).join(", ") })}`;
     } else if (!view.isMe(game.turn)) {
-        status = t("{name}'s turn.", { name: name(game.turn) });
+        status = `⏳ 🎲 ${name(game.turn)}`;
     } else {
-        const action = game.rollsLeft === ROLLS ? (several ? t("Roll the dice.") : t("Your turn: roll the dice."))
-            : game.rollsLeft > 0 ? t("Tap dice to keep them and roll again, or choose a box to score.")
-                : t("Choose a box to score.");
-        status = several ? `${t("{name}'s turn.", { name: name(game.turn) })} ${action}` : action;
+        const action = game.rollsLeft === ROLLS ? t("Roll the dice")
+            : game.rollsLeft > 0 ? t("Keep dice and roll again, or choose a box")
+                : t("Choose a box to score");
+        status = `👉 🎲 ${several ? `${name(game.turn)}: ` : ""}${action}`;
     }
 
     let message = "";
@@ -179,7 +180,8 @@ const yatzee = startSessionPage("Yatzee", (game, state, view) => {
     const canAct = !game.isOver && view.isMe(game.turn);
     current = { game, canAct };
 
-    $("yz-round").textContent = game.isOver ? t("Final scores") : t("Round {n} of {total}", { n: game.round, total: ROUNDS });
+    showScores(state, view, [game.isOver ? t("Final scores") : t("Round {n} of {total}", { n: game.round, total: ROUNDS })],
+        game.players.map((player) => ({ seat: player.seat, score: player.total, acting: !game.isOver && player.seat === game.turn })));
     const { status, message } = yatzeeTexts(game, state, view);
     $("status").textContent = status;
     $("yz-message").textContent = message;

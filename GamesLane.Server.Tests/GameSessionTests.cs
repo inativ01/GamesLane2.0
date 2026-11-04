@@ -481,9 +481,10 @@ public class GameSessionTests
         AssertSameAfterReload(gang, () => new TheGangSession("ABC123"),
             s => s.TryTakeChip(Bob, 1, 3, out var e) ? null : e);
 
-        var backgammon = Started(new BackgammonSession("ABC123", Dice(6, 1, 3, 2)));
+        var backgammon = Started(new BackgammonSession("ABC123", Dice(6, 1, 6, 1)));
         backgammon.TryRoll(Alice, 0, out _);
         backgammon.TryRoll(Bob, 1, out _);
+        backgammon.TryRoll(Alice, 0, out _);
         AssertSameAfterReload(backgammon, () => new BackgammonSession("ABC123", Dice(3, 2)),
             s => s.TryMove(Alice, 0, 13, 7, out var e) ? null : e);
 
@@ -998,7 +999,7 @@ public class GameSessionTests
     [Fact]
     public void Backgammon_seat_0_plays_white_and_seat_1_black_with_the_chosen_options()
     {
-        var session = Seated(new BackgammonSession("ABC123", Dice(6, 1)));
+        var session = Seated(new BackgammonSession("ABC123", Dice(6, 1, 6, 1)));
         session.TrySetOptions(Alice, new Dictionary<string, string> { [BackgammonOptions.MatchLength] = "1", [BackgammonOptions.Cube] = "No" }, out _);
         session.TryNewGame(Alice, 0, out _);
         Assert.Equal(BackgammonPhase.Opening, Backgammon(session).Phase);
@@ -1008,9 +1009,16 @@ public class GameSessionTests
 
         var state = Backgammon(session);
         Assert.Equal((1, false), (state.MatchLength, state.CubeEnabled));
-        Assert.Equal((0, BackgammonPhase.Moving), (state.Turn, state.Phase));
+        Assert.Equal((0, BackgammonPhase.Rolling), (state.Turn, state.Phase));
         Assert.Equal([6, 1], state.OpeningDice);
+        Assert.Equal([6, 1], state.OpeningRoll);
         Assert.Equal(2, state.Rolls);
+
+        Assert.True(session.TryRoll(Alice, 0, out error), error);
+        state = Backgammon(session);
+        Assert.Equal((0, BackgammonPhase.Moving), (state.Turn, state.Phase));
+        Assert.Equal([6, 1], state.Dice);
+        Assert.Null(state.OpeningRoll);
         Assert.Contains(new BackgammonMoveState(13, 7), state.LegalMoves);
         Assert.False(session.TryMove(Bob, 0, 13, 7, out error));
         Assert.Equal("Only players in this game can make moves.", error);
@@ -1029,9 +1037,10 @@ public class GameSessionTests
     [Fact]
     public void Backgammon_players_start_the_next_game_of_the_match()
     {
-        var session = Started(new BackgammonSession("ABC123", Dice(3, 1, 6, 1)));
+        var session = Started(new BackgammonSession("ABC123", Dice(3, 1, 3, 1, 6, 1)));
         session.TryRoll(Alice, 0, out _);
         session.TryRoll(Bob, 1, out _);
+        session.TryRoll(Alice, 0, out _);
         session.TryMove(Alice, 0, 8, 5, out _);
         session.TryMove(Alice, 0, 6, 5, out _);
         session.TryEndTurn(Alice, 0, out _);

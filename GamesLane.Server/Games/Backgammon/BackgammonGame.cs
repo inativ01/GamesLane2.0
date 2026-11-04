@@ -75,6 +75,9 @@ public class BackgammonGame : IBackgammonGame
     public IReadOnlyList<BackgammonStep> LegalMoves { get; private set; } = [];
 
     /// <inheritdoc />
+    public IReadOnlyList<BackgammonCombinedMove> CombinedMoves => FindCombinedMoves();
+
+    /// <inheritdoc />
     public bool CanEndTurn => Phase == BackgammonPhase.Moving && _played.Count == _diceToUse;
 
     /// <inheritdoc />
@@ -91,7 +94,7 @@ public class BackgammonGame : IBackgammonGame
 
     /// <inheritdoc />
     public bool CanDouble => Rules.Cube && Rules.MatchLength > 1 && !IsCrawford && Phase == BackgammonPhase.Rolling
-        && (CubeOwner is null || CubeOwner == Turn) && CubeValue < MaxCube;
+        && OpeningRoll is null && (CubeOwner is null || CubeOwner == Turn) && CubeValue < MaxCube;
 
     /// <inheritdoc />
     public BackgammonResult? Result { get; private set; }
@@ -113,13 +116,14 @@ public class BackgammonGame : IBackgammonGame
         }
 
         Rolls++;
+        OpeningRoll = null;
         StartTurn([_rollDie(), _rollDie()]);
         return true;
     }
 
     /// <summary>
     /// The opening roll: each player rolls one die. On a tie, both dice stay on view until a player rolls again; then
-    /// both roll again. Otherwise the higher die moves first, with both dice.
+    /// both roll again. Otherwise the player with the higher die starts: they roll both dice for their first turn.
     /// </summary>
     private bool TryRollOpening(int player, out string? error)
     {
@@ -143,7 +147,7 @@ public class BackgammonGame : IBackgammonGame
         {
             Turn = white > black ? 0 : 1;
             OpeningRoll = [white, black];
-            StartTurn([white, black]);
+            Phase = BackgammonPhase.Rolling;
         }
 
         return true;
@@ -157,13 +161,20 @@ public class BackgammonGame : IBackgammonGame
             return false;
         }
 
-        if (LegalMoves.FirstOrDefault(m => m.From == from && m.To == to) is not { } step)
+        IReadOnlyList<BackgammonStep>? steps = LegalMoves.FirstOrDefault(m => m.From == from && m.To == to) is { } step
+            ? [step]
+            : CombinedMoves.FirstOrDefault(m => m.From == from && m.To == to)?.Steps;
+        if (steps is null)
         {
             error = _played.Count == _diceToUse ? "You have used your dice. End your turn." : "That move is not allowed.";
             return false;
         }
 
-        Play(step);
+        foreach (var s in steps)
+        {
+            Play(s);
+        }
+
         if (HasWon(player))
         {
             LastTurn = new BackgammonTurn(player, Dice, [.. _played], false);
@@ -231,6 +242,7 @@ public class BackgammonGame : IBackgammonGame
         {
             error = !Rules.Cube || Rules.MatchLength == 1 ? "This match is played without the doubling cube."
                 : IsCrawford ? "Nobody may double in the Crawford game."
+                : OpeningRoll is not null ? "Nobody may double before the first turn."
                 : CubeValue >= MaxCube ? "The cube is at its highest value."
                 : "The other player owns the cube.";
             return false;
@@ -468,6 +480,64 @@ public class BackgammonGame : IBackgammonGame
             .Where(step => BackgammonMoves.CanReach(
                 Position.Apply(Turn, step.From, step.To), Turn, BackgammonMoves.Without(DiceLeft, step.Die), left - 1, _finals))
             .DistinctBy(step => (step.From, step.To))];
+    }
+
+    /// <summary>
+    /// The combined moves of one checker (see <see cref="IBackgammonGame.CombinedMoves"/>): for each starting point and
+    /// destination that no single die reaches, the ways with the fewest dice that keep a complete legal turn possible;
+    /// offered only if they all end in the same position (e.g. not if one way hits a checker on the way and another
+    /// does not).
+    /// </summary>
+    private IReadOnlyList<BackgammonCombinedMove> FindCombinedMoves()
+    {
+        var left = _diceToUse - _played.Count;
+        if (Phase != BackgammonPhase.Moving || left < 2)
+        {
+            return [];
+        }
+
+        var routes = new List<(List<BackgammonStep> Steps, BackgammonPosition End, int[] DiceLeft)>();
+        foreach (var from in LegalMoves.Select(m => m.From).Distinct())
+        {
+            CollectRoutes(Position, from, [.. DiceLeft], left, [], routes);
+        }
+
+        var singles = LegalMoves.Select(m => (m.From, m.To)).ToHashSet();
+        return [.. routes
+            .Where(r => !singles.Contains((r.Steps[0].From, r.Steps[^1].To))
+                && BackgammonMoves.CanReach(r.End, Turn, r.DiceLeft, left - r.Steps.Count, _finals))
+            .GroupBy(r => (r.Steps[0].From, r.Steps[^1].To))
+            .Select(g => g.Where(r => r.Steps.Count == g.Min(x => x.Steps.Count)).ToList())
+            .Where(ways => ways.Select(r => r.End.Key).Distinct().Count() == 1)
+            .Select(ways => new BackgammonCombinedMove(ways[0].Steps[0].From, ways[0].Steps[^1].To, ways[0].Steps))
+            .OrderBy(m => m.From).ThenBy(m => m.To)];
+    }
+
+    /// <summary>
+    /// Every way to move the checker on <paramref name="point"/> on by two or more of <paramref name="dice"/> in a row
+    /// (up to <paramref name="maxSteps"/>), with the position and the dice left at its end.
+    /// </summary>
+    private void CollectRoutes(BackgammonPosition position, int point, int[] dice, int maxSteps, List<BackgammonStep> route,
+        List<(List<BackgammonStep> Steps, BackgammonPosition End, int[] DiceLeft)> routes)
+    {
+        foreach (var die in dice.Distinct())
+        {
+            foreach (var step in BackgammonMoves.Steps(position, Turn, die).Where(s => s.From == point))
+            {
+                var next = position.Apply(Turn, step.From, step.To);
+                var rest = BackgammonMoves.Without(dice, die);
+                List<BackgammonStep> steps = [.. route, step];
+                if (steps.Count >= 2)
+                {
+                    routes.Add((steps, next, rest));
+                }
+
+                if (step.To != BackgammonPosition.Off && steps.Count < maxSteps)
+                {
+                    CollectRoutes(next, step.To, rest, maxSteps, steps, routes);
+                }
+            }
+        }
     }
 
     /// <summary>

@@ -10,21 +10,20 @@ let pickSeat = null; // the seat the pick buttons pick for
 const pickedLocally = (seat) => myPicks[seat]?.round === currentRound;
 
 function rpsStatus(game, state, view) {
-    const round = `Round ${game.round}`;
     if (!game.isRoundComplete) {
         if (pickSeat !== null) {
-            return `${round}: make your pick`;
+            return "👉 Make your pick";
         }
-        return view.isPlayer ? "Waiting for the other player…" : `${round}: waiting for picks…`;
+        return view.isPlayer ? "⏳ The other player" : "⏳ Picking…";
     }
 
     if (game.roundWinner === null) {
-        return `${round}: it's a draw!`;
+        return `🤝 Round ${game.round} is a draw`;
     }
     if (view.isMe(game.roundWinner) && !view.isMe(1 - game.roundWinner)) {
-        return "You win this round!";
+        return `🏆 You win round ${game.round}!`;
     }
-    return `${state.seats[game.roundWinner]?.name ?? "Empty seat"} wins ${round.toLowerCase()}!`;
+    return `🏆 ${state.seats[game.roundWinner]?.name ?? "Empty seat"} wins round ${game.round}`;
 }
 
 function handCard(game, state, seat, view) {
@@ -71,9 +70,9 @@ const rps = startSessionPage("RockPaperScissors", (game, state, view) => {
 
     $("status").textContent = rpsStatus(game, state, view);
     $("hands").replaceChildren(...game.hands.map((_, seat) => handCard(game, state, seat, view)));
-    $("players").replaceChildren(
-        ...game.hands.map((hand, seat) => listItem(seatLabel(state, seat, view), `: ${hand.score}`)),
-        listItem(`Draws: ${game.draws}`));
+    showScores(state, view, [`Round ${game.round}`, `Draws: ${game.draws}`], game.hands.map((hand, seat) => ({
+        seat, score: hand.score, acting: !game.isRoundComplete && !hand.hasPicked,
+    })));
 });
 
 document.querySelectorAll(".pick").forEach((button) => {

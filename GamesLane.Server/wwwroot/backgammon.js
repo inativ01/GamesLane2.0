@@ -79,12 +79,33 @@ function checker(seat, x, y, label = "") {
     return group;
 }
 
-// The board's frame, felt, points, bar and tray.
+// Wood grain for the board: noise stretched along the planks (across for the frame, along the points for the playing
+// field), drawn as darker streaks on the wood's colour.
+function woodDefs() {
+    const grain = (id, frequency, strength) => svg("filter", { id, x: 0, y: 0, width: "100%", height: "100%" },
+        svg("feTurbulence", { type: "fractalNoise", baseFrequency: frequency, numOctaves: 3, seed: 7, result: "noise" }),
+        svg("feColorMatrix", {
+            in: "noise", type: "matrix", result: "streaks",
+            values: `0 0 0 0 0.18  0 0 0 0 0.09  0 0 0 0 0.02  0 0 0 ${strength} -0.2`,
+        }),
+        svg("feComposite", { in: "streaks", in2: "SourceGraphic", operator: "atop" }));
+    const gradient = (id, from, to) => svg("linearGradient", { id, x1: 0, y1: 0, x2: 0, y2: 1 },
+        svg("stop", { offset: 0, "stop-color": from }), svg("stop", { offset: 1, "stop-color": to }));
+    return svg("defs", {},
+        grain("bg-grain-across", "0.003 0.09", 0.7),
+        grain("bg-grain-along", "0.09 0.004", 0.45),
+        gradient("bg-walnut", "#6e3d1c", "#4a2610"),
+        gradient("bg-maple", "#e2bf8a", "#cfa66d"));
+}
+
+// The board's frame, playing field, points, bar and tray, in wood.
 function drawBoard() {
+    const field = (x) => svg("rect", { x, y: FRAME, width: HALF, height: HEIGHT - 2 * FRAME, class: "bg-field" });
     const parts = [
+        woodDefs(),
         svg("rect", { x: 0, y: 0, width: WIDTH, height: HEIGHT, rx: 14, class: "bg-wood" }),
-        svg("rect", { x: LEFT, y: FRAME, width: HALF, height: HEIGHT - 2 * FRAME, class: "bg-felt" }),
-        svg("rect", { x: RIGHT, y: FRAME, width: HALF, height: HEIGHT - 2 * FRAME, class: "bg-felt" }),
+        field(LEFT),
+        field(RIGHT),
         svg("rect", { x: BOARD_W, y: FRAME, width: TRAY_W - FRAME, height: HEIGHT - 2 * FRAME, rx: 6, class: "bg-tray" }),
     ];
     for (let p = 1; p <= 24; p++) {
@@ -97,6 +118,9 @@ function drawBoard() {
             "data-point": p,
         }));
     }
+    // A carved groove around each half of the playing field, and along both sides of the bar.
+    [LEFT, RIGHT].forEach((x) => parts.push(
+        svg("rect", { x: x - 1.5, y: FRAME - 1.5, width: HALF + 3, height: HEIGHT - 2 * FRAME + 3, class: "bg-groove" })));
     return parts;
 }
 
@@ -151,8 +175,37 @@ function lastMove(game) {
     return last?.moves.length ? { seat: last.seat, move: last.moves[last.moves.length - 1] } : null;
 }
 
+// Where an arrow of the last turn starts or ends on black's point p: at the base of the point, on the bar, or in the
+// seat's half of the tray.
+function arrowEnd(p, seat) {
+    if (p === BAR) return [BAR_X, MID_Y];
+    if (p === OFF) return [BOARD_W + (TRAY_W - FRAME) / 2, seat === 1 ? HEIGHT - FRAME - 60 : FRAME + 60];
+    return [pointX(p), isBottom(p) ? HEIGHT - FRAME - R : FRAME + R];
+}
+
+// The last finished turn drawn on the board (with Last move): an arrow per checker moved, numbered in order.
+function lastTurnArrows(game) {
+    const last = game.lastTurn;
+    const parts = [svg("defs", {}, svg("marker", {
+        id: "bg-arrowhead", viewBox: "0 0 10 10", refX: 8, refY: 5, markerWidth: 4, markerHeight: 4, orient: "auto",
+    }, svg("path", { d: "M0,0 L10,5 L0,10 z", class: "bg-arrowhead" })))];
+    last.moves.forEach((m, i) => {
+        const [x1, y1] = arrowEnd(toBlack(m.from, last.seat), last.seat);
+        const [x2, y2] = arrowEnd(toBlack(m.to, last.seat), last.seat);
+        const bend = (isBottom(toBlack(m.from, last.seat)) ? -1 : 1) * 90;
+        const [cx, cy] = [(x1 + x2) / 2, (y1 + y2) / 2 + bend];
+        parts.push(
+            svg("path", { d: `M${x1},${y1} Q${cx},${cy} ${x2},${y2}`, class: "bg-arrow", "marker-end": "url(#bg-arrowhead)" }),
+            svg("circle", { cx: (x1 + 2 * cx + x2) / 4, cy: (y1 + 2 * cy + y2) / 4, r: 15, class: "bg-arrow-step" }),
+            text((x1 + 2 * cx + x2) / 4, (y1 + 2 * cy + y2) / 4 + 6, String(i + 1), "bg-arrow-number"));
+    });
+    return parts;
+}
+
 let selected = null;
 let lastArrival = "";
+// Whether Last move is on: the last finished turn is drawn on the board as arrows.
+let showLast = false;
 
 // The dice rolling animation: until when it runs, and the seats whose dice are rolling.
 const ROLL_MS = 1000;
@@ -164,7 +217,7 @@ let seenOpening = [null, null];
 
 // Starts the one-second rolling animation when the state shows a new roll (not when the page first opens).
 function noticeRoll(game) {
-    const opening = game.phase === "Opening" || (game.openingRoll && !game.played.length);
+    const opening = game.phase === "Opening" || Boolean(game.openingRoll);
     if (seenRolls !== null && game.rolls !== seenRolls) {
         // After a tie, any opening die shown is a new roll; otherwise, the one that was not there before.
         const wasTie = seenOpening[0] !== null && seenOpening[0] === seenOpening[1];
@@ -183,8 +236,8 @@ function noticeRoll(game) {
 }
 
 // The dice on the board: each seat's dice on its own half (black's on the right before the board is turned). During the
-// opening roll and its first turn, each player's one die; then the mover's dice, with used ones faded; between turns,
-// the last roll, faded. Rolling dice show random faces and tumble.
+// opening roll, until the starting player rolls, each player's one die; then the mover's dice, with used ones faded;
+// between turns, the last roll, faded. Rolling dice show random faces and tumble.
 function drawDice(game) {
     const parts = [];
     const rolling = Date.now() < rollingUntil;
@@ -205,9 +258,8 @@ function drawDice(game) {
             return at < 0;
         });
     };
-    if (game.phase === "Opening" || (game.openingRoll && game.phase === "Moving")) {
-        const used = game.openingRoll ? usedOf(game.openingRoll) : [false, false];
-        [0, 1].filter((s) => game.openingDice[s] !== null).forEach((s) => row([game.openingDice[s]], s, [used[s]]));
+    if (game.phase === "Opening" || game.openingRoll) {
+        [0, 1].filter((s) => game.openingDice[s] !== null).forEach((s) => row([game.openingDice[s]], s, [false]));
     } else if (game.dice.length) {
         const all = game.dice[0] === game.dice[1] ? [...game.dice, ...game.dice] : game.dice;
         row(all, game.turn, usedOf(all));
@@ -227,13 +279,9 @@ function drawGame(game, viewer, canMove, mayDouble) {
     root.append(board);
     board.append(...drawBoard());
 
-    // The last turn's moves (faint) and this turn's moves so far.
-    const marked = (seat, moves, className) => moves.forEach((m) =>
-        [m.from, m.to].forEach((p) => board.append(highlight(toBlack(p, seat), className))));
-    if (game.lastTurn && !game.played.length) {
-        marked(game.lastTurn.seat, game.lastTurn.moves, "bg-last");
-    }
-    marked(game.turn, game.played, "bg-last current");
+    // This turn's moves so far (the last turn's are shown only with Last move).
+    game.played.forEach((m) =>
+        [m.from, m.to].forEach((p) => board.append(highlight(toBlack(p, game.turn), "bg-current"))));
 
     const moves = canMove ? game.legalMoves : [];
     const mover = (p) => toBlack(p, game.turn);
@@ -290,6 +338,9 @@ function drawGame(game, viewer, canMove, mayDouble) {
     });
 
     board.append(...drawDice(game));
+    if (showLast && game.lastTurn?.moves.length && !game.played.length) {
+        board.append(...lastTurnArrows(game));
+    }
 
     // Tap areas: each point's half of the board, the bar and the tray; then the cube on top.
     const tapped = (p) => (viewer === 1 || p === BAR || p === OFF ? p : 25 - p);
@@ -330,8 +381,6 @@ function viewerSeat(game, view) {
     return mine.length === 2 ? actingSeat(game) : mine[0] ?? 0;
 }
 
-// A move such as "13/7", "bar/22" or "6/off".
-const moveText = (m) => `${m.from === BAR ? t("bar") : m.from}/${m.to === OFF ? t("off") : m.to}`;
 const diceText = (dice) => dice.join("-");
 const pointsText = (n) => (n === 1 ? t("1 point") : t("{n} points", { n }));
 const colorName = (seat) => t(COLORS[seat]);
@@ -351,38 +400,32 @@ function backgammonTexts(game, state, view) {
             const roller = openingRoller(game, view);
             const waiting = [0, 1].filter((s) => game.openingDice[s] === null || openingTie(game)).map(name);
             status = roller !== null
-                ? both ? t("{color}: tap the board to roll your die: the higher die starts", { color: colorName(roller) })
-                    : t("Tap the board to roll your die: the higher die starts")
-                : waiting.length > 1 ? t("Waiting for {a} and {b} to roll their dice to see who starts", { a: waiting[0], b: waiting[1] })
-                    : t("Waiting for {name} to roll a die to see who starts", { name: waiting[0] });
+                ? `👉 🎲 ${both ? `${colorName(roller)}: ` : ""}${t("The higher die starts")}`
+                : `⏳ 🎲 ${waiting.join(", ")}`;
             break;
         }
         case "Rolling": {
             const color = colorName(game.turn);
-            status = !mine(game.turn) ? t("{name} ({color}) to roll", { name: name(game.turn), color })
-                : both && game.canDouble ? t("{color}: tap the board to roll, or the cube to double", { color })
-                    : both ? t("{color}: tap the board to roll", { color })
-                        : game.canDouble ? t("Your turn: tap the board to roll, or the cube to double")
-                            : t("Your turn: tap the board to roll");
+            status = !mine(game.turn) ? `⏳ 🎲 ${name(game.turn)} (${color})` : `👉 🎲 ${both ? color : t("Your turn")}`;
             break;
         }
         case "Doubled":
             status = `${about(game.turn, "You double to {n}.", "{name} doubles to {n}.", { n: game.cubeValue * 2 })} `
-                + (mine(1 - game.turn) ? t("Take or drop?") : t("Waiting for {name}…", { name: name(1 - game.turn) }));
+                + (mine(1 - game.turn) ? `👉 ${t("Take or drop?")}` : `⏳ ${name(1 - game.turn)}`);
             break;
         case "Moving": {
             const dice = diceText(game.dice);
-            status = !mine(game.turn) ? t("{name} ({color}) is moving: {dice}", { name: name(game.turn), color: colorName(game.turn), dice })
-                : !game.legalMoves.length ? t("Press Done to end your turn")
-                    : both ? `${colorName(game.turn)}: ${dice}` : t("Your move: {dice}", { dice });
+            status = !mine(game.turn) ? `⏳ ${name(game.turn)} (${colorName(game.turn)}): ${dice}`
+                : !game.legalMoves.length ? `👉 ${t("Press Done to end your turn")}`
+                    : `👉 ${both ? colorName(game.turn) : t("Your move")}: ${dice}`;
             break;
         }
         case "GameOver":
-            status = t("Game {n} is over. Next: game {next}.", { n: game.gameNumber, next: game.gameNumber + 1 });
+            status = `🏁 ${t("Game {n} is over.", { n: game.gameNumber })}`;
             break;
         default:
-            status = about(result.seat, "You win the match {a}–{b}!", "{name} wins the match {a}–{b}!",
-                { a: game.scores[result.seat], b: game.scores[1 - result.seat] });
+            status = `🏆 ${about(result.seat, "You win the match {a}–{b}!", "{name} wins the match {a}–{b}!",
+                { a: game.scores[result.seat], b: game.scores[1 - result.seat] })}`;
     }
 
     let message = "";
@@ -402,35 +445,26 @@ function backgammonTexts(game, state, view) {
             : mine(result.seat) && !both ? t("{name} dropped the double: you win {points}.", { name: name(loser), points })
                 : mine(loser) && !both ? t("You dropped the double: {name} wins {points}.", { name: name(result.seat), points })
                     : t("{loser} dropped the double: {winner} wins {points}.", { loser: name(loser), winner: name(result.seat), points });
-    } else if (game.openingRoll && !game.played.length && game.phase === "Moving") {
+    } else if (game.openingRoll) {
         message = about(game.turn, "Opening roll: White {white}, Black {black}. You start.",
             "Opening roll: White {white}, Black {black}. {name} starts.", { white: game.openingRoll[0], black: game.openingRoll[1] });
-    } else if (game.lastTurn && (game.lastTurn.seat !== game.turn || game.phase !== "Moving")) {
-        const last = game.lastTurn;
-        const values = { dice: diceText(last.dice), moves: last.moves.map(moveText).join(" ") };
-        message = !last.moves.length ? about(last.seat, "You rolled {dice} and could not move.", "{name} rolled {dice} and could not move.", values)
-            : last.forced ? about(last.seat, "You rolled {dice}: the only possible move, {moves}, was played.",
-                "{name} rolled {dice}: the only possible move, {moves}, was played.", values)
-                : about(last.seat, "You played {dice}: {moves}.", "{name} played {dice}: {moves}.", values);
     }
     return { status, message };
 }
 
-// The two players: colour, name, match score and pip count, with the seat to act marked.
-function scoreboard(game, state, view) {
+// The score row in the status bar: the match length, the game number and the Crawford game, then each player's colour,
+// name, match score and pip count, with the seat to act outlined.
+function showScoreboard(game, state, view) {
     const acting = game.phase === "GameOver" || game.phase === "MatchOver" ? null : actingSeat(game);
-    const header = listItem([t("Match to {points}", { points: pointsText(game.matchLength) }), t("Game {n}", { n: game.gameNumber }),
-        game.isCrawford && t("Crawford game")].filter(Boolean).join(" · "));
-    header.className = "bg-match";
-    return [header, ...[0, 1].map((seat) => {
-        const item = listItem(
-            Object.assign(document.createElement("span"), { className: `bg-swatch ${seat === 0 ? "white" : "black"}` }),
-            seatLabel(state, seat, view),
-            Object.assign(document.createElement("strong"), { className: "bg-score", textContent: String(game.scores[seat]) }),
-            Object.assign(document.createElement("span"), { className: "bg-pips", textContent: t("{n} pips", { n: game.pips[seat] }) }));
-        item.classList.toggle("acting", seat === acting);
-        return item;
-    })];
+    showScores(state, view,
+        [t("Match to {points}", { points: pointsText(game.matchLength) }), t("Game {n}", { n: game.gameNumber }), game.isCrawford && t("Crawford game")],
+        [0, 1].map((seat) => ({
+            seat,
+            before: el("span", `bg-swatch ${seat === 0 ? "white" : "black"}`),
+            score: game.scores[seat],
+            extra: t("{n} pips", { n: game.pips[seat] }),
+            acting: seat === acting,
+        })));
 }
 
 // The whole page fits the screen without scrolling: the board shrinks by however much the page is too tall (down to
@@ -456,7 +490,7 @@ const backgammon = startSessionPage("Backgammon", (game, state, view) => {
     }
     current = { game, view, viewer, canMove };
 
-    $("bg-players").replaceChildren(...scoreboard(game, state, view));
+    showScoreboard(game, state, view);
     $("bg-board").replaceChildren(drawGame(game, viewer, canMove, game.canDouble && view.isMe(game.turn)));
     const { status, message } = backgammonTexts(game, state, view);
     $("status").textContent = status;
@@ -473,8 +507,10 @@ const backgammon = startSessionPage("Backgammon", (game, state, view) => {
     $("bg-undo").hidden = !(canMove && game.played.length);
     $("bg-done").hidden = !(canMove && game.canEndTurn);
     $("next-round").hidden = !(view.isPlayer && game.phase === "GameOver");
+    $("bg-last-move").hidden = !game.lastTurn?.moves.length || game.played.length > 0;
+    $("bg-last-move").setAttribute("aria-pressed", String(showLast));
     fitBoard();
-});
+}, (seat) => ["⚪", "⚫"][seat]);
 
 addEventListener("resize", () => requestAnimationFrame(fitBoard));
 
@@ -542,4 +578,8 @@ $("bg-undo").addEventListener("click", act("UndoMove"));
 $("bg-done").addEventListener("click", act("EndTurn"));
 $("next-round").addEventListener("click", () => {
     if (current) call("NextRound", backgammon.sessionId, current.game.gameNumber).catch(() => {});
+});
+$("bg-last-move").addEventListener("click", () => {
+    showLast = !showLast;
+    backgammon.refresh();
 });

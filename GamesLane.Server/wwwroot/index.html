@@ -9,8 +9,8 @@
     <meta name="theme-color" content="#19285d">
     <link rel="stylesheet" href="styles.css">
     <script>
-        // The splash screen shows for 5 seconds when the app is first opened in this tab, and when the home icon is used
-        // (/?splash). It runs on its own, so it ends even if the page's other scripts are slow or fail to load. The
+        // The splash screen shows for 5 seconds when the app is first opened in this tab, and when the GamesLane name is
+        // used (/?splash). It runs on its own, so it ends even if the page's other scripts are slow or fail to load. The
         // ?splash is removed from the address, so reloading the page does not show it again.
         if (!sessionStorage.getItem("splashShown") || new URLSearchParams(location.search).has("splash")) {
             const root = document.documentElement;
@@ -38,7 +38,7 @@
     </picture>
 </div>
 <header class="top">
-    <a href="/" class="brand"><img class="brand-name" src="images/name.png" alt="GamesLane"></a>
+    <a href="/?splash" class="brand" title="Main screen" data-i18n-attr="title"><img class="brand-name" src="images/name.png" alt="GamesLane"></a>
     <div id="account" class="account"></div>
 </header>
 <main>

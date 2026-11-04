@@ -82,6 +82,9 @@ public class RichManPoorManGame : IRichManPoorManGame
     public bool HasPassed(int player) => Player(player).Passed;
 
     /// <inheritdoc />
+    public IReadOnlyList<Card>? RoundThrow(int player) => Player(player).RoundThrow;
+
+    /// <inheritdoc />
     public bool IsActive(int player) => Player(player).Active;
 
     /// <inheritdoc />
@@ -135,8 +138,10 @@ public class RichManPoorManGame : IRichManPoorManGame
         }
 
         Throws++;
-        CurrentThrow = LastThrow = new RichManPoorManThrow(player, [.. RichManPoorManRules.Sorted(cards)]);
+        var thrown = RichManPoorManRules.Sorted(cards).ToArray();
+        CurrentThrow = LastThrow = new RichManPoorManThrow(player, thrown);
         Player(player).Passed = false;
+        Player(player).RoundThrow = thrown;
         _passedSinceThrow.Clear();
         if (hand.Count == 0)
         {
@@ -349,6 +354,7 @@ public class RichManPoorManGame : IRichManPoorManGame
             state.Hand.AddRange(RichManPoorManRules.Sorted(
                 deck.Skip(place * RichManPoorManRules.CardsPerPlayer).Take(RichManPoorManRules.CardsPerPlayer)));
             state.Passed = false;
+            state.RoundThrow = null;
             state.Gift = null;
             state.Received = null;
         }
@@ -447,6 +453,7 @@ public class RichManPoorManGame : IRichManPoorManGame
         foreach (var state in _players.Values)
         {
             state.Passed = false;
+            state.RoundThrow = null;
         }
 
         var starter = _players[winner];
@@ -553,6 +560,9 @@ public class RichManPoorManGame : IRichManPoorManGame
 
         /// <summary>Whether the player's last action in this round was to pass.</summary>
         public bool Passed { get; set; }
+
+        /// <summary>The cards the player last threw in this round, or null.</summary>
+        public Card[]? RoundThrow { get; set; }
 
         /// <summary>Whether the player is still playing (has not left).</summary>
         public bool Active { get; set; } = true;

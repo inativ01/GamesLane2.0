@@ -74,6 +74,9 @@ public class RichManPoorManGameTests
             Assert.True(game.HasPassed(player));
         }
 
+        Assert.Equal(["2♠"], Text(game.RoundThrow(0)!));
+        Assert.Equal(["K♠"], Text(game.RoundThrow(5)!));
+        Assert.Null(game.RoundThrow(4));
         Assert.Equal(0, game.Turn);
         Pass(game, 0);
 
@@ -81,6 +84,7 @@ public class RichManPoorManGameTests
         Assert.Equal(5, game.Turn);
         Assert.Equal(5, game.LastRoundWinner);
         Assert.False(game.HasPassed(4));
+        Assert.All(Six, p => Assert.Null(game.RoundThrow(p)));
         Assert.False(game.TryPass(5, out var startError));
         Assert.Equal("You start this round: throw cards of one number.", startError);
     }

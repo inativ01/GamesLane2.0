@@ -11,15 +11,16 @@ public record RichManPoorManThrowState(int Seat, IReadOnlyList<string> Cards);
 
 /// <summary>
 /// A player as everyone sees them: their seat, their place in this game (1 for the rich man), how many cards they hold,
-/// whether their last action in this round was to pass, their finishing place (null until their hand is empty), whether
-/// they are still playing (false once they left, until someone takes their seat), and in the exchange, how many cards
-/// they give and whether they have given them.
+/// whether their last action in this round was to pass, the cards they last threw in this round (null if none), their
+/// finishing place (null until their hand is empty), whether they are still playing (false once they left, until someone
+/// takes their seat), and in the exchange, how many cards they give and whether they have given them.
 /// </summary>
 public record RichManPoorManPlayerState(
     int Seat,
     int Place,
     int CardCount,
     bool Passed,
+    IReadOnlyList<string>? RoundThrow,
     int? Finished,
     bool IsActive,
     int ExchangeCount,
@@ -321,6 +322,7 @@ public class RichManPoorManSession(string id, Action<Card[]>? shuffle = null, Ra
                 place + 1,
                 game.Hand(seat).Count,
                 game.HasPassed(seat),
+                Text(game.RoundThrow(seat)),
                 ranking.Contains(seat) ? ranking.IndexOf(seat) + 1 : null,
                 game.IsActive(seat),
                 game.ExchangeCount(seat),
