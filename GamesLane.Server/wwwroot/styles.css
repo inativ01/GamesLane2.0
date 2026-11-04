@@ -599,11 +599,13 @@ footer {
     box-shadow: none;
 }
 
-/* As tall as the header above it (the GamesLane name's height and padding). */
+/* As tall as the header above it (the GamesLane name's height and padding). When everything does not fit on one line,
+   it takes two: the game's picture and name on the first, the rest on the second. */
 .session-bar {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
-    gap: 0.6rem;
+    gap: 0.4rem 0.6rem;
     min-height: calc(46px + 0.8rem);
     padding: 0.25rem max(0.75rem, calc((100% - 680px) / 2 + 0.75rem));
     background: linear-gradient(135deg, var(--black), #3a1a10);
@@ -619,8 +621,8 @@ footer {
 }
 
 .session-name {
-    flex: 1;
-    min-width: 0;
+    flex: 1 0 auto;
+    max-width: calc(100% - 40px - 0.6rem);
     margin: 0;
     overflow: hidden;
     font-size: 1.2rem;
