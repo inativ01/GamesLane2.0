@@ -47,7 +47,7 @@ A typical setup is a shared screen (such as a TV or laptop) connected as a spect
 
 ## Languages
 
-- English and Hebrew. On pages that have a Hebrew translation (so far the main screen, Backgammon, Rich man, poor man and Yatzee, including the login and profile dialogs, the session lobby and the server's messages), the top bar shows the current language's flag; tapping it opens a menu of the languages, and choosing one reloads the page in it.
+- English and Hebrew. Every page has a Hebrew translation (including the login and profile dialogs, the session lobby, the game options and the server's messages); the top bar shows the current language's flag; tapping it opens a menu of the languages, and choosing one reloads the page in it.
 - Hebrew pages read from right to left (the backgammon board stays as it is).
 - The choice is remembered in the browser; until the user chooses, Hebrew if the browser prefers it, otherwise English.
 - Pages without a translation (The Gang, Rock-paper-scissors, Tic-tac-toe) stay in English and show no flag.

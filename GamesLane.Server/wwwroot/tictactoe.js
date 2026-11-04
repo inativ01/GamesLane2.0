@@ -10,17 +10,17 @@ function ticTacToeStatus(game, state, view) {
     const both = view.isMe(0) && view.isMe(1);
     if (!isRoundOver(game)) {
         if (view.isMe(seatOf(game.currentTurn))) {
-            return both ? `👉 Your turn (${game.currentTurn})` : "👉 Your turn";
+            return both ? `👉 ${t("Your turn")} (${game.currentTurn})` : `👉 ${t("Your turn")}`;
         }
-        return `⏳ Waiting for ${nameOf(game.currentTurn)} (${game.currentTurn})`;
+        return `⏳ ${t("Waiting for {name}", { name: `${nameOf(game.currentTurn)} (${game.currentTurn})` })}`;
     }
     if (game.isDraw) {
-        return `🤝 Round ${game.round} is a draw`;
+        return `🤝 ${t("Round {n} is a draw", { n: game.round })}`;
     }
     if (view.isMe(seatOf(game.winner)) && !both) {
-        return `🏆 You win round ${game.round}!`;
+        return `🏆 ${t("You win round {n}!", { n: game.round })}`;
     }
-    return `🏆 ${nameOf(game.winner)} (${game.winner}) wins round ${game.round}`;
+    return `🏆 ${t("{name} wins round {n}", { name: `${nameOf(game.winner)} (${game.winner})`, n: game.round })}`;
 }
 
 let turnSeat = 0;
@@ -31,7 +31,7 @@ const cells = Array.from({ length: 9 }, (_, i) => {
     cell.type = "button";
     cell.className = "cell";
     cell.disabled = true;
-    cell.setAttribute("aria-label", `Cell ${i + 1}`);
+    cell.setAttribute("aria-label", t("Cell {n}", { n: i + 1 }));
     cell.addEventListener("click", () => call("MakeMove", ticTacToe.sessionId, turnSeat, i).catch(() => {}));
     $("board").appendChild(cell);
     return cell;
@@ -50,7 +50,7 @@ const ticTacToe = startSessionPage("TicTacToe", (game, state, view) => {
 
     $("status").textContent = ticTacToeStatus(game, state, view);
     $("next-round").hidden = !(view.isPlayer && isRoundOver(game));
-    showScores(state, view, [`Round ${game.round}`, `Draws: ${game.draws}`], MARKS.map((mark, seat) => ({
+    showScores(state, view, [t("Round {n}", { n: game.round }), t("Draws: {n}", { n: game.draws })], MARKS.map((mark, seat) => ({
         seat, before: el("span", "score-mark", mark), score: game.scores[seat], acting: !isRoundOver(game) && seat === turnSeat,
     })));
 }, (seat) => MARKS[seat]);

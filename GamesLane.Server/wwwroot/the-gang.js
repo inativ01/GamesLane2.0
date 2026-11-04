@@ -11,7 +11,7 @@ const TABLE_HIDDEN_KEY = "theGang.tableHidden";
 
 function chipElement(stage, number, content = number) {
     const chip = el("span", `chip stage-${stage}`, String(content));
-    chip.title = `${STAGES[stage]} chip ${number}`;
+    chip.title = t("{stage} chip {n}", { stage: t(STAGES[stage]), n: number });
     return chip;
 }
 
@@ -21,7 +21,7 @@ const isVoidChip = (game, stage, seat) => stage === 0 && seat === game.redrawnSe
 
 function voidChip(chip) {
     chip.classList.add("void");
-    chip.title = "No longer counts: this player got new pocket cards";
+    chip.title = t("No longer counts: this player got new pocket cards");
     return chip;
 }
 
@@ -55,7 +55,7 @@ function slotElement(cards) {
         return cardElement(cards?.[0]);
     }
     const slot = el("span", "card-slot", ...cards.map(cardElement));
-    slot.title = "These cards replaced a joker: each hand uses one of them.";
+    slot.title = t("These cards replaced a joker: each hand uses one of them.");
     return slot;
 }
 
@@ -83,27 +83,27 @@ function gangStatus(game, state, view) {
             const step = { jokers: "Jokers: swap your jokers", coordinator: "Coordinator: pass on a card" }[game.preparingCard]
                 ?? "Con Artist: look at your cards";
             const mine = game.playingSeats.some((s) => view.isMe(s) && !game.preparedSeats.includes(s));
-            return `${mine ? "👉 " : ""}${step} · Waiting for ${waiting.join(", ")}`;
+            return `${mine ? "👉 " : ""}${t(step)} · ${t("Waiting for {name}", { name: waiting.join(", ") })}`;
         }
         case "Betting": {
             const mine = game.playingSeats.some((s) => view.isMe(s) && !game.readySeats.includes(s));
-            const status = `${mine ? "👉" : "⏳"} ${STAGES[game.stage]} chips`;
+            const status = `${mine ? "👉" : "⏳"} ${t(`${STAGES[game.stage]} chips`)}`;
             return awaitsRedraw(game)
-                ? `${status} · Waiting for ${state.seats[game.redrawnSeat]?.name ?? ""} to confirm new cards`
+                ? `${status} · ${t("Waiting for {name} to confirm new cards", { name: state.seats[game.redrawnSeat]?.name ?? "" })}`
                 : status;
         }
         case "Reveal":
             return awaitsScan(game)
-                ? "🔍 Agree on the guess before the strongest hand is revealed"
-                : view.isPlayer ? "👉 🃏 Reveal the hands, lowest red chip first" : "🃏 Revealing, lowest red chip first…";
+                ? `🔍 ${t("Agree on the guess before the strongest hand is revealed")}`
+                : view.isPlayer ? `👉 🃏 ${t("Reveal the hands, lowest red chip first")}` : `🃏 ${t("Revealing, lowest red chip first…")}`;
         default:
             if (game.vaults >= TO_FINISH) {
-                return "🎉 Three vaults: the gang wins!";
+                return `🎉 ${t("Three vaults: the gang wins!")}`;
             }
             if (game.alarms >= TO_FINISH) {
-                return "🚨 Three alarms: game over";
+                return `🚨 ${t("Three alarms: game over")}`;
             }
-            return game.succeeded ? "💰 The vault is open!" : "🚨 The alarm went off!";
+            return game.succeeded ? `💰 ${t("The vault is open!")}` : `🚨 ${t("The alarm went off!")}`;
     }
 }
 
@@ -114,21 +114,22 @@ function gangStatus(game, state, view) {
 function heistCards(game) {
     return game.cards.map((card) => {
         const isNew = game.newCards.includes(card.key);
-        const kind = el("span", "heist-card-kind", card.kind === "Challenge" ? "Challenge" : "Specialist");
+        const kind = el("span", "heist-card-kind", t(card.kind === "Challenge" ? "Challenge" : "Specialist"));
         const art = el("img", "heist-card-art");
         art.src = `/images/the-gang/${card.key}.svg`;
         art.alt = "";
+        const name = translateServerText(card.name);
         const item = el("li", `heist-card ${card.kind.toLowerCase()}${isNew ? " new" : ""}`,
             art,
             el("span", "heist-card-body",
-                isNew ? el("span", "heist-card-top", kind, el("span", "heist-card-new", "New")) : kind,
-                el("strong", "heist-card-name", card.name),
-                ...(game.showCardTexts ? [el("span", "heist-card-text", card.text)] : [])));
+                isNew ? el("span", "heist-card-top", kind, el("span", "heist-card-new", t("New"))) : kind,
+                el("strong", "heist-card-name", name),
+                ...(game.showCardTexts ? [el("span", "heist-card-text", translateServerText(card.text))] : [])));
         const unused = isUnused(game, card);
         item.classList.toggle("unused", unused);
         item.tabIndex = 0;
         item.setAttribute("role", "button");
-        item.title = unused ? `${card.name} (not used in this heist): tap for details` : `${card.name}: tap for details`;
+        item.title = t(unused ? "{name} (not used in this heist): tap for details" : "{name}: tap for details", { name });
         item.addEventListener("click", () => showCardText(card));
         item.addEventListener("keydown", (event) => {
             if (event.key === "Enter" || event.key === " ") {
@@ -147,12 +148,13 @@ function showCardText(card) {
         <span class="heist-card-kind"></span>
         <h2></h2>
         <p class="card-popup-text"></p>
-        <div class="actions"><button type="button" data-close>Close</button></div>`);
+        <div class="actions"><button type="button" data-close></button></div>`);
     dialog.classList.add("card-popup", card.kind.toLowerCase());
+    dialog.querySelector("[data-close]").textContent = t("Close");
     dialog.querySelector(".heist-card-art").src = `/images/the-gang/${card.key}.svg`;
-    dialog.querySelector(".heist-card-kind").textContent = card.kind;
-    dialog.querySelector("h2").textContent = card.name;
-    dialog.querySelector(".card-popup-text").textContent = card.text;
+    dialog.querySelector(".heist-card-kind").textContent = t(card.kind);
+    dialog.querySelector("h2").textContent = translateServerText(card.name);
+    dialog.querySelector(".card-popup-text").textContent = translateServerText(card.text);
     // Tapping outside the popup closes it too.
     dialog.addEventListener("click", (event) => {
         if (event.target === dialog) {
@@ -178,7 +180,19 @@ function isUnused(game, card) {
     return card.kind === "Specialist" ? !decision.isDone : decision.isSkipped;
 }
 
-const cardName = (game, key) => game.cards.find((c) => c.key === key)?.name ?? key;
+// A card's name in the chosen language.
+const cardName = (game, key) => translateServerText(game.cards.find((c) => c.key === key)?.name ?? key);
+
+// Mastermind's result from the server, e.g. "no Ks", "one K" or "2 Ks", in the chosen language.
+function countText(text) {
+    const match = /^(?:no (.+)s|one (.+)|(\d+) (.+)s)$/.exec(text);
+    if (!match) {
+        return translateServerText(text);
+    }
+    return match[1] ? t("no {value}s", { value: match[1] })
+        : match[2] ? t("one {value}", { value: match[2] })
+            : t("{n} {value}s", { n: match[3], value: match[4] });
+}
 
 // What the heist's cards did to or showed about one player, one line each starting with the card's name, for the
 // player's row in the chip table: Motion Detector or Laser Tripwires, Investor and Math Whiz, and the carried-out group
@@ -186,12 +200,12 @@ const cardName = (game, key) => game.cards.find((c) => c.key === key)?.name ?? k
 function playerFacts(game, state, seat) {
     const facts = [];
     const fact = (...content) => facts.push(el("span", "player-facts", ...content));
-    const nameOf = (s) => state.seats[s]?.name ?? `Player ${playerNumber(game, s)}`;
+    const nameOf = (s) => state.seats[s]?.name ?? t("Player {n}", { n: playerNumber(game, s) });
     if (game.redrawnSeat === seat) {
-        fact(`${redrawCardName(game)}: new pocket cards were dealt`);
+        fact(`${translateServerText(redrawCardName(game))}: ${t("new pocket cards were dealt")}`);
     }
     for (const announcement of game.announcements.filter((a) => a.seat === seat)) {
-        fact(`${cardName(game, announcement.card)}: ${announcement.text}`);
+        fact(`${cardName(game, announcement.card)}: ${translateServerText(announcement.text)}`);
     }
     const discarding = game.pendingSeat === seat && game.pendingStep === "Discard";
     for (const decision of game.decisions.filter((d) => d.isDone)) {
@@ -200,22 +214,23 @@ function playerFacts(game, state, seat) {
         switch (decision.card) {
             case "informant":
                 if (decision.seat === seat) {
-                    fact(`${name}: `, game.shownFromSeat === null ? "choosing a card to show" : `showed a card to ${nameOf(game.shownToSeat)}`);
+                    fact(`${name}: `, game.shownFromSeat === null ? t("choosing a card to show")
+                        : t("showed a card to {name}", { name: nameOf(game.shownToSeat) }));
                 }
                 break;
             case "hacker":
                 if (decision.seat === seat) {
-                    fact(`${name}: drew a card`, discarding ? ", choosing one to discard" : " and discarded one");
+                    fact(`${name}: ${t(discarding ? "drew a card, choosing one to discard" : "drew a card and discarded one")}`);
                 }
                 break;
             case "jack":
                 if (decision.seat === seat) {
-                    fact(`${name}: got the Jack card`, discarding ? ", choosing one to discard" : " and discarded one");
+                    fact(`${name}: ${t(discarding ? "got the Jack card, choosing one to discard" : "got the Jack card and discarded one")}`);
                 }
                 break;
             case "muscle":
                 if (decision.seat === seat) {
-                    fact(`${name}: beats every hand of the same ranking`);
+                    fact(`${name}: ${t("beats every hand of the same ranking")}`);
                 }
                 break;
             default:
@@ -223,10 +238,10 @@ function playerFacts(game, state, seat) {
                     break;
                 }
                 if (result.passed === null) {
-                    fact(`${name}: ${result.text}`);
+                    fact(`${name}: ${decision.card === "mastermind" ? countText(result.text) : translateServerText(result.text)}`);
                 } else {
-                    fact(`${name}: guessed ${decision.value} `,
-                        el("span", result.passed ? "fact-badge pass" : "fact-badge fail", result.passed ? "PASS" : "FAIL"));
+                    fact(`${name}: ${t("guessed {value}", { value: translateServerText(decision.value) })} `,
+                        el("span", result.passed ? "fact-badge pass" : "fact-badge fail", t(result.passed ? "PASS" : "FAIL")));
                 }
         }
     }
@@ -239,7 +254,8 @@ function tableNotes(game, state) {
         .filter((decision) => decision.isOpen && isUnderWay(decision))
         .map((decision) => {
             const names = userNames(state, decision.agreed);
-            return `${cardName(game, decision.card)}: deciding, ${names.length} of ${userNames(state, decision.voters).length} agreed`
+            return t("{card}: deciding, {agreed} of {total} agreed",
+                { card: cardName(game, decision.card), agreed: names.length, total: userNames(state, decision.voters).length })
                 + (names.length ? ` (${names.join(", ")})` : "");
         });
 }
@@ -255,11 +271,11 @@ function myDecisions(game, state, view) {
         .map((d) => {
             const card = game.cards.find((c) => c.key === d.card);
             if (card.kind !== "Specialist") {
-                return el("div", "my-decision challenge", el("strong", null, card.name), decisionPanel(game, state, view, d));
+                return el("div", "my-decision challenge", el("strong", null, translateServerText(card.name)), decisionPanel(game, state, view, d));
             }
             const box = el("details", "my-decision specialist",
-                el("summary", null, el("strong", null, card.name), el("span", "hint", " · optional, use it any time")),
-                el("p", "hint", card.text),
+                el("summary", null, el("strong", null, translateServerText(card.name)), el("span", "hint", ` · ${t("optional, use it any time")}`)),
+                el("p", "hint", translateServerText(card.text)),
                 decisionPanel(game, state, view, d));
             box.open = isUnderWay(d) || openSpecialists.has(d.card);
             box.addEventListener("toggle", () => {
@@ -281,9 +297,9 @@ const RANKINGS = ["High card", "Pair", "Two pair", "Three of a kind", "Straight"
 function decisionPanel(game, state, view, decision) {
     const panel = el("div", "decision");
     if (!decision.isOpen) {
-        panel.append(el("span", "hint", decision.choice === "Rank" || decision.choice === "Ranking"
+        panel.append(el("span", "hint", t(decision.choice === "Rank" || decision.choice === "Ranking"
             ? "Decided just before the strongest hand is revealed."
-            : "Can be decided during the betting."));
+            : "Can be decided during the betting.")));
         return panel;
     }
 
@@ -299,7 +315,7 @@ function decisionPanel(game, state, view, decision) {
         Rank: "Agree on a card value the strongest hand's player holds:",
         Ranking: "Agree on the strongest hand's ranking:",
     }[decision.choice];
-    panel.append(el("span", "decision-prompt", prompt));
+    panel.append(el("span", "decision-prompt", t(prompt)));
 
     if (needsPlayer) {
         panel.append(el("div", "decision-players", ...game.playingSeats.map((seat) => {
@@ -311,7 +327,8 @@ function decisionPanel(game, state, view, decision) {
         })));
     }
     if (values.length) {
-        const select = el("select", "decision-value", el("option", null, "Choose…"), ...values.map((v) => el("option", null, v)));
+        const select = el("select", "decision-value", el("option", null, t("Choose…")),
+            ...values.map((v) => Object.assign(el("option", null, translateServerText(v)), { value: v })));
         select.firstChild.value = "";
         select.value = decision.value ?? "";
         select.disabled = mine.length === 0;
@@ -328,18 +345,18 @@ function decisionPanel(game, state, view, decision) {
         const thumb = button("👍", agree ? "ready-thumb" : "ready-thumb is-ready",
             () => call("Agree", view.sessionId, mine[0], decision.card, agree).catch(() => {}));
         thumb.disabled = !complete;
-        thumb.title = !complete ? "Complete the choice first" : agree ? "Agree" : "Agreed: tap to undo";
+        thumb.title = t(!complete ? "Complete the choice first" : agree ? "Agree" : "Agreed: tap to undo");
         thumb.setAttribute("aria-label", thumb.title);
         thumb.setAttribute("aria-pressed", String(!agree));
         row.append(thumb);
     }
-    row.append(el("span", "hint", `👍 ${agreedNames.length} of ${userNames(state, decision.voters).length}`
+    row.append(el("span", "hint", `👍 ${t("{on} of {total}", { on: agreedNames.length, total: userNames(state, decision.voters).length })}`
         + (agreedNames.length ? ` (${agreedNames.join(", ")})` : "")));
     panel.append(row);
     if (!mine.length) {
-        panel.append(el("span", "hint", view.isPlayer
+        panel.append(el("span", "hint", t(view.isPlayer
             ? "You can see the strongest hand, so the other players decide this."
-            : "The players decide this."));
+            : "The players decide this.")));
     }
     return panel;
 }
@@ -357,11 +374,11 @@ function myHand(game, state, view, hand) {
     const isLocked = (number) => game.lockedChips.includes(number);
     const keepsLockedChip = myChip !== null && isLocked(myChip);
 
-    const info = el("div", "my-hand-info", el("span", "my-hand-title", `Player ${playerNumber(game, seat)}`));
+    const info = el("div", "my-hand-info", el("span", "my-hand-title", t("Player {n}", { n: playerNumber(game, seat) })));
     // With the "My hand's ranking" option: what the cards make with the shared cards so far.
     if (hand.ranking) {
-        const ranking = el("span", "hand-ranking", hand.ranking);
-        ranking.title = "Your hand so far";
+        const ranking = el("span", "hand-ranking", translateServerText(hand.ranking));
+        ranking.title = t("Your hand so far");
         info.append(ranking);
     }
     // The chips this seat took in this heist's stages so far.
@@ -378,7 +395,7 @@ function myHand(game, state, view, hand) {
 
     if (hand.shownCard) {
         const shown = cardElement(hand.shownCard.card);
-        info.append(el("span", "shown-card", seatLabel(state, hand.shownCard.fromSeat, view), " showed you", shown));
+        info.append(el("span", "shown-card", seatLabel(state, hand.shownCard.fromSeat, view), t(" showed you"), shown));
     }
 
     // Tapping a card: Coordinator picks it to pass on (it can be changed until everyone has picked); Informant shows it;
@@ -401,7 +418,7 @@ function myHand(game, state, view, hand) {
         }
         const pick = el("button", passing && c === hand.passingCard ? "card-pick picked" : "card-pick", card);
         pick.type = "button";
-        pick.title = `${cardAction.verb} ${c}`;
+        pick.title = t(`${cardAction.verb} {card}`, { card: c });
         pick.addEventListener("click", () => cardAction.run(index).catch(() => {}));
         return pick;
     })), info));
@@ -412,50 +429,52 @@ function myHand(game, state, view, hand) {
         box.querySelector(".my-hand-top .card.joker")?.classList.add("replacing");
         const offer = el("div", "joker-choices", ...hand.jokerOffer.map((c, index) => {
             const again = c === "JOKER";
-            const pick = el("button", "joker-choice", cardElement(c), el("span", "joker-choice-label", again ? "Swap again" : "Keep"));
+            const pick = el("button", "joker-choice", cardElement(c), el("span", "joker-choice-label", t(again ? "Swap again" : "Keep")));
             pick.type = "button";
-            pick.title = again ? "Swap this joker for two more cards" : `Keep ${c} instead of the joker`;
+            pick.title = again ? t("Swap this joker for two more cards") : t("Keep {card} instead of the joker", { card: c });
             pick.addEventListener("click", () => call("ChooseJokerCard", view.sessionId, seat, index).catch(() => {}));
             return pick;
         }));
         const hasJoker = hand.jokerOffer.includes("JOKER");
         box.append(el("div", "joker-panel",
-            el("strong", "joker-panel-title", "🃏 You have a joker: replace it"),
-            el("p", "joker-panel-text", hasJoker
+            el("strong", "joker-panel-title", `🃏 ${t("You have a joker: replace it")}`),
+            el("p", "joker-panel-text", t(hasJoker
                 ? "Keep the other card, or swap this joker for two more cards."
-                : "Choose one of these two cards to take the joker's place. The other is discarded."),
+                : "Choose one of these two cards to take the joker's place. The other is discarded.")),
             offer));
     }
 
     // Motion Detector, Laser Tripwires: this seat got new pocket cards. It confirms with a button.
     if (game.redrawnSeat === seat && !game.redrawConfirmed) {
         box.append(el("div", "redraw-panel",
-            el("strong", "redraw-panel-title", `🔄 ${redrawCardName(game)}: you have new pocket cards`),
+            el("strong", "redraw-panel-title",
+                `🔄 ${t("{card}: you have new pocket cards", { card: translateServerText(redrawCardName(game)) })}`),
             el("p", "redraw-panel-text",
-                "Your old cards are gone. Your white chip ", ...voidWhiteChip(game),
-                "no longer says anything about your hand. The stage can't end until you confirm."),
-            button("Got it", "", () => call("ConfirmRedraw", view.sessionId, seat).catch(() => {}))));
+                t("Your old cards are gone. Your white chip "), ...voidWhiteChip(game),
+                t("no longer says anything about your hand. The stage can't end until you confirm.")),
+            button(t("Got it"), "", () => call("ConfirmRedraw", view.sessionId, seat).catch(() => {}))));
     }
 
     if (step === "ShowCard") {
         const select = el("select", "decision-value", ...others.map((s) => {
-            const option = el("option", null, state.seats[s]?.name ?? `Seat ${s + 1}`);
+            const option = el("option", null, state.seats[s]?.name ?? t("Seat {n}", { n: s + 1 }));
             option.value = String(s);
             return option;
         }));
         select.value = String(showTo[seat]);
         select.addEventListener("change", () => { showTo[seat] = Number(select.value); });
-        box.append(el("p", "hint step", "Informant: choose who sees it, then tap the card to show them. ", select));
+        box.append(el("p", "hint step", t("Informant: choose who sees it, then tap the card to show them. "), select));
     } else if (step === "Discard") {
-        box.append(el("p", "hint step", "Tap the card to discard. The stage can't end until you do."));
+        box.append(el("p", "hint step", t("Tap the card to discard. The stage can't end until you do.")));
     }
 
     if (passing) {
         const order = game.playingSeats;
         const next = order[(order.indexOf(seat) + 1) % order.length];
+        const name = state.seats[next]?.name ?? "";
         box.append(el("p", "hint", hand.passingCard
-            ? `You pass ${hand.passingCard} to ${state.seats[next]?.name ?? ""}. Tap another card to change it.`
-            : `Tap the card you want to pass to ${state.seats[next]?.name ?? ""}.`));
+            ? t("You pass {card} to {name}. Tap another card to change it.", { card: hand.passingCard, name })
+            : t("Tap the card you want to pass to {name}.", { name })));
     }
 
     if (!betting) {
@@ -467,16 +486,17 @@ function myHand(game, state, view, hand) {
     for (let number = 1; number <= game.playingSeats.length; number++) {
         const holder = game.playingSeats.find((s) => game.chips[stage][s] === number);
         const mine = holder === seat;
-        const label = holder === undefined ? "" : mine ? "You" : state.seats[holder]?.name ?? "";
+        const label = holder === undefined ? "" : mine ? t("You") : state.seats[holder]?.name ?? "";
         const lockedByOther = isLocked(number) && holder !== undefined && !mine;
         const chip = el("button", mine ? "chip-button mine" : "chip-button",
             chipElement(stage, number), el("span", "holder", isLocked(number) ? `🔒 ${label}`.trim() : label));
         // Tapping your own chip returns it to the middle (unless it is locked).
         chip.type = "button";
         chip.disabled = lockedByOther || keepsLockedChip;
-        chip.title = lockedByOther ? `Chip ${number} is locked: ${label} keeps it`
-            : keepsLockedChip ? "Your chip is locked: you keep it for this stage"
-                : holder === undefined ? `Take chip ${number}` : mine ? "Your chip: tap to return it" : `Take chip ${number} from ${label}`;
+        chip.title = lockedByOther ? t("Chip {n} is locked: {name} keeps it", { n: number, name: label })
+            : keepsLockedChip ? t("Your chip is locked: you keep it for this stage")
+                : holder === undefined ? t("Take chip {n}", { n: number }) : mine ? t("Your chip: tap to return it")
+                    : t("Take chip {n} from {name}", { n: number, name: label });
         chip.addEventListener("click", () => (mine
             ? call("ReturnChip", view.sessionId, seat)
             : call("TakeChip", view.sessionId, seat, number)).catch(() => {}));
@@ -485,7 +505,7 @@ function myHand(game, state, view, hand) {
 
     box.append(chips);
     if (game.lockedChips.length) {
-        box.append(el("p", "hint", "🔒 Locked: whoever takes it first keeps it."));
+        box.append(el("p", "hint", `🔒 ${t("Locked: whoever takes it first keeps it.")}`));
     }
     return box;
 }
@@ -499,11 +519,11 @@ function myActions(game, state, view) {
     }
     if (game.phase === "Preparing" && game.preparingCard === "con-artist") {
         const done = seats.every((s) => game.preparedSeats.includes(s));
-        const seen = button(done ? "✓ Seen" : "I've seen my cards", done ? "is-ready" : "",
+        const seen = button(done ? `✓ ${t("Seen")}` : t("I've seen my cards"), done ? "is-ready" : "",
             () => call("ConfirmSeen", view.sessionId, seats[0]).catch(() => {}));
         seen.disabled = done;
         return el("div", null,
-            el("p", "hint", "Remember your cards: once everyone has seen theirs, all pocket cards are shuffled and dealt again."),
+            el("p", "hint", t("Remember your cards: once everyone has seen theirs, all pocket cards are shuffled and dealt again.")),
             el("div", "my-hand-actions", seen));
     }
     if (game.phase !== "Betting" || game.middleChips.length > 0) {
@@ -514,7 +534,7 @@ function myActions(game, state, view) {
     const isReady = seats.every((s) => game.readySeats.includes(s));
     const ready = button("👍", isReady ? "ready-thumb is-ready" : "ready-thumb",
         () => call("SetReady", view.sessionId, seats[0], !isReady).catch(() => {}));
-    ready.title = isReady ? "Ready: tap to undo" : "Ready";
+    ready.title = t(isReady ? "Ready: tap to undo" : "Ready");
     ready.setAttribute("aria-label", ready.title);
     ready.setAttribute("aria-pressed", String(isReady));
     return el("div", "my-hand-actions", ready);
@@ -525,9 +545,9 @@ function myActions(game, state, view) {
 function chipTable(game, state, view) {
     const blackout = game.cards.some((c) => c.key === "blackout");
     const skipped = (stage) => game.skippedStages.includes(stage);
-    const header = el("tr", null, el("th", null, "Player"), ...STAGES.map((s, stage) => {
-        const th = el("th", skipped(stage) ? "skipped" : null, s);
-        th.title = skipped(stage) ? "Skipped in this heist" : "";
+    const header = el("tr", null, el("th", null, t("Player")), ...STAGES.map((s, stage) => {
+        const th = el("th", skipped(stage) ? "skipped" : null, t(s));
+        th.title = skipped(stage) ? t("Skipped in this heist") : "";
         return th;
     }));
     // With jokers: 🃏 for each joker a player swapped (nobody sees which cards), and "…" while they are choosing.
@@ -538,7 +558,7 @@ function chipTable(game, state, view) {
             return [];
         }
         const mark = el("span", "joker-mark", "🃏".repeat(swaps) + (choosing ? "…" : ""));
-        mark.title = choosing ? "Swapping a joker" : swaps === 1 ? "Swapped a joker" : `Swapped ${swaps} jokers`;
+        mark.title = choosing ? t("Swapping a joker") : swaps === 1 ? t("Swapped a joker") : t("Swapped {n} jokers", { n: swaps });
         return [mark];
     };
     const rows = game.playingSeats.map((seat) => el("tr", null,
@@ -550,10 +570,10 @@ function chipTable(game, state, view) {
             const voided = isVoidChip(game, stage, seat);
             // With Blackout, a removed chip is shown in its stage's colour with "?" instead of its number.
             const content = chip !== null ? chipElement(stage, chip)
-                : removed ? Object.assign(chipElement(stage, "?"), { title: `${STAGES[stage]} chip removed (Blackout)` })
+                : removed ? Object.assign(chipElement(stage, "?"), { title: t("{stage} chip removed (Blackout)", { stage: t(STAGES[stage]) }) })
                     : skipped(stage) ? "" : stage <= game.stage ? "–" : "";
             const cell = el("td", null, voided && content instanceof Element ? voidChip(content) : content);
-            cell.title = voided ? "No longer counts: this player got new pocket cards" : removed ? "Removed (Blackout)" : "";
+            cell.title = voided ? t("No longer counts: this player got new pocket cards") : removed ? t("Removed (Blackout)") : "";
             if (stage === game.stage && game.phase === "Betting" && game.readySeats.includes(seat)) {
                 cell.append(el("span", "ready", " 👍"));
             }
@@ -569,7 +589,7 @@ const hasMuscle = (game, seat) => game.decisions.some((d) => d.card === "muscle"
 
 function muscleBadge(game) {
     const badge = el("span", "muscle-badge", `💪 ${cardName(game, "muscle")}`);
-    badge.title = "Beats every hand of the same ranking";
+    badge.title = t("Beats every hand of the same ranking");
     return badge;
 }
 
@@ -584,7 +604,7 @@ function revealedHand(game, state, view, hand) {
         el("span", "card-row", ...hand.cards.map(cardElement)),
         name);
     if (!hand.inOrder) {
-        item.title = "Weaker than the hand before";
+        item.title = t("Weaker than the hand before");
     }
     return item;
 }
@@ -594,7 +614,8 @@ function revealedHand(game, state, view, hand) {
 function handName(hand) {
     const wrong = (text) => el("span", "wrong-part", text);
     const values = hand.values.flatMap((value, i) => [i ? ", " : "", hand.wrongValues.includes(i) ? wrong(value) : value]);
-    return el("strong", "hand-name", hand.wrongRanking ? wrong(hand.ranking) : hand.ranking, ": ", ...values);
+    const ranking = translateServerText(hand.ranking);
+    return el("strong", "hand-name", hand.wrongRanking ? wrong(ranking) : ranking, ": ", ...values);
 }
 
 // Observers see everything without scrolling: the table's font size is the largest (8 to 40 pixels) at which the page
@@ -701,18 +722,18 @@ const gang = startSessionPage("TheGang", (game, state, view) => {
     $("vaults").textContent = `${game.vaults}/${TO_FINISH}`;
     $("alarms").textContent = `${game.alarms}/${TO_FINISH}`;
     $("toggle-table").hidden = !view.isPlayer;
-    $("toggle-table").textContent = tableHidden ? "Show table" : "Hide table";
+    $("toggle-table").textContent = t(tableHidden ? "Show table" : "Hide table");
     $("table-body").hidden = view.isPlayer && tableHidden;
 
     $("community").replaceChildren(...Array.from({ length: 5 }, (_, i) => slotElement(game.communityCards[i])));
     $("middle").hidden = game.phase !== "Betting";
     $("middle").replaceChildren(
-        "Middle:",
-        ...(game.middleChips.length ? game.middleChips.map((n) => chipElement(game.stage, n)) : [" none"]));
+        t("Middle:"),
+        ...(game.middleChips.length ? game.middleChips.map((n) => chipElement(game.stage, n)) : [` ${t("none")}`]));
     $("chip-table").replaceChildren(...chipTable(game, state, view));
     $("revealed").replaceChildren(...game.revealed.map((hand) => revealedHand(game, state, view, hand)));
     fitTable();
-}, (seat, state) => `Player ${(state.game && playerNumber(state.game, seat)) || seat + 1}`);
+}, (seat, state) => t("Player {n}", { n: (state.game && playerNumber(state.game, seat)) || seat + 1 }));
 
 addEventListener("resize", () => requestAnimationFrame(fitTable));
 $("toggle-table").addEventListener("click", () => {

@@ -10,26 +10,27 @@
     <link rel="stylesheet" href="styles.css">
     <!-- SignalR sets a global "t" while it loads, so it comes before i18n.js, which defines t(). -->
     <script src="https://cdn.jsdelivr.net/npm/@microsoft/signalr@10.0.11/dist/browser/signalr.min.js"></script>
+    <script src="lang/he.js"></script>
     <script src="i18n.js"></script>
 </head>
 <body>
 <div class="masthead">
     <header class="top">
-        <a href="/?splash" class="brand" data-leave title="Main screen"><img class="brand-name" src="images/name.png" alt="GamesLane"></a>
+        <a href="/?splash" class="brand" data-leave title="Main screen" data-i18n-attr="title"><img class="brand-name" src="images/name.png" alt="GamesLane"></a>
         <div id="account" class="account"></div>
     </header>
     <div class="session-bar">
         <img class="session-art" src="images/games/rock-paper-scissors.svg" alt="">
-        <h2 class="session-name">Rock-paper-scissors</h2>
+        <h2 class="session-name" data-i18n>Rock-paper-scissors</h2>
         <span id="session-info" class="session-info"></span>
-        <p class="code" title="Game code"><span aria-hidden="true">🔑</span> <strong id="session-code"></strong></p>
+        <p class="code" title="Game code" data-i18n-attr="title"><span aria-hidden="true">🔑</span> <strong id="session-code"></strong></p>
     </div>
     <div id="status-bar" class="status-bar" hidden>
         <p id="status" class="status"></p>
         <span class="status-actions">
-            <button id="next-round" type="button" class="small" hidden>Next round</button>
-            <button id="play-again" type="button" class="small" hidden>Play again</button>
-            <button id="to-lobby" type="button" class="secondary small" hidden>Back to the lobby</button>
+            <button id="next-round" type="button" class="small" hidden data-i18n>Next round</button>
+            <button id="play-again" type="button" class="small" hidden data-i18n>Play again</button>
+            <button id="to-lobby" type="button" class="secondary small" hidden data-i18n>Back to the lobby</button>
         </span>
         <ul id="scores" class="score-row"></ul>
     </div>
@@ -37,26 +38,26 @@
 <main>
     <section id="session">
         <div id="invite" class="invite" hidden>
-            <h3>Invite friends</h3>
-            <p class="hint">Send them this link, or tell them the game code.</p>
+            <h3 data-i18n>Invite friends</h3>
+            <p class="hint" data-i18n>Send them this link, or tell them the game code.</p>
             <a id="join-url" class="join-url"></a>
             <div class="actions center">
-                <button id="copy-link" type="button" class="secondary" hidden>Copy link</button>
-                <button id="share-link" type="button" class="secondary" hidden>Share…</button>
+                <button id="copy-link" type="button" class="secondary" hidden data-i18n>Copy link</button>
+                <button id="share-link" type="button" class="secondary" hidden data-i18n>Share…</button>
             </div>
         </div>
 
         <div id="session-lobby" class="panel lobby" hidden>
             <div class="lobby-head">
-                <h3>Players</h3>
+                <h3 data-i18n>Players</h3>
                 <span id="seat-count" class="seat-count"></span>
             </div>
             <button id="lobby-options" type="button" class="lobby-options" hidden><span id="options-summary"></span></button>
             <p id="lobby-status" class="status"></p>
             <ul id="seats" class="seats"></ul>
-            <p id="login-to-play" class="hint" hidden>Log in to take a seat. <button type="button" class="secondary small" data-login>Log in</button></p>
+            <p id="login-to-play" class="hint" hidden><span data-i18n>Log in to take a seat.</span> <button type="button" class="secondary small" data-login data-i18n>Log in</button></p>
             <div class="actions center">
-                <button id="start-game" type="button" class="big" hidden>Start</button>
+                <button id="start-game" type="button" class="big" hidden data-i18n>Start</button>
             </div>
         </div>
 
@@ -64,9 +65,9 @@
             <div id="hands" class="hands"></div>
             <p id="pick-for" class="hint" hidden></p>
             <div id="picks" class="actions center" hidden>
-                <button type="button" class="pick" data-choice="Rock">✊ Rock</button>
-                <button type="button" class="pick" data-choice="Paper">✋ Paper</button>
-                <button type="button" class="pick" data-choice="Scissors">✌️ Scissors</button>
+                <button type="button" class="pick" data-choice="Rock" data-i18n>✊ Rock</button>
+                <button type="button" class="pick" data-choice="Paper" data-i18n>✋ Paper</button>
+                <button type="button" class="pick" data-choice="Scissors" data-i18n>✌️ Scissors</button>
             </div>
         </div>
     </section>

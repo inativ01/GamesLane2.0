@@ -12,18 +12,18 @@ const pickedLocally = (seat) => myPicks[seat]?.round === currentRound;
 function rpsStatus(game, state, view) {
     if (!game.isRoundComplete) {
         if (pickSeat !== null) {
-            return "👉 Make your pick";
+            return `👉 ${t("Make your pick")}`;
         }
-        return view.isPlayer ? "⏳ Waiting for the other player" : "⏳ Waiting for the picks";
+        return `⏳ ${t(view.isPlayer ? "Waiting for the other player" : "Waiting for the picks")}`;
     }
 
     if (game.roundWinner === null) {
-        return `🤝 Round ${game.round} is a draw`;
+        return `🤝 ${t("Round {n} is a draw", { n: game.round })}`;
     }
     if (view.isMe(game.roundWinner) && !view.isMe(1 - game.roundWinner)) {
-        return `🏆 You win round ${game.round}!`;
+        return `🏆 ${t("You win round {n}!", { n: game.round })}`;
     }
-    return `🏆 ${state.seats[game.roundWinner]?.name ?? "Empty seat"} wins round ${game.round}`;
+    return `🏆 ${t("{name} wins round {n}", { name: state.seats[game.roundWinner]?.name ?? t("Empty seat"), n: game.round })}`;
 }
 
 function handCard(game, state, seat, view) {
@@ -32,13 +32,13 @@ function handCard(game, state, seat, view) {
     let label;
     if (game.isRoundComplete) {
         symbol = SYMBOLS[hand.pick];
-        label = hand.pick;
+        label = t(hand.pick);
     } else if (view.isMe(seat) && pickedLocally(seat)) {
         symbol = SYMBOLS[myPicks[seat].choice];
-        label = `You picked ${myPicks[seat].choice}`;
+        label = t("You picked {choice}", { choice: t(myPicks[seat].choice) });
     } else {
         symbol = hand.hasPicked ? "✔️" : "…";
-        label = hand.hasPicked ? "Picked" : "Choosing";
+        label = t(hand.hasPicked ? "Picked" : "Choosing");
     }
 
     const card = document.createElement("div");
@@ -65,12 +65,12 @@ const rps = startSessionPage("RockPaperScissors", (game, state, view) => {
         : view.mySeats.find((seat) => !game.hands[seat].hasPicked && !pickedLocally(seat)) ?? null;
     $("picks").hidden = pickSeat === null;
     $("pick-for").hidden = !(pickSeat !== null && view.mySeats.length > 1);
-    $("pick-for").textContent = `Picking for seat ${pickSeat + 1}`;
+    $("pick-for").textContent = t("Picking for seat {n}", { n: pickSeat + 1 });
     $("next-round").hidden = !(view.isPlayer && game.isRoundComplete);
 
     $("status").textContent = rpsStatus(game, state, view);
     $("hands").replaceChildren(...game.hands.map((_, seat) => handCard(game, state, seat, view)));
-    showScores(state, view, [`Round ${game.round}`, `Draws: ${game.draws}`], game.hands.map((hand, seat) => ({
+    showScores(state, view, [t("Round {n}", { n: game.round }), t("Draws: {n}", { n: game.draws })], game.hands.map((hand, seat) => ({
         seat, score: hand.score, acting: !game.isRoundComplete && !hand.hasPicked,
     })));
 });

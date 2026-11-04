@@ -127,7 +127,7 @@ The texts in the pages and scripts are in English, and they are also the keys of
 - Texts from the server (error messages, option names) go through `translateServerText()`, which finds their translation by their English text. **Changing an English message on the server means changing its key in `lang/he.js` too.**
 - Hebrew style: instructions in the plural (e.g. הקישו על הלוח), so they suit everyone. A text about the viewer has its own "you" form (e.g. "You rolled {n}." / "{name} rolled {n}."; see `about()` in `backgammon.js`). Texts about other players avoid male and female verb forms (e.g. "ל־{name} יצא {n}").
 - Spoken texts (Rich man, poor man's **Read throws aloud**): a translation can say a count as `{n}` (digits) or as words, `{m}` or `{f}` (masculine or feminine, from the keys `"2 (masculine)"`, `"2 (feminine)"`, … up to 12), e.g. `"{n} aces": "{m} אסים"`. Without a Hebrew voice on the device, the English text is spoken.
-- Terms still to be confirmed by the user: צעדים (pips), משחק קרופורד (Crawford game), גמון / בקגמון (gammon / backgammon), "(אני)" for the viewer's own seat; game names שש־בש, הכנופיה, איקס־עיגול, אבן, נייר ומספריים; in Rich man, poor man: זריקה / פס (Throw / Pass), מסירה (Give), עשיר / עני (rich man / poor man), נסיך (jack) and the spoken numbers (e.g. "שלוש תשיעיות"); in Yatzee: the name יאצי, the boxes (אחדות … שישיות, שלישייה, רביעייה, פול האוס, רצף קטן / גדול, צ'אנס), משבצת (box), כרטיס הניקוד (scorecard) and נשמרה (a kept die). Confirmed: סדרת משחקים (match), עשיר ועני (the game's name).
+- Terms still to be confirmed by the user: צעדים (pips), משחק קרופורד (Crawford game), גמון / בקגמון (gammon / backgammon), "(אני)" for the viewer's own seat; game names שש־בש, הכנופיה, איקס־עיגול, אבן, נייר ומספריים; in Rich man, poor man: זריקה / פס (Throw / Pass), מסירה (Give), עשיר / עני (rich man / poor man), נסיך (jack) and the spoken numbers (e.g. "שלוש תשיעיות"); in Yatzee: the name יאצי, the boxes (אחדות … שישיות, שלישייה, רביעייה, פול האוס, רצף קטן / גדול, צ'אנס), משבצת (box), כרטיס הניקוד (scorecard) and נשמרה (a kept die); in The Gang: שוד (heist), צ'יפ (chip), קלפי כיס (pocket cards), כספת / אזעקה (vault / alarm), אתגר / מומחה (challenge / specialist), the card names (e.g. גישה מהירה, גלאי תנועה, האפלה, מודיע, נהג מילוט, המוח, נסיך, שרירן) and the hand rankings (קלף גבוה, זוג, שני זוגות, סטרייט, פלאש, סטרייט פלאש, רויאל פלאש). Confirmed: סדרת משחקים (match), עשיר ועני (the game's name).
 
 ## Game Hub API
 
@@ -338,8 +338,8 @@ _Last updated: 2026-11-04. Keep this section current; it is the hand-off point b
 3. Game history and stats (deferred).
 4. Backgammon: first play-test on phones and a TV; possible extras later (a move list, variants such as Nackgammon or Acey-deucey).
 5. Rich man, poor man: first play-test with real players on phones and a TV.
-6. Hebrew: translate The Gang, Rock-paper-scissors and Tic-tac-toe (main screen and Backgammon are done; first check on Render, and the user to review the terms listed under [Translations](#translations)).
-7. Yatzee: built on the `Yatzee` branch (not yet merged into `main`, so not on the live site); first play-test, then merge.
+6. Hebrew: every page is translated; first check on Render, and the user to review the terms listed under [Translations](#translations).
+7. Yatzee: first play-test.
 
 ## Working conventions
 - Ask before adding or upgrading packages.
