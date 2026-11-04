@@ -26,6 +26,11 @@
     </div>
     <div id="status-bar" class="status-bar" hidden>
         <p id="status" class="status"></p>
+        <span class="status-actions">
+            <button id="next-round" type="button" class="small" hidden>Next round</button>
+            <button id="play-again" type="button" class="small" hidden>Play again</button>
+            <button id="to-lobby" type="button" class="secondary small" hidden>Back to the lobby</button>
+        </span>
         <ul id="scores" class="score-row"></ul>
     </div>
 </div>
@@ -57,11 +62,6 @@
 
         <div id="game-screen" hidden>
             <div id="board" class="board"></div>
-            <button id="next-round" type="button" hidden>Next round</button>
-            <div id="game-over-actions" class="actions center" hidden>
-                <button id="play-again" type="button">Play again</button>
-                <button id="to-lobby" type="button" class="secondary">Back to the lobby</button>
-            </div>
         </div>
     </section>
 

@@ -26,6 +26,11 @@
     </div>
     <div id="status-bar" class="status-bar" hidden>
         <p id="status" class="status"></p>
+        <span class="status-actions">
+            <button id="next-heist" type="button" class="small" hidden>Next heist</button>
+            <button id="play-again" type="button" class="small" hidden>Play again</button>
+            <button id="to-lobby" type="button" class="secondary small" hidden>Back to the lobby</button>
+        </span>
     </div>
 </div>
 <main class="gang">
@@ -60,11 +65,6 @@
             <div id="my-decisions" class="my-decisions" hidden></div>
             <div class="actions center gang-controls">
                 <button id="reveal-next" type="button" hidden>Reveal next hand</button>
-                <button id="next-heist" type="button" hidden>Next heist</button>
-            </div>
-            <div id="game-over-actions" class="actions center" hidden>
-                <button id="play-again" type="button">Play again</button>
-                <button id="to-lobby" type="button" class="secondary">Back to the lobby</button>
             </div>
 
             <!-- Everything observers see. Players can hide it, e.g. when a TV shows it. -->

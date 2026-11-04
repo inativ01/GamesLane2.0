@@ -930,10 +930,6 @@ button.session-action:not(:disabled):hover {
     padding: 0.8rem 1.2rem;
 }
 
-#next-round {
-    margin-top: 1rem;
-}
-
 /* The Gang. The player's own hand is on top; everything observers see is on a green felt table below. */
 
 .card-row,
@@ -2150,10 +2146,6 @@ button.big {
     box-shadow: 0 4px 14px rgba(194, 86, 26, 0.35);
 }
 
-#game-over-actions {
-    margin-top: 0.5rem;
-}
-
 /* A game waiting for an absent player (Paused), or with absent seats that can be taken. */
 .absent-banner {
     display: flex;
@@ -2323,9 +2315,8 @@ a.button.is-busy {
         grid-template-areas:
             "hand table"
             "decisions table"
-            "controls table"
-            "over table";
-        grid-template-rows: auto auto auto 1fr;
+            "controls table";
+        grid-template-rows: auto auto 1fr;
         column-gap: 1.25rem;
         align-items: start;
     }
@@ -2333,7 +2324,6 @@ a.button.is-busy {
     main.gang #my-hands { grid-area: hand; }
     main.gang #my-decisions { grid-area: decisions; }
     main.gang .gang-controls { grid-area: controls; }
-    main.gang #game-over-actions { grid-area: over; }
 
     main.gang .table-view {
         grid-area: table;
@@ -2364,7 +2354,7 @@ a.button.is-busy {
     /* A player who hid the table gets their hand in the middle instead. */
     main.gang #game-screen:has(#table-body[hidden]) {
         grid-template-columns: minmax(340px, 560px);
-        grid-template-areas: "hand" "decisions" "controls" "over" "table";
+        grid-template-areas: "hand" "decisions" "controls" "table";
         justify-content: center;
     }
 }

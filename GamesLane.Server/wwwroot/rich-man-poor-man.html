@@ -27,6 +27,11 @@
     </div>
     <div id="status-bar" class="status-bar" hidden>
         <p id="status" class="status"></p>
+        <span class="status-actions">
+            <button id="next-round" type="button" class="small" hidden data-i18n>Next game</button>
+            <button id="play-again" type="button" class="small" hidden data-i18n>Play again</button>
+            <button id="to-lobby" type="button" class="secondary small" hidden data-i18n>Back to the lobby</button>
+        </span>
     </div>
 </div>
 <main class="rich-poor">
@@ -71,14 +76,6 @@
                 <div id="rp-pile" class="rp-pile"></div>
                 <ol id="rp-players" class="rp-players"></ol>
             </section>
-
-            <div class="actions center">
-                <button id="next-round" type="button" hidden data-i18n>Next game</button>
-            </div>
-            <div id="game-over-actions" class="actions center" hidden>
-                <button id="play-again" type="button" data-i18n>Play again</button>
-                <button id="to-lobby" type="button" class="secondary" data-i18n>Back to the lobby</button>
-            </div>
         </div>
     </section>
 

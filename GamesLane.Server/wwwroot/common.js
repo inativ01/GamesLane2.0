@@ -977,10 +977,11 @@ function startSessionPage(gameType, render, seatRole = (seat) => String(seat + 1
             return;
         }
 
-        $("game-over-actions").hidden = !(view.isPlayer && state.phase === "Over");
+        $("play-again").hidden = $("to-lobby").hidden = !(view.isPlayer && state.phase === "Over");
         updateBanner(state);
         render(state.game, state, view);
-        const mustAct = $("status").textContent.includes("👉");
+        const mustAct = $("status").textContent.includes("👉")
+            || [...$("status-bar").querySelectorAll(".status-actions button")].some((b) => !b.hidden && !b.classList.contains("secondary"));
         $("status-bar").classList.toggle("act", mustAct);
     }
 
