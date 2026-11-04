@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" role="img" aria-label="Yatzee">
+  <defs>
+    <linearGradient id="felt" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#2a4fa0"/>
+      <stop offset="1" stop-color="#19285d"/>
+    </linearGradient>
+  </defs>
+  <rect width="120" height="120" rx="26" fill="url(#felt)"/>
+  <!-- Scorecard -->
+  <g transform="rotate(8 78 46)">
+    <rect x="58" y="14" width="44" height="58" rx="4" fill="#f8f4ea" stroke="#c9bda8" stroke-width="1.5"/>
+    <g stroke="#c9bda8" stroke-width="1.5">
+      <line x1="62" y1="25" x2="98" y2="25"/><line x1="62" y1="34" x2="98" y2="34"/>
+      <line x1="62" y1="43" x2="98" y2="43"/><line x1="62" y1="52" x2="98" y2="52"/>
+      <line x1="62" y1="61" x2="98" y2="61"/><line x1="84" y1="18" x2="84" y2="68"/>
+    </g>
+    <g fill="#d0631c">
+      <rect x="87" y="27" width="8" height="4" rx="1"/><rect x="87" y="36" width="6" height="4" rx="1"/>
+      <rect x="87" y="45" width="9" height="4" rx="1"/>
+    </g>
+  </g>
+  <!-- Three dice; the front one is kept (gold outline) -->
+  <g transform="rotate(-14 32 46)">
+    <rect x="16" y="30" width="32" height="32" rx="6" fill="#fff" stroke="#2b2420" stroke-width="1.5"/>
+    <circle cx="24" cy="38" r="3" fill="#2b2420"/><circle cx="40" cy="54" r="3" fill="#2b2420"/>
+  </g>
+  <g transform="rotate(10 86 88)">
+    <rect x="70" y="72" width="32" height="32" rx="6" fill="#fff" stroke="#2b2420" stroke-width="1.5"/>
+    <circle cx="78" cy="80" r="3" fill="#2b2420"/><circle cx="94" cy="80" r="3" fill="#2b2420"/>
+    <circle cx="86" cy="88" r="3" fill="#2b2420"/>
+    <circle cx="78" cy="96" r="3" fill="#2b2420"/><circle cx="94" cy="96" r="3" fill="#2b2420"/>
+  </g>
+  <g transform="rotate(-4 44 86)">
+    <rect x="24" y="66" width="40" height="40" rx="8" fill="#fff" stroke="#e6a93c" stroke-width="3"/>
+    <circle cx="34" cy="76" r="3.6" fill="#2b2420"/><circle cx="54" cy="76" r="3.6" fill="#2b2420"/>
+    <circle cx="44" cy="86" r="3.6" fill="#2b2420"/>
+    <circle cx="34" cy="96" r="3.6" fill="#2b2420"/><circle cx="54" cy="96" r="3.6" fill="#2b2420"/>
+  </g>
+</svg>

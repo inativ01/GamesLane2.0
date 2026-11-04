@@ -21,13 +21,13 @@ It is a complete reimplementation of the original [GamesLane](https://github.com
 ### Lobby (main screen)
 - A splash screen (the portrait or landscape picture, to suit the screen) is shown for 5 seconds when the app is first opened in a browser tab and whenever the home icon is used; then the main screen appears. It is not shown again when the page reloads (e.g. after logging in).
 - The top bar of every page shows the GamesLane name picture and, on the right, a **Log in** button when no user is logged in, or the user's icon and name (which open their profile) and a **Log out** button.
-- **Languages:** English and Hebrew. On pages that have a Hebrew translation (so far the main screen, Backgammon and Rich man, poor man, including the login and profile dialogs, the session lobby and the server's messages), the top bar shows the current language's flag; tapping it opens a menu of the languages, and choosing one reloads the page in it. Hebrew pages read from right to left (the backgammon board stays as it is). The choice is remembered in the browser; until the user chooses, Hebrew if the browser prefers it, otherwise English. Pages without a translation (The Gang, Rock-paper-scissors, Tic-tac-toe) stay in English and show no flag.
+- **Languages:** English and Hebrew. On pages that have a Hebrew translation (so far the main screen, Backgammon, Rich man, poor man and Yatzee, including the login and profile dialogs, the session lobby and the server's messages), the top bar shows the current language's flag; tapping it opens a menu of the languages, and choosing one reloads the page in it. Hebrew pages read from right to left (the backgammon board stays as it is). The choice is remembered in the browser; until the user chooses, Hebrew if the browser prefers it, otherwise English. Pages without a translation (The Gang, Rock-paper-scissors, Tic-tac-toe) stay in English and show no flag.
 - **Translating a page** (see `i18n.js`):
   - Load `lang/he.js` and then `i18n.js` in the page's `<head>` (untranslated pages load only `i18n.js`).
   - Mark fixed texts in the HTML with `data-i18n` (the element's whole text is translated) or `data-i18n-attr="title,aria-label"`; in scripts, wrap texts in `t("...")`, with varying parts as `{name}`: `t("Seat {n}", { n })`. Write whole sentences as keys, not pieces glued together, since word order differs in Hebrew.
   - Texts from the server (error messages, option names) go through `translateServerText()`, which finds their translation by their English text. **Changing an English message on the server means changing its key in `lang/he.js` too.**
   - Hebrew style: instructions in the plural (e.g. הקישו על הלוח), so they suit everyone. A text about the viewer has its own "you" form (e.g. "You rolled {n}." / "{name} rolled {n}."; see `about()` in `backgammon.js`). Texts about other players avoid male and female verb forms (e.g. "ל־{name} יצא {n}").
-  - Terms still to be confirmed by the user: צעדים (pips), משחק קרופורד (Crawford game), גמון / בקגמון (gammon / backgammon), "(אני)" for the viewer's own seat; game names שש־בש, הכנופיה, איקס־עיגול, אבן, נייר ומספריים; in Rich man, poor man: זריקה / פס (Throw / Pass), מסירה (Give), עשיר / עני (rich man / poor man), נסיך (jack) and the spoken numbers (e.g. "3 תשיעיות"). Confirmed: משחקון (match), עשיר ועני (the game's name).
+  - Terms still to be confirmed by the user: צעדים (pips), משחק קרופורד (Crawford game), גמון / בקגמון (gammon / backgammon), "(אני)" for the viewer's own seat; game names שש־בש, הכנופיה, איקס־עיגול, אבן, נייר ומספריים; in Rich man, poor man: זריקה / פס (Throw / Pass), מסירה (Give), עשיר / עני (rich man / poor man), נסיך (jack) and the spoken numbers (e.g. "3 תשיעיות"); in Yatzee: the name יאצי, the boxes (אחדות … שישיות, שלישייה, רביעייה, פול האוס, רצף קטן / גדול, צ'אנס), משבצת (box), כרטיס הניקוד (scorecard) and נשמרה (a kept die). Confirmed: משחקון (match), עשיר ועני (the game's name).
 - A list of games. A new session can be started only when a user is logged in; choosing a game while logged out opens the login dialog, and the session is started once the user has logged in.
 - Logged-in users can reorder the games by dragging a game by its ⋮⋮ handle (mouse or touch; Alt+↑/↓ with the keyboard). A saved user's order (registered or Google) is saved with their account; a guest's is remembered in the browser. The order is applied whenever the main screen opens. Games not in a saved order (e.g. new ones) keep their usual place after the others.
 - A way to join a session by entering its code. This does not require a logged-in user.
@@ -47,7 +47,7 @@ It is a complete reimplementation of the original [GamesLane](https://github.com
 - On every page except the main screen, a home icon in the top bar goes back to the main screen (for players, this gives up their seats).
 - A user who loses their connection (closed tab, phone asleep, network lost) keeps their seats for 60 seconds, and gets them back if they return in time; their seat shows a spinner meanwhile. In the lobby, the seats are then freed, as if they had left. During a game, see **Disconnections and seats** below.
 - Creating a session does not seat the creator; they join the session and can then take a seat.
-- Each game defines its maximum number of seats (up to 12) and the minimum needed to start (which may equal the maximum). Tic-tac-toe, rock-paper-scissors and backgammon have 2 seats, both required; The Gang has 8 seats, at least 3 required; Rich man, poor man has 12 seats, at least 6 required.
+- Each game defines its maximum number of seats (up to 12) and the minimum needed to start (which may equal the maximum). Tic-tac-toe, rock-paper-scissors and backgammon have 2 seats, both required; The Gang has 8 seats, at least 3 required; Rich man, poor man has 12 seats, at least 6 required; Yatzee has 8 seats and can be played alone (at least 1).
 - When the minimum number of seats is taken, a **Start** button appears (**New game** after the first game). Any seated user can start the game.
 - While the session is in the lobby, an **Invite friends** panel shows the join link (`/join/{code}`), with **Copy link** and **Share…** buttons where the browser supports them.
 - Anyone not seated (logged in or not) is a **spectator**.
@@ -58,7 +58,7 @@ It is a complete reimplementation of the original [GamesLane](https://github.com
 - Anyone can watch an active game. During a game, the only seats that can be taken are those of absent players (see below).
 - A seated user can **stand up** (become a spectator) or **leave** (go back to the main lobby, giving up their seats).
 - A player can **End game** at any time during a game (after confirming): everyone goes back to the session lobby, the seats move up, others can join, and **Start** begins a new game. Private game information is not sent while the session is in the lobby.
-- When a game ends (The Gang, and a backgammon match), anyone seated can choose **Play again** while at least the minimum number of players are seated, or go **Back to the lobby** (for everyone). A new game is played by whoever is seated (any number between the minimum and the maximum). If fewer than the minimum remain, the session goes back to the session lobby automatically.
+- When a game ends (The Gang, a backgammon match, and Yatzee), anyone seated can choose **Play again** while at least the minimum number of players are seated, or go **Back to the lobby** (for everyone). A new game is played by whoever is seated (any number between the minimum and the maximum). If fewer than the minimum remain, the session goes back to the session lobby automatically.
 - Tic-tac-toe and rock-paper-scissors never end by themselves; players stand up or leave when they are done.
 
 ### Disconnections and seats
@@ -78,7 +78,7 @@ It is a complete reimplementation of the original [GamesLane](https://github.com
 
   | Game | With an absent seat | Effect |
   | --- | --- | --- |
-  | Tic-tac-toe, Rock-paper-scissors, Backgammon, The Gang | **Wait:** the session is Paused | The game screen shows "Waiting for …" with **Take this seat** and **End game**. Present players can still do what does not need the absent seat (e.g. finish their own turn, pick, move their chip); the game stops where it needs the absent player |
+  | Tic-tac-toe, Rock-paper-scissors, Backgammon, The Gang, Yatzee | **Wait:** the session is Paused | The game screen shows "Waiting for …" with **Take this seat** and **End game**. Present players can still do what does not need the absent seat (e.g. finish their own turn, pick, move their chip); the game stops where it needs the absent player |
   | Rich man, poor man | **Act automatically:** the seat passes | The game goes on and never pauses; the seat keeps its cards. At the card exchange, absent seats are removed (see the game's rules) |
 
 - **Ending:** any one present player can **End game** during a game (after confirming), which takes everyone back to the session lobby. The session also goes back to the lobby with **Back to the lobby** after a game is Over, and when there are too few players for the next game (**Play again** with fewer than the minimum seated, or Rich man, poor man's exchange with fewer than 6).
@@ -113,6 +113,7 @@ GamesLane.Server/              ASP.NET Core backend
   Games/TheGang/               The Gang rules: cards, poker hand ranking, heists
   Games/Backgammon/            Backgammon rules: position, legal moves, turns, doubling cube, matches, options
   Games/RichManPoorMan/        Rich man, poor man rules: the deck (one set of 2 to A per player), rounds, players who left, the exchange
+  Games/Yatzee/                Yatzee rules: scoring each box (with the joker rule), scorecards and bonuses, turns
   wwwroot/                     Web pages
     index.html, home.js        Main screen: start a session or join one by code
     common.js                  Shared: login dialog and account bar, hub connection, session lobby and page framework, playing cards
@@ -125,6 +126,7 @@ GamesLane.Server/              ASP.NET Core backend
     the-gang.html/.js          The Gang page
     backgammon.html/.js        Backgammon page (the board is drawn as SVG)
     rich-man-poor-man.html/.js Rich man, poor man page
+    yatzee.html/.js            Yatzee page
     images/                    Logo, the GamesLane name for the header and the splash screens (web-sized copies of the originals in docs/), game pictures (SVG)
     images/the-gang/           A picture (SVG) for each challenge and specialist card, named by the card's key, e.g. quick-access.svg
     images/flags/              Flags for the language picker
@@ -202,6 +204,14 @@ docs/                          Original logo, name and splash pictures (kept out
 - **Joining:** during a game, nobody can take a seat other than a seat whose player left. During the exchange, an observer who is logged in can **Ask to join**; any player sees the request and can **Accept** it, choosing the newcomer's place (#1 to the last; the players from that place down move down one), or **Decline** it. A player who leaves during the exchange is dropped at once. Each time a player is added or dropped, one set of 2 to A is added to or removed from the deck (so each number still appears once per player), all the cards are shuffled and dealt again, any cards already given are cancelled, and the exchange starts again for the new number of players.
 - **Screens:** each player's phone shows their hand sorted from low to high, with equal numbers together; they tap cards of one number, then **Throw**, or **Pass**. Tapping a card when there is a throw to beat picks as many cards of that number as are needed. A user holding several seats sees one hand per seat. The table (shown to everyone, and to observers such as a TV) shows the cards to beat and who threw them, then the round's winner; and the players in place order (#1, the rich man, to the last, the poor man), each with their number of cards, whose turn it is, who has passed in this round, who left, the finishing places so far, and during the exchange, who has given their cards. After a game, it shows the next game's places. On a screen without a seat, **Read throws aloud** says each throw out loud (e.g. "3 nines"), in the page's language, using the browser's speech; the choice is remembered in the browser.
 
+- **Yatzee** (יאצי, 1–8 players): the classic dice game, in English and Hebrew. Players take turns in seat order for 13 rounds.
+  - **A turn:** press **Roll** to roll the five dice, up to three times. Between rolls, tap dice to keep them (a kept die is lifted, outlined in gold and marked **Kept**); tap again to let it go. Then tap an open box of your scorecard to score the dice there, which ends the turn. The dice tumble for a moment when rolled.
+  - **The boxes:** Ones to Sixes score the dice of that number. Three of a kind and Four of a kind score the total of all the dice; a full house (three of one number and two of another) scores 25, a small straight (four in a row) 30, a large straight (five in a row) 40, a Yatzee (five of a kind) 50, and Chance the total of all the dice. A box whose pattern is not there scores 0 (the page asks before scoring 0).
+  - **Bonuses:** 35 when Ones to Sixes add up to 63 or more; 100 for each extra Yatzee rolled while the Yatzee box holds 50.
+  - **Joker rule** (official): a Yatzee rolled once the Yatzee box is filled (with 50 or 0) must go in the upper box of its number if that box is open; otherwise in any open lower box, where a full house and the straights score in full; otherwise in any open upper box, for 0.
+  - **The end:** once every box is filled, the highest total wins (several players on a tie); alone, the page shows the final score. **Play again** starts a new game with clean scorecards.
+  - **Screens:** everyone sees the dice and the scorecard, with a column per player, the section totals and bonuses, and the player to play highlighted. Their open boxes show what the dice would score there (on their own screen, as buttons to tap). A message says what the last player scored.
+
 ### Game options
 
 A game can offer **options**, i.e. rule variants (so far The Gang's and backgammon's). Each option has a key, a label and a list of choices with a default; `Games/GameOptions.cs` lists them per game. A **choice** option is one of its choices. A **set** option (e.g. The Gang's challenge cards) is a list of choices, all on by default (for cards, each with its picture: tap a card to turn it on or off; a card that is off is greyed out); its value lists the choices turned off, separated by commas, so cards added later are on by default. An option can apply only when another option has a certain value (`shownWhen`, e.g. the card options only in Advanced mode).
@@ -216,7 +226,7 @@ Clients connect to the SignalR hub at `/hubs/game` and call these methods:
 
 | Method | Returns | Description |
 | --- | --- | --- |
-| `CreateSession(gameType)` | session code | Logged-in users only. Creates a session (`"TicTacToe"`, `"RockPaperScissors"`, `"TheGang"`, `"Backgammon"` or `"RichManPoorMan"`) and returns its 6-character code. The creator is not seated. The session starts with the creator's saved options for the game, if any. |
+| `CreateSession(gameType)` | session code | Logged-in users only. Creates a session (`"TicTacToe"`, `"RockPaperScissors"`, `"TheGang"`, `"Backgammon"`, `"RichManPoorMan"` or `"Yatzee"`) and returns its 6-character code. The creator is not seated. The session starts with the creator's saved options for the game, if any. |
 | `EnterSession(sessionId)` | `{ state, playerId, private }` | Subscribes to the session's updates. For a logged-in user, reconnects them to their seats, updates their name and icon on them, and returns their `playerId`; otherwise `playerId` is `null`. `private` is the user's private game information, or `null`. Pages call this when they open and after reconnecting. |
 | `TakeSeat(sessionId)` | — | Logged-in users only. Takes the next available seat under the user's display name: in the session lobby, the first empty one; during a game, the first absent seat of the game (Away or Vacant), whose game the user continues. Not while a game is Over, nor during Rich man, poor man's exchange (use `RequestSeat`). |
 | `LeaveSeat(sessionId, seat)` | — | Gives up one of the caller's seats (used for **Leave seat** and **Stand up**). |
@@ -252,6 +262,9 @@ Clients connect to the SignalR hub at `/hubs/game` and call these methods:
 | `GiveCards(sessionId, seat, cards)` | — | Rich man, poor man, in the exchange: `seat` gives `cards` to its partner; the poorer player of a pair must give its highest cards. |
 | `RequestSeat(sessionId)` / `CancelSeatRequest(sessionId)` | — | Rich man, poor man, in the exchange: the logged-in caller asks to join the next game, or withdraws the request. |
 | `AcceptSeat(sessionId, playerId, place)` / `DeclineSeat(sessionId, playerId)` | — | Rich man, poor man, in the exchange: a player accepts the request of `playerId` at `place` (1 for #1), which deals the cards again for the new number of players, or declines it. |
+| `RollDice(sessionId, seat)` | — | Yatzee: `seat`, which the caller must hold, rolls the dice that are not kept (all five on the turn's first roll), up to three times per turn. |
+| `HoldDie(sessionId, seat, die, held)` | — | Yatzee: between rolls, `seat` keeps (`held` true) or lets go of die `die` (0 to 4). |
+| `Score(sessionId, seat, category)` | — | Yatzee: `seat` scores the dice in box `category` (`"Ones"` … `"Sixes"`, `"ThreeOfAKind"`, `"FourOfAKind"`, `"FullHouse"`, `"SmallStraight"`, `"LargeStraight"`, `"Yatzee"`, `"Chance"`), which ends its turn. |
 
 After every change, the server sends a `StateUpdated` message with the public session state to everyone in the session. In games with private information (The Gang), each player's connections then also receive a `PrivateStateUpdated` message with that user's own cards; nobody else receives it. `EnterSession` returns the same private information as `private`. The public session state has these fields:
 
@@ -267,7 +280,7 @@ After every change, the server sends a `StateUpdated` message with the public se
 | `optionList` | The game's options: `{ key, label, choices: [{ value, label, hint, image }], default, kind, shownWhen }`, where `image` is a picture's address or `null`, `kind` is `"Choice"` or `"Set"` and `shownWhen` is `{ key, value }` or `null` (empty for games without options) |
 | `options` | The chosen value of each option, e.g. `{ "mode": "Basic" }`, used by the next new game |
 
-In rock-paper-scissors, the game state only shows whether each seat has picked; the picks themselves are revealed once both have picked. In backgammon, the game state has the board from white's side (`points`: entry `i` is white's point `i + 1`, positive for white checkers and negative for black), `bar`, `off`, `pips` and `scores` by seat, the `phase` (`"Opening"`, `"Rolling"`, `"Doubled"`, `"Moving"`, `"GameOver"`, `"MatchOver"`), the seat to move (`turn`), each seat's opening die (`openingDice`, `null` until rolled) and the decided `openingRoll`, the `dice` and `diceLeft`, the number of rolls so far (`rolls`, so a page can tell a new roll), the `legalMoves` and the moves `played` so far (in the mover's numbering), the `lastTurn`, the cube (`cubeValue`, `cubeOwner`, `canDouble`, `isCrawford`) and the last game's `result`. Errors (e.g. "It is not your turn.") are returned as hub errors to the caller.
+In rock-paper-scissors, the game state only shows whether each seat has picked; the picks themselves are revealed once both have picked. In backgammon, the game state has the board from white's side (`points`: entry `i` is white's point `i + 1`, positive for white checkers and negative for black), `bar`, `off`, `pips` and `scores` by seat, the `phase` (`"Opening"`, `"Rolling"`, `"Doubled"`, `"Moving"`, `"GameOver"`, `"MatchOver"`), the seat to move (`turn`), each seat's opening die (`openingDice`, `null` until rolled) and the decided `openingRoll`, the `dice` and `diceLeft`, the number of rolls so far (`rolls`, so a page can tell a new roll), the `legalMoves` and the moves `played` so far (in the mover's numbering), the `lastTurn`, the cube (`cubeValue`, `cubeOwner`, `canDouble`, `isCrawford`) and the last game's `result`. In Yatzee, the game state has the `round`, the seat to play (`turn`), the `dice` (all 0 before the turn's first roll), which are `held`, the `rollsLeft` in the turn, the number of rolls so far (`rolls`), the `possibleScores` of the seat to play (one per box in the order above, `null` where it cannot score), the `players` in seat order (`seat`, `scores` per box, `upperTotal`, `upperBonus`, `lowerTotal`, `yatzeeBonus`, `total`), the `lastTurn`, `isOver` and the `winners` (seats). Errors (e.g. "It is not your turn.") are returned as hub errors to the caller.
 
 ### Rejoining
 
@@ -339,7 +352,7 @@ For local testing, use `dotnet user-secrets` in `GamesLane.Server` and register 
 
 ## Project Status and External Services
 
-_Last updated: 2026-11-02. Keep this section current; it is the hand-off point between work sessions._
+_Last updated: 2026-11-04. Keep this section current; it is the hand-off point between work sessions._
 
 ### Local machine
 - Repo folder: being moved out of iCloud Drive (it was `C:\Users\inati\iCloudDrive\Programming\GamesLane2.0`). In iCloud, sync locked files during moves, and once Git's index lost most of the tracked files, so a commit deleted them (fixed in `f82caee`). Before every push, check the full file list of the commit (`git show --stat HEAD`).
@@ -378,6 +391,7 @@ _Last updated: 2026-11-02. Keep this section current; it is the hand-off point b
 4. Backgammon: first play-test on phones and a TV; possible extras later (a move list, variants such as Nackgammon or Acey-deucey).
 5. Rich man, poor man: first play-test with real players on phones and a TV.
 6. Hebrew: translate The Gang, Rock-paper-scissors and Tic-tac-toe (main screen and Backgammon are done; first check on Render, and the user to review the terms listed under Languages).
+7. Yatzee: built on the `Yatzee` branch (not yet merged into `main`, so not on the live site); first play-test, then merge.
 
 ### Working conventions
 - Ask before adding or upgrading packages.

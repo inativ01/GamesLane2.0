@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Yatzee - GamesLane</title>
+    <link rel="icon" href="images/logo-32.png">
+    <link rel="apple-touch-icon" href="images/logo-180.png">
+    <meta name="theme-color" content="#19285d">
+    <link rel="stylesheet" href="styles.css">
+    <!-- SignalR sets a global "t" while it loads, so it comes before i18n.js, which defines t(). -->
+    <script src="https://cdn.jsdelivr.net/npm/@microsoft/signalr@10.0.11/dist/browser/signalr.min.js"></script>
+    <script src="lang/he.js"></script>
+    <script src="i18n.js"></script>
+</head>
+<body>
+<header class="top">
+    <a href="/" class="brand" data-leave><img class="brand-name" src="images/name.png" alt="GamesLane"></a>
+    <a href="/?splash" class="home-link" data-leave title="Main screen" aria-label="Main screen" data-i18n-attr="title,aria-label"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11.5 12 4l9 7.5M5.5 9.5v10h5V14h3v5.5h5v-10"/></svg></a>
+    <div id="account" class="account"></div>
+</header>
+<main class="yatzee">
+    <section id="session">
+        <div class="session-head">
+            <img class="session-art" src="images/games/yatzee.svg" alt="">
+            <div class="session-title">
+                <h2 data-i18n>Yatzee</h2>
+                <p data-i18n>1–8 players</p>
+            </div>
+            <p class="code"><span data-i18n>Game code</span> <strong id="session-code"></strong></p>
+        </div>
+        <div id="invite" class="invite" hidden>
+            <h3 data-i18n>Invite friends</h3>
+            <p class="hint" data-i18n>Send them this link, or tell them the game code.</p>
+            <a id="join-url" class="join-url"></a>
+            <div class="actions center">
+                <button id="copy-link" type="button" class="secondary" hidden data-i18n>Copy link</button>
+                <button id="share-link" type="button" class="secondary" hidden data-i18n>Share…</button>
+            </div>
+        </div>
+
+        <div id="session-lobby" class="panel lobby" hidden>
+            <div class="lobby-head">
+                <h3 data-i18n>Players</h3>
+                <span id="seat-count" class="seat-count"></span>
+            </div>
+            <div id="lobby-options" class="lobby-options" hidden>
+                <span id="options-summary"></span>
+                <button id="edit-options" type="button" class="secondary small" data-i18n>Game options</button>
+            </div>
+            <p id="lobby-status" class="status"></p>
+            <ul id="seats" class="seats"></ul>
+            <p id="login-to-play" class="hint" hidden><span data-i18n>Log in to take a seat.</span> <button type="button" class="secondary small" data-login data-i18n>Log in</button></p>
+            <div class="actions center">
+                <button id="start-game" type="button" class="big" hidden data-i18n>Start</button>
+            </div>
+        </div>
+
+        <div id="game-screen" hidden>
+            <p id="yz-round" class="yz-round"></p>
+            <p id="status" class="status"></p>
+            <div id="yz-dice" class="yz-dice"></div>
+            <div class="actions center yz-controls">
+                <button id="yz-roll" type="button" hidden></button>
+            </div>
+            <p id="yz-message" class="yz-message" hidden></p>
+            <div class="yz-card-wrap">
+                <table id="yz-card" class="yz-card"></table>
+            </div>
+            <div id="game-over-actions" class="actions center" hidden>
+                <button id="play-again" type="button" data-i18n>Play again</button>
+                <button id="to-lobby" type="button" class="secondary" data-i18n>Back to the lobby</button>
+            </div>
+            <button id="stand-up" type="button" class="secondary small" hidden data-i18n>Stand up</button>
+        </div>
+    </section>
+
+    <p id="error" class="error" role="alert"></p>
+</main>
+<script src="common.js"></script>
+<script src="yatzee.js"></script>
+</body>
+</html>
