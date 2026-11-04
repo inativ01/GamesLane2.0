@@ -117,6 +117,22 @@ public class GameSessionStoreTests
         Assert.Null(await new GameSessionStore(repository).GetAsync(session.Id));
     }
 
+    [Fact]
+    public async Task Sessions_with_no_activity_for_30_days_are_deleted()
+    {
+        var repository = new MemoryRepository();
+        var clock = new Clock();
+        var store = new GameSessionStore(repository, clock);
+        var old = await store.CreateAsync(GameType.TicTacToe);
+        clock.Now += TimeSpan.FromDays(20);
+        var recent = await store.CreateAsync(GameType.TicTacToe);
+        clock.Now += TimeSpan.FromDays(11);
+
+        Assert.Equal(1, await repository.DeleteOlderThanAsync(clock.Now - ExpiredSessionCleanup.Expiry));
+        Assert.False(await repository.ExistsAsync(old.Id));
+        Assert.True(await repository.ExistsAsync(recent.Id));
+    }
+
     private sealed class Clock : TimeProvider
     {
         public DateTimeOffset Now { get; set; } = new(2026, 11, 4, 12, 0, 0, TimeSpan.Zero);

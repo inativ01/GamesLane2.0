@@ -23,6 +23,7 @@ builder.Services.AddSingleton<ISessionRepository, SessionRepository>();
 builder.Services.AddSingleton<IGameSessionStore, GameSessionStore>();
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddHostedService<DisconnectedSeatsMonitor>();
+builder.Services.AddHostedService<ExpiredSessionCleanup>();
 builder.Services.ConfigureHttpJsonOptions(options => options.SerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 builder.Services.AddSignalR()
     .AddJsonProtocol(options => options.PayloadSerializerOptions.Converters.Add(new JsonStringEnumConverter()));

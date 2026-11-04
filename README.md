@@ -106,7 +106,7 @@ GamesLane.Server/              ASP.NET Core backend
   Hubs/GameHub.cs              SignalR hub for creating, joining and playing sessions
   Hubs/DisconnectedSeatsMonitor.cs  Marks users disconnected for 60 seconds as Away; removes sessions nobody has open from memory
   Sessions/GameSession.cs      Seats, session lobby and game flow shared by all games
-  Sessions/                    Game-specific sessions; the session store (memory, and the database through SessionRepository); SessionSnapshot, which saves a session as JSON
+  Sessions/                    Game-specific sessions; the session store (memory, and the database through SessionRepository); SessionSnapshot, which saves a session as JSON; ExpiredSessionCleanup (daily, deletes sessions 30 days after their last activity)
   Games/GameOptions.cs         Game options (rule variants): each game's options, and checking chosen values
   Games/TicTacToe/             Tic-tac-toe rules
   Games/RockPaperScissors/     Rock-paper-scissors rules
