@@ -744,9 +744,12 @@ button.session-action:not(:disabled):hover {
     display: none;
 }
 
+/* The match facts on a line of their own; the players' chips share the next line if both fit, otherwise one each. */
 .score-facts {
+    flex-basis: 100%;
     color: #5a544d;
     font-weight: 600;
+    text-align: center;
 }
 
 .score-chip {
