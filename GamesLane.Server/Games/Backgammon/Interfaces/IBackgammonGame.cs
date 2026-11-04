@@ -3,8 +3,8 @@ namespace GamesLane.Server.Games.Backgammon;
 /// <summary>
 /// A backgammon match between player 0 (white) and player 1 (black), to <see cref="BackgammonRules.MatchLength"/>
 /// points. Each game starts with the opening roll: each player rolls one die (both again on a tie), and the higher die
-/// moves first with both dice. A turn: roll (or first offer to double), move checkers by the dice as the rules require,
-/// then end the turn.
+/// starts with a turn of its own. A turn: roll (or first offer to double), move checkers by the dice as the rules
+/// require, then end the turn.
 /// Points are each player's own numbering (see <see cref="BackgammonPosition"/>).
 /// </summary>
 public interface IBackgammonGame
@@ -50,7 +50,7 @@ public interface IBackgammonGame
     IReadOnlyList<int> DiceLeft { get; }
 
     /// <summary>
-    /// The opening roll of the current game (white's die, black's die) while its first turn is played, or null.
+    /// The opening roll of the current game (white's die, black's die) until the starting player rolls, or null.
     /// </summary>
     IReadOnlyList<int>? OpeningRoll { get; }
 
@@ -74,6 +74,14 @@ public interface IBackgammonGame
     /// The moves the player to move can make now: one per starting point and destination.
     /// </summary>
     IReadOnlyList<BackgammonStep> LegalMoves { get; }
+
+    /// <summary>
+    /// The moves of one checker by several dice in a row that the player to move can make now, one per starting point
+    /// and destination that is not also a move of one die. A move is offered only if every way of playing it (e.g. 5 then
+    /// 3, or 3 then 5) that keeps a complete legal turn possible ends in the same position; with doubles, the fewest
+    /// dice are used.
+    /// </summary>
+    IReadOnlyList<BackgammonCombinedMove> CombinedMoves { get; }
 
     /// <summary>
     /// Whether the player to move has used as many dice as the rules require, so the turn can end.
@@ -125,7 +133,7 @@ public interface IBackgammonGame
 
     /// <summary>
     /// Moves one of <paramref name="player"/>'s checkers from <paramref name="from"/> to <paramref name="to"/> with one
-    /// of the dice. Bearing off the last checker wins the game.
+    /// of the dice, or with several (see <see cref="CombinedMoves"/>). Bearing off the last checker wins the game.
     /// </summary>
     bool TryMove(int player, int from, int to, out string? error);
 

@@ -38,8 +38,8 @@ A typical setup is a shared screen (such as a TV or laptop) connected as a spect
 
 ## Main screen
 
-- A splash screen (the portrait or landscape picture, to suit the screen) is shown for 5 seconds when the app is first opened in a browser tab and whenever the home icon is used; then the main screen appears. It is not shown again when the page reloads (e.g. after logging in).
-- The top bar of every page shows the GamesLane name picture and, on the right, a **Log in** button when no user is logged in, or the user's icon and name (which open their profile) and a **Log out** button.
+- A splash screen (the portrait or landscape picture, to suit the screen) is shown for 5 seconds when the app is first opened in a browser tab and whenever the GamesLane name in the top bar is used (on every page, the main screen too); then the main screen appears. It is not shown again when the page reloads (e.g. after logging in).
+- The top bar of every page shows the GamesLane name picture and, on the right, a **Log in** button when no user is logged in, or the user's icon and name, which open their profile: the display name and icon, and a **Log out** button.
 - A list of games. A new session can be started only when a user is logged in; choosing a game while logged out opens the login dialog, and the session is started once the user has logged in.
 - Logged-in users can reorder the games by dragging a game by its ⋮⋮ handle (mouse or touch; Alt+↑/↓ with the keyboard). A saved user's order (registered or Google) is saved with their account; a guest's is remembered in the browser. The order is applied whenever the main screen opens. Games not in a saved order (e.g. new ones) keep their usual place after the others.
 - A way to join a session by entering its code. This does not require a logged-in user.
@@ -57,7 +57,7 @@ A typical setup is a shared screen (such as a TV or laptop) connected as a spect
 - A **session** is one instance of a specific game, identified by a unique code.
 - A session can be created from the main screen, joined by entering its code, or opened directly from its URL. Joining does not require a logged-in user.
 - A session's status is **Lobby** (the session lobby), **Playing** (the game screen), **Paused** (the game screen, waiting for an absent player) or **Over** (the game has ended by itself and shows its result). Each game also has its own phases inside Playing, e.g. the exchange in Rich man, poor man or the reveal in The Gang. See [Disconnections and seats](#disconnections-and-seats).
-- The game code is shown in the game's banner at the top of the session's page; clicking it copies it to the clipboard.
+- The top of a session's page stays in place while the page scrolls. Under the top bar, the **session bar** (as tall as the top bar) shows the game's picture and name, the user's role (🪑 and their seats, e.g. X in Tic-tac-toe or ⚪ in Backgammon, or 👁 when watching), the players present out of the seats (👥), during a game the players' **Stand up** (🧍) and **End game** (⏹) icons, and the game code (🔑); clicking the code copies it to the clipboard. During a game, a **status bar** under it shows the game's status and messages to the user, with the buttons of the turn where the game has them (e.g. Backgammon's **Roll** and **Done**). While the user waits for others, the status bar is grey; when they have something to do (👉, e.g. their move), it turns gold, with a larger text, and flashes once. The game options are shown and changed only in the session lobby.
 - Sessions are saved and kept for 30 days after their last activity, so players can come back to a game later, even after the server restarts. After that, its code no longer works.
 
 ## Session lobby
@@ -65,7 +65,7 @@ A typical setup is a shared screen (such as a TV or laptop) connected as a spect
 - A screen shared by all games, showing the game's **seats**.
 - Only a logged-in user can take a seat. Users do not choose a seat: the taken seats are always the first ones, followed by a single empty seat (**Sit here**), until all seats are taken. A user may take more than one seat (and then sees the private information of all of them).
 - A user can leave a seat by tapping it. The seats after it then move up one, so there are no gaps.
-- On every page except the main screen, a home icon in the top bar goes back to the main screen (for players, this gives up their seats).
+- On every page except the main screen, the GamesLane name in the top bar goes back to the main screen (for players, this gives up their seats).
 - A user who loses their connection (closed tab, phone asleep, network lost) keeps their seats for 60 seconds, and gets them back if they return in time; their seat shows a spinner meanwhile. In the lobby, the seats are then freed, as if they had left. During a game, see [Disconnections and seats](#disconnections-and-seats).
 - Creating a session does not seat the creator; they join the session and can then take a seat.
 - Each game has its own number of seats and minimum to start:
@@ -78,7 +78,7 @@ A typical setup is a shared screen (such as a TV or laptop) connected as a spect
 
 - When the minimum number of seats is taken, a **Start** button appears (**New game** after the first game). Any seated user can start the game.
 - While the session is in the lobby, an **Invite friends** panel shows the join link (`/join/{code}`), with **Copy link** and **Share…** buttons where the browser supports them.
-- In the lobby, seated players see the chosen [game options](#game-options) and can change them.
+- In the lobby, everyone sees the chosen [game options](#game-options) on a big **Game options:** button; seated players can change them.
 - Anyone not seated (logged in or not) is a **spectator**.
 
 ## Game screen
@@ -86,8 +86,8 @@ A typical setup is a shared screen (such as a TV or laptop) connected as a spect
 - Once the game starts, the session lobby is replaced by a game-specific screen.
 - Seated players may see a different version of the screen than spectators (for example, their own cards in hand). Spectators never see any player's private information.
 - Anyone can watch an active game. During a game, the only seats that can be taken are those of absent players (see below).
-- A seated user can **stand up** (become a spectator) or **leave** (go back to the main screen, giving up their seats).
-- A player can **End game** at any time during a game (after confirming): everyone goes back to the session lobby, the seats move up, others can join, and **Start** begins a new game.
+- A seated user can **stand up** (🧍, after confirming; they become a spectator) or **leave** (go back to the main screen, giving up their seats).
+- A player can **End game** (⏹) at any time during a game (after confirming): everyone goes back to the session lobby, the seats move up, others can join, and **Start** begins a new game.
 - When a game ends (The Gang, and a backgammon match), anyone seated can choose **Play again** while at least the minimum number of players are seated, or go **Back to the lobby** (for everyone). A new game is played by whoever is seated (any number between the minimum and the maximum). If fewer than the minimum remain, the session goes back to the session lobby automatically.
 - Tic-tac-toe and rock-paper-scissors never end by themselves; players stand up or leave when they are done.
 
@@ -100,17 +100,17 @@ A typical setup is a shared screen (such as a TV or laptop) connected as a spect
   | **Present** | The holder is connected | Taking the seat, or reconnecting | The holder disconnects or leaves |
   | **Reconnecting** | The holder lost their connection less than 60 seconds ago; the seat shows a spinner. For the game, the seat is still present: nothing else changes | Disconnecting | Coming back (Present), or 60 seconds (Away) |
   | **Away** | The holder has been disconnected for 60 seconds or more; the seat is still theirs | 60 seconds after disconnecting | The holder comes back (at any time), someone takes the seat, or the game ends |
-  | **Vacant** | Nobody holds the seat | **Stand up**, the home icon, or an Away seat freed (below) | Someone takes it |
+  | **Vacant** | Nobody holds the seat | **Stand up**, going back to the main screen, or an Away seat freed (below) | Someone takes it |
 
   An **absent** seat is one that is Away or Vacant.
 - **Only while a game is in progress** (Playing or Paused) are Away seats kept. In the session lobby, and once a game is Over, an Away seat is freed.
 - **Coming back:** after a refresh or a dropped connection, the page reconnects by itself and the player keeps their seats: in the session lobby, as long as they return within 60 seconds; during a game, at any time, unless someone has taken their seat.
-- **Taking an absent seat:** during a game, anyone logged in can take an absent seat of the game with **Take this seat** (in the banner at the top of the game screen, which names the Away players and counts the empty seats; a user who is not logged in sees **Log in to take a seat**), and continues that player's game (their cards, checkers or chips). If the seat was Away, its holder loses it: when they come back, they are a spectator.
+- **Taking an absent seat:** during a game, anyone logged in can take an absent seat of the game with **Take this seat** (in the banner in the status bar, which names the Away players and counts the empty seats; a user who is not logged in sees **Log in to take a seat**), and continues that player's game (their cards, checkers or chips). If the seat was Away, its holder loses it: when they come back, they are a spectator.
 - **What a game does with absent seats** depends on the game:
 
   | Game | With an absent seat | Effect |
   | --- | --- | --- |
-  | Tic-tac-toe, Rock-paper-scissors, Backgammon, The Gang | **Wait:** the session is Paused | The game screen shows "Waiting for …" with **Take this seat** and **End game**. Present players can still do what does not need the absent seat (e.g. finish their own turn, pick, move their chip); the game stops where it needs the absent player |
+  | Tic-tac-toe, Rock-paper-scissors, Backgammon, The Gang | **Wait:** the session is Paused | The status bar shows "⏸ ⏳ …" (the players waited for) with **Take this seat** and **End game**. Present players can still do what does not need the absent seat (e.g. finish their own turn, pick, move their chip); the game stops where it needs the absent player |
   | Rich man, poor man | **Act automatically:** the seat passes | The game goes on and never pauses; the seat keeps its cards. If every seat is absent, the game waits for a player to come back or take a seat. At the card exchange, absent seats are removed (see the game's rules) |
 
 - **Ending:** any one present player can **End game** during a game (after confirming), which takes everyone back to the session lobby. The session also goes back to the lobby with **Back to the lobby** after a game is Over, and when there are too few players for the next game (**Play again** with fewer than the minimum seated, or Rich man, poor man's exchange with fewer than 6).
@@ -120,7 +120,7 @@ A typical setup is a shared screen (such as a TV or laptop) connected as a spect
 
 A game can offer **options**, i.e. rule variants (so far The Gang's and backgammon's). A **choice** option is one of its choices. A **set** option (e.g. The Gang's challenge cards) is a list of choices, all on by default (for cards, each with its picture: tap a card to turn it on or off; a card that is off is greyed out). Some options are shown only when another option has a certain value (e.g. the card options only in Advanced mode).
 
-- In the session lobby, everyone sees the chosen options; seated players can change them with **Game options**. They apply to the next new game; a paused game keeps the options it started with.
+- In the session lobby, the chosen options are shown on a big button starting with **Game options:**. Anyone can press it, spectators too: seated players change the options in the dialog it opens; everyone else sees them there without changing them. They apply to the next new game; a paused game keeps the options it started with.
 - Saved users (registered or Google, not guests) can **save** the options as their preferences for that game, and **load** them back in the dialog. A session starts with its creator's saved preferences.
 
 ## Games
@@ -138,11 +138,13 @@ A game can offer **options**, i.e. rule variants (so far The Gang's and backgamm
 2 players, standard rules. The first seat plays white, the second black.
 
 - **A match** to 1, 3, 5, 7 or 9 points (option **Match length**, default 5). A single game scores 1 point, a gammon (the loser bore off no checker) 2, a backgammon (and still has a checker on the bar or in the winner's home board) 3, times the cube. When the match ends, **Play again** starts a new one; between games, **Next game**.
-- **Opening roll:** at the start of each game, each player rolls their own die (tap the board, or **Roll**); each die stays on its player's side. On a tie, both dice stay on view until a player rolls again, and both roll again. The higher die moves first, with both dice.
-- **A turn:** tap the board (or press **Roll**) to roll, move the checkers, then press **Done**. The dice tumble for one second when rolled; between turns, the last roll stays on the board, faded. **Undo** takes back the last checker moved in the turn. Tap a checker and then one of its highlighted destinations; a checker that can only go to one place moves at once. The rules are enforced: a checker on the bar must enter first, a point with two or more opposing checkers is blocked, a single opposing checker is hit, bearing off only once all checkers are home (with a higher number only when no checker is on a higher point), as many dice as possible must be used (all four with doubles), and if only one die can be used, it must be the larger one when possible.
-- **Automatic turns:** if no checker can move, the turn passes; if there is only one way to play the dice, the game plays it and the turn ends. A message says so.
-- **Doubling cube** (option, on by default; not in 1-point matches): before rolling, the player may **Double** (or tap the cube, which is outlined when they may); the other player **Take**s (the cube doubles and they own it) or **Drop**s (losing the game at the cube's value). Crawford rule: no doubling in the game after a player first comes within one point of winning the match.
-- **The board** is seen from each player's own side of the table: the board is turned around (rotated, not mirrored) between the players. Black's home board is at the bottom right, bearing off into the tray on the right, with its two back checkers at the top right; white's home board is at the bottom left, bearing off into the tray on the left, with its two back checkers at the top left. Spectators see white's side, and a user holding both seats sees the side of the seat that must act. It shows the dice on the mover's side (used dice faded), the cube, both pip counts and the match score. The previous turn's moves are highlighted, and so are the current turn's for everyone watching; the checker just moved drops into place. The board scales to fit the screen, in portrait or landscape, and on a TV: it shrinks so that the whole page (scores, board and buttons) is visible without scrolling.
+- **Opening roll:** at the start of each game, each player rolls their own die (tap the board, or **Roll** in the status bar); each die stays on its player's side. On a tie, both dice stay on view until a player rolls again, and both roll again. The player with the higher die starts: they roll both dice for their first turn (and may not double before it).
+- **A turn:** tap the board (or press **Roll**) to roll, move the checkers, then press **Done**. **Roll**, **Double**, **Take**, **Drop**, **Undo**, **Done** and **Next game** are buttons in the status bar, shown when they can be used. The dice tumble for one second when rolled; between turns, the last roll stays on the board, faded. **Undo** takes back the last checker moved in the turn (a combined move counts as one checker moved per die). Tap a checker and then one of its highlighted destinations; a checker that can only go to one place moves at once.
+- **Combined moves:** a checker can also move by both dice at once (e.g. 13 to 5 with 5-3, or by two, three or four dice with doubles), as one of its destinations. This is offered only when the checker can get there, and only when every way of getting there gives the same result (e.g. not when going by the 3 first hits an opposing checker and going by the 5 first does not; then the dice are played one at a time). With doubles, the fewest dice are used.
+- **Last move:** a **Last move** button in the status bar draws the last turn's checker moves on the board as numbered arrows; pressing it again hides them. The rules are enforced: a checker on the bar must enter first, a point with two or more opposing checkers is blocked, a single opposing checker is hit, bearing off only once all checkers are home (with a higher number only when no checker is on a higher point), as many dice as possible must be used (all four with doubles), and if only one die can be used, it must be the larger one when possible.
+- **Automatic turns:** if no checker can move, the turn passes; if there is only one way to play the dice, the game plays it and the turn ends. **Last move** shows what was played.
+- **Doubling cube** (option, on by default; not in 1-point matches): before rolling, the player may **Double** (the button in the status bar, or tap the cube, which is outlined when they may); the other player **Take**s (the cube doubles and they own it) or **Drop**s (losing the game at the cube's value). Crawford rule: no doubling in the game after a player first comes within one point of winning the match.
+- **The board** looks like a wooden board: a dark walnut frame and bar, a light maple playing field with dark and ivory inlaid points, and a dark tray, with wood grain. It is seen from each player's own side of the table: the board is turned around (rotated, not mirrored) between the players. Black's home board is at the bottom right, bearing off into the tray on the right, with its two back checkers at the top right; white's home board is at the bottom left, bearing off into the tray on the left, with its two back checkers at the top left. Spectators see white's side, and a user holding both seats sees the side of the seat that must act. It shows the dice on the mover's side (used dice faded), the cube, both pip counts and the match score. The previous turn's moves are highlighted, and so are the current turn's for everyone watching; the checker just moved drops into place. The board scales to fit the screen, in portrait or landscape, and on a TV: it shrinks so that the whole page (scores, board and buttons) is visible without scrolling.
 
 ### The Gang
 

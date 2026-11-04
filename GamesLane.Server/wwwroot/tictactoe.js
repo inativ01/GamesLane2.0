@@ -8,22 +8,20 @@ const isRoundOver = (game) => game.isDraw || game.winner !== "None";
 function ticTacToeStatus(game, state, view) {
     const nameOf = (mark) => state.seats[seatOf(mark)]?.name ?? mark;
     const both = view.isMe(0) && view.isMe(1);
-    const round = `Round ${game.round}`;
+    const round = `R${game.round}`;
     if (!isRoundOver(game)) {
         if (view.isMe(seatOf(game.currentTurn))) {
-            return both ? `${round}: your turn (${game.currentTurn})` : `${round}: your turn`;
+            return both ? `${round} · 👉 Your turn (${game.currentTurn})` : `${round} · 👉 Your turn`;
         }
-        return view.isPlayer
-            ? `${round}: waiting for ${nameOf(game.currentTurn)}…`
-            : `${round}: ${nameOf(game.currentTurn)} (${game.currentTurn}) to move`;
+        return `${round} · ⏳ ${nameOf(game.currentTurn)} (${game.currentTurn})`;
     }
     if (game.isDraw) {
-        return `${round}: it's a draw!`;
+        return `${round} · 🤝 Draw`;
     }
     if (view.isMe(seatOf(game.winner)) && !both) {
-        return "You win this round!";
+        return `${round} · 🏆 You win!`;
     }
-    return `${nameOf(game.winner)} (${game.winner}) wins ${round.toLowerCase()}!`;
+    return `${round} · 🏆 ${nameOf(game.winner)} (${game.winner}) wins`;
 }
 
 let turnSeat = 0;
@@ -56,7 +54,7 @@ const ticTacToe = startSessionPage("TicTacToe", (game, state, view) => {
     $("players").replaceChildren(
         ...MARKS.map((mark, seat) => listItem(seatLabel(state, seat, view, `${mark} · `), `: ${game.scores[seat]}`)),
         listItem(`Draws: ${game.draws}`));
-});
+}, (seat) => MARKS[seat]);
 
 $("next-round").addEventListener("click", () => {
     call("NextRound", ticTacToe.sessionId, currentRound).catch(() => {});

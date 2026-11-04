@@ -10,21 +10,21 @@ let pickSeat = null; // the seat the pick buttons pick for
 const pickedLocally = (seat) => myPicks[seat]?.round === currentRound;
 
 function rpsStatus(game, state, view) {
-    const round = `Round ${game.round}`;
+    const round = `R${game.round}`;
     if (!game.isRoundComplete) {
         if (pickSeat !== null) {
-            return `${round}: make your pick`;
+            return `${round} · 👉 Make your pick`;
         }
-        return view.isPlayer ? "Waiting for the other player…" : `${round}: waiting for picks…`;
+        return view.isPlayer ? `${round} · ⏳ The other player` : `${round} · ⏳ Picking…`;
     }
 
     if (game.roundWinner === null) {
-        return `${round}: it's a draw!`;
+        return `${round} · 🤝 Draw`;
     }
     if (view.isMe(game.roundWinner) && !view.isMe(1 - game.roundWinner)) {
-        return "You win this round!";
+        return `${round} · 🏆 You win!`;
     }
-    return `${state.seats[game.roundWinner]?.name ?? "Empty seat"} wins ${round.toLowerCase()}!`;
+    return `${round} · 🏆 ${state.seats[game.roundWinner]?.name ?? "Empty seat"} wins`;
 }
 
 function handCard(game, state, seat, view) {

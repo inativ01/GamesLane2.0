@@ -7,6 +7,12 @@ namespace GamesLane.Server.Games.Backgammon;
 public record BackgammonStep(int From, int To, int Die);
 
 /// <summary>
+/// One checker moved by two or more dice in a row, e.g. from 13 to 5 with 5 and 3: the <see cref="Steps"/> are played
+/// one after the other.
+/// </summary>
+public record BackgammonCombinedMove(int From, int To, IReadOnlyList<BackgammonStep> Steps);
+
+/// <summary>
 /// The moves the rules allow. A turn must use as many of the dice as possible (all four with doubles); if only one die
 /// can be used, it must be the larger one when that is possible.
 /// </summary>

@@ -14,21 +14,33 @@
     <script src="i18n.js"></script>
 </head>
 <body>
-<header class="top">
-    <a href="/" class="brand" data-leave><img class="brand-name" src="images/name.png" alt="GamesLane"></a>
-    <a href="/?splash" class="home-link" data-leave title="Main screen" aria-label="Main screen" data-i18n-attr="title,aria-label"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11.5 12 4l9 7.5M5.5 9.5v10h5V14h3v5.5h5v-10"/></svg></a>
-    <div id="account" class="account"></div>
-</header>
+<div class="masthead">
+    <header class="top">
+        <a href="/?splash" class="brand" data-leave title="Main screen" data-i18n-attr="title"><img class="brand-name" src="images/name.png" alt="GamesLane"></a>
+        <div id="account" class="account"></div>
+    </header>
+    <div class="session-bar">
+        <img class="session-art" src="images/games/backgammon.svg" alt="">
+        <h2 class="session-name" data-i18n>Backgammon</h2>
+        <span id="session-info" class="session-info"></span>
+        <p class="code" title="Game code" data-i18n-attr="title"><span aria-hidden="true">🔑</span> <strong id="session-code"></strong></p>
+    </div>
+    <div id="status-bar" class="status-bar" hidden>
+        <p id="status" class="status"></p>
+        <span class="status-actions">
+            <button id="bg-roll" type="button" class="small" hidden data-i18n>Roll</button>
+            <button id="bg-double" type="button" class="secondary small" hidden data-i18n>Double</button>
+            <button id="bg-take" type="button" class="small" hidden data-i18n>Take</button>
+            <button id="bg-drop" type="button" class="secondary small" hidden data-i18n>Drop</button>
+            <button id="bg-undo" type="button" class="secondary small" hidden data-i18n>Undo</button>
+            <button id="bg-done" type="button" class="small" hidden data-i18n>Done</button>
+            <button id="next-round" type="button" class="small" hidden data-i18n>Next game</button>
+            <button id="bg-last-move" type="button" class="secondary small" hidden aria-pressed="false" data-i18n>Last move</button>
+        </span>
+    </div>
+</div>
 <main class="backgammon">
     <section id="session">
-        <div class="session-head">
-            <img class="session-art" src="images/games/backgammon.svg" alt="">
-            <div class="session-title">
-                <h2 data-i18n>Backgammon</h2>
-                <p data-i18n>2 players</p>
-            </div>
-            <p class="code"><span data-i18n>Game code</span> <strong id="session-code"></strong></p>
-        </div>
         <div id="invite" class="invite" hidden>
             <h3 data-i18n>Invite friends</h3>
             <p class="hint" data-i18n>Send them this link, or tell them the game code.</p>
@@ -44,10 +56,7 @@
                 <h3 data-i18n>Players</h3>
                 <span id="seat-count" class="seat-count"></span>
             </div>
-            <div id="lobby-options" class="lobby-options" hidden>
-                <span id="options-summary"></span>
-                <button id="edit-options" type="button" class="secondary small" data-i18n>Game options</button>
-            </div>
+            <button id="lobby-options" type="button" class="lobby-options" hidden><span id="options-summary"></span></button>
             <p id="lobby-status" class="status"></p>
             <ul id="seats" class="seats"></ul>
             <p id="login-to-play" class="hint" hidden><span data-i18n>Log in to take a seat.</span> <button type="button" class="secondary small" data-login data-i18n>Log in</button></p>
@@ -58,23 +67,12 @@
 
         <div id="game-screen" hidden>
             <ul id="bg-players" class="bg-players"></ul>
-            <p id="status" class="status"></p>
             <div id="bg-board" class="bg-board"></div>
             <p id="bg-message" class="bg-message" hidden></p>
-            <div id="bg-controls" class="actions center bg-controls">
-                <button id="bg-roll" type="button" hidden data-i18n>Roll</button>
-                <button id="bg-double" type="button" class="secondary" hidden data-i18n>Double</button>
-                <button id="bg-take" type="button" hidden data-i18n>Take</button>
-                <button id="bg-drop" type="button" class="secondary" hidden data-i18n>Drop</button>
-                <button id="bg-undo" type="button" class="secondary" hidden data-i18n>Undo</button>
-                <button id="bg-done" type="button" hidden data-i18n>Done</button>
-                <button id="next-round" type="button" hidden data-i18n>Next game</button>
-            </div>
             <div id="game-over-actions" class="actions center" hidden>
                 <button id="play-again" type="button" data-i18n>Play again</button>
                 <button id="to-lobby" type="button" class="secondary" data-i18n>Back to the lobby</button>
             </div>
-            <button id="stand-up" type="button" class="secondary small" hidden data-i18n>Stand up</button>
         </div>
     </section>
 

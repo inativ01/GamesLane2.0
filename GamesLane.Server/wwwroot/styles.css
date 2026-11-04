@@ -142,7 +142,8 @@ a.button.small {
     height: 46px;
 }
 
-/* The splash screen on the main screen: when the app is opened in a tab, and when the home icon is used. */
+/* The splash screen on the main screen: when the app is opened in a tab, and when the GamesLane name on another page
+   is used. */
 .splash {
     display: none;
 }
@@ -174,43 +175,10 @@ html.splash-done .splash {
     object-fit: contain;
 }
 
-/* The home icon in the header (pages other than the main screen), on the right before the account. */
-.home-link {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 38px;
-    height: 38px;
-    margin-inline-start: auto;
-    border-radius: 50%;
-    color: var(--gold);
-    background: rgba(255, 255, 255, 0.1);
-    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.2);
-    transition: background-color 0.15s;
-}
-
-.home-link:hover {
-    background: rgba(255, 255, 255, 0.22);
-}
-
-.home-link svg {
-    width: 22px;
-    height: 22px;
-    fill: none;
-    stroke: currentColor;
-    stroke-width: 2;
-    stroke-linecap: round;
-    stroke-linejoin: round;
-}
-
 /* The language picker in the header, before the account: the current language's flag, which opens a menu. */
 .language {
     position: relative;
     margin-inline-start: auto;
-}
-
-.home-link + .language {
-    margin-inline-start: 0;
 }
 
 .language-button {
@@ -469,6 +437,13 @@ input {
     justify-content: center;
 }
 
+/* Log out, at the bottom of the profile dialog, apart from Save and Cancel. */
+.profile-logout {
+    justify-content: flex-end;
+    padding-top: 0.6rem;
+    border-top: 1px solid var(--line);
+}
+
 .panel {
     margin: 0.75rem 0;
     padding: 1rem;
@@ -609,71 +584,170 @@ footer {
 
 /* Session pages */
 
-/* Game header: picture, name and player count on a dark banner, with the game code as a gold ticket. */
-.session-head {
+/* The top of a session page stays in place: the header, the session bar (the game's picture and name, the user's role,
+   the players present, the players' Stand up and End game icons, and the game code) and, during a game, the status bar
+   (the game's status, its turn buttons and the absent players' banner). */
+.masthead {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+}
+
+.masthead .top {
+    position: static;
+    box-shadow: none;
+}
+
+/* As tall as the header above it (the GamesLane name's height and padding). */
+.session-bar {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
-    margin: 0.75rem 0 0.5rem;
-    padding: 0.75rem;
-    border-radius: var(--radius);
-    background:
-        radial-gradient(circle at 100% 0%, rgba(230, 169, 60, 0.25), transparent 55%),
-        linear-gradient(135deg, var(--black), #3a1a10);
+    gap: 0.6rem;
+    min-height: calc(46px + 0.8rem);
+    padding: 0.25rem max(0.75rem, calc((100% - 680px) / 2 + 0.75rem));
+    background: linear-gradient(135deg, var(--black), #3a1a10);
     color: #fff;
-    text-align: start;
-    box-shadow: var(--shadow);
 }
 
 .session-art {
-    width: 64px;
-    height: 64px;
+    width: 40px;
+    height: 40px;
     flex: none;
-    border-radius: 16px;
-    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.15);
+    border-radius: 10px;
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.15);
 }
 
-.session-title {
+.session-name {
     flex: 1;
     min-width: 0;
-}
-
-.session-title h2 {
     margin: 0;
-    font-size: 1.35rem;
+    overflow: hidden;
+    font-size: 1.2rem;
     font-weight: 800;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
-.session-title p {
-    margin: 0.15rem 0 0;
-    color: rgba(255, 255, 255, 0.7);
-    font-size: 0.85rem;
+.session-info {
+    display: flex;
+    flex: none;
+    gap: 0.4rem;
+}
+
+.session-fact {
+    padding: 0.15rem 0.55rem;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.1);
+    font-size: 0.95rem;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.session-actions {
+    display: flex;
+    flex: none;
+    gap: 0.3rem;
+}
+
+.session-actions:not(:has(:not([hidden]))) {
+    display: none;
+}
+
+button.session-action {
+    width: 34px;
+    height: 34px;
+    padding: 0;
+    background: rgba(255, 255, 255, 0.1);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.2);
+    font-size: 1.05rem;
+    line-height: 1;
+}
+
+button.session-action:not(:disabled):hover {
+    background: rgba(255, 255, 255, 0.22);
 }
 
 .code {
     display: flex;
     flex: none;
-    flex-direction: column;
     align-items: center;
+    gap: 0.3rem;
     margin: 0;
-    padding: 0.35rem 0.75rem;
+    padding: 0.15rem 0.6rem;
     border: 1px dashed rgba(230, 169, 60, 0.7);
-    border-radius: 10px;
+    border-radius: 999px;
     background: rgba(255, 255, 255, 0.06);
 }
 
 .code span {
-    color: rgba(255, 255, 255, 0.65);
-    font-size: 0.7rem;
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
+    font-size: 0.9rem;
 }
 
 .code strong {
     color: var(--gold);
-    font-size: 1.4rem;
-    letter-spacing: 0.15em;
+    font-size: 1.15rem;
+    letter-spacing: 0.12em;
+}
+
+/* While the user waits for others: a grey bar. */
+.status-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 0.2rem 0.5rem;
+    padding: 0.2rem max(0.75rem, calc((100% - 680px) / 2 + 0.75rem));
+    background: linear-gradient(180deg, #e4e2df, #d6d3cf);
+    border-bottom: 1px solid #c4c0ba;
+    text-align: center;
+}
+
+.status-bar .status {
+    margin: 0;
+    color: #4a4540;
+    font-size: 1rem;
+}
+
+.status-bar .absent-banner {
+    flex-basis: 100%;
+}
+
+.status-actions {
+    display: inline-flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.35rem;
+}
+
+.status-actions:not(:has(:not([hidden]))) {
+    display: none;
+}
+
+/* When the user has to act (the status shows 👉): a gold bar with a larger text that pulses once. */
+.status-bar.act {
+    background: linear-gradient(180deg, #fff1cc, #ffe2a1);
+    border-bottom-color: var(--gold);
+    box-shadow: inset 4px 0 0 var(--orange), inset -4px 0 0 var(--orange);
+    animation: act-pulse 1.2s ease-out;
+}
+
+.status-bar.act .status {
+    color: var(--primary-dark);
+    font-size: 1.15rem;
+    font-weight: 800;
+}
+
+@keyframes act-pulse {
+    from {
+        background: #ffc94d;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .status-bar.act {
+        animation: none;
+    }
 }
 
 .code.copyable {
@@ -1747,20 +1821,56 @@ button.ready-thumb.is-ready:not(:disabled):hover {
     font-weight: 700;
 }
 
-/* The chosen game options, with a button that opens the options dialog. */
-.lobby-options {
+/* The chosen game options, as a big button that opens the options dialog (to change them for seated players, to see
+   them for everyone else). */
+button.lobby-options {
     display: flex;
-    flex-wrap: wrap;
     align-items: center;
-    justify-content: space-between;
-    gap: 0.5rem;
+    gap: 0.6rem;
+    width: 100%;
     margin-top: 0.6rem;
-    padding: 0.5rem 0.75rem;
-    border-radius: 10px;
+    padding: 0.8rem 1rem;
+    border-radius: 12px;
     background: var(--surface-soft);
-    font-size: 0.9rem;
+    color: var(--ink);
+    box-shadow: inset 0 0 0 2px var(--line);
+    font-size: 1rem;
     font-weight: 600;
     text-align: start;
+}
+
+button.lobby-options:not(:disabled):hover {
+    background: #e5dacb;
+    box-shadow: inset 0 0 0 2px var(--primary);
+}
+
+button.lobby-options::before {
+    content: "⚙️";
+    flex: none;
+    font-size: 1.3rem;
+}
+
+button.lobby-options::after {
+    content: "›";
+    flex: none;
+    margin-inline-start: auto;
+    color: var(--muted);
+    font-size: 1.6rem;
+    line-height: 1;
+}
+
+#options-summary {
+    flex: 1;
+}
+
+.option-list {
+    margin: 0;
+    padding: 0;
+    border: none;
+}
+
+.option-list:disabled .option-choice {
+    cursor: default;
 }
 
 .option {
@@ -1998,10 +2108,6 @@ button.big {
     margin-top: 0.5rem;
 }
 
-#stand-up {
-    margin-top: 0.75rem;
-}
-
 /* A game waiting for an absent player (Paused), or with absent seats that can be taken. */
 .absent-banner {
     display: flex;
@@ -2009,8 +2115,9 @@ button.big {
     justify-content: center;
     align-items: center;
     gap: 0.5rem;
-    margin: 0.5rem 0;
-    padding: 0.55rem 0.8rem;
+    margin: 0.2rem 0;
+    padding: 0.25rem 0.8rem;
+    font-size: 0.9rem;
     border-radius: var(--radius);
     background: #fff4d6;
     box-shadow: inset 0 0 0 2px var(--gold);
@@ -2168,23 +2275,19 @@ a.button.is-busy {
         display: grid;
         grid-template-columns: minmax(340px, 440px) 1fr;
         grid-template-areas:
-            "status status"
             "hand table"
             "decisions table"
             "controls table"
-            "over table"
-            "standup table";
-        grid-template-rows: auto auto auto auto auto 1fr;
+            "over table";
+        grid-template-rows: auto auto auto 1fr;
         column-gap: 1.25rem;
         align-items: start;
     }
 
-    main.gang #status { grid-area: status; }
     main.gang #my-hands { grid-area: hand; }
     main.gang #my-decisions { grid-area: decisions; }
     main.gang .gang-controls { grid-area: controls; }
     main.gang #game-over-actions { grid-area: over; }
-    main.gang #stand-up { grid-area: standup; justify-self: start; }
 
     main.gang .table-view {
         grid-area: table;
@@ -2215,7 +2318,7 @@ a.button.is-busy {
     /* A player who hid the table gets their hand in the middle instead. */
     main.gang #game-screen:has(#table-body[hidden]) {
         grid-template-columns: minmax(340px, 560px);
-        grid-template-areas: "status" "hand" "decisions" "controls" "over" "standup" "table";
+        grid-template-areas: "hand" "decisions" "controls" "over" "table";
         justify-content: center;
     }
 }
@@ -2232,23 +2335,11 @@ body.observer main.gang #my-decisions {
     display: none;
 }
 
-body.observer main.gang .session-head {
-    margin: 0.4rem 0;
-    padding: 0.4rem 0.75rem;
-}
-
-body.observer main.gang .session-art {
-    width: 40px;
-    height: 40px;
-    border-radius: 10px;
-}
-
 body.observer main.gang #game-screen {
     display: block;
 }
 
-body.observer main.gang .status {
-    margin: 0.3rem 0;
+body.observer:has(main.gang) .status-bar .status {
     font-size: clamp(1rem, 2.6vh, 2rem);
 }
 
@@ -2341,20 +2432,20 @@ body.observer main.gang .heist-card-kind,
 body.observer main.gang .heist-card-new { font-size: 0.6em; }
 body.observer main.gang .heist-card-name { font-size: 1em; }
 
-/* Short screens, such as a phone on its side: a slimmer header and game banner. */
+/* Short screens, such as a phone on its side: a slimmer header. */
 @media (max-height: 500px) {
-    body.observer:has(main.gang) .top { padding-top: 0.2rem; padding-bottom: 0.2rem; }
-    body.observer:has(main.gang) .brand-name { height: 30px; }
+    .masthead .top { padding-top: 0.2rem; padding-bottom: 0.2rem; }
+    .masthead .brand-name { height: 30px; }
+    .masthead .language-button { width: 32px; height: 32px; }
+    .session-bar { min-height: calc(30px + 0.4rem); padding-top: 0.1rem; padding-bottom: 0.1rem; }
+    .session-art { width: 26px; height: 26px; border-radius: 7px; }
+    .session-name { font-size: 1rem; }
+    button.session-action { width: 28px; height: 28px; }
+    .status-bar { padding-top: 0.1rem; padding-bottom: 0.1rem; }
     body.observer main.gang { padding-top: 0.25rem; }
-    body.observer main.gang .session-head { margin: 0.2rem 0; padding: 0.25rem 0.75rem; }
-    body.observer main.gang .session-art,
-    body.observer main.gang .session-title p { display: none; }
-    body.observer main.gang .code { flex-direction: row; gap: 0.5rem; padding: 0.1rem 0.6rem; }
-    body.observer main.gang .code strong { font-size: 1.1rem; }
-    body.observer main.gang .status { margin: 0.15rem 0; }
 }
 
-/* Backgammon: a wooden board with green felt, drawn as an SVG that scales to the screen. */
+/* Backgammon: a wooden board, drawn as an SVG that scales to the screen. */
 main.backgammon {
     max-width: 980px;
 }
@@ -2425,11 +2516,15 @@ main.backgammon {
     -webkit-tap-highlight-color: transparent;
 }
 
-.bg-wood { fill: #6b3f1f; }
-.bg-felt { fill: #1f5c3a; }
-.bg-tray { fill: #4a2a12; }
-.bg-point.light { fill: #e8d7b0; }
-.bg-point.dark { fill: #a3342a; }
+/* A wooden board: a walnut frame and bar, a maple playing field with inlaid walnut and ivory points, and a walnut tray,
+   all with wood grain. */
+.bg-wood { fill: url(#bg-walnut); filter: url(#bg-grain-across); }
+.bg-field { fill: url(#bg-maple); filter: url(#bg-grain-along); }
+.bg-tray { fill: #3b1f0d; filter: url(#bg-grain-along); }
+.bg-groove { fill: none; stroke: #2a1508; stroke-width: 3; stroke-opacity: 0.8; }
+.bg-point { stroke: rgba(42, 21, 8, 0.35); stroke-width: 1; }
+.bg-point.light { fill: #f3e6c8; }
+.bg-point.dark { fill: #5a2d12; }
 
 .bg-checker circle { fill: #f4efe6; stroke: #8a7f70; stroke-width: 2; }
 .bg-checker .bg-checker-ring { fill: none; stroke: #d6cbb8; stroke-width: 2; }
@@ -2473,13 +2568,20 @@ main.backgammon {
 .bg-target-tray { fill: rgba(76, 209, 122, 0.45); stroke: #4cd17a; stroke-width: 4; }
 .bg-hit { fill: transparent; cursor: pointer; }
 
+/* Last move: the last turn's checkers as numbered arrows. */
+.bg-arrow { fill: none; stroke: #ffb02e; stroke-width: 7; stroke-linecap: round; opacity: 0.9; }
+.bg-arrowhead { fill: #ffb02e; }
+.bg-arrow-step { fill: #ffb02e; stroke: #fff; stroke-width: 3; }
+.bg-arrow-number { fill: var(--black); font-size: 18px; font-weight: 800; pointer-events: none; }
+
+#bg-last-move[aria-pressed="true"] {
+    background: #ffe2a1;
+    box-shadow: inset 0 0 0 2px var(--gold);
+}
+
 .bg-message {
     margin: 0.3rem 0;
     color: var(--muted);
-}
-
-.bg-controls {
-    min-height: 2.75rem;
 }
 
 /* Rich man, poor man: the user's own hands on top, and the table (the cards to beat and the players) on green felt. */
@@ -2487,37 +2589,9 @@ main.rich-poor {
     max-width: 980px;
 }
 
-/* During a game, the session heading shrinks to a line, so the hand and the table fit on the screen. */
+/* During a game, less space above the hand, so the hand and the table fit on the screen. */
 main.rich-poor:has(#game-screen:not([hidden])) {
     padding-top: 0.25rem;
-}
-
-main.rich-poor #session:has(#game-screen:not([hidden])) .session-head {
-    margin: 0.2rem 0;
-    padding: 0.25rem 0.75rem;
-}
-
-main.rich-poor #session:has(#game-screen:not([hidden])) :is(.session-art, .session-title p) {
-    display: none;
-}
-
-main.rich-poor #session:has(#game-screen:not([hidden])) .session-title h2 {
-    font-size: 1.05rem;
-}
-
-main.rich-poor #session:has(#game-screen:not([hidden])) .code {
-    flex-direction: row;
-    gap: 0.5rem;
-    padding: 0.1rem 0.6rem;
-}
-
-main.rich-poor #session:has(#game-screen:not([hidden])) .code strong {
-    font-size: 1.1rem;
-}
-
-main.rich-poor .status {
-    margin: 0.3rem 0;
-    font-size: 1.05rem;
 }
 
 main.rich-poor .my-hand {
@@ -2728,18 +2802,23 @@ main.rich-poor .my-hand .actions {
         height: 40px;
     }
 
+    .session-bar {
+        gap: 0.4rem;
+        min-height: calc(40px + 0.8rem);
+    }
+
     .session-art {
-        width: 48px;
-        height: 48px;
-        border-radius: 12px;
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
     }
 
-    .session-title h2 {
-        font-size: 1.1rem;
+    .session-name {
+        font-size: 1rem;
     }
 
-    .code strong {
-        font-size: 1.15rem;
+    .session-fact {
+        padding: 0.05rem 0.35rem;
     }
 
     .game-tile img {
