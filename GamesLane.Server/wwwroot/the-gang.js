@@ -694,7 +694,7 @@ const gang = startSessionPage("TheGang", (game, state, view) => {
     const actions = myActions(game, state, view);
     $("my-hands").replaceChildren(...hands.map((hand) => myHand(game, state, view, hand)), ...(actions ? [actions] : []));
     $("reveal-next").hidden = !(view.isPlayer && game.phase === "Reveal" && !awaitsScan(game));
-    $("next-heist").hidden = !(view.isPlayer && game.phase === "HeistOver" && !state.isGameOver);
+    $("next-heist").hidden = !(view.isPlayer && game.phase === "HeistOver" && state.phase !== "Over");
 
     // The table. Observers always see it; players may hide it.
     $("heist").textContent = String(game.heist);

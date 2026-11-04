@@ -601,13 +601,23 @@ function listItem(...content) {
     return item;
 }
 
-// A seat's name as shown on the game screen.
+// A seat's name as shown on the game screen. An Away holder is marked "(away)"; a reconnecting one gets a spinner
+// (see seatLabel).
 function seatName(state, seat, view) {
     const info = state.seats[seat];
     if (!info) {
         return t("Empty seat");
     }
-    return info.name + (view.isMe(seat) ? ` ${t("(you)")}` : "") + (info.isConnected ? "" : ` ${t("(disconnected)")}`);
+    return info.name + (view.isMe(seat) ? ` ${t("(you)")}` : "") + (info.status === "Away" ? ` ${t("(away)")}` : "");
+}
+
+// A small spinner for a seat whose holder is reconnecting.
+function reconnectingSpinner() {
+    const spinner = el("span", "seat-spinner");
+    spinner.title = t("Reconnecting…");
+    spinner.setAttribute("role", "img");
+    spinner.setAttribute("aria-label", t("Reconnecting…"));
+    return spinner;
 }
 
 // A seat's icon and name, optionally after a prefix such as "X: ".
@@ -620,6 +630,9 @@ function seatLabel(state, seat, view, prefix = "") {
         label.append(iconElement(info.icon));
     }
     label.append(seatName(state, seat, view));
+    if (info?.status === "Reconnecting") {
+        label.append(reconnectingSpinner());
+    }
     return label;
 }
 
@@ -656,9 +669,38 @@ function startSessionPage(gameType, render) {
 
     const act = (method, ...args) => call(method, sessionId, ...args).catch(() => {});
 
-    // The one empty seat shown in the lobby: the next available one (while a game is paused, the first empty seat of
-    // its players), or -1 if there is none.
-    const nextSeat = (state) => (state.canResume ? state.vacantGameSeats[0] ?? -1 : state.seats.findIndex((s) => !s));
+    // The one empty seat shown in the lobby: the next available one, or -1 if there is none.
+    const nextSeat = (state) => state.seats.findIndex((s) => !s);
+
+    // On the game screen: a banner while the game waits for absent players, or has absent seats that can be taken, with
+    // Take this seat for logged-in users and End game for players; and an End game button for players during a game.
+    const banner = el("div", "absent-banner");
+    banner.hidden = true;
+    banner.setAttribute("role", "status");
+    $("game-screen").prepend(banner);
+    const endGame = el("button", "secondary small", t("End game"));
+    endGame.type = "button";
+    endGame.id = "end-game";
+    endGame.hidden = true;
+    $("stand-up").after(endGame);
+
+    function updateBanner(state) {
+        const absent = state.phase === "Paused" || state.phase === "Playing" ? state.absentSeats : [];
+        banner.hidden = absent.length === 0;
+        if (banner.hidden) {
+            return;
+        }
+        const names = absent.map((seat) => state.seats[seat]?.name ?? t("a new player")).join(", ");
+        const text = state.phase === "Paused" ? t("Paused: waiting for {names}.", { names }) : t("Away: {names}.", { names });
+        const items = [el("span", null, text)];
+        if (account?.signedIn) {
+            const take = el("button", "small", t("Take this seat"));
+            take.type = "button";
+            take.addEventListener("click", () => act("TakeSeat"));
+            items.push(take);
+        }
+        banner.replaceChildren(...items);
+    }
 
     // A seat tile: a big icon, the name, and a note such as "Seat 2 · You". The user's own seat is a button to leave
     // it; the empty seat is a button to sit there (the server gives the next available seat, which is this one).
@@ -672,7 +714,7 @@ function startSessionPage(gameType, render) {
         tile.className = "seat";
         tile.classList.toggle("empty", !info);
         tile.classList.toggle("mine", view.isMe(seat));
-        tile.classList.toggle("away", Boolean(info && !info.isConnected));
+        tile.classList.toggle("away", Boolean(info && info.status !== "Present"));
 
         const avatar = iconElement(info ? info.icon : "+", "seat-avatar");
         const name = document.createElement("span");
@@ -680,9 +722,13 @@ function startSessionPage(gameType, render) {
         name.textContent = info ? info.name : t("Empty seat");
         const note = document.createElement("span");
         note.className = "seat-note";
-        note.textContent = [t("Seat {n}", { n: seat + 1 }), view.isMe(seat) && t("You"), info && !info.isConnected && t("Disconnected")]
+        note.textContent = [t("Seat {n}", { n: seat + 1 }), view.isMe(seat) && t("You"), info?.status === "Away" && t("Away"),
+            info?.status === "Reconnecting" && t("Reconnecting…")]
             .filter(Boolean)
             .join(" · ");
+        if (info?.status === "Reconnecting") {
+            note.append(reconnectingSpinner());
+        }
         tile.append(avatar, name, note);
 
         if (action) {
@@ -841,12 +887,6 @@ function startSessionPage(gameType, render) {
     }
 
     function lobbyStatus(state, taken) {
-        if (state.canResume) {
-            const toFill = state.vacantGameSeats.length;
-            return toFill === 0 ? t("Game paused. Resume it, or end it to change players.")
-                : toFill === 1 ? t("Game paused: 1 seat to fill to resume it, or end it to change players.")
-                    : t("Game paused: {n} seats to fill to resume it, or end it to change players.", { n: toFill });
-        }
         if (taken < state.minSeats) {
             return t("Waiting for players ({taken}/{needed} needed)…", { taken, needed: state.minSeats });
         }
@@ -872,15 +912,15 @@ function startSessionPage(gameType, render) {
             $("options-summary").textContent = optionsSummary(state);
             $("edit-options").hidden = !view.isPlayer;
             $("login-to-play").hidden = Boolean(account?.signedIn);
-            $("resume-game").hidden = !(view.isPlayer && state.canResume && state.vacantGameSeats.length === 0);
-            $("end-game").hidden = !(view.isPlayer && state.canResume);
-            $("start-game").hidden = !(view.isPlayer && !state.canResume && taken >= state.minSeats);
+            $("start-game").hidden = !(view.isPlayer && taken >= state.minSeats);
             $("start-game").textContent = t(state.gameNumber > 0 ? "New game" : "Start");
             return;
         }
 
-        $("game-over-actions").hidden = !(view.isPlayer && state.isGameOver);
+        $("game-over-actions").hidden = !(view.isPlayer && state.phase === "Over");
         $("stand-up").hidden = !view.isPlayer;
+        endGame.hidden = !(view.isPlayer && state.phase !== "Over");
+        updateBanner(state);
         render(state.game, state, view);
     }
 
@@ -924,13 +964,12 @@ function startSessionPage(gameType, render) {
         enter();
     });
 
-    $("end-game").addEventListener("click", () => {
-        if (confirm(t("End the paused game? Its progress is lost, and other players can then join for a new game."))) {
+    endGame.addEventListener("click", () => {
+        if (confirm(t("End the game? Its progress is lost, and everyone goes back to the lobby."))) {
             act("EndGame");
         }
     });
     $("start-game").addEventListener("click", () => act("NewGame", lastState?.gameNumber ?? 0));
-    $("resume-game").addEventListener("click", () => act("ResumeGame"));
     $("edit-options").addEventListener("click", openOptionsDialog);
     $("play-again").addEventListener("click", () => act("NewGame", lastState?.gameNumber ?? 0));
     $("to-lobby").addEventListener("click", () => act("ReturnToLobby"));

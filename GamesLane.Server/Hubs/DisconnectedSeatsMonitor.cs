@@ -4,8 +4,8 @@ using Microsoft.AspNetCore.SignalR;
 namespace GamesLane.Server.Hubs;
 
 /// <summary>
-/// Frees the seats of users who have been disconnected for longer than <see cref="GracePeriod"/>,
-/// so a game pauses (or others can sit down) when a player does not come back.
+/// Marks users disconnected for <see cref="GameSession.ReconnectWindow"/> as Away, so a game pauses (or others can take
+/// their seats) when a player does not come back; outside a game, their seats are freed.
 /// Also deletes sessions that nobody has had open, with no seat taken, for longer than <see cref="GracePeriod"/>.
 /// </summary>
 public class DisconnectedSeatsMonitor(
@@ -19,7 +19,7 @@ public class DisconnectedSeatsMonitor(
     private static readonly TimeSpan CheckInterval = TimeSpan.FromSeconds(5);
 
     /// <summary>
-    /// Every few seconds, frees expired seats in all sessions and sends the new state to each affected session,
+    /// Every few seconds, updates the Away seats in all sessions and sends the new state to each affected session,
     /// then deletes abandoned sessions.
     /// </summary>
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -32,7 +32,7 @@ public class DisconnectedSeatsMonitor(
             {
                 try
                 {
-                    if (session.ReleaseDisconnectedSeats(now - GracePeriod))
+                    if (session.UpdateAwaySeats(now))
                     {
                         await GameHub.BroadcastState(hub.Clients, session);
                     }

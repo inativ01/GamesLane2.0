@@ -133,10 +133,6 @@ public class GameHub(
         Act(sessionId, (IGameSession s, out string? error) => s.TrySetOptions(UserKey, options, out error));
 
     /// <inheritdoc />
-    public Task ResumeGame(string sessionId) =>
-        Act(sessionId, (IGameSession s, out string? error) => s.TryResume(UserKey, out error));
-
-    /// <inheritdoc />
     public Task EndGame(string sessionId) =>
         Act(sessionId, (IGameSession s, out string? error) => s.TryEndGame(UserKey, out error));
 

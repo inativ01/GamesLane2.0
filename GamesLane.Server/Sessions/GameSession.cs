@@ -16,15 +16,38 @@ public enum GameType
 }
 
 /// <summary>
-/// Which screen a session shows.
+/// A session's status.
 /// </summary>
 public enum SessionPhase
 {
-    /// <summary>The session lobby: users take seats. No game has started yet, or the game is paused.</summary>
+    /// <summary>The session lobby: users take seats and choose options. No game is in progress.</summary>
     Lobby,
 
-    /// <summary>The game screen: a game is in progress or has just ended.</summary>
+    /// <summary>The game screen: a game is in progress.</summary>
     Playing,
+
+    /// <summary>The game screen: a game is in progress, waiting for an absent player (see <see cref="SeatStatus"/>).</summary>
+    Paused,
+
+    /// <summary>The game screen: the game has ended by itself and shows its result.</summary>
+    Over,
+}
+
+/// <summary>
+/// The state of a taken seat. A seat that is <see cref="Away"/>, or empty, is absent.
+/// </summary>
+public enum SeatStatus
+{
+    /// <summary>The holder is connected.</summary>
+    Present,
+
+    /// <summary>The holder lost their connection less than <see cref="GameSession.ReconnectWindow"/> ago; for the game,
+    /// the seat is still present.</summary>
+    Reconnecting,
+
+    /// <summary>The holder has been disconnected for <see cref="GameSession.ReconnectWindow"/> or more. During a game,
+    /// the seat is still theirs until someone takes it.</summary>
+    Away,
 }
 
 /// <summary>
@@ -37,14 +60,13 @@ public record PlayerProfile(string Name, string Icon);
 /// A taken seat, as everyone sees it. <see cref="PlayerId"/> is a random ID for the user within this session,
 /// so pages can recognise their own seats without revealing user IDs.
 /// </summary>
-public record SeatInfo(string PlayerId, string Name, string Icon, bool IsConnected);
+public record SeatInfo(string PlayerId, string Name, string Icon, SeatStatus Status);
 
 /// <summary>
 /// Public session state, safe to send to everyone in the session. <see cref="Seats"/> has one entry per seat (null when empty).
 /// <see cref="GameNumber"/> is 0 until the first game starts; <see cref="Game"/> is the game-specific state, or null before then.
 /// <see cref="Options"/> are the chosen values of the game's options (<see cref="OptionList"/>), used by the next new game.
-/// <see cref="CanResume"/> is true while an unfinished game is paused; <see cref="VacantGameSeats"/> are its players'
-/// seats that are empty (they must be taken to resume it), in order.
+/// <see cref="AbsentSeats"/> are, during a game, its seats that are Away or empty (they can be taken), in order.
 /// </summary>
 public record SessionState(
     string SessionId,
@@ -54,12 +76,10 @@ public record SessionState(
     int MaxSeats,
     IReadOnlyList<SeatInfo?> Seats,
     int GameNumber,
-    bool IsGameOver,
-    bool CanResume,
     object? Game,
     IReadOnlyList<GameOption> OptionList,
     IReadOnlyDictionary<string, string> Options,
-    IReadOnlyList<int> VacantGameSeats);
+    IReadOnlyList<int> AbsentSeats);
 
 /// <summary>
 /// Returned when a page enters a session: the public state, plus the caller's player ID if they are logged in, and
@@ -75,15 +95,20 @@ public record PrivateUpdate(string ConnectionId, object State);
 /// <summary>
 /// One session of a game: its seats, and the game played by the seated users.
 /// Users are identified by a user key; a user may hold several seats. Each game type sets its number of seats.
-/// Users do not choose a seat: they take the next available one. Without an unfinished game, the taken seats are
-/// always the first ones: when a seat is freed, the seats after it move up.
-/// When fewer players remain than the game needs, an unfinished game pauses and the session returns to the lobby.
-/// Only its players' empty seats can then be taken; the game can be resumed once they are, or ended by any seated
-/// player, which lets other players join.
+/// Users do not choose a seat: they take the next available one. In the lobby, the taken seats are always the first
+/// ones: when a seat is freed, the seats after it move up.
+/// A user who disconnects keeps their seats for <see cref="ReconnectWindow"/>; then they are Away. In the lobby, and once
+/// a game is over, an Away user's seats are freed. During a game, they keep them until they come back or someone takes
+/// them; meanwhile the game pauses (unless <see cref="ContinuesWithAbsentPlayers"/>). Any seated player can end a game.
 /// All public members are thread-safe; derived classes must lock <see cref="Sync"/> when accessing state.
 /// </summary>
 public abstract class GameSession : IGameSession
 {
+    /// <summary>
+    /// How long a disconnected user's seats count as present: after that, they are Away.
+    /// </summary>
+    public static readonly TimeSpan ReconnectWindow = TimeSpan.FromSeconds(60);
+
     private const int MaxSeatLimit = 12;
 
     /// <summary>
@@ -94,9 +119,10 @@ public abstract class GameSession : IGameSession
     private readonly Seat?[] _seats;
     private readonly Dictionary<string, string> _connections = [];
     private readonly Dictionary<string, DateTimeOffset> _disconnectedSince = [];
+    private readonly HashSet<string> _away = [];
     private readonly Dictionary<string, string> _playerIds = [];
     private int[] _gameSeats = [];
-    private bool _gameEnded;
+    private bool _onGameScreen;
     private DateTimeOffset? _emptySince;
     private IReadOnlyDictionary<string, string> _options;
 
@@ -132,25 +158,19 @@ public abstract class GameSession : IGameSession
     protected abstract int MaxSeats { get; }
 
     /// <summary>
-    /// Whether an unfinished game continues when players leave, as long as at least <see cref="MinSeatsToContinue"/> of
-    /// its players remain. The game must then handle the empty seats itself.
+    /// Whether a game goes on while some of its seats are absent (see <see cref="IsAbsent"/>), acting for them itself.
+    /// Otherwise the session is Paused while any of its seats is absent.
     /// </summary>
-    protected virtual bool ContinuesWithFewerPlayers => false;
+    protected virtual bool ContinuesWithAbsentPlayers => false;
 
     /// <summary>
-    /// With <see cref="ContinuesWithFewerPlayers"/>, the number of the game's players who must remain for it to continue.
+    /// During a game, why the absent game seat <paramref name="seat"/> cannot be taken now, or null if it can (the
+    /// newcomer continues that player's game); <paramref name="seat"/> is -1 when no seat is absent. By default, it can.
     /// </summary>
-    protected virtual int MinSeatsToContinue => MinSeats;
+    protected virtual string? SeatingDuringGameError(int seat) => null;
 
     /// <summary>
-    /// While a game is being played, why the empty <paramref name="seat"/> cannot be taken, or null if it can. By default,
-    /// nobody can take a seat during a game; a game that allows it should allow only its players' empty seats (see
-    /// <see cref="GameSeats"/>), and the newcomer continues that player's game.
-    /// </summary>
-    protected virtual string? SeatingDuringGameError(int seat) => "The game has already started. You can watch it.";
-
-    /// <summary>
-    /// Called after a seat is taken or freed, while holding <see cref="Sync"/>.
+    /// Called after a seat is taken or freed, or a holder becomes Away or comes back, while holding <see cref="Sync"/>.
     /// </summary>
     protected virtual void OnSeatsChanged()
     {
@@ -193,9 +213,18 @@ public abstract class GameSession : IGameSession
     protected string? HolderOf(int seat) => _seats[seat]?.UserKey;
 
     /// <summary>
-    /// Whether the session shows the session lobby or the game screen.
+    /// Whether <paramref name="seat"/> is absent: empty, or its holder is Away. Call while holding <see cref="Sync"/>.
     /// </summary>
-    private SessionPhase Phase { get; set; }
+    protected bool IsAbsent(int seat) => _seats[seat] is not { } taken || _away.Contains(taken.UserKey);
+
+    /// <summary>
+    /// The session's status, from the screen it shows, whether the game is over, and its absent seats.
+    /// </summary>
+    private SessionPhase Phase =>
+        !_onGameScreen ? SessionPhase.Lobby
+        : IsGameOver ? SessionPhase.Over
+        : !ContinuesWithAbsentPlayers && _gameSeats.Any(IsAbsent) ? SessionPhase.Paused
+        : SessionPhase.Playing;
 
     /// <summary>
     /// The number of games started in this session; 0 before the first.
@@ -203,14 +232,9 @@ public abstract class GameSession : IGameSession
     private int GameNumber { get; set; }
 
     /// <summary>
-    /// Whether a game has started and not ended, by itself or by the players (it may be paused).
+    /// Whether a game is in progress (Playing or Paused).
     /// </summary>
-    private bool HasUnfinishedGame => GameNumber > 0 && !IsGameOver && !_gameEnded;
-
-    /// <summary>
-    /// Whether an unfinished game is paused in the lobby.
-    /// </summary>
-    private bool IsPaused => Phase == SessionPhase.Lobby && HasUnfinishedGame;
+    private bool HasUnfinishedGame => _onGameScreen && !IsGameOver;
 
     /// <summary>
     /// Registers a connection that opened the session page. If <paramref name="profile"/> is given (the user is logged in),
@@ -221,7 +245,7 @@ public abstract class GameSession : IGameSession
         lock (Sync)
         {
             _connections[connectionId] = userKey;
-            _disconnectedSince.Remove(userKey);
+            MarkConnected(userKey);
             if (profile is null)
             {
                 return null;
@@ -254,20 +278,25 @@ public abstract class GameSession : IGameSession
     }
 
     /// <summary>
-    /// Frees the seats of users who have been disconnected since <paramref name="cutoff"/> or earlier. Returns true if any seat was freed.
+    /// Marks users disconnected for <see cref="ReconnectWindow"/> or more as Away. Away users keep their seats only during
+    /// a game; otherwise their seats are freed. Returns true if anything changed.
     /// </summary>
-    public bool ReleaseDisconnectedSeats(DateTimeOffset cutoff)
+    public bool UpdateAwaySeats(DateTimeOffset now)
     {
         lock (Sync)
         {
-            var expired = _disconnectedSince.Where(d => d.Value <= cutoff).Select(d => d.Key).ToList();
-            var freed = 0;
-            foreach (var userKey in expired)
+            var newlyAway = _disconnectedSince
+                .Where(d => now - d.Value >= ReconnectWindow && !_away.Contains(d.Key))
+                .Select(d => d.Key)
+                .ToList();
+            _away.UnionWith(newlyAway);
+            var freed = FreeAwaySeats();
+            if (newlyAway.Count > 0 && freed == 0)
             {
-                freed += FreeSeats(userKey);
+                OnSeatsChanged();
             }
 
-            return freed > 0;
+            return newlyAway.Count > 0 || freed > 0;
         }
     }
 
@@ -291,8 +320,9 @@ public abstract class GameSession : IGameSession
     }
 
     /// <summary>
-    /// Takes an empty seat. Only in the lobby, unless the game allows seating during a game (see
-    /// <see cref="SeatingDuringGameError"/>); while a game is paused, only one of its players' seats.
+    /// Takes a seat. In the lobby, an empty seat. During a game, an absent seat of the game (empty, or its holder is
+    /// Away, who then loses it), unless the game refuses it (see <see cref="SeatingDuringGameError"/>); the newcomer
+    /// continues that player's game. Not once a game is over.
     /// </summary>
     public bool TryTakeSeat(string userKey, PlayerProfile profile, string connectionId, int seat, [NotNullWhen(false)] out string? error)
     {
@@ -304,46 +334,54 @@ public abstract class GameSession : IGameSession
                 return false;
             }
 
-            if (Phase == SessionPhase.Playing && SeatingDuringGameError(seat) is { } closed)
+            if (_seats[seat]?.UserKey == userKey)
             {
-                error = closed;
+                error = "You are already in this seat.";
                 return false;
             }
 
-            if (_seats[seat] is { } current)
+            error = Phase == SessionPhase.Over ? "The game is over. Wait for the next game to take a seat."
+                : !HasUnfinishedGame ? (_seats[seat] is null ? null : "That seat is taken.")
+                : !_gameSeats.Contains(seat) ? "The game has already started. You can watch it."
+                : !IsAbsent(seat) ? "That seat is taken."
+                : SeatingDuringGameError(seat);
+            if (error is not null)
             {
-                error = current.UserKey == userKey ? "You are already in this seat." : "That seat is taken.";
                 return false;
             }
 
-            if (IsPaused && !_gameSeats.Contains(seat))
-            {
-                error = PausedNoSeat;
-                return false;
-            }
-
+            var previous = _seats[seat]?.UserKey;
             _seats[seat] = new Seat(userKey, profile);
+            if (previous is not null && !HoldsSeat(previous))
+            {
+                _disconnectedSince.Remove(previous);
+                _away.Remove(previous);
+            }
+
             _connections[connectionId] = userKey;
-            _disconnectedSince.Remove(userKey);
+            MarkConnected(userKey);
             OnSeatsChanged();
-            error = null;
             return true;
         }
     }
 
     /// <summary>
-    /// Takes the next available seat: the first empty one, or while a game is paused (or being played, if the game allows
-    /// it), the first empty seat of its players.
+    /// Takes the next available seat: in the lobby, the first empty one; during a game, the first absent seat of the game
+    /// that can be taken.
     /// </summary>
     public bool TryTakeNextSeat(string userKey, PlayerProfile profile, string connectionId, [NotNullWhen(false)] out string? error)
     {
         lock (Sync)
         {
-            var inGame = IsPaused || (Phase == SessionPhase.Playing && VacantGameSeats().Any());
-            var seat = inGame ? VacantGameSeats().DefaultIfEmpty(-1).First() : Array.FindIndex(_seats, s => s is null);
+            var seat = HasUnfinishedGame
+                ? AbsentGameSeats().Where(s => SeatingDuringGameError(s) is null).DefaultIfEmpty(-1).First()
+                : Array.FindIndex(_seats, s => s is null);
             if (seat < 0)
             {
-                error = IsPaused ? PausedNoSeat : "All seats are taken.";
+                error = Phase == SessionPhase.Over ? "The game is over. Wait for the next game to take a seat."
+                    : HasUnfinishedGame ? AbsentGameSeats().DefaultIfEmpty(-1).Select(SeatingDuringGameError)
+                        .FirstOrDefault(e => e is not null) ?? "The game has already started. You can watch it."
+                    : "All seats are taken.";
                 return false;
             }
 
@@ -352,7 +390,7 @@ public abstract class GameSession : IGameSession
     }
 
     /// <summary>
-    /// Gives up one of the user's seats. An unfinished game pauses if too few of its players remain.
+    /// Gives up one of the user's seats. During a game, the seat is then absent.
     /// </summary>
     public bool TryLeaveSeat(string userKey, int seat, [NotNullWhen(false)] out string? error)
     {
@@ -364,12 +402,7 @@ public abstract class GameSession : IGameSession
                 return false;
             }
 
-            _seats[seat] = null;
-            if (!HoldsSeat(userKey))
-            {
-                _disconnectedSince.Remove(userKey);
-            }
-
+            VacateSeat(seat);
             AfterSeatsChanged();
             OnSeatsChanged();
             CloseGapsInLobby();
@@ -402,15 +435,9 @@ public abstract class GameSession : IGameSession
                 return error is null;
             }
 
-            if (Phase == SessionPhase.Playing && !IsGameOver)
+            if (HasUnfinishedGame)
             {
                 error = "The game is not over yet.";
-                return false;
-            }
-
-            if (IsPaused)
-            {
-                error = "The game is paused. Resume it, or end it first.";
                 return false;
             }
 
@@ -423,10 +450,9 @@ public abstract class GameSession : IGameSession
             }
 
             _gameSeats = seats;
-            _gameEnded = false;
             GameNumber++;
             StartNewGame(seats);
-            Phase = SessionPhase.Playing;
+            _onGameScreen = true;
             return true;
         }
     }
@@ -474,55 +500,27 @@ public abstract class GameSession : IGameSession
     }
 
     /// <summary>
-    /// Continues the paused game. Whoever now holds each of its seats plays that seat.
-    /// </summary>
-    public bool TryResume(string userKey, [NotNullWhen(false)] out string? error)
-    {
-        lock (Sync)
-        {
-            if (!TryRequireSeated(userKey, out error) || Phase == SessionPhase.Playing)
-            {
-                return error is null;
-            }
-
-            if (!HasUnfinishedGame)
-            {
-                error = "There is no game to resume.";
-                return false;
-            }
-
-            if (!GameSeatsReady())
-            {
-                error = "Every player's seat must be taken to resume.";
-                return false;
-            }
-
-            Phase = SessionPhase.Playing;
-            return true;
-        }
-    }
-
-    /// <summary>
-    /// Ends the paused game, however many of its seats are taken. The seats then move up, other users can join, and
-    /// a new game can be started.
+    /// Ends the game in progress (Playing or Paused) and takes everyone back to the session lobby. The seats then move
+    /// up, other users can join, and a new game can be started.
     /// </summary>
     public bool TryEndGame(string userKey, [NotNullWhen(false)] out string? error)
     {
         lock (Sync)
         {
-            if (!TryRequireSeated(userKey, out error))
+            if (!TryRequireSeated(userKey, out var seatError))
             {
+                error = seatError!;
                 return false;
             }
 
-            if (!IsPaused)
+            if (!HasUnfinishedGame)
             {
-                error = "There is no paused game to end.";
+                error = "There is no game in progress to end.";
                 return false;
             }
 
-            _gameEnded = true;
-            CloseGapsInLobby();
+            EndGameInLobby();
+            error = null;
             return true;
         }
     }
@@ -545,8 +543,7 @@ public abstract class GameSession : IGameSession
                 return false;
             }
 
-            Phase = SessionPhase.Lobby;
-            CloseGapsInLobby();
+            EndGameInLobby();
             return true;
         }
     }
@@ -566,14 +563,12 @@ public abstract class GameSession : IGameSession
                 MaxSeats,
                 _seats.Select(s => s is null
                     ? null
-                    : new SeatInfo(PlayerIdFor(s.UserKey), s.Profile.Name, s.Profile.Icon, IsConnected(s.UserKey))).ToArray(),
+                    : new SeatInfo(PlayerIdFor(s.UserKey), s.Profile.Name, s.Profile.Icon, StatusOf(s.UserKey))).ToArray(),
                 GameNumber,
-                GameNumber > 0 && IsGameOver,
-                IsPaused,
                 GameNumber > 0 ? GetGameState() : null,
                 GameOptions.For(Type),
                 _options,
-                IsPaused ? [.. VacantGameSeats()] : []);
+                HasUnfinishedGame ? [.. AbsentGameSeats()] : []);
         }
     }
 
@@ -609,7 +604,7 @@ public abstract class GameSession : IGameSession
     /// </summary>
     protected bool TryGetPlayingSeat(string userKey, int seat, [NotNullWhen(false)] out string? error)
     {
-        if (Phase != SessionPhase.Playing || !HasUnfinishedGame)
+        if (!HasUnfinishedGame)
         {
             error = "The game is not in progress.";
             return false;
@@ -630,7 +625,7 @@ public abstract class GameSession : IGameSession
     /// </summary>
     protected bool IsInGame(string userKey, [NotNullWhen(false)] out string? error)
     {
-        var inGame = Phase == SessionPhase.Playing && _gameSeats.Any(s => _seats[s]?.UserKey == userKey);
+        var inGame = _onGameScreen && _gameSeats.Any(s => _seats[s]?.UserKey == userKey);
         error = inGame ? null : "Only players in this game can do that.";
         return inGame;
     }
@@ -638,7 +633,7 @@ public abstract class GameSession : IGameSession
     /// <summary>
     /// Whether the session shows the game screen (a game is being played, or has just ended), not the session lobby.
     /// </summary>
-    protected bool IsPlaying => Phase == SessionPhase.Playing;
+    protected bool IsPlaying => _onGameScreen;
 
     /// <summary>
     /// Changes which seats play the current game, for a game whose players change between its rounds.
@@ -658,8 +653,27 @@ public abstract class GameSession : IGameSession
         }
 
         _seats[seat] = new Seat(userKey, profile);
-        _disconnectedSince.Remove(userKey);
+        MarkConnected(userKey);
         return seat;
+    }
+
+    /// <summary>
+    /// Empties <paramref name="seat"/> without any other effect (for a game that removes players itself, e.g. Away
+    /// players at a card exchange). Call while holding <see cref="Sync"/>.
+    /// </summary>
+    protected void VacateSeat(int seat)
+    {
+        if (_seats[seat] is not { } taken)
+        {
+            return;
+        }
+
+        _seats[seat] = null;
+        if (!HoldsSeat(taken.UserKey))
+        {
+            _disconnectedSince.Remove(taken.UserKey);
+            _away.Remove(taken.UserKey);
+        }
     }
 
     /// <summary>
@@ -673,8 +687,8 @@ public abstract class GameSession : IGameSession
     /// </summary>
     protected void EndGameInLobby()
     {
-        _gameEnded = true;
-        Phase = SessionPhase.Lobby;
+        _onGameScreen = false;
+        FreeAwaySeats();
         CloseGapsInLobby();
     }
 
@@ -684,7 +698,7 @@ public abstract class GameSession : IGameSession
     /// </summary>
     private object? PrivateStateFor(string userKey)
     {
-        if (GameNumber == 0 || Phase == SessionPhase.Lobby)
+        if (GameNumber == 0 || !_onGameScreen)
         {
             return null;
         }
@@ -718,6 +732,7 @@ public abstract class GameSession : IGameSession
         }
 
         _disconnectedSince.Remove(userKey);
+        _away.Remove(userKey);
         if (freed > 0)
         {
             AfterSeatsChanged();
@@ -728,14 +743,39 @@ public abstract class GameSession : IGameSession
         return freed;
     }
 
-    private const string PausedNoSeat = "The game is paused. A seated player can end it to let more players join.";
+    /// <summary>
+    /// Outside a game in progress (in the lobby, or once a game is over), frees the seats of Away users. Returns how
+    /// many seats were freed.
+    /// </summary>
+    private int FreeAwaySeats() =>
+        HasUnfinishedGame ? 0 : _away.ToList().Sum(FreeSeats);
 
     /// <summary>
-    /// In the lobby without an unfinished game, moves the taken seats up so they are the first ones, in order.
+    /// A user is connected again: no longer reconnecting or Away.
+    /// </summary>
+    private void MarkConnected(string userKey)
+    {
+        _disconnectedSince.Remove(userKey);
+        if (_away.Remove(userKey))
+        {
+            OnSeatsChanged();
+        }
+    }
+
+    /// <summary>
+    /// The state of a seat held by <paramref name="userKey"/>.
+    /// </summary>
+    private SeatStatus StatusOf(string userKey) =>
+        IsConnected(userKey) ? SeatStatus.Present
+        : _away.Contains(userKey) ? SeatStatus.Away
+        : SeatStatus.Reconnecting;
+
+    /// <summary>
+    /// In the lobby, moves the taken seats up so they are the first ones, in order.
     /// </summary>
     private void CloseGapsInLobby()
     {
-        if (Phase == SessionPhase.Lobby && !HasUnfinishedGame)
+        if (!_onGameScreen)
         {
             MoveSeatsUp();
         }
@@ -749,35 +789,19 @@ public abstract class GameSession : IGameSession
     }
 
     /// <summary>
-    /// The current game's seats that are empty, in order.
+    /// The current game's absent seats (empty, or held by an Away user), in order.
     /// </summary>
-    private IEnumerable<int> VacantGameSeats() => _gameSeats.Where(s => _seats[s] is null);
+    private IEnumerable<int> AbsentGameSeats() => _gameSeats.Where(IsAbsent);
 
     /// <summary>
-    /// Goes back to the lobby when too few players remain: an unfinished game pauses, and after a game has ended,
-    /// there are not enough players for a new one.
+    /// Once a game is over, goes back to the lobby when there are not enough players for a new one.
     /// </summary>
     private void AfterSeatsChanged()
     {
-        if (Phase != SessionPhase.Playing)
+        if (Phase == SessionPhase.Over && OccupiedSeats().Count() < MinSeats)
         {
-            return;
+            EndGameInLobby();
         }
-
-        var enough = IsGameOver ? OccupiedSeats().Count() >= MinSeats : GameSeatsReady();
-        if (!enough)
-        {
-            Phase = SessionPhase.Lobby;
-        }
-    }
-
-    /// <summary>
-    /// Whether enough of the current game's seats are taken for it to be played.
-    /// </summary>
-    private bool GameSeatsReady()
-    {
-        var taken = _gameSeats.Count(s => _seats[s] is not null);
-        return taken == _gameSeats.Length || (ContinuesWithFewerPlayers && taken >= MinSeatsToContinue);
     }
 
     /// <summary>

@@ -70,9 +70,9 @@ public record RichManPoorManPrivateState(IReadOnlyList<RichManPoorManHand> Hands
 /// <summary>
 /// Rich man, poor man for 6 to 12 seats. The game's players are seat numbers: the first game seats them in seat order,
 /// and each later game gives them their places by the last game's ranking. It never ends by itself: after each game, a
-/// player starts the next one. A player who leaves during a game passes automatically, and anyone can take their seat to
-/// continue in their place. When the next game starts, players who left are dropped (with fewer than 6 left, everyone
-/// goes back to the session lobby); during its exchange, users ask to join and a player accepts them at a place.
+/// player starts the next one. An absent player (Away, or whose seat is empty) passes automatically, and anyone can take
+/// their seat to continue in their place. When the next game starts, absent players are dropped (with fewer than 6 left,
+/// everyone goes back to the session lobby); during its exchange, users ask to join and a player accepts them at a place.
 /// </summary>
 public class RichManPoorManSession(string id, Action<Card[]>? shuffle = null, Random? random = null)
     : GameSession(id), IRichManPoorManSession
@@ -93,10 +93,7 @@ public class RichManPoorManSession(string id, Action<Card[]>? shuffle = null, Ra
     protected override bool IsGameOver => false;
 
     /// <inheritdoc />
-    protected override bool ContinuesWithFewerPlayers => true;
-
-    /// <inheritdoc />
-    protected override int MinSeatsToContinue => 1;
+    protected override bool ContinuesWithAbsentPlayers => true;
 
     private RichManPoorManGame Game => _game ?? throw new InvalidOperationException("No game has started.");
 
@@ -140,7 +137,8 @@ public class RichManPoorManSession(string id, Action<Card[]>? shuffle = null, Ra
             var game = Game;
             if (round == game.GameNumber && game.Phase == RichManPoorManPhase.GameOver)
             {
-                var order = game.NextOrder.Where(seat => HolderOf(seat) is not null).ToArray();
+                var players = game.NextOrder.ToArray();
+                var order = players.Where(seat => !IsAbsent(seat)).ToArray();
                 if (order.Length < RichManPoorManRules.MinPlayers)
                 {
                     EndGameInLobby();
@@ -151,6 +149,11 @@ public class RichManPoorManSession(string id, Action<Card[]>? shuffle = null, Ra
                 {
                     error = nextError ?? "The next game cannot start yet.";
                     return false;
+                }
+
+                foreach (var dropped in players.Except(order))
+                {
+                    VacateSeat(dropped);
                 }
 
                 _requests.Clear();
@@ -249,17 +252,12 @@ public class RichManPoorManSession(string id, Action<Card[]>? shuffle = null, Ra
 
     /// <inheritdoc />
     protected override string? SeatingDuringGameError(int seat) =>
-        _game?.Phase switch
-        {
-            RichManPoorManPhase.Exchanging => "Ask to join: a player will choose your place.",
-            RichManPoorManPhase.GameOver => "Wait for the card exchange of the next game, then ask to join.",
-            _ when GameSeats.Contains(seat) && HolderOf(seat) is null => null,
-            _ => "Only the seat of a player who left can be taken during a game.",
-        };
+        _game?.Phase == RichManPoorManPhase.Exchanging ? "Ask to join: a player will choose your place." : null;
 
     /// <summary>
-    /// Players who left pass automatically, and play again when someone takes their seat. During the exchange, they are
-    /// dropped and the cards are dealt again; with fewer than 6 players left, everyone goes back to the session lobby.
+    /// Absent players pass automatically, and play again when they come back or someone takes their seat. During the
+    /// exchange, they are dropped (their seats are freed) and the cards are dealt again; with fewer than 6 players left,
+    /// everyone goes back to the session lobby.
     /// </summary>
     protected override void OnSeatsChanged()
     {
@@ -272,13 +270,13 @@ public class RichManPoorManSession(string id, Action<Card[]>? shuffle = null, Ra
         {
             foreach (var seat in game.Order)
             {
-                game.SetActive(seat, HolderOf(seat) is not null);
+                game.SetActive(seat, !IsAbsent(seat));
             }
 
             return;
         }
 
-        var left = game.Order.Where(seat => HolderOf(seat) is null).ToArray();
+        var left = game.Order.Where(IsAbsent).ToArray();
         if (!IsPlaying || left.Length == 0)
         {
             return;
@@ -294,6 +292,7 @@ public class RichManPoorManSession(string id, Action<Card[]>? shuffle = null, Ra
         foreach (var seat in left)
         {
             game.TryRemovePlayer(seat, out _);
+            VacateSeat(seat);
         }
 
         SetGameSeats(game.Order);

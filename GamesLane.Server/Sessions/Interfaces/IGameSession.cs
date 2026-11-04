@@ -30,9 +30,10 @@ public interface IGameSession
     bool Disconnect(string connectionId, DateTimeOffset now);
 
     /// <summary>
-    /// Frees the seats of users who have been disconnected since <paramref name="cutoff"/> or earlier. Returns true if any seat was freed.
+    /// Marks users disconnected for <see cref="GameSession.ReconnectWindow"/> or more as Away. Away users keep their
+    /// seats only during a game; otherwise their seats are freed. Returns true if anything changed.
     /// </summary>
-    bool ReleaseDisconnectedSeats(DateTimeOffset cutoff);
+    bool UpdateAwaySeats(DateTimeOffset now);
 
     /// <summary>
     /// Whether nobody has had the session open, and no seat has been taken, for at least <paramref name="gracePeriod"/>.
@@ -41,17 +42,18 @@ public interface IGameSession
     bool IsAbandoned(DateTimeOffset now, TimeSpan gracePeriod);
 
     /// <summary>
-    /// Takes an empty seat, showing the user's name and icon on it. While a game is paused, only one of its players' seats.
+    /// Takes a seat, showing the user's name and icon on it: in the lobby, an empty seat; during a game, an absent seat
+    /// of the game (empty or Away), continuing that player's game.
     /// </summary>
     bool TryTakeSeat(string userKey, PlayerProfile profile, string connectionId, int seat, [NotNullWhen(false)] out string? error);
 
     /// <summary>
-    /// Takes the next available seat: the first empty one, or while a game is paused, the first empty seat of its players.
+    /// Takes the next available seat: in the lobby, the first empty one; during a game, the first absent seat of the game.
     /// </summary>
     bool TryTakeNextSeat(string userKey, PlayerProfile profile, string connectionId, [NotNullWhen(false)] out string? error);
 
     /// <summary>
-    /// Gives up one of the user's seats. An unfinished game pauses if too few of its players remain.
+    /// Gives up one of the user's seats. During a game, the seat is then absent.
     /// </summary>
     bool TryLeaveSeat(string userKey, int seat, [NotNullWhen(false)] out string? error);
 
@@ -79,13 +81,8 @@ public interface IGameSession
     void UseSavedOptions(IReadOnlyDictionary<string, string>? options);
 
     /// <summary>
-    /// Continues the paused game. Whoever now holds each of its seats plays that seat.
-    /// </summary>
-    bool TryResume(string userKey, [NotNullWhen(false)] out string? error);
-
-    /// <summary>
-    /// Ends the paused game, however many of its seats are taken. The seats then move up, other users can join, and
-    /// a new game can be started.
+    /// Ends the game in progress (Playing or Paused) and takes everyone back to the session lobby. The seats then move
+    /// up, other users can join, and a new game can be started.
     /// </summary>
     bool TryEndGame(string userKey, [NotNullWhen(false)] out string? error);
 

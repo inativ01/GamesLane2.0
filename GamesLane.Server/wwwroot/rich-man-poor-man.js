@@ -159,7 +159,7 @@ function pile(game, state, view) {
         return [el("p", "hint", t("The pairs are exchanging cards. Nobody gets new cards until all have given."))];
     }
     if (game.phase === "GameOver") {
-        const left = game.players.filter((p) => !state.seats[p.seat]).length;
+        const left = game.players.filter((p) => !state.seats[p.seat] || state.seats[p.seat].status === "Away").length;
         const staying = game.players.length - left;
         return [
             el("p", "rp-pile-who", t("The next game's places:")),
@@ -184,9 +184,9 @@ function pile(game, state, view) {
     return [el("p", "hint", t("No cards on the table yet."))];
 }
 
-// A player in the list: place, name, cards left, and what they did. A player who left shows "Left"; the first such
-// seat (the one the server gives) has a button to take it over during the game.
-function playerItem(game, state, view, player, takeOver) {
+// A player in the list: place, name, cards left, and what they did. An absent player shows "Away" (their seat can be
+// taken from the banner at the top of the game screen).
+function playerItem(game, state, view, player) {
     const item = el("li", null, el("span", "rp-place", `#${player.place}`));
     item.classList.toggle("turn", game.phase === "Playing" && game.turn === player.seat);
     item.classList.toggle("left", !player.isActive);
@@ -198,15 +198,9 @@ function playerItem(game, state, view, player, takeOver) {
     item.append(el("span", "rp-count", `🂠 ${player.cardCount}`));
     if (player.finished !== null) tag(`🏁 ${player.finished}`, "finished");
     if (player.passed) tag(t("Passed"));
-    if (!player.isActive) tag(t("Left"), "away");
+    if (!player.isActive) tag(t("Away"), "away");
     if (game.phase === "Exchanging" && player.exchangeCount > 0) {
         tag(player.hasGiven ? t("Gave {n} ✓", { n: player.exchangeCount }) : t("Gives {n}…", { n: player.exchangeCount }));
-    }
-    if (takeOver && account?.signedIn) {
-        const button = el("button", "secondary small", t("Take this seat"));
-        button.type = "button";
-        button.addEventListener("click", () => call("TakeSeat", rich.sessionId).catch(() => {}));
-        item.append(button);
     }
     return item;
 }
@@ -305,10 +299,7 @@ const rich = startSessionPage("RichManPoorMan", (game, state, view) => {
     $("rp-join").hidden = !join;
     $("rp-join").replaceChildren(...(join ?? []));
     $("rp-pile").replaceChildren(...pile(game, state, view));
-    const takeOver = game.phase === "Playing"
-        ? Math.min(...game.players.filter((p) => !state.seats[p.seat]).map((p) => p.seat))
-        : null;
-    $("rp-players").replaceChildren(...game.players.map((p) => playerItem(game, state, view, p, p.seat === takeOver)));
+    $("rp-players").replaceChildren(...game.players.map((p) => playerItem(game, state, view, p)));
     $("next-round").hidden = !(view.isPlayer && game.phase === "GameOver");
     updateSpeech(game, view);
 });
