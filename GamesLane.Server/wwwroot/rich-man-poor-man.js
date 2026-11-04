@@ -247,7 +247,8 @@ function joinPanel(game, state, view) {
     return [el("p", "hint", t("The next game can take new players.")), ask];
 }
 
-// Reading the throws aloud, on a shared screen: e.g. "3 nines", in the page's language.
+// Reading the throws aloud, on a shared screen: e.g. "3 nines", in the page's language. Translations say the count
+// as {n} (digits), {m} or {f} (the number's word in its masculine or feminine form, e.g. "שני אסים", "שתי מלכות").
 const SPOKEN = {
     2: ["A two", "{n} twos"], 3: ["A three", "{n} threes"], 4: ["A four", "{n} fours"], 5: ["A five", "{n} fives"],
     6: ["A six", "{n} sixes"], 7: ["A seven", "{n} sevens"], 8: ["An eight", "{n} eights"], 9: ["A nine", "{n} nines"],
@@ -255,10 +256,23 @@ const SPOKEN = {
     A: ["An ace", "{n} aces"],
 };
 
-function speak(text) {
+// Many computers have no Hebrew voice, and an English voice reads only the digits of a Hebrew text, so without one
+// the throws are read in English. Until the browser has listed its voices, the Hebrew text is tried anyway.
+const isHebrewVoice = (voice) => /^(he|iw)([-_]|$)/i.test(voice.lang);
+
+function missingHebrewVoice() {
+    const voices = speechSynthesis.getVoices();
+    return document.documentElement.lang === "he" && voices.length > 0 && !voices.some(isHebrewVoice);
+}
+
+function speak(key, values = {}) {
     speechSynthesis.cancel();
+    const hebrew = document.documentElement.lang === "he" && !missingHebrewVoice();
+    const text = hebrew ? t(key, values) : key.replace(/\{(\w+)\}/g, (match, name) => String(values[name] ?? match));
     const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = document.documentElement.lang === "he" ? "he-IL" : "en-US";
+    utterance.lang = hebrew ? "he-IL" : "en-US";
+    const voices = speechSynthesis.getVoices();
+    utterance.voice = (hebrew ? voices.find(isHebrewVoice) : voices.find((voice) => /^en([-_]|$)/i.test(voice.lang))) ?? null;
     speechSynthesis.speak(utterance);
 }
 
@@ -268,12 +282,16 @@ function updateSpeech(game, view) {
     button.hidden = view.isPlayer || !("speechSynthesis" in window);
     button.textContent = on ? t("🔊 Reading throws aloud") : t("🔇 Read throws aloud");
     button.setAttribute("aria-pressed", String(on));
+    button.title = !button.hidden && missingHebrewVoice()
+        ? t("This device has no Hebrew voice, so the throws are read in English. On Windows, add one in Settings > Time & language > Speech.")
+        : "";
     const isNew = heardThrows !== null && game.throws > heardThrows;
     heardThrows = game.throws;
     if (isNew && on && !button.hidden && game.lastThrow) {
         const cards = game.lastThrow.cards;
         const [one, many] = SPOKEN[cards[0].slice(0, -1)];
-        speak(cards.length === 1 ? t(one) : t(many, { n: cards.length }));
+        const n = cards.length;
+        speak(n === 1 ? one : many, { n, m: t(`${n} (masculine)`), f: t(`${n} (feminine)`) });
     }
 }
 
@@ -281,10 +299,14 @@ $("rp-speech").addEventListener("click", () => {
     const on = localStorage.getItem(SPEECH_KEY) !== "on";
     localStorage.setItem(SPEECH_KEY, on ? "on" : "off");
     if (on) {
-        speak(t("The throws will be read aloud."));
+        speak("The throws will be read aloud.");
     }
     rich.refresh();
 });
+
+if ("speechSynthesis" in window) {
+    speechSynthesis.addEventListener("voiceschanged", () => rich.refresh());
+}
 
 let currentGame = null;
 
