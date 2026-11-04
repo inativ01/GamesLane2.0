@@ -2556,8 +2556,7 @@ main.backgammon {
 .bg-cube.can-double { cursor: pointer; }
 .bg-cube.can-double rect { stroke: #e6a93c; stroke-width: 4; }
 
-/* This turn's moves, the checkers that can move, the selected one and its destinations. */
-.bg-current { fill: rgba(120, 190, 255, 0.35); }
+/* The checkers that can move, the selected one and its destinations. */
 .bg-movable { fill: none; stroke: #4cd17a; stroke-width: 4; }
 .bg-selected { fill: rgba(76, 209, 122, 0.35); stroke: #4cd17a; stroke-width: 4; }
 .bg-target { fill: rgba(76, 209, 122, 0.85); stroke: #fff; stroke-width: 3; }

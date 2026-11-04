@@ -279,10 +279,6 @@ function drawGame(game, viewer, canMove, mayDouble) {
     root.append(board);
     board.append(...drawBoard());
 
-    // This turn's moves so far (the last turn's are shown only with Last move).
-    game.played.forEach((m) =>
-        [m.from, m.to].forEach((p) => board.append(highlight(toBlack(p, game.turn), "bg-current"))));
-
     const moves = canMove ? game.legalMoves : [];
     const mover = (p) => toBlack(p, game.turn);
     if (selected === null) {
