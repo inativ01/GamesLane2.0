@@ -510,8 +510,8 @@ function myHand(game, state, view, hand) {
     return box;
 }
 
-// This user's buttons, once for all their hands (each user is ready or confirms once): Ready once everyone holds a
-// chip, and with Con Artist, "I've seen my cards". Null if there are none now.
+// This user's buttons under their hands, once for all their hands: with Con Artist, "I've seen my cards". Null if there
+// are none now. Confirming the chips is the Confirm button in the status bar (see updateConfirm).
 function myActions(game, state, view) {
     const seats = view.mySeats.filter((s) => game.playingSeats.includes(s));
     if (!seats.length) {
@@ -526,18 +526,28 @@ function myActions(game, state, view) {
             el("p", "hint", t("Remember your cards: once everyone has seen theirs, all pocket cards are shuffled and dealt again.")),
             el("div", "my-hand-actions", seen));
     }
-    if (game.phase !== "Betting" || game.middleChips.length > 0) {
-        return null;
-    }
+    return null;
+}
 
-    // Ready is a thumbs-up: grey until pressed, green once ready (tap again to undo).
-    const isReady = seats.every((s) => game.readySeats.includes(s));
-    const ready = button("👍", isReady ? "ready-thumb is-ready" : "ready-thumb",
-        () => call("SetReady", view.sessionId, seats[0], !isReady).catch(() => {}));
-    ready.title = t(isReady ? "Ready: tap to undo" : "Ready");
-    ready.setAttribute("aria-label", ready.title);
-    ready.setAttribute("aria-pressed", String(isReady));
-    return el("div", "my-hand-actions", ready);
+// The status bar's Confirm button, once everyone holds a chip: the user confirms their chips for all their hands.
+// Once confirmed it shows "✓ Confirmed"; tapping it again undoes it.
+let confirmSeat = null;
+let confirmed = false;
+
+function updateConfirm(game, view) {
+    const seats = view.mySeats.filter((s) => game.playingSeats.includes(s));
+    const shown = seats.length > 0 && game.phase === "Betting" && game.middleChips.length === 0;
+    const confirm = $("gang-confirm");
+    confirm.hidden = !shown;
+    if (!shown) {
+        return;
+    }
+    confirmSeat = seats[0];
+    confirmed = seats.every((s) => game.readySeats.includes(s));
+    confirm.textContent = confirmed ? `✓ ${t("Confirmed")}` : t("Confirm");
+    confirm.classList.toggle("secondary", confirmed);
+    confirm.title = confirmed ? t("Confirmed: tap to undo") : "";
+    confirm.setAttribute("aria-pressed", String(confirmed));
 }
 
 // Every playing seat's chips from all stages, with ✓ for players who are ready. Skipped stages are struck out, and
@@ -716,6 +726,7 @@ const gang = startSessionPage("TheGang", (game, state, view) => {
     $("my-hands").replaceChildren(...hands.map((hand) => myHand(game, state, view, hand)), ...(actions ? [actions] : []));
     $("reveal-next").hidden = !(view.isPlayer && game.phase === "Reveal" && !awaitsScan(game));
     $("next-heist").hidden = !(view.isPlayer && game.phase === "HeistOver" && state.phase !== "Over");
+    updateConfirm(game, view);
 
     // The table. Observers always see it; players may hide it.
     $("heist").textContent = String(game.heist);
@@ -743,6 +754,9 @@ $("toggle-table").addEventListener("click", () => {
 });
 $("reveal-next").addEventListener("click", () => {
     call("RevealNext", gang.sessionId, gangState?.revealed.length ?? 0).catch(() => {});
+});
+$("gang-confirm").addEventListener("click", () => {
+    call("SetReady", gang.sessionId, confirmSeat, !confirmed).catch(() => {});
 });
 $("next-heist").addEventListener("click", () => {
     call("NextHeist", gang.sessionId, gangState?.heist ?? 1).catch(() => {});

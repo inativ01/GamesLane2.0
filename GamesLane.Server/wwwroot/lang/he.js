@@ -483,8 +483,9 @@ TRANSLATIONS.he = {
     "I've seen my cards": "ראיתי את הקלפים שלי",
     "Remember your cards: once everyone has seen theirs, all pocket cards are shuffled and dealt again.":
         "זכרו את הקלפים שלכם: אחרי שכולם יראו את שלהם, כל קלפי הכיס יעורבבו ויחולקו מחדש.",
-    "Ready": "מוכנים",
-    "Ready: tap to undo": "מוכנים: הקישו לביטול",
+    "Confirm": "אישור",
+    "Confirmed": "אושר",
+    "Confirmed: tap to undo": "אושר: הקישו לביטול",
     "Swapping a joker": "החלפת ג'וקר…",
     "Swapped a joker": "ג'וקר הוחלף",
     "Swapped {n} jokers": "{n} ג'וקרים הוחלפו",
