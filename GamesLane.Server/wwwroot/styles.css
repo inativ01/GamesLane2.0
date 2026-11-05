@@ -472,7 +472,9 @@ input {
 }
 
 /* Main screen: public and private games side by side (one under the other on narrow screens); choosing to create or
-   join a game shows the list of games instead. */
+   join a game shows the list of games instead. Each column has three rows (title and hint, Create a game, then Join a
+   game or the code box); side by side, the rows line up across the columns. Columns may shrink below their content's
+   natural width, so they fit narrow screens. */
 
 main.home {
     max-width: 960px;
@@ -480,12 +482,31 @@ main.home {
 
 .menu-columns {
     display: grid;
-    gap: 0 0.75rem;
+    grid-template-columns: minmax(0, 1fr);
+    column-gap: 0.75rem;
+}
+
+.menu-column {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    align-content: start;
+    row-gap: 1rem;
+    min-width: 0;
+}
+
+.menu-column > button {
+    align-self: start;
 }
 
 @media (min-width: 700px) {
     .menu-columns {
-        grid-template-columns: 1fr 1fr;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-template-rows: repeat(3, auto);
+    }
+
+    .menu-column {
+        grid-row: span 3;
+        grid-template-rows: subgrid;
     }
 }
 
@@ -493,14 +514,13 @@ main.home {
     display: none;
 }
 
-.menu-column h2 + .hint {
-    margin-top: -0.4rem;
+.menu-head h2 {
+    margin-bottom: 0.25rem;
 }
 
-.menu-actions {
-    display: grid;
-    gap: 0.6rem;
-    margin-bottom: 1rem;
+.menu-head .hint,
+.menu-column form .hint {
+    margin: 0 0 0.5rem;
 }
 
 #picker {
