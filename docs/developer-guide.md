@@ -79,9 +79,9 @@ GamesLane.Server/              ASP.NET Core backend
     index.html, home.js        Main screen: public games (create, or join a random one) and private games (create, or join by code); the list of games to choose from; going back to games waiting for the user
     common.js                  Shared: automatic guest, account bar and profile dialog (with login), hub connection, session lobby and page framework, playing cards
     i18n.js                    Shared: languages. The English texts in the code are the keys: t("Log in") gives the chosen language's text. Also matches the server's English messages to their translations, and the language picker
-    lang/he.js                 Hebrew translations (a page offers Hebrew by loading this file before i18n.js)
+    lang/he.js, es.js, fr.js, pt.js  Hebrew, Spanish (Mexico), French (France) and Portuguese (Brazil) translations (a page offers a language by loading its file before i18n.js)
     styles.css                 Styles for all pages
-    privacy.html               Privacy policy
+    privacy.html               Privacy policy in English (the address registered with Google); privacy.he.html, .es.html, .fr.html, .pt.html: the policy in each language, linked from the main screen in the chosen language
     tictactoe.html/.js         Tic-tac-toe page
     rock-paper-scissors.html/.js  Rock-paper-scissors page
     the-gang.html/.js          The Gang page
@@ -120,19 +120,32 @@ The seat states (Present, Reconnecting, Away, Vacant) and what each game does wi
 4. **Hub:** add the game's methods to `IGameHub` and `GameHub` (each one calls `Act` with the session's `Try…` method), and list them in the [Game Hub API](#game-hub-api).
 5. **Options** (if any): add them to `GameOptions.For`.
 6. **Page:** `wwwroot/<game>.html` and `.js` using `startSessionPage`, its page in `GAME_PAGES` (`common.js`), a tile on the main screen (`index.html`, `data-create="<GameType>"`) with a picture in `images/games/`, and its styles in `styles.css`.
-7. **Texts:** the Hebrew translations in `lang/he.js` (see [Translations](#translations)).
+7. **Texts:** the translations in `lang/he.js`, `lang/es.js`, `lang/fr.js` and `lang/pt.js` (see [Translations](#translations)).
 8. **Docs:** the game's rules and screens in the [user manual](user-manual.md), and its folders here.
 
 ## Translations
 
 The texts in the pages and scripts are in English, and they are also the keys of the translations (see `i18n.js`).
 
-- Load `lang/he.js` and then `i18n.js` in the page's `<head>` (untranslated pages load only `i18n.js`). SignalR's script sets a global `t` while it loads, so it must come before `i18n.js`, which defines `t()`.
+- The languages are listed in `LANGUAGES` in `i18n.js`: the code (also the file name in `lang/`), the locale (the language's variant, used to choose a voice for reading aloud), the name in the language itself and the flag in `images/flags/`. Until the user chooses, the page opens in the first of the browser's preferred languages (`navigator.languages`) that it offers.
+- Load the files in `lang/` and then `i18n.js` in the page's `<head>` (untranslated pages load only `i18n.js`). SignalR's script sets a global `t` while it loads, so it must come before `i18n.js`, which defines `t()`.
+- The privacy policy is a separate page per language, `privacy.<code>.html` (`privacy.html` is the English one), with the same sections, bold parts and links. **Changing the policy means changing every page and its "Last updated" date.** The main screen's footer links to the chosen language's page (`home.js`).
+- Every language translates the same texts as `lang/he.js`; `TranslationsTests` checks this, that translations use only the varying parts of their text, that each language has its flag, that every translated page loads every language, and that every language has a privacy policy with the same sections and links as the English one.
 - Mark fixed texts in the HTML with `data-i18n` (the element's whole text is translated) or `data-i18n-attr="title,aria-label"`; in scripts, wrap texts in `t("...")`, with varying parts as `{name}`: `t("Seat {n}", { n })`. Write whole sentences as keys, not pieces glued together, since word order differs in Hebrew.
-- Texts from the server (error messages, option names) go through `translateServerText()`, which finds their translation by their English text. **Changing an English message on the server means changing its key in `lang/he.js` too.**
+- Texts from the server (error messages, option names) go through `translateServerText()`, which finds their translation by their English text. **Changing an English message on the server means changing its key in every file in `lang/` too.**
 - Hebrew style: instructions in the plural (e.g. הקישו על הלוח), so they suit everyone. A text about the viewer has its own "you" form (e.g. "You rolled {n}." / "{name} rolled {n}."; see `about()` in `backgammon.js`). Texts about other players avoid male and female verb forms (e.g. "ל־{name} יצא {n}").
-- Spoken texts (Rich man, poor man's **Read throws aloud**): a translation can say a count as `{n}` (digits) or as words, `{m}` or `{f}` (masculine or feminine, from the keys `"2 (masculine)"`, `"2 (feminine)"`, … up to 12), e.g. `"{n} aces": "{m} אסים"`. Without a Hebrew voice on the device, the English text is spoken.
+- Spoken texts (Rich man, poor man's **Read throws aloud**): a translation can say a count as `{n}` (digits) or as words, `{m}` or `{f}` (masculine or feminine, from the keys `"2 (masculine)"`, `"2 (feminine)"`, … up to 12), e.g. `"{n} aces": "{m} אסים"` (Portuguese uses them too, for "duas damas"; Spanish and French use `{n}`). Without a voice for the language on the device, the English text is spoken.
+- Spanish, French and Portuguese style: the informal "you" (tú, tu, você). Colours stand alone or in brackets (e.g. "Ficha 3 (Rojo)"), since one colour text serves Backgammon, The Gang and Uno, and the nouns they go with differ in gender.
 - Terms still to be confirmed by the user: צעדים (pips), משחק קרופורד (Crawford game), גמון / בקגמון (gammon / backgammon), "(אני)" for the viewer's own seat; game names שש־בש, הכנופיה, איקס־עיגול, אבן, נייר ומספריים; in Rich man, poor man: בחר / פס (Select / Pass), מסירה (Give), עשיר / עני (rich man / poor man), נסיך (jack) and the spoken numbers (e.g. "שלוש תשיעיות"); in Yatzee: the name יאצי, the boxes (שלשות … שישיות, שלישייה, רביעייה, פול האוס, רצף קטן / גדול, צ'אנס), משבצת (box), כרטיס הניקוד (scorecard) and נשמרה (a kept die); in The Gang: שוד (heist), צ'יפ (chip), קלפי כיס (pocket cards), כספת / אזעקה (vault / alarm), אתגר / מומחה (challenge / specialist), the card names (e.g. גישה מהירה, גלאי תנועה, האפלה, מודיע, נהג מילוט, המוח, נסיך, שרירן) and the hand rankings (קלף גבוה, זוג, שני זוגות, סטרייט, פלאש, סטרייט פלאש, רויאל פלאש); in Uno: the name אונו, יד (hand), ג'וקר / ג'וקר +4 (Wild / Wild Draw Four), קח 2, דילוג, היפוך כיוון, שליפה (drawing), שרשור קלפי שליפה (stacking), פירמידה and תפסתי! (Catch!). Confirmed: סדרת משחקים (match), עשיר ועני (the game's name), אחדים / שתיימים (ones / twos, in Yatzee and in Rich man, poor man's spoken throws).
+- Spanish, French and Portuguese terms still to be confirmed by native speakers (Spanish / French / Portuguese):
+  - Game names: Gato / Morpion / Jogo da Velha (Tic-tac-toe), Chin chan pu / Chifoumi / Jokenpô (Rock-paper-scissors), Backgammon / Backgammon / Gamão, Rico o pobretón / Riche ou fauché / Do luxo ao lixo (Rich man, poor man); The Gang, Yatzee and Uno keep their names.
+  - Shared: partida / partie / partida (a game), lugar / place / lugar (seat), sala / salon / sala (lobby), nombre visible / pseudo / nome de exibição (display name).
+  - Backgammon: casillas / pips / casas (pips), serie / match / partida (match), cubo doblador / videau / dado de dobra (doubling cube), Blanco / Blanc / Branco and Negro / Noir / Preto.
+  - Rich man, poor man: Rico / Riche / Rico and Pobretón / Fauché / Pobre, Paso / Passer / Passo (Pass), puesto / place / posição (place), tirar / poser / jogar (throw), and the spoken throws (e.g. "3 doses", "3 deux", "três dois").
+  - Yatzee: the boxes (Unos … Seises, Tercia, Póker, Full, Escalera corta / larga, Libre; As … Six, Brelan, Carré, Full, Petite / Grande suite, Chance; Uns … Seis, Trinca, Quadra, Full house, Sequência baixa / alta, Chance), casilla / case / categoria (box), hoja de puntos / feuille de score / cartela (scorecard).
+  - The Gang: golpe / casse / assalto (heist), ficha / jeton / ficha (chip), cartas de mano / cartes en main / cartas na mão (pocket cards), cartas comunitarias / cartes communes / cartas comunitárias (shared cards), jugada / combinaison / combinação (hand ranking), reto / défi / desafio (challenge), the card names (e.g. Apagón / Coupure de courant / Apagão for Blackout, Matón / Gros bras / Brutamontes for Muscle) and the hand rankings (e.g. Escalera / Quinte / Sequência for Straight, Color / Couleur / Flush for Flush).
+  - The privacy policy (`privacy.he.html`, `privacy.es.html`, `privacy.fr.html`, `privacy.pt.html`), including the Hebrew one.
+  - Uno: Salta / Passe ton tour / Pular (Skip), Reversa / Changement de sens / Inverter (Reverse), Toma 2 / +2 / +2 (Draw Two), Comodín / Joker / Coringa (Wild), mano / donne / mão (hand), tomar / piocher / comprar (draw), ¡Te caché! / Contre-Uno ! / Peguei! (Catch!).
 
 ## Game Hub API
 
@@ -362,6 +375,7 @@ _Last updated: 2026-11-05. Keep this section current; it is the hand-off point b
 6. Hebrew: every page is translated; first check on Render, and the user to review the terms listed under [Translations](#translations).
 7. Yatzee: first play-test.
 8. Uno: first play-test.
+9. Spanish, French and Portuguese: every page is translated; first check on Render (including long texts on phones), and native speakers to review the terms listed under [Translations](#translations).
 
 ## Working conventions
 - Ask before adding or upgrading packages.

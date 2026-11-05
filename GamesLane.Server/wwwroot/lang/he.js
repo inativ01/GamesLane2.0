@@ -290,7 +290,7 @@ TRANSLATIONS.he = {
     "2 (feminine)": "שתי", "3 (feminine)": "שלוש", "4 (feminine)": "ארבע", "5 (feminine)": "חמש",
     "6 (feminine)": "שש", "7 (feminine)": "שבע", "8 (feminine)": "שמונה", "9 (feminine)": "תשע",
     "10 (feminine)": "עשר", "11 (feminine)": "אחת עשרה", "12 (feminine)": "שתים עשרה",
-    "This device has no Hebrew voice, so the throws are read in English. On Windows, add one in Settings > Time & language > Speech.":
+    "This device has no voice for this language, so the throws are read in English. On Windows, add one in Settings > Time & language > Speech.":
         "במכשיר הזה אין קול בעברית, ולכן הזריקות מוקראות באנגלית. ב־Windows אפשר להוסיף קול בהגדרות > זמן ושפה > דיבור.",
 
     // Rich man, poor man: messages from the server

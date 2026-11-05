@@ -12,7 +12,7 @@ It is a complete reimplementation of the original [GamesLane](https://github.com
 - **Play together in real time:** a private game with family and friends has a code and a join link; a public game matches you with other people on GamesLane. A typical setup is a shared screen (a TV or laptop) showing the table, while each player plays on their own phone.
 - **Accounts:** everyone starts as a guest (a random name and icon) and can log in with a username and password, or with Google.
 - **Never lose a game:** players who drop out get their seat back when they return, others can take over an absent seat, and sessions are saved for 30 days.
-- **Languages:** English and Hebrew (right to left).
+- **Languages:** English, Hebrew (right to left), Spanish (Mexico), French (France) and Portuguese (Brazil).
 
 ## Documentation
 
