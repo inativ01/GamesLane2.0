@@ -9,8 +9,9 @@ public interface IGameSessionStore
 {
     /// <summary>
     /// Creates a session of the given game with a new code, unique in memory and in the database, and saves it.
+    /// <paramref name="prepare"/>, if given, sets the session up before anyone else can find it.
     /// </summary>
-    Task<IGameSession> CreateAsync(GameType type);
+    Task<IGameSession> CreateAsync(GameType type, Action<IGameSession>? prepare = null);
 
     /// <summary>
     /// The session with the given code: from memory, or else loaded from the database. Null if there is none, or if
@@ -24,7 +25,8 @@ public interface IGameSessionStore
     Task SaveAsync(IGameSession session);
 
     /// <summary>
-    /// Removes the session from memory: it is saved first, or deleted if no seat was ever taken in it.
+    /// Removes the session from memory: it is saved first, or deleted if its game never started, or if it is a public
+    /// game with nobody seated.
     /// </summary>
     Task UnloadAsync(IGameSession session);
 
@@ -32,4 +34,10 @@ public interface IGameSessionStore
     /// The sessions in memory.
     /// </summary>
     IEnumerable<IGameSession> All { get; }
+
+    /// <summary>
+    /// When the session was last saved (after its last change), or <see cref="DateTimeOffset.MinValue"/> if not since it
+    /// was loaded.
+    /// </summary>
+    DateTimeOffset LastActivity(IGameSession session);
 }

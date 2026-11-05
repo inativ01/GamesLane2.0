@@ -4,6 +4,7 @@ using GamesLane.Server.Games.RockPaperScissors;
 using GamesLane.Server.Games.TheGang;
 using GamesLane.Server.Games.TicTacToe;
 using GamesLane.Server.Games.Yatzee;
+using GamesLane.Server.Hubs;
 using GamesLane.Server.Sessions;
 
 namespace GamesLane.Server.Tests;
@@ -204,6 +205,150 @@ public class GameSessionTests
         Assert.False(session.TransferSeats(Carol, NewAlice, NewAliceProfile, Now));
         Assert.False(session.TransferSeats(Alice, Alice, AliceProfile, Now));
         Assert.Equal(["Alice", "Bob"], session.GetPublicState().Seats.Select(s => s!.Name));
+    }
+
+    // Public games
+
+    [Fact]
+    public void In_a_public_game_only_the_creator_chooses_the_options_and_starts_it()
+    {
+        var session = Public(new TheGangSession("ABC123"));
+        session.TryTakeNextSeat(Alice, AliceProfile, "conn-a", out _);
+        session.TryTakeNextSeat(Bob, BobProfile, "conn-b", out _);
+        session.TryTakeNextSeat(Carol, CarolProfile, "conn-c", out _);
+        var state = session.GetPublicState();
+        Assert.True(state.IsPublic);
+        Assert.Equal(state.Seats[0]!.PlayerId, state.HostPlayerId);
+
+        Assert.False(session.TrySetOptions(Bob, null, out var error));
+        Assert.Equal("Only the game's creator can change the options.", error);
+        Assert.True(session.TrySetOptions(Alice, null, out error), error);
+        Assert.False(session.TryNewGame(Bob, 0, out error));
+        Assert.Equal("Only the game's creator can start the game.", error);
+        Assert.True(session.TryNewGame(Alice, 0, out error), error);
+    }
+
+    [Fact]
+    public void A_public_game_with_a_fixed_number_of_players_starts_when_its_seats_are_filled()
+    {
+        var session = Public(new TicTacToeSession("ABC123"));
+        session.TryTakeNextSeat(Alice, AliceProfile, "conn-a", out _);
+        Assert.True(session.IsOpenToJoin);
+        Assert.Equal(SessionPhase.Lobby, session.GetPublicState().Phase);
+
+        Assert.True(session.TryTakeNextSeat(Bob, BobProfile, "conn-b", out var error), error);
+        Assert.Equal(SessionPhase.Playing, session.GetPublicState().Phase);
+        Assert.False(session.IsOpenToJoin);
+    }
+
+    [Fact]
+    public void A_public_game_starts_by_itself_when_a_player_fills_the_last_seat()
+    {
+        var session = Public(new YatzeeSession("ABC123"));
+        for (var i = 0; i < 7; i++)
+        {
+            session.TryTakeNextSeat($"user:p{i}", new PlayerProfile($"P{i}", "🙂"), $"conn-{i}", out _);
+        }
+
+        Assert.Equal(SessionPhase.Lobby, session.GetPublicState().Phase);
+        session.TryTakeNextSeat("user:p7", new PlayerProfile("P7", "🙂"), "conn-7", out _);
+        Assert.Equal(SessionPhase.Playing, session.GetPublicState().Phase);
+    }
+
+    [Fact]
+    public void A_public_game_cannot_be_joined_once_started_and_its_absent_seats_cannot_be_taken()
+    {
+        var session = PublicTicTacToe();
+        session.Disconnect("conn-b", Now);
+        session.UpdateAwaySeats(Now.Add(GameSession.ReconnectWindow));
+        Assert.Equal(SessionPhase.Paused, session.GetPublicState().Phase);
+
+        Assert.False(session.TryTakeNextSeat(Carol, CarolProfile, "conn-c", out var error));
+        Assert.Equal("A public game cannot be joined once it has started.", error);
+    }
+
+    [Fact]
+    public void A_player_leaving_a_public_game_ends_it_for_everyone()
+    {
+        var session = PublicTicTacToe();
+
+        Assert.True(session.TryLeaveSeat(Bob, 1, out var error), error);
+
+        var state = session.GetPublicState();
+        Assert.Equal(SessionPhase.Lobby, state.Phase);
+        Assert.Equal("Bob left the game.", state.Notice);
+        Assert.Equal(["Alice"], state.Seats.OfType<SeatInfo>().Select(s => s.Name));
+        Assert.True(session.IsOpenToJoin);
+    }
+
+    [Fact]
+    public void Going_back_to_the_main_screen_from_a_public_game_ends_it_and_the_next_game_clears_the_notice()
+    {
+        var session = PublicTicTacToe();
+        session.LeaveAllSeats(Alice);
+        Assert.Equal("Alice left the game.", session.GetPublicState().Notice);
+
+        session.TryTakeNextSeat(Carol, CarolProfile, "conn-c", out _);
+        var state = session.GetPublicState();
+        Assert.Equal(SessionPhase.Playing, state.Phase);
+        Assert.Null(state.Notice);
+    }
+
+    [Fact]
+    public void When_the_creator_leaves_a_public_lobby_the_next_seated_player_becomes_the_creator()
+    {
+        var session = Public(new TheGangSession("ABC123"));
+        session.TryTakeNextSeat(Alice, AliceProfile, "conn-a", out _);
+        session.TryTakeNextSeat(Bob, BobProfile, "conn-b", out _);
+        session.LeaveAllSeats(Alice);
+
+        var state = session.GetPublicState();
+        Assert.Equal(state.Seats[0]!.PlayerId, state.HostPlayerId);
+        Assert.Equal("Bob", state.Seats[0]!.Name);
+        Assert.True(session.TrySetOptions(Bob, null, out var error), error);
+
+        session.LeaveAllSeats(Bob);
+        Assert.False(session.HasSeatedPlayers);
+        Assert.False(session.IsOpenToJoin);
+    }
+
+    [Fact]
+    public void A_disconnected_player_is_waited_for_until_they_come_back()
+    {
+        var session = PublicTicTacToe();
+        Assert.False(session.IsWaitingFor(Bob));
+
+        session.Disconnect("conn-b", Now);
+        Assert.True(session.IsWaitingFor(Bob));
+        Assert.False(session.IsWaitingFor(Carol));
+
+        session.Enter(Bob, BobProfile, "conn-b2");
+        Assert.False(session.IsWaitingFor(Bob));
+    }
+
+    [Fact]
+    public void Nobody_can_ask_to_join_a_public_rich_man_poor_man_game()
+    {
+        var session = RichManPoorMan(6);
+        session.MakePublic();
+
+        Assert.False(session.TryRequestSeat(Players[6], new PlayerProfile("P6", "🐙"), out var error));
+        Assert.Equal("A public game cannot be joined once it has started.", error);
+    }
+
+    // A public Tic-tac-toe game created by Alice and joined by Bob, so it has started.
+    private static TicTacToeSession PublicTicTacToe()
+    {
+        var session = Public(new TicTacToeSession("ABC123"));
+        session.TryTakeNextSeat(Alice, AliceProfile, "conn-a", out _);
+        session.TryTakeNextSeat(Bob, BobProfile, "conn-b", out _);
+        return session;
+    }
+
+    private static T Public<T>(T session) where T : GameSession
+    {
+        session.MakePublic();
+        return session;
     }
 
     // Starting
@@ -528,8 +673,24 @@ public class GameSessionTests
         Assert.False(session.IsIdle(Now, Idle));
         Assert.False(session.IsIdle(Now.AddMinutes(4), Idle));
         Assert.True(session.IsIdle(Now.AddMinutes(5), Idle));
-        Assert.True(session.HasHadSeats);
-        Assert.False(new TicTacToeSession("XYZ789").HasHadSeats);
+        Assert.False(session.HasStarted);
+        Assert.True(session.TryNewGame(Alice, 0, out _));
+        Assert.True(session.HasStarted);
+    }
+
+    [Fact]
+    public void Sessions_nobody_has_open_are_removed_sooner_when_their_game_never_started()
+    {
+        var empty = new TicTacToeSession("ABC123");
+        var privateLobby = Seated(new TicTacToeSession("ABC124"));
+        var publicLobby = Public(new YatzeeSession("ABC125"));
+        publicLobby.TryTakeNextSeat(Alice, AliceProfile, "conn-a", out _);
+        var started = Started(new TicTacToeSession("ABC126"));
+
+        Assert.Equal(TimeSpan.FromSeconds(30), DisconnectedSeatsMonitor.IdleLimit(empty));
+        Assert.Equal(TimeSpan.FromMinutes(10), DisconnectedSeatsMonitor.IdleLimit(privateLobby));
+        Assert.Equal(TimeSpan.FromSeconds(30), DisconnectedSeatsMonitor.IdleLimit(publicLobby));
+        Assert.Equal(TimeSpan.FromMinutes(5), DisconnectedSeatsMonitor.IdleLimit(started));
     }
 
     [Fact]

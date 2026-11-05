@@ -50,6 +50,11 @@ public class GameHub(
     public async Task<SessionEntry> EnterSession(string sessionId)
     {
         var session = await GetSession(sessionId);
+        if (session.IsPublic && !session.IsSeated(UserKey))
+        {
+            throw new HubException("You are no longer in this game.");
+        }
+
         await Groups.AddToGroupAsync(Context.ConnectionId, SessionGroup(session.Id));
         var playerId = session.Enter(UserKey, AuthSetup.GetProfile(Context.User), Context.ConnectionId);
         if (playerId is not null)
@@ -78,38 +83,80 @@ public class GameHub(
     }
 
     /// <inheritdoc />
-    public async Task<string> CreateSession(GameType gameType)
+    public async Task<string> CreateSession(GameType gameType, bool isPublic)
     {
-        RequireProfile("Log in to start a game.");
+        var profile = RequireProfile("Log in to start a game.");
         if (!Enum.IsDefined(gameType))
         {
             throw new HubException("Unknown game type.");
         }
 
-        var session = await store.CreateAsync(gameType);
+        IReadOnlyDictionary<string, string>? options = null;
         if (AuthSetup.GetSavedUserId(Context.User) is { } userId)
         {
             try
             {
-                session.UseSavedOptions(await savedOptions.GetAsync(userId, gameType));
+                options = await savedOptions.GetAsync(userId, gameType);
             }
             catch (Exception ex)
             {
                 // The game still starts, with the default options.
                 logger.LogWarning(ex, "Could not load the saved options for {GameType}.", gameType);
             }
-
-            await store.SaveAsync(session);
         }
 
+        var session = await store.CreateAsync(gameType, s =>
+        {
+            s.UseSavedOptions(options);
+            if (isPublic)
+            {
+                s.MakePublic();
+                s.TryTakeNextSeat(UserKey, profile, Context.ConnectionId, out _);
+            }
+        });
         return session.Id;
     }
 
     /// <inheritdoc />
-    public Task TakeSeat(string sessionId)
+    public async Task<string?> JoinPublicGame(GameType gameType)
+    {
+        var profile = RequireProfile("Log in to join a game.");
+        var candidates = store.All.Where(s => s.Type == gameType && s.IsOpenToJoin).ToList();
+        while (candidates.Count > 0)
+        {
+            var session = candidates[Random.Shared.Next(candidates.Count)];
+            candidates.Remove(session);
+            if (session.TryTakeNextSeat(UserKey, profile, Context.ConnectionId, out _))
+            {
+                await BroadcastState(session);
+                return session.Id;
+            }
+        }
+
+        return null;
+    }
+
+    /// <inheritdoc />
+    public Task<IReadOnlyList<WaitingGame>> WaitingGames()
+    {
+        IReadOnlyList<WaitingGame> games = store.All
+            .Where(s => s.IsWaitingFor(UserKey))
+            .OrderByDescending(store.LastActivity)
+            .Select(s => new WaitingGame(s.Id, s.Type, s.IsPublic))
+            .ToList();
+        return Task.FromResult(games);
+    }
+
+    /// <inheritdoc />
+    public async Task TakeSeat(string sessionId)
     {
         var profile = RequireProfile("Log in to take a seat.");
-        return Act(sessionId, (IGameSession s, out string? error) => s.TryTakeNextSeat(UserKey, profile, Context.ConnectionId, out error));
+        if ((await GetSession(sessionId)).IsPublic)
+        {
+            throw new HubException("Public games are joined from the main screen.");
+        }
+
+        await Act(sessionId, (IGameSession s, out string? error) => s.TryTakeNextSeat(UserKey, profile, Context.ConnectionId, out error));
     }
 
     /// <inheritdoc />

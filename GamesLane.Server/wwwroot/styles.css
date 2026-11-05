@@ -111,13 +111,14 @@ a.button.small {
     font-size: 0.85rem;
 }
 
-/* Header: the GamesLane name on a blue bar, with the account on the right. */
+/* Header: the GamesLane name on a blue bar, with the account on the right. Everything stays on one line; a long account
+   name is shortened with "…" only when it does not fit. */
 .top {
     position: sticky;
     top: 0;
     z-index: 10;
     display: flex;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     align-items: center;
     justify-content: space-between;
     gap: 0.5rem;
@@ -129,6 +130,7 @@ a.button.small {
 
 .brand {
     display: inline-flex;
+    flex: none;
     align-items: center;
     gap: 0.5rem;
     margin: 0;
@@ -244,10 +246,10 @@ html.splash-done .splash {
 
 .account {
     display: flex;
-    flex-wrap: wrap;
     align-items: center;
     justify-content: flex-end;
     gap: 0.4rem;
+    min-width: 0;
     font-size: 0.9rem;
 }
 
@@ -265,6 +267,7 @@ html.splash-done .splash {
     display: inline-flex;
     align-items: center;
     gap: 0.35rem;
+    min-width: 0;
     max-width: 12rem;
 }
 
@@ -468,7 +471,107 @@ input {
     font-size: 1.15rem;
 }
 
-/* Main screen */
+/* Main screen: public and private games side by side (one under the other on narrow screens); choosing to create or
+   join a game shows the list of games instead. Each column has three rows (title and hint, Create a game, then Join a
+   game or the code box); side by side, the rows line up across the columns. Columns may shrink below their content's
+   natural width, so they fit narrow screens. */
+
+main.home {
+    max-width: 960px;
+}
+
+.menu-columns {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    column-gap: 0.75rem;
+}
+
+.menu-column {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    align-content: start;
+    row-gap: 1rem;
+    min-width: 0;
+}
+
+.menu-column > button {
+    align-self: start;
+}
+
+/* Public Join a game sits level with the private code box and its Join button (at the bottom of their row), all of the
+   same height. */
+.menu-column > button.menu-join {
+    align-self: end;
+}
+
+.menu-column > button.big,
+.menu-column .join-row input {
+    box-sizing: border-box;
+    min-height: 3.25rem;
+}
+
+@media (min-width: 700px) {
+    .menu-columns {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-template-rows: repeat(3, auto);
+    }
+
+    .menu-column {
+        grid-row: span 3;
+        grid-template-rows: subgrid;
+    }
+}
+
+.menu-columns[hidden] {
+    display: none;
+}
+
+.menu-head h2 {
+    margin-bottom: 0.25rem;
+}
+
+.menu-head .hint,
+.menu-column form .hint {
+    margin: 0 0 0.5rem;
+}
+
+#picker {
+    max-width: 680px;
+    margin-inline: auto;
+}
+
+.picker-actions {
+    justify-content: center;
+    margin-top: 1rem;
+}
+
+/* Games in progress that wait for the user, each with Return and Leave. */
+.waiting-games {
+    display: grid;
+    gap: 0.5rem;
+    margin: 0.75rem 0;
+}
+
+.waiting-games[hidden] {
+    display: none;
+}
+
+.waiting-game {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.6rem 0.9rem;
+    border-radius: var(--radius);
+    background: #fbe7d6;
+    box-shadow: var(--shadow);
+}
+
+.waiting-game span {
+    flex: 1;
+    min-width: 12rem;
+    font-weight: 700;
+}
 
 .join-row {
     display: flex;
@@ -3070,9 +3173,5 @@ button.yz-option:not(:disabled):hover {
     .game-tile img {
         width: 64px;
         height: 64px;
-    }
-
-    .account-name {
-        max-width: 7rem;
     }
 }

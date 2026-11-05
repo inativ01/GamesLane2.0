@@ -25,7 +25,14 @@ builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddHostedService<DisconnectedSeatsMonitor>();
 builder.Services.AddHostedService<ExpiredSessionCleanup>();
 builder.Services.ConfigureHttpJsonOptions(options => options.SerializerOptions.Converters.Add(new JsonStringEnumConverter()));
-builder.Services.AddSignalR()
+// Each side sends a keep-alive message every 5 seconds and treats 10 seconds of silence as a lost connection, so a
+// player whose phone or browser closed without saying goodbye shows as Reconnecting within about 10 seconds.
+// The page's settings in common.js must match.
+builder.Services.AddSignalR(options =>
+    {
+        options.KeepAliveInterval = TimeSpan.FromSeconds(5);
+        options.ClientTimeoutInterval = TimeSpan.FromSeconds(10);
+    })
     .AddJsonProtocol(options => options.PayloadSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 
 var app = builder.Build();
@@ -43,11 +50,12 @@ app.MapGet("/health", () => Results.Ok("Healthy"));
 app.MapAccountEndpoints();
 app.MapExternalSignInEndpoints();
 
+// Public games cannot be joined by code, so they are not found here.
 app.MapGet("/api/sessions/{code}", async (string code, IGameSessionStore store) =>
-    await store.GetAsync(code) is { } session ? Results.Ok(SessionInfo(session)) : Results.NotFound());
+    await store.GetAsync(code) is { IsPublic: false } session ? Results.Ok(SessionInfo(session)) : Results.NotFound());
 
 app.MapGet("/join/{code}", async (string code, IGameSessionStore store) =>
-    await store.GetAsync(code) is { } session
+    await store.GetAsync(code) is { IsPublic: false } session
         ? Results.Redirect($"{GameSessionStore.PageFor(session.Type)}?session={session.Id}")
         : Results.Redirect($"/?session={Uri.EscapeDataString(code.ToUpperInvariant())}&notfound=1"));
 

@@ -91,16 +91,50 @@ public class GameSessionStoreTests
     }
 
     [Fact]
-    public async Task A_session_where_no_seat_was_taken_is_deleted_when_removed_from_memory()
+    public async Task A_session_whose_game_never_started_is_deleted_when_removed_from_memory_even_with_seats_taken()
     {
         var repository = new MemoryRepository();
         var store = new GameSessionStore(repository);
         var session = await store.CreateAsync(GameType.TicTacToe);
+        session.TryTakeSeat("user:alice", Alice, "conn-a", 0, out _);
 
         await store.UnloadAsync(session);
 
         Assert.False(await repository.ExistsAsync(session.Id));
         Assert.Null(await store.GetAsync(session.Id));
+    }
+
+    [Fact]
+    public async Task A_public_game_with_nobody_seated_is_deleted_even_after_it_started()
+    {
+        var repository = new MemoryRepository();
+        var store = new GameSessionStore(repository);
+        var session = await store.CreateAsync(GameType.TicTacToe, s =>
+        {
+            s.MakePublic();
+            s.TryTakeNextSeat("user:alice", Alice, "conn-a", out _);
+        });
+        session.TryTakeNextSeat("user:bob", Bob, "conn-b", out _);
+        Assert.True(session.HasStarted);
+        session.LeaveAllSeats("user:alice");
+        session.LeaveAllSeats("user:bob");
+
+        await store.UnloadAsync(session);
+
+        Assert.False(await repository.ExistsAsync(session.Id));
+    }
+
+    [Fact]
+    public async Task Remembers_when_each_session_last_changed()
+    {
+        var clock = new Clock();
+        var store = new GameSessionStore(new MemoryRepository(), clock);
+        var session = await store.CreateAsync(GameType.TicTacToe);
+        Assert.Equal(clock.Now, store.LastActivity(session));
+
+        clock.Now += TimeSpan.FromMinutes(3);
+        await store.SaveAsync(session);
+        Assert.Equal(clock.Now, store.LastActivity(session));
     }
 
     [Fact]
@@ -110,6 +144,8 @@ public class GameSessionStoreTests
         var store = new GameSessionStore(repository);
         var session = await store.CreateAsync(GameType.TicTacToe);
         session.TryTakeSeat("user:alice", Alice, "conn-a", 0, out _);
+        session.TryTakeSeat("user:bob", Bob, "conn-b", 1, out _);
+        session.TryNewGame("user:alice", 0, out _);
         await store.UnloadAsync(session);
 
         var saved = (await repository.FindAsync(session.Id))!;

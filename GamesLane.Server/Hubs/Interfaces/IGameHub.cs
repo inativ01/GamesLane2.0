@@ -10,19 +10,31 @@ namespace GamesLane.Server.Hubs;
 public interface IGameHub
 {
     /// <summary>
-    /// Opens a session page: subscribes to updates and, for a logged-in user, reconnects them to their seats.
+    /// Opens a session page: subscribes to updates and, for a logged-in user, reconnects them to their seats. A public
+    /// game can be opened only by its seated players.
     /// </summary>
     Task<SessionEntry> EnterSession(string sessionId);
 
     /// <summary>
-    /// Logged-in users only. Creates a session and returns its code. The creator is not seated. The session starts
-    /// with the creator's saved options for the game, if they have any.
+    /// Logged-in users only. Creates a session and returns its code. The session starts with the creator's saved options
+    /// for the game, if they have any. The creator of a private game is not seated; the creator of a public game is.
     /// </summary>
-    Task<string> CreateSession(GameType gameType);
+    Task<string> CreateSession(GameType gameType, bool isPublic);
+
+    /// <summary>
+    /// Seats the caller in a random public game of <paramref name="gameType"/> that is in its lobby, and returns its code,
+    /// or null if there is none. The game starts if this fills its seats.
+    /// </summary>
+    Task<string?> JoinPublicGame(GameType gameType);
+
+    /// <summary>
+    /// The games in progress where the caller holds a seat but is not connected, most recently active first.
+    /// </summary>
+    Task<IReadOnlyList<WaitingGame>> WaitingGames();
 
     /// <summary>
     /// Takes the next available seat (in the lobby, the first empty one; during a game, the first absent seat of the
-    /// game) as the logged-in user, using their display name.
+    /// game) as the logged-in user, using their display name. Not in public games, which are joined from the main screen.
     /// </summary>
     Task TakeSeat(string sessionId);
 
@@ -43,7 +55,8 @@ public interface IGameHub
     Task NewGame(string sessionId, int gameNumber);
 
     /// <summary>
-    /// Anyone in the session, in the lobby. Sets the game's options for the next new game; options left out get their default.
+    /// Anyone in the session (in a public game, its creator), in the lobby. Sets the game's options for the next new game;
+    /// options left out get their default.
     /// </summary>
     Task SetOptions(string sessionId, Dictionary<string, string>? options);
 
