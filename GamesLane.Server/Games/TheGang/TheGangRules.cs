@@ -4,9 +4,8 @@ namespace GamesLane.Server.Games.TheGang;
 /// The rules a game of The Gang is played with, from its options: the mode, how many challenge cards the first heist
 /// gets, which challenge and specialist cards (keys from <see cref="TheGangCards"/>) can be drawn, whether cards that
 /// cancel each other are kept apart, and whether the deck has two jokers. Cards are only drawn in
-/// <see cref="TheGangMode.Advanced"/> mode; jokers can be used in both modes. Two options only change the pages: whether
-/// each player sees the ranking of their own hand next to their cards, and whether the challenge and specialist cards on
-/// the table show what they do.
+/// <see cref="TheGangMode.Advanced"/> mode; jokers can be used in both modes. One option only changes the pages: whether
+/// each player sees the ranking of their own hand next to their cards.
 /// </summary>
 public record TheGangRules(
     TheGangMode Mode,
@@ -15,8 +14,7 @@ public record TheGangRules(
     IReadOnlyList<string> Specialists,
     bool AvoidClashes = false,
     bool Jokers = false,
-    bool ShowHandRanking = false,
-    bool ShowCardTexts = false)
+    bool ShowHandRanking = false)
 {
     /// <summary>
     /// The basic game, without cards.
@@ -36,7 +34,6 @@ public record TheGangRules(
             GameOptions.TurnedOn(option(TheGangOptions.Specialists), options),
             options.GetValueOrDefault(TheGangOptions.AvoidClashes) == TheGangOptions.Yes,
             options.GetValueOrDefault(TheGangOptions.Jokers) == TheGangOptions.Yes,
-            options.GetValueOrDefault(TheGangOptions.ShowHandRanking) == TheGangOptions.Yes,
-            options.GetValueOrDefault(TheGangOptions.ShowCardTexts) == TheGangOptions.Yes);
+            options.GetValueOrDefault(TheGangOptions.ShowHandRanking) == TheGangOptions.Yes);
     }
 }

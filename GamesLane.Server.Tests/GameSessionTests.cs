@@ -900,11 +900,10 @@ public class GameSessionTests
     }
 
     [Fact]
-    public void With_the_options_players_see_their_own_hand_ranking_and_the_table_shows_card_texts()
+    public void With_the_option_players_see_their_own_hand_ranking()
     {
         var plain = StartedTheGang();
         Assert.Null(Assert.IsType<TheGangPrivateState>(plain.GetPrivateState(Carol)).Hands.Single().Ranking);
-        Assert.False(Gang(plain).ShowCardTexts);
 
         var session = TheGang();
         session.TryTakeSeat(Alice, AliceProfile, "conn-a", 0, out _);
@@ -913,13 +912,11 @@ public class GameSessionTests
         Assert.True(session.TrySetOptions(Alice, new Dictionary<string, string>
         {
             [TheGangOptions.ShowHandRanking] = TheGangOptions.Yes,
-            [TheGangOptions.ShowCardTexts] = TheGangOptions.Yes,
         }, out var error), error);
         session.TryNewGame(Alice, 0, out _);
 
         Assert.Equal("Pair", Assert.IsType<TheGangPrivateState>(session.GetPrivateState(Carol)).Hands.Single().Ranking);
         Assert.Equal("High card", Assert.IsType<TheGangPrivateState>(session.GetPrivateState(Alice)).Hands.Single().Ranking);
-        Assert.True(Gang(session).ShowCardTexts);
     }
 
     [Fact]

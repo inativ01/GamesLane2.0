@@ -50,11 +50,6 @@ public static class TheGangOptions
     public const string ShowHandRanking = "showHandRanking";
 
     /// <summary>
-    /// The key of the option that shows what each challenge and specialist card does on the card itself (off by default).
-    /// </summary>
-    public const string ShowCardTexts = "showCardTexts";
-
-    /// <summary>
     /// The values of yes/no options.
     /// </summary>
     public const string Yes = "Yes";
@@ -112,15 +107,6 @@ public static class TheGangOptions
             [
                 new GameOptionChoice(No, "Allow", "As in the original game. E.g. with Quick Access, Motion Detector and Laser Tripwires have no effect."),
                 new GameOptionChoice(Yes, "Avoid", "Never draw them for the same heist."),
-            ],
-            No,
-            ShownWhen: WhenAdvanced),
-        new GameOption(
-            ShowCardTexts,
-            "Card descriptions",
-            [
-                new GameOptionChoice(No, "Tap to read", "The cards on the table show their name; tap a card to read what it does."),
-                new GameOptionChoice(Yes, "On the cards", "The cards on the table also show what they do."),
             ],
             No,
             ShownWhen: WhenAdvanced),

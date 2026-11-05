@@ -107,9 +107,8 @@ function gangStatus(game, state, view) {
     }
 }
 
-// The challenge and specialist cards in play, drawn as small cards on the table: a picture, the kind and the name, and
-// with the "Card descriptions" option, what the card does. Tapping a card opens it: it grows and shows what it does;
-// tapping it again closes it. Cards added for this heist are marked "New", and cards not used (yet) in this heist
+// The challenge and specialist cards in play, drawn as small cards on the table: a picture, the kind and the name.
+// Tapping a card opens it: it grows and shows what it does; tapping it again closes it. Cards added for this heist are marked "New", and cards not used (yet) in this heist
 // are faded. What the cards did is shown in the chip table (see chipTable), and open group decisions are shown to
 // players next to their hand (see myDecisions).
 function heistCards(game) {
@@ -126,7 +125,7 @@ function heistCards(game) {
             el("span", "heist-card-body",
                 isNew ? el("span", "heist-card-top", kind, el("span", "heist-card-new", t("New"))) : kind,
                 el("strong", "heist-card-name", name),
-                ...(game.showCardTexts || open ? [el("span", "heist-card-text", translateServerText(card.text))] : [])));
+                ...(open ? [el("span", "heist-card-text", translateServerText(card.text))] : [])));
         const unused = isUnused(game, card);
         item.classList.toggle("unused", unused);
         item.tabIndex = 0;

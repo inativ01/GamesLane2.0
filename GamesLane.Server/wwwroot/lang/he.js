@@ -572,11 +572,6 @@ TRANSLATIONS.he = {
         "כמו במשחק המקורי. למשל, עם גישה מהירה, לגלאי תנועה ולקרני לייזר אין השפעה.",
     "Avoid": "להימנע",
     "Never draw them for the same heist.": "לעולם לא לשלוף אותם לאותו שוד.",
-    "Card descriptions": "תיאורי הקלפים",
-    "Tap to read": "הקשה לקריאה",
-    "The cards on the table show their name; tap a card to read what it does.": "הקלפים על השולחן מציגים את שמם; הקישו על קלף כדי לקרוא מה הוא עושה.",
-    "On the cards": "על הקלפים",
-    "The cards on the table also show what they do.": "הקלפים על השולחן מציגים גם מה הם עושים.",
 
     // The Gang: messages from the server
     "Chips are numbered 1 to {n}.": "הצ'יפים ממוספרים מ־1 עד {n}.",
