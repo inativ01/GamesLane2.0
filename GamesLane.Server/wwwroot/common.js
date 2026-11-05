@@ -1035,8 +1035,10 @@ function startSessionPage(gameType, render, seatRole = (seat) => t("Seat {n}", {
     function update(state) {
         lastState = state;
         view.mySeats = state.seats.flatMap((s, i) => (s && s.playerId === view.playerId ? [i] : []));
+        // The server sends the state to everyone just before it answers EnterSession, so until then (no playerId yet)
+        // the user's seats are not known.
         if (state.isPublic && !view.isPlayer) {
-            if (!leaving) location.replace("/?left=1");
+            if (view.playerId && !leaving) location.replace("/?left=1");
             return;
         }
         const inLobby = state.phase === "Lobby";
