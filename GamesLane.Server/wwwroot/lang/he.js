@@ -358,7 +358,7 @@ TRANSLATIONS.he = {
     "Die showing {n}": "קובייה עם {n}",
     "Not rolled yet": "עוד לא הוטלה",
     "Roll the dice": "הטילו את הקוביות",
-    "Keep dice and roll again, or choose a box": "שמרו קוביות והטילו שוב, או בחרו משבצת",
+    "Keep dice and roll again ({n} left), or choose a box": "שמרו קוביות והטילו שוב (נשארו {n}), או בחרו משבצת",
     "Choose a box to score": "בחרו משבצת לניקוד",
     "Score {points} in {box}": "רישום {points} במשבצת {box}",
     "Score 0 in {box}?": "לרשום 0 במשבצת {box}?",

@@ -2987,12 +2987,33 @@ main.yatzee {
     max-width: 980px;
 }
 
+/* The dice stay centred; the Roll button follows them (on their right, or on their left in Hebrew). */
+.yz-dice-row {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    gap: clamp(0.4rem, 2vw, 0.9rem);
+    margin: 1rem 0 1.4rem;
+}
+
 .yz-dice {
+    grid-column: 2;
     display: flex;
     justify-content: center;
     gap: clamp(0.4rem, 2vw, 0.9rem);
-    margin: 1rem 0 1.4rem;
     direction: ltr;
+}
+
+button.yz-roll {
+    grid-column: 3;
+    justify-self: start;
+    width: clamp(3.2rem, 15vw, 5rem);
+    aspect-ratio: 1;
+    padding: 0;
+    border-radius: 50%;
+    font-size: clamp(1.8rem, 8vw, 2.8rem);
+    line-height: 1;
+    box-shadow: 0 4px 14px rgba(194, 86, 26, 0.35);
 }
 
 .yz-die {
