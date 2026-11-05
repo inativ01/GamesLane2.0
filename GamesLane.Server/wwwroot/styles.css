@@ -498,6 +498,18 @@ main.home {
     align-self: start;
 }
 
+/* Public Join a game sits level with the private code box and its Join button (at the bottom of their row), all of the
+   same height. */
+.menu-column > button.menu-join {
+    align-self: end;
+}
+
+.menu-column > button.big,
+.menu-column .join-row input {
+    box-sizing: border-box;
+    min-height: 3.25rem;
+}
+
 @media (min-width: 700px) {
     .menu-columns {
         grid-template-columns: repeat(2, minmax(0, 1fr));
