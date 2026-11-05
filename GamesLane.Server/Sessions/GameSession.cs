@@ -96,9 +96,16 @@ public record WaitingGame(string SessionId, GameType GameType, bool IsPublic);
 
 /// <summary>
 /// Returned when a page enters a session: the public state, plus the caller's player ID if they are logged in, and
-/// their private game information (e.g. their cards) if they hold seats in a game that has any.
+/// their private game information (e.g. their cards) if they hold seats in a game that has any, and the session's
+/// latest chat messages, oldest first.
 /// </summary>
-public record SessionEntry(SessionState State, string? PlayerId, object? Private);
+public record SessionEntry(SessionState State, string? PlayerId, object? Private, IReadOnlyList<ChatMessage> Chat);
+
+/// <summary>
+/// A chat message, as everyone in the session sees it. <see cref="Number"/> counts the session's messages from 1;
+/// <see cref="PlayerId"/> is the sender's player ID in the session, so a page recognises its own user's messages.
+/// </summary>
+public record ChatMessage(int Number, string PlayerId, string Name, string Icon, string Text, DateTimeOffset Time);
 
 /// <summary>
 /// Private game information to send to one connection only.
@@ -126,6 +133,16 @@ public abstract class GameSession : IGameSession
     /// </summary>
     public static readonly TimeSpan ReconnectWindow = TimeSpan.FromSeconds(60);
 
+    /// <summary>
+    /// The longest chat message, in characters.
+    /// </summary>
+    public const int MaxChatLength = 300;
+
+    /// <summary>
+    /// How many of the latest chat messages a session keeps.
+    /// </summary>
+    public const int ChatHistoryLength = 100;
+
     private const int MaxSeatLimit = 12;
 
     /// <summary>
@@ -147,6 +164,8 @@ public abstract class GameSession : IGameSession
     [NotSaved]
     private DateTimeOffset? _idleSince;
     private IReadOnlyDictionary<string, string> _options;
+    private readonly List<ChatMessage> _chat = [];
+    private int _chatCount;
 
     /// <summary>
     /// Creates an empty session in the lobby, with the game's default options. Throws if the game's seat counts are invalid.
@@ -822,6 +841,53 @@ public abstract class GameSession : IGameSession
                 _isPublic,
                 _host is null ? null : PlayerIdFor(_host),
                 _notice);
+        }
+    }
+
+    /// <summary>
+    /// Adds a chat message from <paramref name="userKey"/>, shown with <paramref name="profile"/>. Anyone with the session
+    /// open can chat, seated or watching. Runs of spaces and line breaks become one space. Only the latest
+    /// <see cref="ChatHistoryLength"/> messages are kept.
+    /// </summary>
+    public bool TrySendChat(string userKey, PlayerProfile profile, string? text, DateTimeOffset now,
+        [NotNullWhen(true)] out ChatMessage? message, [NotNullWhen(false)] out string? error)
+    {
+        lock (Sync)
+        {
+            message = null;
+            text = string.Join(' ', (text ?? "").Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
+            if (text.Length is 0 or > MaxChatLength)
+            {
+                error = $"Write a message of 1 to {MaxChatLength} characters.";
+                return false;
+            }
+
+            if (!IsConnected(userKey))
+            {
+                error = "Open the game to chat.";
+                return false;
+            }
+
+            message = new ChatMessage(++_chatCount, PlayerIdFor(userKey), profile.Name, profile.Icon, text, now);
+            _chat.Add(message);
+            if (_chat.Count > ChatHistoryLength)
+            {
+                _chat.RemoveRange(0, _chat.Count - ChatHistoryLength);
+            }
+
+            error = null;
+            return true;
+        }
+    }
+
+    /// <summary>
+    /// The session's latest chat messages, oldest first.
+    /// </summary>
+    public IReadOnlyList<ChatMessage> GetChat()
+    {
+        lock (Sync)
+        {
+            return [.. _chat];
         }
     }
 

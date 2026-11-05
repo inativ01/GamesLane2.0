@@ -107,6 +107,20 @@ TRANSLATIONS.es = {
     "Waiting for {name} to start the game.": "Esperando a que {name} empiece la partida.",
     "The game's creator chooses the options.": "Quien creó la partida elige las opciones.",
 
+    // Shared: chat
+    "Chat": "Chat",
+    "Open the chat": "Abrir el chat",
+    "Close the chat": "Cerrar el chat",
+    "Chat: {n} new messages": "Chat: {n} mensajes nuevos",
+    "Notifications": "Notificaciones",
+    "Sound": "Sonido",
+    "No messages yet. Say hello!": "Todavía no hay mensajes. ¡Saluda!",
+    "Write a message…": "Escribe un mensaje…",
+    "Send": "Enviar",
+    "Log in to chat.": "Inicia sesión para chatear.",
+    "Write a message of 1 to {n} characters.": "Escribe un mensaje de 1 a {n} caracteres.",
+    "Open the game to chat.": "Abre la partida para chatear.",
+
     // Main screen
     "Public games": "Partidas públicas",
     "Play with other people on GamesLane.": "Juega con otras personas en GamesLane.",

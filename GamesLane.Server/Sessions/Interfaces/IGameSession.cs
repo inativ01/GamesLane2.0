@@ -160,4 +160,16 @@ public interface IGameSession
     /// The private game information for every open connection whose user has any.
     /// </summary>
     IReadOnlyList<PrivateUpdate> GetPrivateUpdates();
+
+    /// <summary>
+    /// Adds a chat message from <paramref name="userKey"/>, shown with <paramref name="profile"/>. Anyone with the session
+    /// open can chat, seated or watching. Only the latest <see cref="GameSession.ChatHistoryLength"/> messages are kept.
+    /// </summary>
+    bool TrySendChat(string userKey, PlayerProfile profile, string? text, DateTimeOffset now,
+        [NotNullWhen(true)] out ChatMessage? message, [NotNullWhen(false)] out string? error);
+
+    /// <summary>
+    /// The session's latest chat messages, oldest first.
+    /// </summary>
+    IReadOnlyList<ChatMessage> GetChat();
 }
