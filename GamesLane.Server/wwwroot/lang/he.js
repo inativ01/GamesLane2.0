@@ -241,7 +241,7 @@ TRANSLATIONS.he = {
 
     // Rich man, poor man: throws read aloud. {m} and {f} are the count in words, masculine and feminine.
     "A two": "שתיים",
-    "{n} twos": "{f} שתיות",
+    "{n} twos": "{m} שתיימים",
     "A three": "שלוש",
     "{n} threes": "{f} שלשות",
     "A four": "ארבע",
@@ -314,8 +314,8 @@ TRANSLATIONS.he = {
     "Yatzee - GamesLane": "יאצי - GamesLane",
     "Roll five dice, three times a turn, and fill your scorecard.": "מטילים חמש קוביות, עד שלוש פעמים בתור, וממלאים את כרטיס הניקוד.",
     "1–8 players": "1–8 שחקנים",
-    "Ones": "אחדות",
-    "Twos": "שתיות",
+    "Ones": "אחדים",
+    "Twos": "שתיימים",
     "Threes": "שלשות",
     "Fours": "רביעיות",
     "Fives": "חמישיות",
