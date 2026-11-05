@@ -80,7 +80,7 @@ function yatzeeTexts(game, state, view) {
         status = `⏳ ${t("Waiting for {name}", { name: name(game.turn) })}`;
     } else {
         const action = game.rollsLeft === ROLLS ? t("Roll the dice")
-            : game.rollsLeft > 0 ? t("Keep dice and roll again, or choose a box")
+            : game.rollsLeft > 0 ? t("Keep dice and roll again ({n} left), or choose a box", { n: game.rollsLeft })
                 : t("Choose a box to score");
         status = `👉 🎲 ${several ? `${name(game.turn)}: ` : ""}${action}`;
     }
@@ -187,8 +187,10 @@ const yatzee = startSessionPage("Yatzee", (game, state, view) => {
     $("yz-message").textContent = message;
     $("yz-message").hidden = !message;
     renderDice(game, canAct, rolling);
-    $("yz-roll").hidden = !(canAct && game.rollsLeft > 0);
-    $("yz-roll").textContent = game.rollsLeft === ROLLS ? t("Roll") : t("Roll again ({n} left)", { n: game.rollsLeft });
+    const roll = $("yz-roll");
+    roll.hidden = !(canAct && game.rollsLeft > 0);
+    roll.title = game.rollsLeft === ROLLS ? t("Roll") : t("Roll again ({n} left)", { n: game.rollsLeft });
+    roll.setAttribute("aria-label", roll.title);
     renderCard(game, state, view, canAct, rolling);
 });
 
