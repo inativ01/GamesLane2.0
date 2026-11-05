@@ -53,10 +53,10 @@ A typical setup is a shared screen (such as a TV or laptop) connected as a spect
 
 ## Languages
 
-- English and Hebrew. Every page has a Hebrew translation (including the profile dialog, the session lobby, the game options and the server's messages); the top bar shows the current language's flag; tapping it opens a menu of the languages, and choosing one reloads the page in it.
+- English, Hebrew, Spanish (Mexico), French (France) and Portuguese (Brazil). Every page is translated (including the profile dialog, the session lobby, the game options and the server's messages); the top bar shows the current language's flag; tapping it opens a menu of the languages, and choosing one reloads the page in it.
 - Hebrew pages read from right to left (the backgammon board stays as it is).
-- The choice is remembered in the browser; until the user chooses, Hebrew if the browser prefers it, otherwise English.
-- Pages without a translation (The Gang, Rock-paper-scissors, Tic-tac-toe) stay in English and show no flag.
+- The choice is remembered in the browser; until the user chooses, the first of the browser's preferred languages that GamesLane has (e.g. a browser set to French opens in French), otherwise English.
+- Some games have a local name rather than a translation of the English one, e.g. Tic-tac-toe is Gato in Spanish, Morpion in French and Jogo da Velha in Portuguese. The Gang, Yatzee and Uno keep their names.
 
 ## Sessions
 
@@ -200,7 +200,7 @@ A game can offer **options**, i.e. rule variants (so far The Gang's, backgammon'
 
 ### Rich man, poor man
 
-עשיר ועני, 6–12 players. A shedding card game, in English and Hebrew.
+עשיר ועני, 6–12 players. A shedding card game.
 
 - **Goal:** get rid of all your cards. A game does not have a single winner: it ends with a full ranking of the players, in the order they emptied their hands. A player may empty their hand in the middle of a round; their place in the ranking is kept and they take no further part in that game. The game ends when every active player has emptied their hand (the last player keeps throwing alone until their hand is empty).
 - **The deck:** one set of 2 to A per player, so every player gets 13 cards and each number appears once per player: 6 players use 6 sets, 9 players use 9 sets, 12 players use 12 sets. The sets are drawn as ordinary playing cards, taking the suits ♠, ♥, ♦, ♣ in turn (the fifth set is ♠ again), with ♥ and ♦ in red. **Suits do not matter** at all; only the numbers count. With more than 4 players, the same number appears more than 4 times (with 9 players, there are nine 7s).
@@ -238,11 +238,11 @@ A game can offer **options**, i.e. rule variants (so far The Gang's, backgammon'
 - **Screens:**
   - **A player's phone** shows their hand sorted from low to high, with equal numbers together, overlapping as needed so the whole hand and the table fit on the screen without scrolling. They tap one or more cards of the same value, then **Select** to put them on the table, or **Pass**. Tapping a card when there is a throw to beat picks as many cards of that number as are needed. A user holding several seats sees one hand per seat.
   - **The table** (shown to everyone, and to observers such as a TV) shows the cards to beat and who threw them, then the round's winner; and the players in place order (#1, the rich man, to the last, the poor man), one line each, with their number of cards, whose turn it is, their last call in this round (**Pass**, or what they threw, e.g. "2×9"), who left, the finishing places so far, and during the exchange, how many cards each player gives and to whom (e.g. "Gives 4 cards to #8", then "✓ Gave 4 cards to #8" once given). After a game, it shows the next game's places.
-  - **Read throws aloud:** on a screen without a seat, this button says each throw out loud (e.g. "3 nines"), in the page's language, using the browser's speech; the choice is remembered in the browser. Hebrew needs a Hebrew voice on the device: without one, the throws are read in English (on Windows, add a Hebrew voice in Settings > Time & language > Speech).
+  - **Read throws aloud:** on a screen without a seat, this button says each throw out loud (e.g. "3 nines"), in the page's language, using the browser's speech; the choice is remembered in the browser. Each language needs a voice for it on the device (Hebrew voices are often missing): without one, the throws are read in English, and the button's tooltip says so (on Windows, add a voice in Settings > Time & language > Speech). A voice for the language's variant is preferred (e.g. Mexican Spanish), otherwise any voice of the language.
 
 ### Yatzee
 
-יאצי, 1–8 players. The classic dice game, in English and Hebrew. Players take turns in seat order for 13 rounds.
+יאצי, 1–8 players. The classic dice game. Players take turns in seat order for 13 rounds.
 
 - **A turn:** press 🎲, the **Roll** button after the dice (on their right, or on their left in Hebrew), to roll the five dice, up to three times; the status bar then says how many rolls are left. Between rolls, tap dice to keep them (a kept die is lifted, outlined in gold and marked **Kept**); tap again to let it go. Then tap an open box of your scorecard to score the dice there, which ends the turn. The dice tumble for a moment when rolled.
 - **The boxes:** Ones to Sixes score the dice of that number. Three of a kind and Four of a kind score the total of all the dice; a full house (three of one number and two of another) scores 25, a small straight (four in a row) 30, a large straight (five in a row) 40, a Yatzee (five of a kind) 50, and Chance the total of all the dice. A box whose pattern is not there scores 0 (the page asks before scoring 0).

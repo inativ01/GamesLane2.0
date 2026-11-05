@@ -262,23 +262,25 @@ const SPOKEN = {
     A: ["An ace", "{n} aces"],
 };
 
-// Many computers have no Hebrew voice, and an English voice reads only the digits of a Hebrew text, so without one
-// the throws are read in English. Until the browser has listed its voices, the Hebrew text is tried anyway.
-const isHebrewVoice = (voice) => /^(he|iw)([-_]|$)/i.test(voice.lang);
+// Many computers have no voice for some languages (e.g. Hebrew), and another language's voice misreads the text, so
+// without one the throws are read in English. Until the browser has listed its voices, the page's language is tried
+// anyway. A voice for the language's locale (e.g. Mexican Spanish) is preferred over another variant of it.
+const voiceLang = (voice) => voice.lang.replace("_", "-").toLowerCase();
+const speaks = (lang) => (voice) => [lang.code, ...(lang.code === "he" ? ["iw"] : [])].includes(voiceLang(voice).split("-")[0]);
 
-function missingHebrewVoice() {
+function missingVoice() {
     const voices = speechSynthesis.getVoices();
-    return document.documentElement.lang === "he" && voices.length > 0 && !voices.some(isHebrewVoice);
+    return language !== LANGUAGES[0] && voices.length > 0 && !voices.some(speaks(language));
 }
 
 function speak(key, values = {}) {
     speechSynthesis.cancel();
-    const hebrew = document.documentElement.lang === "he" && !missingHebrewVoice();
-    const text = hebrew ? t(key, values) : key.replace(/\{(\w+)\}/g, (match, name) => String(values[name] ?? match));
+    const lang = missingVoice() ? LANGUAGES[0] : language;
+    const text = lang === language ? t(key, values) : key.replace(/\{(\w+)\}/g, (match, name) => String(values[name] ?? match));
     const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = hebrew ? "he-IL" : "en-US";
-    const voices = speechSynthesis.getVoices();
-    utterance.voice = (hebrew ? voices.find(isHebrewVoice) : voices.find((voice) => /^en([-_]|$)/i.test(voice.lang))) ?? null;
+    utterance.lang = lang.locale;
+    const voices = speechSynthesis.getVoices().filter(speaks(lang));
+    utterance.voice = voices.find((voice) => voiceLang(voice) === lang.locale.toLowerCase()) ?? voices[0] ?? null;
     speechSynthesis.speak(utterance);
 }
 
@@ -288,8 +290,8 @@ function updateSpeech(game, view) {
     button.hidden = view.isPlayer || !("speechSynthesis" in window);
     button.textContent = on ? t("🔊 Reading throws aloud") : t("🔇 Read throws aloud");
     button.setAttribute("aria-pressed", String(on));
-    button.title = !button.hidden && missingHebrewVoice()
-        ? t("This device has no Hebrew voice, so the throws are read in English. On Windows, add one in Settings > Time & language > Speech.")
+    button.title = !button.hidden && missingVoice()
+        ? t("This device has no voice for this language, so the throws are read in English. On Windows, add one in Settings > Time & language > Speech.")
         : "";
     const isNew = heardThrows !== null && game.throws > heardThrows;
     heardThrows = game.throws;

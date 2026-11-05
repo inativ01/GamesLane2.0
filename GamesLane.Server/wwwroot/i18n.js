@@ -4,19 +4,26 @@
 // t("Log in") gives the text in the chosen language, or the English text when it has no translation. Parts that vary
 // are written {name}, e.g. t("Seat {n}", { n: 2 }). Each language's translations are in lang/<code>.js, which fills
 // TRANSLATIONS and is loaded before this script. A page offers the languages whose translations it loads; pages
-// without translations stay in English. The choice is remembered in this browser; until the user chooses, Hebrew if
-// the browser prefers it, otherwise English.
+// without translations stay in English. The choice is remembered in this browser; until the user chooses, the first of
+// the browser's preferred languages that the page offers, otherwise English. The locale is the variant of the language
+// (e.g. Mexican Spanish), used to choose a voice for reading aloud.
 
 var TRANSLATIONS = window.TRANSLATIONS ?? {};
 
 const LANGUAGES = [
-    { code: "en", name: "English", flag: "images/flags/us.svg" },
-    { code: "he", name: "עברית", flag: "images/flags/il.svg", rtl: true },
+    { code: "en", locale: "en-US", name: "English", flag: "images/flags/us.svg" },
+    { code: "he", locale: "he-IL", name: "עברית", flag: "images/flags/il.svg", rtl: true },
+    { code: "es", locale: "es-MX", name: "Español", flag: "images/flags/mx.svg" },
+    { code: "fr", locale: "fr-FR", name: "Français", flag: "images/flags/fr.svg" },
+    { code: "pt", locale: "pt-BR", name: "Português", flag: "images/flags/br.svg" },
 ];
 const LANGUAGE_KEY = "language";
 const offeredLanguages = LANGUAGES.filter((lang) => lang.code === "en" || TRANSLATIONS[lang.code]);
 const language = (() => {
-    const preferred = localStorage.getItem(LANGUAGE_KEY) ?? (navigator.language?.toLowerCase().startsWith("he") ? "he" : "en");
+    const browserLanguage = (navigator.languages?.length ? navigator.languages : [navigator.language ?? ""])
+        .map((tag) => tag.toLowerCase().split("-")[0])
+        .find((code) => offeredLanguages.some((lang) => lang.code === code));
+    const preferred = localStorage.getItem(LANGUAGE_KEY) ?? browserLanguage;
     return offeredLanguages.find((lang) => lang.code === preferred) ?? LANGUAGES[0];
 })();
 document.documentElement.lang = language.code;
