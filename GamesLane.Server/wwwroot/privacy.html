@@ -31,10 +31,10 @@
 
     <h3>How it is stored</h3>
     <ul>
-        <li>Guests (who log in with just a name) are not saved at all.</li>
+        <li>Guests (everyone who has not logged in with an account) are stored only in their browser's local storage, never on the server, and do not expire.</li>
         <li>Accounts (username or Google/Microsoft) are saved in a database: the information above, plus when the account was created and last used. <strong>An account that is not used for 30 days is deleted automatically</strong>, together with its picture.</li>
         <li>Games are kept only in the server's memory and are deleted when the server restarts.</li>
-        <li>When you log in, your browser stores a login token that keeps you logged in for up to 30 days after your last visit, or until you log out. You can clear it by clearing your browser's site data.</li>
+        <li>Your browser stores a login token. For an account, it keeps you logged in for up to 30 days after your last visit, or until you log out. For a guest, it holds the guest's display name and icon, and lasts until you clear your browser's site data.</li>
         <li>While you sign in with Google or Microsoft, a cookie is used for a few moments to complete the sign-in, and is then removed.</li>
     </ul>
 
@@ -43,7 +43,7 @@
     <p>The site is hosted by <a href="https://render.com">Render</a>, the database by <a href="https://neon.tech">Neon</a>, and the page loads a script from the <a href="https://www.jsdelivr.com">jsDelivr</a> content network. Like any web service, these providers may process your IP address to deliver the site.</p>
 
     <h3>Children</h3>
-    <p>GamesLane is meant for family use. Accounts are optional; children can play as guests with just a name, without providing any account information, and anyone can watch a game without logging in.</p>
+    <p>GamesLane is meant for family use. Accounts are optional; everyone starts as a guest and can play without providing any account information.</p>
 
     <h3>Contact</h3>
     <p>For questions or requests about your information, open an issue at <a href="https://github.com/inativ01/GamesLane2.0/issues">github.com/inativ01/GamesLane2.0</a>.</p>

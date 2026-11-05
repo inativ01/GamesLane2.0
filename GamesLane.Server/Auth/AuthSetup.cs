@@ -15,13 +15,15 @@ namespace GamesLane.Server.Auth;
 public record AuthProviders(IReadOnlyList<string> Names);
 
 /// <summary>
-/// Users log in as a guest (a name only), as a registered user (username and password), or with an external account.
+/// Every visitor is logged in: as a guest (created automatically, with a random name and icon), as a registered user
+/// (username and password), or with an external account.
 /// Each external provider is enabled only when its client ID and secret are configured, e.g. through the environment
 /// variables <c>Authentication__Google__ClientId</c> and <c>Authentication__Google__ClientSecret</c>.
 /// A logged-in user is identified by a signed login token, which the page keeps per browser tab and sends with each
 /// request (and as the <c>access_token</c> query parameter when connecting to the hub), so each tab can have its own user.
-/// The token holds the user's ID, display name, icon and kind. A cookie is used only briefly, to bring the result of an
-/// external sign-in back to the page.
+/// The token holds the user's ID, display name, icon and kind. Guests exist only in their token, which does not expire;
+/// saved users' tokens last 30 days. A cookie is used only briefly, to bring the result of an external sign-in back to
+/// the page.
 /// </summary>
 public static class AuthSetup
 {
@@ -36,7 +38,7 @@ public static class AuthSetup
     public const string Microsoft = "Microsoft";
 
     /// <summary>
-    /// The kind of user who logged in with just a name. Guests are not saved.
+    /// The kind of user who has not logged in with an account. Guests are not saved.
     /// </summary>
     public const string GuestKind = "Guest";
 
@@ -201,14 +203,32 @@ public static class AuthSetup
             TokenScheme));
 
     /// <summary>
-    /// A new login token for <paramref name="user"/>, valid for 30 days.
+    /// A new login token for <paramref name="user"/>: valid for 30 days for saved users, and without end for guests,
+    /// who exist only in their token.
     /// </summary>
     public static string IssueToken(HttpContext context, ClaimsPrincipal user)
     {
         var options = context.RequestServices.GetRequiredService<IOptionsMonitor<BearerTokenOptions>>().Get(TokenScheme);
         var now = context.RequestServices.GetRequiredService<TimeProvider>().GetUtcNow();
-        var properties = new AuthenticationProperties { IssuedUtc = now, ExpiresUtc = now + options.BearerTokenExpiration };
+        var expires = GetKind(user) == GuestKind ? DateTimeOffset.MaxValue : now + options.BearerTokenExpiration;
+        var properties = new AuthenticationProperties { IssuedUtc = now, ExpiresUtc = expires };
         return options.BearerTokenProtector.Protect(new AuthenticationTicket(user, properties, TokenScheme));
+    }
+
+    /// <summary>
+    /// The user in a login token, or null if the token is not valid or has expired.
+    /// </summary>
+    public static ClaimsPrincipal? ReadToken(HttpContext context, string? token)
+    {
+        if (string.IsNullOrEmpty(token))
+        {
+            return null;
+        }
+
+        var options = context.RequestServices.GetRequiredService<IOptionsMonitor<BearerTokenOptions>>().Get(TokenScheme);
+        var now = context.RequestServices.GetRequiredService<TimeProvider>().GetUtcNow();
+        var ticket = options.BearerTokenProtector.Unprotect(token);
+        return ticket?.Properties.ExpiresUtc is { } expires && expires > now ? ticket.Principal : null;
     }
 
     /// <summary>

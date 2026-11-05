@@ -303,6 +303,24 @@ public class RichManPoorManSession(string id, Action<Card[]>? shuffle = null, Ra
     protected override void OnRestored() => _game?.Reattach(shuffle, random);
 
     /// <inheritdoc />
+    protected override bool OnUserReplaced(string fromUserKey, string toUserKey, PlayerProfile profile)
+    {
+        var index = _requests.FindIndex(r => r.UserKey == fromUserKey);
+        if (index < 0)
+        {
+            return false;
+        }
+
+        _requests.RemoveAt(index);
+        if (!_requests.Any(r => r.UserKey == toUserKey))
+        {
+            _requests.Insert(index, (toUserKey, profile));
+        }
+
+        return true;
+    }
+
+    /// <inheritdoc />
     protected override void StartNewGame(IReadOnlyList<int> seats)
     {
         _requests.Clear();

@@ -240,11 +240,6 @@ function joinPanel(game, state, view) {
             return el("div", "rp-request", iconElement(request.icon), el("span", null, request.name), places, accept, decline);
         })];
     }
-    if (!account?.signedIn) {
-        const login = el("button", "secondary small", t("Log in"));
-        login.addEventListener("click", openLoginDialog);
-        return [el("p", "hint", t("Log in to ask to join the next game."), " ", login)];
-    }
     if (requests.some((r) => r.playerId === view.playerId)) {
         const cancel = el("button", "secondary small", t("Cancel"));
         cancel.addEventListener("click", () => send("CancelSeatRequest"));
