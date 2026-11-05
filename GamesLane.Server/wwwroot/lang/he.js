@@ -424,6 +424,7 @@ TRANSLATIONS.he = {
     "New": "חדש",
     "{name} (not used in this heist): tap for details": "{name} (לא בשימוש בשוד הזה): הקישו לפרטים",
     "{name}: tap for details": "{name}: הקישו לפרטים",
+    "{name}: tap to close": "{name}: הקישו לסגירה",
     "new pocket cards were dealt": "חולקו קלפי כיס חדשים",
     "choosing a card to show": "בחירת קלף להצגה…",
     "showed a card to {name}": "קלף הוצג ל־{name}",

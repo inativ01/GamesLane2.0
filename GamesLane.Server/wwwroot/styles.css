@@ -1506,8 +1506,7 @@ button.ready-thumb.is-ready:not(:disabled):hover {
     background: #fbe9e6;
 }
 
-.heist-card.specialist .heist-card-art,
-.card-popup.specialist .heist-card-art {
+.heist-card.specialist .heist-card-art {
     background: #e6f3e9;
 }
 
@@ -1518,26 +1517,30 @@ button.ready-thumb.is-ready:not(:disabled):hover {
     min-width: 0;
 }
 
-/* A card's popup: its picture, kind, name and what it does. */
-.card-popup .heist-card-art {
-    float: right;
-    width: 5rem;
-    height: 5rem;
-    margin: 0 0 0.5rem 0.75rem;
+/* An opened card: wider, straight, with a bigger picture and what it does. */
+.heist-cards .heist-card.open {
+    flex: 1 1 100%;
+    grid-column: 1 / -1;
+    max-width: 30rem;
+    align-items: flex-start;
+    gap: 0.75em;
+    padding: 0.75em 0.9em 0.75em 0.75em;
+    transform: none;
 }
 
-.card-popup .heist-card-kind {
-    display: inline-block;
-    margin-bottom: 0.4rem;
+.heist-card.open .heist-card-art {
+    width: 5em;
+    height: 5em;
 }
 
-.card-popup.specialist .heist-card-kind {
-    background: #2f7d45;
+.heist-card.open .heist-card-name {
+    font-size: 1.1rem;
 }
 
-.card-popup-text {
-    margin: 0.5rem 0 1rem;
-    line-height: 1.45;
+.heist-card.open .heist-card-text {
+    font-size: 0.92em;
+    line-height: 1.4;
+    color: var(--ink);
 }
 
 .heist-card:nth-child(even) {

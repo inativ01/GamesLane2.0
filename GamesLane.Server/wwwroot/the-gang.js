@@ -108,62 +108,51 @@ function gangStatus(game, state, view) {
 }
 
 // The challenge and specialist cards in play, drawn as small cards on the table: a picture, the kind and the name, and
-// with the "Card descriptions" option, what the card does. Tapping a card shows what it does. Cards added for this heist are marked "New", and cards not used (yet) in this heist
+// with the "Card descriptions" option, what the card does. Tapping a card opens it: it grows and shows what it does;
+// tapping it again closes it. Cards added for this heist are marked "New", and cards not used (yet) in this heist
 // are faded. What the cards did is shown in the chip table (see chipTable), and open group decisions are shown to
 // players next to their hand (see myDecisions).
 function heistCards(game) {
     return game.cards.map((card) => {
         const isNew = game.newCards.includes(card.key);
+        const open = openCards.has(card.key);
         const kind = el("span", "heist-card-kind", t(card.kind === "Challenge" ? "Challenge" : "Specialist"));
         const art = el("img", "heist-card-art");
         art.src = `/images/the-gang/${card.key}.svg`;
         art.alt = "";
         const name = translateServerText(card.name);
-        const item = el("li", `heist-card ${card.kind.toLowerCase()}${isNew ? " new" : ""}`,
+        const item = el("li", `heist-card ${card.kind.toLowerCase()}${isNew ? " new" : ""}${open ? " open" : ""}`,
             art,
             el("span", "heist-card-body",
                 isNew ? el("span", "heist-card-top", kind, el("span", "heist-card-new", t("New"))) : kind,
                 el("strong", "heist-card-name", name),
-                ...(game.showCardTexts ? [el("span", "heist-card-text", translateServerText(card.text))] : [])));
+                ...(game.showCardTexts || open ? [el("span", "heist-card-text", translateServerText(card.text))] : [])));
         const unused = isUnused(game, card);
         item.classList.toggle("unused", unused);
         item.tabIndex = 0;
         item.setAttribute("role", "button");
-        item.title = t(unused ? "{name} (not used in this heist): tap for details" : "{name}: tap for details", { name });
-        item.addEventListener("click", () => showCardText(card));
+        item.setAttribute("aria-expanded", String(open));
+        item.title = open ? t("{name}: tap to close", { name })
+            : t(unused ? "{name} (not used in this heist): tap for details" : "{name}: tap for details", { name });
+        const toggle = () => {
+            open ? openCards.delete(card.key) : openCards.add(card.key);
+            gang.refresh();
+            requestAnimationFrame(() => $("heist-cards").querySelector(`[data-key="${card.key}"]`)?.focus());
+        };
+        item.dataset.key = card.key;
+        item.addEventListener("click", toggle);
         item.addEventListener("keydown", (event) => {
             if (event.key === "Enter" || event.key === " ") {
                 event.preventDefault();
-                showCardText(card);
+                toggle();
             }
         });
         return item;
     });
 }
 
-// A popup with a challenge or specialist card's picture, kind, name and what it does.
-function showCardText(card) {
-    const dialog = createDialog(`
-        <img class="heist-card-art" alt="">
-        <span class="heist-card-kind"></span>
-        <h2></h2>
-        <p class="card-popup-text"></p>
-        <div class="actions"><button type="button" data-close></button></div>`);
-    dialog.classList.add("card-popup", card.kind.toLowerCase());
-    dialog.querySelector("[data-close]").textContent = t("Close");
-    dialog.querySelector(".heist-card-art").src = `/images/the-gang/${card.key}.svg`;
-    dialog.querySelector(".heist-card-kind").textContent = t(card.kind);
-    dialog.querySelector("h2").textContent = translateServerText(card.name);
-    dialog.querySelector(".card-popup-text").textContent = translateServerText(card.text);
-    // Tapping outside the popup closes it too.
-    dialog.addEventListener("click", (event) => {
-        if (event.target === dialog) {
-            dialog.close();
-        }
-    });
-    dialog.addEventListener("close", () => dialog.remove());
-    dialog.showModal();
-}
+// The cards this user has opened, kept open across updates.
+const openCards = new Set();
 
 // Whether a card has not been used (yet) in this heist: Motion Detector or Laser Tripwires that did not go off (known
 // once the first 3 shared cards appear, or at once with Quick Access, which has no white chips), an optional specialist
