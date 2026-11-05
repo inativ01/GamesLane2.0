@@ -111,7 +111,7 @@ TRANSLATIONS.he = {
     "Public games": "משחקים ציבוריים",
     "Play with other people on GamesLane.": "שחקו עם אנשים אחרים ב־GamesLane.",
     "Private games": "משחקים פרטיים",
-    "Family and friends: share the game code or link with them.": "משפחה וחברים: שתפו איתם את קוד המשחק או את הקישור.",
+    "Play with family and friends, sharing the game code": "שחקו עם משפחה וחברים, בשיתוף קוד המשחק",
     "Create a game": "יצירת משחק",
     "Create a public game": "יצירת משחק ציבורי",
     "Join a public game": "הצטרפות למשחק ציבורי",
