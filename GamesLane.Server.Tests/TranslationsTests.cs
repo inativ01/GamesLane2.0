@@ -2,7 +2,8 @@ using System.Text.RegularExpressions;
 
 namespace GamesLane.Server.Tests;
 
-// Checks the translation files in wwwroot/lang against each other, the languages in i18n.js and the pages.
+// Checks the translation files in wwwroot/lang against each other, the languages in i18n.js, the pages and the
+// translated privacy policies.
 public partial class TranslationsTests
 {
     private static readonly string Wwwroot = FindWwwroot();
@@ -75,6 +76,25 @@ public partial class TranslationsTests
             Assert.All(Translated, code => Assert.Contains($"<script src=\"lang/{code}.js\"></script>", html));
         }
     }
+
+    [Fact]
+    public void Every_language_has_the_privacy_policy_with_the_same_sections_and_links()
+    {
+        var english = File.ReadAllText(Path.Combine(Wwwroot, "privacy.html"));
+        foreach (var code in Translated)
+        {
+            var path = Path.Combine(Wwwroot, $"privacy.{code}.html");
+            Assert.True(File.Exists(path), $"privacy.{code}.html is missing.");
+            var policy = File.ReadAllText(path);
+            Assert.Contains($"<html lang=\"{code}\"", policy);
+            foreach (var tag in new[] { "<h3>", "<li>", "<strong>", "<a href=" })
+            {
+                Assert.True(Count(english, tag) == Count(policy, tag), $"privacy.{code}.html has a different number of {tag} than privacy.html.");
+            }
+        }
+    }
+
+    private static int Count(string text, string tag) => text.Split(tag).Length - 1;
 
     private static HashSet<string> Names(string text) => Placeholder().Matches(text).Select(match => match.Groups[1].Value).ToHashSet();
 

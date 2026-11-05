@@ -81,7 +81,7 @@ GamesLane.Server/              ASP.NET Core backend
     i18n.js                    Shared: languages. The English texts in the code are the keys: t("Log in") gives the chosen language's text. Also matches the server's English messages to their translations, and the language picker
     lang/he.js, es.js, fr.js, pt.js  Hebrew, Spanish (Mexico), French (France) and Portuguese (Brazil) translations (a page offers a language by loading its file before i18n.js)
     styles.css                 Styles for all pages
-    privacy.html               Privacy policy
+    privacy.html               Privacy policy in English (the address registered with Google); privacy.he.html, .es.html, .fr.html, .pt.html: the policy in each language, linked from the main screen in the chosen language
     tictactoe.html/.js         Tic-tac-toe page
     rock-paper-scissors.html/.js  Rock-paper-scissors page
     the-gang.html/.js          The Gang page
@@ -129,7 +129,8 @@ The texts in the pages and scripts are in English, and they are also the keys of
 
 - The languages are listed in `LANGUAGES` in `i18n.js`: the code (also the file name in `lang/`), the locale (the language's variant, used to choose a voice for reading aloud), the name in the language itself and the flag in `images/flags/`. Until the user chooses, the page opens in the first of the browser's preferred languages (`navigator.languages`) that it offers.
 - Load the files in `lang/` and then `i18n.js` in the page's `<head>` (untranslated pages load only `i18n.js`). SignalR's script sets a global `t` while it loads, so it must come before `i18n.js`, which defines `t()`.
-- Every language translates the same texts as `lang/he.js`; `TranslationsTests` checks this, that translations use only the varying parts of their text, that each language has its flag, and that every translated page loads every language.
+- The privacy policy is a separate page per language, `privacy.<code>.html` (`privacy.html` is the English one), with the same sections, bold parts and links. **Changing the policy means changing every page and its "Last updated" date.** The main screen's footer links to the chosen language's page (`home.js`).
+- Every language translates the same texts as `lang/he.js`; `TranslationsTests` checks this, that translations use only the varying parts of their text, that each language has its flag, that every translated page loads every language, and that every language has a privacy policy with the same sections and links as the English one.
 - Mark fixed texts in the HTML with `data-i18n` (the element's whole text is translated) or `data-i18n-attr="title,aria-label"`; in scripts, wrap texts in `t("...")`, with varying parts as `{name}`: `t("Seat {n}", { n })`. Write whole sentences as keys, not pieces glued together, since word order differs in Hebrew.
 - Texts from the server (error messages, option names) go through `translateServerText()`, which finds their translation by their English text. **Changing an English message on the server means changing its key in every file in `lang/` too.**
 - Hebrew style: instructions in the plural (e.g. הקישו על הלוח), so they suit everyone. A text about the viewer has its own "you" form (e.g. "You rolled {n}." / "{name} rolled {n}."; see `about()` in `backgammon.js`). Texts about other players avoid male and female verb forms (e.g. "ל־{name} יצא {n}").
@@ -143,6 +144,7 @@ The texts in the pages and scripts are in English, and they are also the keys of
   - Rich man, poor man: Rico / Riche / Rico and Pobretón / Fauché / Pobre, Paso / Passer / Passo (Pass), puesto / place / posição (place), tirar / poser / jogar (throw), and the spoken throws (e.g. "3 doses", "3 deux", "três dois").
   - Yatzee: the boxes (Unos … Seises, Tercia, Póker, Full, Escalera corta / larga, Libre; As … Six, Brelan, Carré, Full, Petite / Grande suite, Chance; Uns … Seis, Trinca, Quadra, Full house, Sequência baixa / alta, Chance), casilla / case / categoria (box), hoja de puntos / feuille de score / cartela (scorecard).
   - The Gang: golpe / casse / assalto (heist), ficha / jeton / ficha (chip), cartas de mano / cartes en main / cartas na mão (pocket cards), cartas comunitarias / cartes communes / cartas comunitárias (shared cards), jugada / combinaison / combinação (hand ranking), reto / défi / desafio (challenge), the card names (e.g. Apagón / Coupure de courant / Apagão for Blackout, Matón / Gros bras / Brutamontes for Muscle) and the hand rankings (e.g. Escalera / Quinte / Sequência for Straight, Color / Couleur / Flush for Flush).
+  - The privacy policy (`privacy.he.html`, `privacy.es.html`, `privacy.fr.html`, `privacy.pt.html`), including the Hebrew one.
   - Uno: Salta / Passe ton tour / Pular (Skip), Reversa / Changement de sens / Inverter (Reverse), Toma 2 / +2 / +2 (Draw Two), Comodín / Joker / Coringa (Wild), mano / donne / mão (hand), tomar / piocher / comprar (draw), ¡Te caché! / Contre-Uno ! / Peguei! (Catch!).
 
 ## Game Hub API
