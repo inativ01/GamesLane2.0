@@ -1,6 +1,7 @@
 using System.Diagnostics.CodeAnalysis;
 using GamesLane.Server.Games.Backgammon;
 using GamesLane.Server.Games.TheGang;
+using GamesLane.Server.Games.Uno;
 using GamesLane.Server.Sessions;
 
 namespace GamesLane.Server.Games;
@@ -72,6 +73,7 @@ public static class GameOptions
     {
         GameType.TheGang => TheGangOptions.All,
         GameType.Backgammon => BackgammonOptions.All,
+        GameType.Uno => UnoOptions.All,
         _ => [],
     };
 

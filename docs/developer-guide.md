@@ -74,6 +74,7 @@ GamesLane.Server/              ASP.NET Core backend
   Games/Backgammon/            Backgammon rules: position, legal moves, turns, doubling cube, matches, options
   Games/RichManPoorMan/        Rich man, poor man rules: the deck (one set of 2 to A per player), rounds, players who left, the exchange
   Games/Yatzee/                Yatzee rules: scoring each box (with the joker rule), scorecards and bonuses, turns
+  Games/Uno/                   Uno rules: cards and deck, turns and action cards, drawing, UNO calls, hands and scores, the pyramid, options
   wwwroot/                     Web pages
     index.html, home.js        Main screen: public games (create, or join a random one) and private games (create, or join by code); the list of games to choose from; going back to games waiting for the user
     common.js                  Shared: automatic guest, account bar and profile dialog (with login), hub connection, session lobby and page framework, playing cards
@@ -87,6 +88,7 @@ GamesLane.Server/              ASP.NET Core backend
     backgammon.html/.js        Backgammon page (the board is drawn as SVG)
     rich-man-poor-man.html/.js Rich man, poor man page
     yatzee.html/.js            Yatzee page
+    uno.html/.js               Uno page (the cards are drawn with CSS)
     images/                    Logo, the GamesLane name for the header and the splash screens (web-sized copies of the originals in docs/), game pictures (SVG)
     images/the-gang/           A picture (SVG) for each challenge and specialist card, named by the card's key, e.g. quick-access.svg
     images/flags/              Flags for the language picker
@@ -130,7 +132,7 @@ The texts in the pages and scripts are in English, and they are also the keys of
 - Texts from the server (error messages, option names) go through `translateServerText()`, which finds their translation by their English text. **Changing an English message on the server means changing its key in `lang/he.js` too.**
 - Hebrew style: instructions in the plural (e.g. הקישו על הלוח), so they suit everyone. A text about the viewer has its own "you" form (e.g. "You rolled {n}." / "{name} rolled {n}."; see `about()` in `backgammon.js`). Texts about other players avoid male and female verb forms (e.g. "ל־{name} יצא {n}").
 - Spoken texts (Rich man, poor man's **Read throws aloud**): a translation can say a count as `{n}` (digits) or as words, `{m}` or `{f}` (masculine or feminine, from the keys `"2 (masculine)"`, `"2 (feminine)"`, … up to 12), e.g. `"{n} aces": "{m} אסים"`. Without a Hebrew voice on the device, the English text is spoken.
-- Terms still to be confirmed by the user: צעדים (pips), משחק קרופורד (Crawford game), גמון / בקגמון (gammon / backgammon), "(אני)" for the viewer's own seat; game names שש־בש, הכנופיה, איקס־עיגול, אבן, נייר ומספריים; in Rich man, poor man: בחר / פס (Select / Pass), מסירה (Give), עשיר / עני (rich man / poor man), נסיך (jack) and the spoken numbers (e.g. "שלוש תשיעיות"); in Yatzee: the name יאצי, the boxes (שלשות … שישיות, שלישייה, רביעייה, פול האוס, רצף קטן / גדול, צ'אנס), משבצת (box), כרטיס הניקוד (scorecard) and נשמרה (a kept die); in The Gang: שוד (heist), צ'יפ (chip), קלפי כיס (pocket cards), כספת / אזעקה (vault / alarm), אתגר / מומחה (challenge / specialist), the card names (e.g. גישה מהירה, גלאי תנועה, האפלה, מודיע, נהג מילוט, המוח, נסיך, שרירן) and the hand rankings (קלף גבוה, זוג, שני זוגות, סטרייט, פלאש, סטרייט פלאש, רויאל פלאש). Confirmed: סדרת משחקים (match), עשיר ועני (the game's name), אחדים / שתיימים (ones / twos, in Yatzee and in Rich man, poor man's spoken throws).
+- Terms still to be confirmed by the user: צעדים (pips), משחק קרופורד (Crawford game), גמון / בקגמון (gammon / backgammon), "(אני)" for the viewer's own seat; game names שש־בש, הכנופיה, איקס־עיגול, אבן, נייר ומספריים; in Rich man, poor man: בחר / פס (Select / Pass), מסירה (Give), עשיר / עני (rich man / poor man), נסיך (jack) and the spoken numbers (e.g. "שלוש תשיעיות"); in Yatzee: the name יאצי, the boxes (שלשות … שישיות, שלישייה, רביעייה, פול האוס, רצף קטן / גדול, צ'אנס), משבצת (box), כרטיס הניקוד (scorecard) and נשמרה (a kept die); in The Gang: שוד (heist), צ'יפ (chip), קלפי כיס (pocket cards), כספת / אזעקה (vault / alarm), אתגר / מומחה (challenge / specialist), the card names (e.g. גישה מהירה, גלאי תנועה, האפלה, מודיע, נהג מילוט, המוח, נסיך, שרירן) and the hand rankings (קלף גבוה, זוג, שני זוגות, סטרייט, פלאש, סטרייט פלאש, רויאל פלאש); in Uno: the name אונו, יד (hand), ג'וקר / ג'וקר +4 (Wild / Wild Draw Four), קח 2, דילוג, היפוך כיוון, שליפה (drawing), שרשור קלפי שליפה (stacking), פירמידה and תפסתי! (Catch!). Confirmed: סדרת משחקים (match), עשיר ועני (the game's name), אחדים / שתיימים (ones / twos, in Yatzee and in Rich man, poor man's spoken throws).
 
 ## Game Hub API
 
@@ -138,7 +140,7 @@ Clients connect to the SignalR hub at `/hubs/game` and call these methods:
 
 | Method | Returns | Description |
 | --- | --- | --- |
-| `CreateSession(gameType, isPublic)` | session code | Logged-in users only. Creates a private or public session (`"TicTacToe"`, `"RockPaperScissors"`, `"TheGang"`, `"Backgammon"`, `"RichManPoorMan"` or `"Yatzee"`) and returns its 6-character code. The creator of a private session is not seated; the creator of a public one is, and is its host. The session starts with the creator's saved options for the game, if any. |
+| `CreateSession(gameType, isPublic)` | session code | Logged-in users only. Creates a private or public session (`"TicTacToe"`, `"RockPaperScissors"`, `"TheGang"`, `"Backgammon"`, `"RichManPoorMan"`, `"Yatzee"` or `"Uno"`) and returns its 6-character code. The creator of a private session is not seated; the creator of a public one is, and is its host. The session starts with the creator's saved options for the game, if any. |
 | `JoinPublicGame(gameType)` | session code, or `null` | Seats the caller in a random public session of `gameType` that is in its lobby with a player and a free seat, and returns its code; `null` if there is none. The game starts if this fills the last seat. |
 | `WaitingGames()` | `[{ sessionId, gameType, isPublic }]` | The games in progress where the caller holds a seat but has no connection (Reconnecting or Away), most recently active first. |
 | `EnterSession(sessionId)` | `{ state, playerId, private }` | Subscribes to the session's updates. For a logged-in user, reconnects them to their seats, updates their name and icon on them, and returns their `playerId`; otherwise `playerId` is `null`. `private` is the user's private game information, or `null`. Pages call this when they open and after reconnecting. A public session refuses users who hold no seat in it ("You are no longer in this game."). |
@@ -151,7 +153,7 @@ Clients connect to the SignalR hub at `/hubs/game` and call these methods:
 | `ReturnToLobby(sessionId)` | — | Seated users only. After a game has ended, takes everyone back to the session lobby. |
 | `MakeMove(sessionId, seat, cell)` | — | Tic-tac-toe: places the mark of `seat` (0 is X, 1 is O), which the caller must hold. Cells are numbered 0–8, left to right, top to bottom. |
 | `Pick(sessionId, seat, choice)` | — | Rock-paper-scissors: picks `"Rock"`, `"Paper"` or `"Scissors"` for `seat`, which the caller must hold. |
-| `NextRound(sessionId, round)` | — | Rock-paper-scissors and tic-tac-toe: starts the round after `round`; backgammon: starts the game of the match after game `round`; Rich man, poor man: starts the game after game `round` (or with fewer than 6 players left, goes back to the session lobby). If it has already started, nothing changes. |
+| `NextRound(sessionId, round)` | — | Rock-paper-scissors and tic-tac-toe: starts the round after `round`; backgammon: starts the game of the match after game `round`; Rich man, poor man: starts the game after game `round` (or with fewer than 6 players left, goes back to the session lobby); Uno (to a score target): deals the hand after hand `round`. If it has already started, nothing changes. |
 | `Roll(sessionId, seat)` | — | Backgammon: `seat`, which the caller must hold, rolls the dice; during the opening roll, its one die. |
 | `MoveChecker(sessionId, seat, from, to)` | — | Backgammon: `seat` moves a checker, by one die or, for a combined move in `legalMoves`, by several. Points are numbered from that seat's side: 1 to 24 in the direction it moves, 25 for the bar, 0 for off the board. |
 | `UndoMove(sessionId, seat)` | — | Backgammon: takes back the last checker `seat` moved in this turn. |
@@ -179,12 +181,17 @@ Clients connect to the SignalR hub at `/hubs/game` and call these methods:
 | `RollDice(sessionId, seat)` | — | Yatzee: `seat`, which the caller must hold, rolls the dice that are not kept (all five on the turn's first roll), up to three times per turn. |
 | `HoldDie(sessionId, seat, die, held)` | — | Yatzee: between rolls, `seat` keeps (`held` true) or lets go of die `die` (0 to 4). |
 | `Score(sessionId, seat, category)` | — | Yatzee: `seat` scores the dice in box `category` (`"Ones"` … `"Sixes"`, `"ThreeOfAKind"`, `"FourOfAKind"`, `"FullHouse"`, `"SmallStraight"`, `"LargeStraight"`, `"Yatzee"`, `"Chance"`), which ends its turn. |
+| `PlayCard(sessionId, seat, card, color)` | — | Uno: `seat`, which the caller must hold, plays `card` (short text: the colour's letter `R`, `Y`, `G` or `B` and `0`–`9`, `S` for Skip, `R` for Reverse or `+2`, e.g. `"R7"`, `"GS"`, `"B+2"`; or `"W"` and `"W+4"`), with `color` (`"Red"`, `"Yellow"`, `"Green"` or `"Blue"`) for a wild card, otherwise `null`. After drawing, only the card drawn. |
+| `DrawCard(sessionId, seat)` | — | Uno: `seat` draws the cards stacked for it, or else one card (with the drawing option, cards until one can be played). If the card drawn can be played, `seat` plays it or keeps it; otherwise its turn ends. |
+| `PassAfterDraw(sessionId, seat)` | — | Uno: `seat` keeps the card it drew, which ends its turn. |
+| `CallUno(sessionId, seat)` | — | Uno: `seat` calls UNO, on its turn with two cards (one of them playable), or right after going down to one card. |
+| `CatchUno(sessionId, seat, targetSeat)` | — | Uno: `seat` catches `targetSeat`, which went down to one card without calling UNO, before the next action; `targetSeat` draws 2 cards. |
 
 Seats are numbered from 0 in the API. Errors (e.g. "It is not your turn.") are returned as hub errors to the caller.
 
 ### Session state
 
-After every change, the server sends a `StateUpdated` message with the public session state to everyone in the session. In games with private information (The Gang, Rich man, poor man), each player's connections then also receive a `PrivateStateUpdated` message with that user's own cards; nobody else receives it. `EnterSession` returns the same private information as `private`. The public session state has these fields:
+After every change, the server sends a `StateUpdated` message with the public session state to everyone in the session. In games with private information (The Gang, Rich man, poor man, Uno), each player's connections then also receive a `PrivateStateUpdated` message with that user's own cards; nobody else receives it. `EnterSession` returns the same private information as `private`. The public session state has these fields:
 
 | Field | Description |
 | --- | --- |
@@ -207,6 +214,7 @@ Game-specific state:
 - **Backgammon:** the board from white's side (`points`: entry `i` is white's point `i + 1`, positive for white checkers and negative for black), `bar`, `off`, `pips` and `scores` by seat, the `phase` (`"Opening"`, `"Rolling"`, `"Doubled"`, `"Moving"`, `"GameOver"`, `"MatchOver"`), the seat to move (`turn`), each seat's opening die (`openingDice`, `null` until rolled) and the decided `openingRoll`, the `dice` and `diceLeft`, the number of rolls so far (`rolls`, so a page can tell a new roll), the `legalMoves` (moves by one die, then the combined moves of one checker by several dice; see `IBackgammonGame.CombinedMoves`) and the moves `played` so far (one per die, in the mover's numbering), the `lastTurn`, the cube (`cubeValue`, `cubeOwner`, `canDouble`, `isCrawford`) and the last game's `result`.
 - **Rich man, poor man** (`RichManPoorManState` in `Sessions/RichManPoorManSession.cs`): the `players` in place order, each with `seat`, `place`, `cardCount`, `passed`, `roundThrow` (the cards they last threw in this round, or `null`), `finished`, `isActive`, `exchangeCount` and `hasGiven`; the `turn`, `currentThrow` and `lastThrow` (`{ seat, cards }`), the number of `throws` so far (so a page can tell a new throw), `lastRoundWinner`, `ranking` and the `joinRequests`. Each hand's private state (`RichManPoorManHand`) has its `cards`, and for the exchange its `partnerSeat`, the `requiredGift` (the poorer player's highest cards), the `gift` it has given (until all have given) and the cards it `received`.
 - **Yatzee** (`YatzeeState` in `Sessions/YatzeeSession.cs`): the `round`, the seat to play (`turn`), the `dice` (all 0 before the turn's first roll), which are `held`, the `rollsLeft` in the turn, the number of rolls so far (`rolls`, so a page can tell a new roll), the `possibleScores` of the seat to play (one per box in the order of `Score` above, `null` where it cannot score), the `players` in seat order (`seat`, `scores` per box, `upperTotal`, `upperBonus`, `lowerTotal`, `yatzeeBonus`, `total`), the `lastTurn` (`seat`, `category`, `points`, `bonus`, `dice`), `isOver` and the `winners` (seats).
+- **Uno** (`UnoState` in `Sessions/UnoSession.cs`): the rules (`end`: `"OneGame"`, `"Score"` or `"Pyramid"`, `target`, `stacking`, `drawUntilPlayable`), the `handNumber`, the `phase` (`"Playing"`, `"HandOver"`, `"GameOver"`), the seat to play (`turn`), the `direction` (1 in seat order, -1 after a Reverse), the `topCard`, the `color` to play, the cards in the `drawPile`, the `pendingDraw` (cards stacked for the seat to play), `hasDrawn` (the seat to play has drawn a card it may play or keep), the `players` in seat order (`seat`, `cardCount`, `score`, `handSize` (pyramid: the cards last dealt), `finished` (pyramid place, or `null`), `saidUno`, `canBeCaught`), the last action's `events` (`seat`, `kind`: `"TurnedUp"`, `"Played"`, `"Drew"`, `"Skipped"`, `"Passed"`, `"CalledUno"`, `"Caught"`, `"NewCards"` or `"Finished"`, and its `card`, `count`, chosen `color` and `bySeat`), the number of `actions` so far, the `lastResult` (`seat`, `points`), the pyramid's `ranking` and the `winner`. Each hand's private state (`UnoHand`) has its `cards` (sorted by colour and value) and those that are `playable` now.
 
 ### Rejoining
 
@@ -313,7 +321,7 @@ The scripts in `wwwroot` have no build step; `node --check <file>.js` checks a s
 
 ## Project status and external services
 
-_Last updated: 2026-11-04. Keep this section current; it is the hand-off point between work sessions._
+_Last updated: 2026-11-05. Keep this section current; it is the hand-off point between work sessions._
 
 ### Local machine
 - Repo folder: being moved out of iCloud Drive (it was `C:\Users\inati\iCloudDrive\Programming\GamesLane2.0`). In iCloud, sync locked files during moves, and once Git's index lost most of the tracked files, so a commit deleted them (fixed in `f82caee`). Before every push, check the full file list of the commit (`git show --stat HEAD`).
@@ -353,6 +361,7 @@ _Last updated: 2026-11-04. Keep this section current; it is the hand-off point b
 5. Rich man, poor man: first play-test with real players on phones and a TV.
 6. Hebrew: every page is translated; first check on Render, and the user to review the terms listed under [Translations](#translations).
 7. Yatzee: first play-test.
+8. Uno: first play-test.
 
 ## Working conventions
 - Ask before adding or upgrading packages.

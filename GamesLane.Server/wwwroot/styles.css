@@ -3167,6 +3167,282 @@ button.yz-option:not(:disabled):hover {
     opacity: 0.6;
 }
 
+/* Uno: the table (draw pile, discard pile, colour to play and the players) on dark felt, and the user's hands below. */
+main.uno {
+    max-width: 980px;
+}
+
+.uno-card {
+    --uno-color: #1d1a17;
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.6em;
+    height: 3.9em;
+    flex: none;
+    border: 0.18em solid #fff;
+    border-radius: 0.35em;
+    background: var(--uno-color);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+    color: #fff;
+    font-size: clamp(1rem, min(4.2vw, 3vh), 1.5rem);
+    font-weight: 900;
+    line-height: 1;
+    direction: ltr;
+    user-select: none;
+}
+
+.uno-card.red { --uno-color: #d7262e; }
+.uno-card.yellow { --uno-color: #e9b40c; }
+.uno-card.green { --uno-color: #2b9a48; }
+.uno-card.blue { --uno-color: #1f6fd1; }
+
+/* A wild card: black, with the four colours in its oval; on the pile, a ring of the colour chosen. */
+.uno-card.wild .uno-oval {
+    background: conic-gradient(#d7262e 0 25%, #1f6fd1 0 50%, #2b9a48 0 75%, #e9b40c 0);
+}
+
+.uno-card.wild .uno-symbol {
+    color: #fff;
+    text-shadow: 0 0 3px #000, 0 0 2px #000;
+}
+
+.uno-card.chose-red { box-shadow: 0 0 0 0.22em #d7262e; }
+.uno-card.chose-yellow { box-shadow: 0 0 0 0.22em #e9b40c; }
+.uno-card.chose-green { box-shadow: 0 0 0 0.22em #2b9a48; }
+.uno-card.chose-blue { box-shadow: 0 0 0 0.22em #1f6fd1; }
+
+.uno-card.back {
+    --uno-color: #1d1a17;
+}
+
+.uno-card.back .uno-symbol {
+    color: #d7262e;
+    font-size: 0.55em;
+}
+
+.uno-oval {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 78%;
+    height: 62%;
+    border-radius: 50%;
+    background: #fff;
+    transform: rotate(-25deg);
+}
+
+.uno-symbol {
+    color: var(--uno-color);
+    font-size: 1.05em;
+    transform: rotate(25deg);
+}
+
+.uno-corner {
+    position: absolute;
+    top: 0.18em;
+    left: 0.22em;
+    font-size: 0.5em;
+}
+
+.uno-corner.end {
+    top: auto;
+    left: auto;
+    right: 0.22em;
+    bottom: 0.18em;
+    transform: rotate(180deg);
+}
+
+.uno-table {
+    margin: 0.4rem 0;
+    padding: 0.6rem;
+    border-radius: var(--radius);
+    background: radial-gradient(circle at 50% 30%, #3a3f4a, #1c1f26);
+    color: #fff;
+}
+
+.uno-pile {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 0.8rem;
+    padding: 0.3rem 0 0.5rem;
+}
+
+.uno-draw {
+    position: relative;
+    padding: 0;
+    border: 0;
+    background: none;
+}
+
+.uno-draw:not(:disabled):hover,
+.uno-draw:not(:disabled):focus-visible {
+    background: none;
+    transform: translateY(-2px);
+}
+
+.uno-draw:disabled {
+    opacity: 1;
+    cursor: default;
+}
+
+.uno-pile-count {
+    position: absolute;
+    right: -0.5rem;
+    bottom: -0.4rem;
+    padding: 0 0.4em;
+    border-radius: 999px;
+    background: #fff;
+    color: var(--ink);
+    font-size: 0.8rem;
+    font-weight: 700;
+}
+
+.uno-pile-info {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.3rem;
+    font-weight: 700;
+}
+
+.uno-color {
+    padding: 0.1rem 0.6rem;
+    border-radius: 999px;
+    background: #fff;
+    color: var(--ink);
+}
+
+.uno-color.red, .uno-color-choice.red { background: #d7262e; color: #fff; }
+.uno-color.yellow, .uno-color-choice.yellow { background: #e9b40c; color: var(--ink); }
+.uno-color.green, .uno-color-choice.green { background: #2b9a48; color: #fff; }
+.uno-color.blue, .uno-color-choice.blue { background: #1f6fd1; color: #fff; }
+
+.uno-direction {
+    font-size: 1.6rem;
+    line-height: 1;
+}
+
+.uno-pending {
+    padding: 0.1rem 0.6rem;
+    border-radius: 999px;
+    background: var(--gold);
+    color: var(--ink);
+}
+
+.uno-message {
+    margin: 0 0 0.5rem;
+    color: #eef0f4;
+    text-align: center;
+}
+
+.uno-players {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr));
+    gap: 0.3rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.uno-players li {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    min-width: 0;
+    padding: 0.25rem 0.45rem;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.92);
+    color: var(--ink);
+    font-size: 0.9rem;
+}
+
+.uno-players li.turn {
+    box-shadow: inset 0 0 0 3px var(--gold);
+}
+
+.uno-players li.done {
+    opacity: 0.7;
+}
+
+.uno-players .seat-label {
+    flex: 0 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.uno-count {
+    margin-inline-start: auto;
+    color: var(--muted);
+    white-space: nowrap;
+}
+
+.uno-tag {
+    padding: 0 0.45em;
+    border-radius: 999px;
+    background: var(--surface-soft);
+    font-size: 0.8rem;
+    white-space: nowrap;
+}
+
+.uno-tag.uno-said { background: #d7262e; color: #fff; font-weight: 800; }
+.uno-tag.finished { background: #d6efd9; color: #1f6b35; }
+
+.uno-catch {
+    background: #d7262e;
+}
+
+/* The hand: cards in rows, from the first colour to the last; the ones that cannot be played are faded on your turn. */
+.uno-cards {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    margin: 0.4rem 0;
+    padding-top: 0.4em;
+    direction: ltr;
+}
+
+.uno-play {
+    padding: 0;
+    border: 0;
+    border-radius: 0.35em;
+    background: none;
+}
+
+.uno-play:hover,
+.uno-play:focus-visible {
+    background: none;
+}
+
+.uno-play:hover .uno-card,
+.uno-play:focus-visible .uno-card,
+.uno-card.chosen {
+    transform: translateY(-0.3em);
+}
+
+.uno-card.drawn,
+.uno-card.chosen {
+    box-shadow: 0 0 0 3px var(--gold), 0 4px 10px rgba(0, 0, 0, 0.3);
+}
+
+.uno-card.unplayable {
+    opacity: 0.45;
+}
+
+.uno-colors {
+    flex-wrap: wrap;
+}
+
+.uno-call {
+    background: #d7262e;
+    font-weight: 900;
+}
+
 @media (max-width: 420px) {
     .brand-name {
         height: 40px;

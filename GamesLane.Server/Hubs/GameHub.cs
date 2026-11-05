@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using GamesLane.Server.Auth;
 using GamesLane.Server.Games.RockPaperScissors;
+using GamesLane.Server.Games.Uno;
 using GamesLane.Server.Games.Yatzee;
 using GamesLane.Server.Sessions;
 using GamesLane.Server.Users;
@@ -316,6 +317,26 @@ public class GameHub(
     /// <inheritdoc />
     public Task Score(string sessionId, int seat, YatzeeCategory category) =>
         Act(sessionId, (IYatzeeSession s, out string? error) => s.TryScore(UserKey, seat, category, out error));
+
+    /// <inheritdoc />
+    public Task PlayCard(string sessionId, int seat, string? card, UnoColor? color) =>
+        Act(sessionId, (IUnoSession s, out string? error) => s.TryPlay(UserKey, seat, card, color, out error));
+
+    /// <inheritdoc />
+    public Task DrawCard(string sessionId, int seat) =>
+        Act(sessionId, (IUnoSession s, out string? error) => s.TryDraw(UserKey, seat, out error));
+
+    /// <inheritdoc />
+    public Task PassAfterDraw(string sessionId, int seat) =>
+        Act(sessionId, (IUnoSession s, out string? error) => s.TryPass(UserKey, seat, out error));
+
+    /// <inheritdoc />
+    public Task CallUno(string sessionId, int seat) =>
+        Act(sessionId, (IUnoSession s, out string? error) => s.TryCallUno(UserKey, seat, out error));
+
+    /// <inheritdoc />
+    public Task CatchUno(string sessionId, int seat, int targetSeat) =>
+        Act(sessionId, (IUnoSession s, out string? error) => s.TryCatchUno(UserKey, seat, targetSeat, out error));
 
     /// <inheritdoc />
     public Task RevealNext(string sessionId, int revealed) =>
