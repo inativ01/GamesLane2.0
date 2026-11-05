@@ -208,9 +208,9 @@ Players are identified by their user ID. After a refresh or dropped connection, 
 
 Every user is logged in, at least as a guest. A user is identified by a signed **login token** holding their user ID, display name, icon and kind (`Guest`, `Registered`, or the provider, e.g. `Google`). The page keeps it in the browser tab's `sessionStorage`, so each tab can have its own user; a newly opened tab starts with the most recently logged-in user. The page sends the token as an `Authorization: Bearer` header, and as the `access_token` query parameter when connecting to the hub.
 
-Tokens last 30 days. Every page load calls `GET /auth/me`, which returns a renewed token with the saved user's current name and icon (so changes made in another tab or device show up), and records the user as active at most once a day. If the saved user was deleted, `/auth/me` reports them as logged out.
+Saved users' tokens last 30 days. Every page load calls `GET /auth/me`, which returns a renewed token with the saved user's current name and icon (so changes made in another tab or device show up), and records the user as active at most once a day. If the saved user was deleted, `/auth/me` reports them as logged out.
 
-**Automatic guests:** when `/auth/me` reports no user (a first visit, an expired token, a deleted saved user, or after logging out), the page calls `POST /auth/guest` and reloads the account. The page keeps the guest's name and icon in `localStorage` (`guestProfile`) and sends them, so an expired guest comes back with the same name and icon (as a new user ID); without them, the server picks `Guest-` and a random 3-digit number, and a random built-in icon. Logging out clears `guestProfile`, so the new guest gets a random name and icon.
+**Guests** are stored only in their login token, in the browser's `localStorage` (and the tab's `sessionStorage`); nothing about them is on the server. Their tokens do not expire (`ExpiresUtc` is `DateTimeOffset.MaxValue`), and the 30-day deletion of inactive users applies only to saved users. When `/auth/me` reports no user (a first visit, cleared site data, a deleted saved user, or after logging out), the page calls `POST /auth/guest`, which creates a guest named `Guest-` and a random 3-digit number with a random built-in icon, and reloads the account.
 
 **Seat transfer:** before logging in, creating an account, signing in with a provider or logging out, the page keeps the current token in `sessionStorage` (`previousToken`). After the reload, once it has the new token, it calls `POST /auth/transfer` with the previous token, before connecting to the hub. The server checks that the previous token is valid and has not expired (which proves it is the same person), then in every session in memory gives the previous user's seats, player ID, connection status (Reconnecting or Away) and any Rich man, poor man request to join to the new user, with the new name and icon (`GameSession.TransferSeats`), and broadcasts the new state. Sessions not in memory are not changed.
 
@@ -248,7 +248,7 @@ Each option has a key, a label and a list of choices with a default; `Games/Game
 | `GET /api/sessions/{code}` | `{ sessionId, gameType, page }` for an existing session, or 404 |
 | `GET /join/{code}` | Shareable join link; redirects to the session's page (`<page>?session=CODE`), or if there is no such session, to the main screen with the code filled in and a message |
 | `GET /auth/me` | `{ signedIn, kind, name, icon, uploadedIcon, gameOrder, accessToken, providers, icons }`. `gameOrder` is a saved user's order of the games (game names), or `null`; `accessToken` is a renewed login token; `providers` lists the external sign-in options that are configured; `icons` lists the built-in icons |
-| `POST /auth/guest` | Body `{ name, icon }`, both optional. Logs in as a new guest; a missing or invalid name becomes `Guest-` and a random 3-digit number (e.g. `Guest-042`), and a missing or invalid icon a random built-in icon |
+| `POST /auth/guest` | Logs in as a new guest named `Guest-` and a random 3-digit number (e.g. `Guest-042`), with a random built-in icon. The token does not expire |
 | `POST /auth/transfer` | Body `{ previousToken }`, logged-in users only. Gives the seats of the user in `previousToken` to the current user in every session in memory (204), or `{ error }` (400) if the token is not valid or has expired |
 | `POST /auth/register` | Body `{ username, password, name, icon }`. Creates a registered user and logs in. Rate-limited |
 | `POST /auth/login` | Body `{ username, password }`. Logs in a registered user. Rate-limited (10 attempts per minute per address) |
@@ -355,7 +355,7 @@ _Last updated: 2026-11-04. Keep this section current; it is the hand-off point b
 
 ## Known limitations
 - Sessions are kept in memory by one server, and saved in the database; running more than one server instance would need a shared store (no scale-out).
-- A guest exists only in the browser where they were created; an expired guest comes back with the same name and icon, but as a new user.
+- A guest exists only in the browser where they were created; clearing the browser's site data (or losing the server's token keys) ends them, and the next visit creates a new guest.
 - Forgotten passwords cannot be reset (no email is collected).
 - The login-token keys are stored unencrypted in the database (the server logs a warning about this at startup), so the connection string must be kept secret.
 - Seats move to the new user after logging in or out only in sessions that are in memory at the time; a seat in a session nobody has open stays with the previous user.

@@ -27,13 +27,13 @@ A typical setup is a shared screen (such as a TV or laptop) connected as a spect
 - A **user** is a person using the site. There is always exactly one user per browser tab; different tabs may have different users.
 - A user has a **user ID**, a **display name** and an **icon** (a built-in emoji, or an uploaded picture).
 - There are three kinds of user:
-  - **Guest:** anyone who has not logged in with an account. A new visitor automatically becomes a guest named `Guest-` and a random 3-digit number (e.g. `Guest-042`), with a random built-in icon. Guests are not saved in the database.
-  - **Registered user:** a unique username (3–20 letters, digits or `_`, any case) and a password (at least 8 characters), plus a display name and icon. Passwords cannot be reset, since no email is collected.
+  - **Guest:** anyone who has not logged in with an account. A new visitor automatically becomes a guest named `Guest-` and a random 3-digit number (e.g. `Guest-042`), with a random built-in icon. A guest's information is stored only in their browser's local storage, never on the server.
+  - **Registered user** (stored in the server's database, like Google users): a unique username (3–20 letters, digits or `_`, any case) and a password (at least 8 characters), plus a display name and icon. Passwords cannot be reset, since no email is collected.
   - **Google** (or Microsoft): the account is saved by provider and account ID. The display name and icon default to the Google name and picture; changing them affects only GamesLane.
 - The profile (the user's icon and name in the top bar) lets every user change their display name and icon. Guests can also **Log in**, **Create account** (which keeps the display name and icon chosen in the profile), or sign in with Google. Registered and Google users can upload a picture as their icon (the page shrinks it to 128×128 before uploading) and **Log out**, which makes them a new guest with a random name and icon.
-- A login lasts 30 days after the last visit. Saved users who are inactive for 30 days are deleted automatically.
+- Registered and Google users stay logged in for 30 days after their last visit. Their information is deleted from the database automatically after 30 days of inactivity.
+- Guests do not expire: a guest keeps the same name and icon for as long as the browser keeps its local storage. A guest exists only in the browser where they were created; clearing the browser's site data ends them, and the next visit creates a new guest.
 - Changing the display name or icon also updates it on any seat the user holds.
-- A guest exists only in the browser where they were created. Their name and icon are remembered in the browser, so a guest whose login has expired comes back with the same name and icon (as a new user).
 - Logging in, creating an account or logging out mid-game keeps your seats: they move to the new user, with the new name and icon. Other tabs that still use the previous user become spectators. Only sessions that are open on the server at the time move; a seat in a session nobody has open stays with the previous user.
 
 ## Main screen

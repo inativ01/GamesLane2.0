@@ -15,10 +15,8 @@ const GAME_PAGES = {
 };
 
 // The login token is kept per browser tab, so each tab can have its own user.
-// A new tab starts with the most recently logged-in user.
+// A new tab starts with the most recently logged-in user. A guest exists only in their token, which does not expire.
 const TOKEN_KEY = "loginToken";
-// A guest's name and icon, kept in this browser so an expired guest comes back with the same name and icon.
-const GUEST_KEY = "guestProfile";
 // The login token this tab had before logging in or out. The next page load gives that user's seats to the new user.
 const PREVIOUS_TOKEN_KEY = "previousToken";
 
@@ -75,15 +73,10 @@ async function fetchAccount() {
     }
 }
 
-// Someone without a valid login token becomes a guest: with their previous guest name and icon if this browser has
-// them, otherwise with a random name and icon. Returns false if the server could not be reached.
+// Someone without a valid login token becomes a new guest, with a random name and icon. Returns false if the server
+// could not be reached.
 async function becomeGuest() {
-    const saved = JSON.parse(localStorage.getItem(GUEST_KEY) ?? "null");
-    const response = await fetch("/auth/guest", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: saved?.name ?? null, icon: saved?.icon ?? null }),
-    }).catch(() => null);
+    const response = await fetch("/auth/guest", { method: "POST" }).catch(() => null);
     if (!response?.ok) {
         return false;
     }
@@ -110,13 +103,10 @@ const accountReady = (async () => {
         }
     }
     account ??= { signedIn: false, providers: [], icons: [] };
-    // Every visit renews the login token, so it keeps working as long as the user comes back within 30 days.
+    // Every visit renews the login token, so a saved user's keeps working as long as they come back within 30 days.
     if (account.signedIn && account.accessToken) {
         saveToken(account.accessToken);
         await transferSeats();
-    }
-    if (account.kind === "Guest") {
-        localStorage.setItem(GUEST_KEY, JSON.stringify({ name: account.name, icon: account.icon }));
     }
     renderAccount();
     if (isNewExternalUser && account.signedIn) {
@@ -414,7 +404,6 @@ function openProfileDialog() {
     } else {
         dialog.querySelector("[data-logout]").addEventListener("click", () => {
             sessionStorage.setItem(PREVIOUS_TOKEN_KEY, token);
-            localStorage.removeItem(GUEST_KEY);
             saveToken("");
             location.reload();
         });

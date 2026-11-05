@@ -122,18 +122,31 @@ public class IdentityTests
     }
 
     [Fact]
-    public void A_previous_login_token_is_read_back_until_it_expires()
+    public void A_saved_users_login_token_is_read_back_until_it_expires_after_30_days()
     {
         var time = new TestTime { Now = new DateTimeOffset(2026, 11, 5, 12, 0, 0, TimeSpan.Zero) };
         var context = TokenContext(time);
-        var token = AuthSetup.IssueToken(context, AuthSetup.CreateUser("guest:0123456789abcdef", "Guest-042", "🐼", AuthSetup.GuestKind));
+        var token = AuthSetup.IssueToken(context, AuthSetup.CreateUser(SavedId.ToString(), "Ada", "🦊", AuthSetup.RegisteredKind));
 
-        Assert.Equal("guest:0123456789abcdef", AuthSetup.GetUserId(AuthSetup.ReadToken(context, token)));
+        Assert.Equal(SavedId.ToString(), AuthSetup.GetUserId(AuthSetup.ReadToken(context, token)));
         Assert.Null(AuthSetup.ReadToken(context, "not-a-token"));
         Assert.Null(AuthSetup.ReadToken(context, null));
 
         time.Now = time.Now.AddDays(31);
         Assert.Null(AuthSetup.ReadToken(context, token));
+    }
+
+    [Fact]
+    public void A_guests_login_token_does_not_expire()
+    {
+        var time = new TestTime { Now = new DateTimeOffset(2026, 11, 5, 12, 0, 0, TimeSpan.Zero) };
+        var context = TokenContext(time);
+        var token = AuthSetup.IssueToken(context, AuthSetup.CreateUser("guest:0123456789abcdef", "Guest-042", "🐼", AuthSetup.GuestKind));
+
+        time.Now = time.Now.AddYears(50);
+        var guest = AuthSetup.ReadToken(context, token);
+        Assert.Equal("guest:0123456789abcdef", AuthSetup.GetUserId(guest));
+        Assert.Equal(new PlayerProfile("Guest-042", "🐼"), AuthSetup.GetProfile(guest));
     }
 
     private static HttpContext TokenContext(TimeProvider time)

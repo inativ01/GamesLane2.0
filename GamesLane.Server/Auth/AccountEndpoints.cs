@@ -9,7 +9,7 @@ using Microsoft.AspNetCore.SignalR;
 namespace GamesLane.Server.Auth;
 
 /// <summary>
-/// The body of <c>POST /auth/guest</c> and <c>POST /auth/profile</c>.
+/// The body of <c>POST /auth/profile</c>.
 /// </summary>
 public record ProfileRequest(string? Name, string? Icon);
 
@@ -61,14 +61,10 @@ public static class AccountEndpoints
             });
         });
 
-        // A new guest. Without a valid name or icon (e.g. a first visit), they get a random name and icon; the page sends
-        // the guest's previous name and icon when their login token has expired.
-        app.MapPost("/auth/guest", (ProfileRequest? request, HttpContext context) =>
-        {
-            var name = UserRules.NormalizeName(request?.Name) ?? UserRules.RandomGuestName();
-            var icon = UserRules.IsBuiltInIcon(request?.Icon) ? request.Icon : UserRules.RandomIcon();
-            return Token(context, AuthSetup.CreateUser($"guest:{Guid.NewGuid():N}", name, icon, AuthSetup.GuestKind));
-        });
+        // A new guest, with a random name and icon.
+        app.MapPost("/auth/guest", (HttpContext context) =>
+            Token(context, AuthSetup.CreateUser(
+                $"guest:{Guid.NewGuid():N}", UserRules.RandomGuestName(), UserRules.RandomIcon(), AuthSetup.GuestKind)));
 
         // After logging in or out, gives the seats of the previous user (proven by their login token) to the current one,
         // in every session in memory.
