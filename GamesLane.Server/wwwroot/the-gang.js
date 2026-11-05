@@ -640,8 +640,9 @@ function fitTable() {
     }
 }
 
-// A sound when another player takes one of this user's chips: a short falling two-note alert, made by the browser.
-// Browsers only allow sound after the user has tapped the page, so the sound is set up on the first tap.
+// A sound when another player takes one of this user's chips: a short falling two-note alert, made by the browser,
+// unless the user turned sound off in their profile. Browsers only allow sound after the user has tapped the page, so
+// the sound is set up on the first tap.
 let audio = null;
 addEventListener("pointerdown", () => {
     audio ??= new AudioContext();
@@ -649,7 +650,7 @@ addEventListener("pointerdown", () => {
 }, { capture: true });
 
 function playStolenSound() {
-    if (!audio || audio.state !== "running") return;
+    if (!audio || audio.state !== "running" || !userSettings().sound) return;
     const start = audio.currentTime;
     [[880, 0], [587, 0.14]].forEach(([frequency, delay]) => {
         const tone = audio.createOscillator();

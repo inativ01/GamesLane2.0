@@ -324,6 +324,22 @@ button:not(.cell):disabled {
     margin-bottom: 0.75rem;
 }
 
+/* The profile's settings: Chat in games and Sounds, as tick boxes. */
+.profile-settings {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    margin-top: 0.75rem;
+}
+
+label.setting {
+    flex-direction: row;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 400;
+    cursor: pointer;
+}
+
 /* Logging in, for guests, below the profile form. */
 .profile-account {
     padding-top: 0.6rem;

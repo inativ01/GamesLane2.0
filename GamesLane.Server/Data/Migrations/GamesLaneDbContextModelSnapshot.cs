@@ -78,6 +78,9 @@ namespace GamesLane.Server.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<bool>("ChatOn")
+                        .HasColumnType("boolean");
+
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -104,6 +107,9 @@ namespace GamesLane.Server.Data.Migrations
 
                     b.Property<string>("PasswordHash")
                         .HasColumnType("text");
+
+                    b.Property<bool>("SoundOn")
+                        .HasColumnType("boolean");
 
                     b.Property<string>("Username")
                         .HasMaxLength(20)
