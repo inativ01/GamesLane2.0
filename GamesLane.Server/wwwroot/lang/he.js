@@ -212,7 +212,7 @@ TRANSLATIONS.he = {
     "Give": "מסירה",
     "Card exchange: {given}/{total} given": "החלפת קלפים: {given}/{total} מסרו",
     "Game {n} is over.": "משחק {n} הסתיים.",
-    "Beat the cards on the table, or pass": "נצחו את הקלפים שעל השולחן, או פס",
+    "Throw higher cards than the ones on the table, or pass": "זרקו קלפים גבוהים יותר מהקלפים שעל השולחן, או פס",
     "You start the round": "הסיבוב נפתח אצלך",
     "The pairs are exchanging cards. Nobody gets new cards until all have given.": "הזוגות מחליפים קלפים. אף אחד לא מקבל קלפים חדשים עד שכולם ימסרו.",
     "The next game's places:": "המקומות במשחק הבא:",

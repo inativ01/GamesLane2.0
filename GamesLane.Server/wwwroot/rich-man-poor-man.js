@@ -150,7 +150,7 @@ function statusText(game, state, view) {
         return `🏁 ${t("Game {n} is over.", { n: game.gameNumber })}`;
     }
     const mine = view.isMe(game.turn) && view.mySeats.length === 1;
-    return mine ? `👉 ${t(game.currentThrow ? "Beat the cards on the table, or pass" : "You start the round")}`
+    return mine ? `👉 ${t(game.currentThrow ? "Throw higher cards than the ones on the table, or pass" : "You start the round")}`
         : `⏳ ${t("Waiting for {name}", { name: playerName(state, game.turn) })}`;
 }
 
