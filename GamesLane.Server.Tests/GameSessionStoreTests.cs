@@ -48,6 +48,8 @@ public class GameSessionStoreTests
         Assert.Equal("/rich-man-poor-man.html", GameSessionStore.PageFor(GameType.RichManPoorMan));
         Assert.IsType<YatzeeSession>(await store.CreateAsync(GameType.Yatzee));
         Assert.Equal("/yatzee.html", GameSessionStore.PageFor(GameType.Yatzee));
+        Assert.IsType<UnoSession>(await store.CreateAsync(GameType.Uno));
+        Assert.Equal("/uno.html", GameSessionStore.PageFor(GameType.Uno));
     }
 
     [Fact]

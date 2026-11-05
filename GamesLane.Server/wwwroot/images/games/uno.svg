@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" role="img" aria-label="Uno">
+  <rect width="120" height="120" rx="26" fill="#1d1a17"/>
+  <!-- A fan of four cards, each with a white oval: blue, green and yellow behind a red 7. -->
+  <g stroke="#fff" stroke-width="3" font-family="system-ui, sans-serif" font-weight="900">
+    <g transform="rotate(-30 60 104)">
+      <rect x="40" y="26" width="40" height="60" rx="6" fill="#1f6fd1"/>
+    </g>
+    <g transform="rotate(-10 60 104)">
+      <rect x="40" y="26" width="40" height="60" rx="6" fill="#2b9a48"/>
+    </g>
+    <g transform="rotate(10 60 104)">
+      <rect x="40" y="26" width="40" height="60" rx="6" fill="#f2c118"/>
+    </g>
+    <g transform="rotate(30 60 104)">
+      <rect x="40" y="26" width="40" height="60" rx="6" fill="#d7262e"/>
+      <ellipse cx="60" cy="56" rx="13" ry="21" transform="rotate(30 60 56)" fill="#fff" stroke="none"/>
+      <text x="60" y="66" font-size="28" fill="#d7262e" stroke="none" text-anchor="middle">7</text>
+    </g>
+  </g>
+</svg>
