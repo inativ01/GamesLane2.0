@@ -89,13 +89,11 @@ public class GameOptionsTests
     }
 
     [Fact]
-    public void Seated_players_change_options_in_the_lobby_and_everyone_sees_them()
+    public void Anyone_in_the_session_changes_options_in_the_lobby_and_everyone_sees_them()
     {
         var session = Seated(new TheGangSession("ABC123"));
 
-        Assert.False(session.TrySetOptions(Carol, Advanced, out var error));
-        Assert.Equal("Only seated players can do that.", error);
-        Assert.True(session.TrySetOptions(Bob, Advanced, out error), error);
+        Assert.True(session.TrySetOptions(Carol, Advanced, out var error), error);
 
         var state = session.GetPublicState();
         Assert.Equal("Advanced", state.Options[TheGangOptions.Mode]);

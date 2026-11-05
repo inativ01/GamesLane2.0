@@ -68,7 +68,6 @@ TRANSLATIONS.he = {
     "Players": "שחקנים",
     "Game options": "אפשרויות משחק",
     "Game options:": "אפשרויות משחק:",
-    "Only seated players can change the options.": "רק שחקנים שיושבים יכולים לשנות את האפשרויות.",
     "Close": "סגירה",
     "Log in to take a seat.": "התחברו כדי לשבת ולשחק.",
     "Start": "התחלה",

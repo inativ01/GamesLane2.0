@@ -79,7 +79,7 @@ A typical setup is a shared screen (such as a TV or laptop) connected as a spect
 
 - When the minimum number of seats is taken, a **Start** button appears (**New game** after the first game). Any seated user can start the game.
 - While the session is in the lobby, an **Invite friends** panel shows the join link (`/join/{code}`), with **Copy link** and **Share…** buttons where the browser supports them.
-- In the lobby, everyone sees the chosen [game options](#game-options) on a big **Game options:** button; seated players can change them.
+- In the lobby, everyone sees the chosen [game options](#game-options) on a big **Game options:** button; anyone in the session can change them.
 - Anyone not seated (logged in or not) is a **spectator**.
 
 ## Game screen
@@ -121,7 +121,7 @@ A typical setup is a shared screen (such as a TV or laptop) connected as a spect
 
 A game can offer **options**, i.e. rule variants (so far The Gang's and backgammon's). A **choice** option is one of its choices. A **set** option (e.g. The Gang's challenge cards) is a list of choices, all on by default (for cards, each with its picture: tap a card to turn it on or off; a card that is off is greyed out). Some options are shown only when another option has a certain value (e.g. the card options only in Advanced mode).
 
-- In the session lobby, the chosen options are shown on a big button starting with **Game options:**. Anyone can press it, spectators too: seated players change the options in the dialog it opens; everyone else sees them there without changing them. They apply to the next new game; a paused game keeps the options it started with.
+- In the session lobby, the chosen options are shown on a big button starting with **Game options:**. Anyone in the session can press it and change the options in the dialog it opens, spectators too. They apply to the next new game; a paused game keeps the options it started with.
 - Saved users (registered or Google, not guests) can **save** the options as their preferences for that game, and **load** them back in the dialog. A session starts with its creator's saved preferences.
 
 ## Games

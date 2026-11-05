@@ -862,25 +862,22 @@ function startSessionPage(gameType, render, seatRole = (seat) => t("Seat {n}", {
             .join(" · ");
     }
 
-    // Seated players choose the options for the next game. Saved users can also save them as their preferences
-    // (used automatically when they create a game) and load them back. Everyone else sees the options without changing
-    // them.
+    // Anyone in the session chooses the options for the next game. Saved users can also save them as their preferences
+    // (used automatically when they create a game) and load them back.
     function openOptionsDialog() {
         const state = lastState;
-        const canEdit = view.isPlayer;
-        const canSave = canEdit && account?.signedIn && account.kind !== "Guest";
+        const canSave = account?.signedIn && account.kind !== "Guest";
         const dialog = createDialog(`
             <form>
                 <h2>${t("Game options")}</h2>
-                <p class="hint" ${canEdit ? "hidden" : ""}>${t("Only seated players can change the options.")}</p>
-                <fieldset class="option-list" ${canEdit ? "" : "disabled"}></fieldset>
+                <fieldset class="option-list"></fieldset>
                 <div class="actions option-prefs" ${canSave ? "" : "hidden"}>
                     <button type="button" class="secondary small" data-save>${t("Save as my preferences")}</button>
                     <button type="button" class="secondary small" data-load>${t("Load my preferences")}</button>
                 </div>
                 <p class="hint" data-note role="status"></p>
                 <p class="error" role="alert"></p>
-                <div class="actions"><button type="submit" ${canEdit ? "" : "hidden"}>${t("Apply")}</button><button type="button" class="secondary" data-close>${t(canEdit ? "Cancel" : "Close")}</button></div>
+                <div class="actions"><button type="submit">${t("Apply")}</button><button type="button" class="secondary" data-close>${t("Cancel")}</button></div>
             </form>`);
         const form = dialog.querySelector("form");
         const note = form.querySelector("[data-note]");

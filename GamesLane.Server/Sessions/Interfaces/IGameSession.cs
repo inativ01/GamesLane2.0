@@ -84,7 +84,7 @@ public interface IGameSession
     bool TryNewGame(string userKey, int gameNumber, [NotNullWhen(false)] out string? error);
 
     /// <summary>
-    /// Changes the game's options, for the next new game. Only seated players, and only in the lobby. Options left out
+    /// Changes the game's options, for the next new game. Anyone in the session, only in the lobby. Options left out
     /// get their default; unknown options and values are refused.
     /// </summary>
     bool TrySetOptions(string userKey, IReadOnlyDictionary<string, string>? options, [NotNullWhen(false)] out string? error);

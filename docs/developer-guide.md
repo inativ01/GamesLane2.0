@@ -141,7 +141,7 @@ Clients connect to the SignalR hub at `/hubs/game` and call these methods:
 | `LeaveSeat(sessionId, seat)` | — | Gives up one of the caller's seats (used for **Leave seat** and **Leave my seat (watch)**). |
 | `LeaveSession(sessionId)` | — | Stops receiving updates and gives up all the caller's seats (used when going back to the main screen). |
 | `NewGame(sessionId, gameNumber)` | — | Seated users only. Starts a new game for everyone seated, replacing game `gameNumber` (0 before the first game). Refused while a game is in progress. If that game was already replaced, nothing changes. |
-| `SetOptions(sessionId, options)` | — | Seated users only, in the session lobby. Sets the options for the next new game, e.g. `{ "mode": "Advanced" }`. Options left out get their default. |
+| `SetOptions(sessionId, options)` | — | Anyone in the session, in the session lobby. Sets the options for the next new game, e.g. `{ "mode": "Advanced" }`. Options left out get their default. |
 | `EndGame(sessionId)` | — | Seated users only. During a game (Playing or Paused), ends it and takes everyone back to the session lobby; the seats move up, others can join, and a new game can be started. |
 | `ReturnToLobby(sessionId)` | — | Seated users only. After a game has ended, takes everyone back to the session lobby. |
 | `MakeMove(sessionId, seat, cell)` | — | Tic-tac-toe: places the mark of `seat` (0 is X, 1 is O), which the caller must hold. Cells are numbered 0–8, left to right, top to bottom. |

@@ -43,7 +43,7 @@ public interface IGameHub
     Task NewGame(string sessionId, int gameNumber);
 
     /// <summary>
-    /// Seated users only, in the lobby. Sets the game's options for the next new game; options left out get their default.
+    /// Anyone in the session, in the lobby. Sets the game's options for the next new game; options left out get their default.
     /// </summary>
     Task SetOptions(string sessionId, Dictionary<string, string>? options);
 

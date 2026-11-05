@@ -516,19 +516,13 @@ public abstract class GameSession : IGameSession
     }
 
     /// <summary>
-    /// Changes the game's options, for the next new game. Only seated players, and only in the lobby. Options left out
+    /// Changes the game's options, for the next new game. Anyone in the session, only in the lobby. Options left out
     /// get their default; unknown options and values are refused.
     /// </summary>
     public bool TrySetOptions(string userKey, IReadOnlyDictionary<string, string>? options, [NotNullWhen(false)] out string? error)
     {
         lock (Sync)
         {
-            if (!TryRequireSeated(userKey, out var seatError))
-            {
-                error = seatError!;
-                return false;
-            }
-
             if (Phase != SessionPhase.Lobby)
             {
                 error = "Options can only be changed in the lobby.";
