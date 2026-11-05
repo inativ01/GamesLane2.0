@@ -204,8 +204,14 @@ function playerItem(game, state, view, player) {
         tag(`${player.roundThrow.length}×${player.roundThrow[0].slice(0, -1)}`, "call");
     }
     if (!player.isActive) tag(t("Away"), "away");
+    // In the exchange, each player gives to their pair: #1 and the last place, #2 and the one before it, and so on.
     if (game.phase === "Exchanging" && player.exchangeCount > 0) {
-        tag(player.hasGiven ? t("Gave {n} ✓", { n: player.exchangeCount }) : t("Gives {n}…", { n: player.exchangeCount }));
+        const n = player.exchangeCount;
+        const values = { n, place: `#${game.players.length + 1 - player.place}` };
+        const text = player.hasGiven
+            ? `✓ ${t(n === 1 ? "Gave 1 card to {place}" : "Gave {n} cards to {place}", values)}`
+            : t(n === 1 ? "Gives 1 card to {place}" : "Gives {n} cards to {place}", values);
+        tag(text, player.hasGiven ? "given" : "giving");
     }
     return item;
 }

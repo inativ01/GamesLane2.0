@@ -2857,6 +2857,8 @@ main.rich-poor .my-hand .actions {
 .rp-tag.finished { background: #d6efd9; color: #1f6b35; }
 .rp-tag.call { background: #fff3d6; color: var(--ink); font-weight: 800; direction: ltr; }
 .rp-tag.call.pass { background: var(--surface-soft); color: var(--muted); }
+.rp-tag.giving { background: #fff3d6; }
+.rp-tag.given { background: #d6efd9; color: #1f6b35; }
 
 .rp-players .seat-label {
     flex: 0 1 auto;
