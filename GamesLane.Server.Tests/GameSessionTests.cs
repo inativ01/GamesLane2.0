@@ -146,6 +146,66 @@ public class GameSessionTests
         Assert.Equal(["🚀", "🐼"], seats.Select(s => s!.Icon));
     }
 
+    // Logging in or out (seats move to the new user)
+
+    private const string NewAlice = "user:guest:alice2";
+    private static readonly PlayerProfile NewAliceProfile = new("Guest-042", "🐸");
+
+    [Fact]
+    public void Logging_in_or_out_gives_the_users_seats_to_the_new_user_who_plays_on()
+    {
+        var session = Started(new TicTacToeSession("ABC123"));
+        var playerId = session.Enter(Alice, AliceProfile, "conn-a");
+        session.Disconnect("conn-a", Now);
+
+        Assert.True(session.TransferSeats(Alice, NewAlice, NewAliceProfile, Now.AddSeconds(5)));
+        var seat = session.GetPublicState().Seats[0]!;
+        Assert.Equal(("Guest-042", "🐸", playerId, SeatStatus.Reconnecting), (seat.Name, seat.Icon, seat.PlayerId, seat.Status));
+
+        Assert.Equal(playerId, session.Enter(NewAlice, NewAliceProfile, "conn-a2"));
+        Assert.Equal(SeatStatus.Present, session.GetPublicState().Seats[0]!.Status);
+        Assert.False(session.TryMove(Alice, 0, 4, out var error));
+        Assert.Equal("Only players in this game can make moves.", error);
+        Assert.True(session.TryMove(NewAlice, 0, 4, out error), error);
+    }
+
+    [Fact]
+    public void An_away_seat_stays_away_after_moving_to_the_new_user_until_they_come_back()
+    {
+        var session = Started(new TicTacToeSession("ABC123"));
+        session.Disconnect("conn-a", Now);
+        session.UpdateAwaySeats(Now.Add(GameSession.ReconnectWindow));
+        Assert.Equal(SessionPhase.Paused, session.GetPublicState().Phase);
+
+        Assert.True(session.TransferSeats(Alice, NewAlice, NewAliceProfile, Now.AddMinutes(5)));
+        Assert.Equal(SeatStatus.Away, session.GetPublicState().Seats[0]!.Status);
+
+        session.Enter(NewAlice, NewAliceProfile, "conn-a2");
+        Assert.Equal(SessionPhase.Playing, session.GetPublicState().Phase);
+    }
+
+    [Fact]
+    public void A_new_user_who_does_not_come_to_the_session_becomes_away()
+    {
+        var session = Started(new TicTacToeSession("ABC123"));
+
+        Assert.True(session.TransferSeats(Alice, NewAlice, NewAliceProfile, Now));
+        Assert.Equal(SeatStatus.Reconnecting, session.GetPublicState().Seats[0]!.Status);
+
+        Assert.True(session.UpdateAwaySeats(Now.Add(GameSession.ReconnectWindow)));
+        Assert.Equal(SeatStatus.Away, session.GetPublicState().Seats[0]!.Status);
+    }
+
+    [Fact]
+    public void Nothing_moves_for_a_user_without_seats_or_to_the_same_user()
+    {
+        var session = Seated(new TicTacToeSession("ABC123"));
+
+        Assert.False(session.TransferSeats(Carol, NewAlice, NewAliceProfile, Now));
+        Assert.False(session.TransferSeats(Alice, Alice, AliceProfile, Now));
+        Assert.Equal(["Alice", "Bob"], session.GetPublicState().Seats.Select(s => s!.Name));
+    }
+
     // Starting
 
     [Fact]
@@ -1248,6 +1308,28 @@ public class GameSessionTests
         Assert.Empty(state.JoinRequests);
         Assert.Equal("P6", session.GetPublicState().Seats[6]!.Name);
         Assert.Equal(13, Assert.IsType<RichManPoorManPrivateState>(session.GetPrivateState(Players[6])).Hands.Single().Cards.Count);
+    }
+
+    [Fact]
+    public void Rich_man_poor_man_request_to_join_moves_to_the_new_user_after_logging_in()
+    {
+        var session = RichManPoorMan(6);
+        session.TryNewGame(Players[0], 0, out _);
+        PlayOut(session);
+        session.TryNextRound(Players[0], 1, out _);
+        session.Enter(Players[6], new PlayerProfile("P6", "🐙"), "conn-6");
+        session.TryRequestSeat(Players[6], new PlayerProfile("P6", "🐙"), out _);
+        var playerId = Rmpm(session).JoinRequests.Single().PlayerId;
+
+        var ada = new PlayerProfile("Ada", "🦉");
+        Assert.True(session.TransferSeats(Players[6], Players[8], ada, Now));
+        session.Enter(Players[8], ada, "conn-8");
+        var request = Rmpm(session).JoinRequests.Single();
+        Assert.Equal(("Ada", playerId), (request.Name, request.PlayerId));
+
+        Assert.True(session.TryAcceptSeat(Players[1], playerId, 1, out var error), error);
+        Assert.Equal("Ada", session.GetPublicState().Seats[6]!.Name);
+        Assert.NotNull(session.GetPrivateState(Players[8]));
     }
 
     // Seats players 0 to count - 1, each in their own seat; the deck is dealt from low to high (#1 gets the lowest cards).

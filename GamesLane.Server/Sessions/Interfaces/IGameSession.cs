@@ -30,6 +30,13 @@ public interface IGameSession
     bool Disconnect(string connectionId, DateTimeOffset now);
 
     /// <summary>
+    /// Gives everything <paramref name="fromUserKey"/> holds in the session (their seats, and any request to join) to
+    /// <paramref name="toUserKey"/>, shown as <paramref name="profile"/>, when the same person logs in or out.
+    /// Returns true if anything changed.
+    /// </summary>
+    bool TransferSeats(string fromUserKey, string toUserKey, PlayerProfile profile, DateTimeOffset now);
+
+    /// <summary>
     /// Marks users disconnected for <see cref="GameSession.ReconnectWindow"/> or more as Away. Away users keep their
     /// seats only during a game; otherwise their seats are freed. Returns true if anything changed.
     /// </summary>

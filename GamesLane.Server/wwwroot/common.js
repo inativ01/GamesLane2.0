@@ -17,6 +17,10 @@ const GAME_PAGES = {
 // The login token is kept per browser tab, so each tab can have its own user.
 // A new tab starts with the most recently logged-in user.
 const TOKEN_KEY = "loginToken";
+// A guest's name and icon, kept in this browser so an expired guest comes back with the same name and icon.
+const GUEST_KEY = "guestProfile";
+// The login token this tab had before logging in or out. The next page load gives that user's seats to the new user.
+const PREVIOUS_TOKEN_KEY = "previousToken";
 
 function loadToken() {
     let value = sessionStorage.getItem(TOKEN_KEY);
@@ -57,22 +61,62 @@ let busyTimer = null;
 
 // The current user, set once accountReady resolves:
 // { signedIn, kind, name, icon, uploadedIcon, gameOrder, providers, icons }. kind is "Guest", "Registered" or a provider
-// such as "Google"; gameOrder is a saved user's order of the games on the main screen, or null.
+// such as "Google"; gameOrder is a saved user's order of the games on the main screen, or null. Everyone is logged in,
+// as a guest at least; signedIn is false only if the server could not be reached.
 let account = null;
 let isNewExternalUser = false;
 
+// The current user from the server, or null if it could not be reached.
+async function fetchAccount() {
+    try {
+        return await (await authFetch("/auth/me")).json();
+    } catch {
+        return null;
+    }
+}
+
+// Someone without a valid login token becomes a guest: with their previous guest name and icon if this browser has
+// them, otherwise with a random name and icon. Returns false if the server could not be reached.
+async function becomeGuest() {
+    const saved = JSON.parse(localStorage.getItem(GUEST_KEY) ?? "null");
+    const response = await fetch("/auth/guest", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: saved?.name ?? null, icon: saved?.icon ?? null }),
+    }).catch(() => null);
+    if (!response?.ok) {
+        return false;
+    }
+    saveToken((await response.json()).accessToken);
+    return true;
+}
+
+// After logging in or out, gives the previous user's seats to the new user.
+async function transferSeats() {
+    const previous = sessionStorage.getItem(PREVIOUS_TOKEN_KEY);
+    sessionStorage.removeItem(PREVIOUS_TOKEN_KEY);
+    if (previous && previous !== token) {
+        await postJson("/auth/transfer", { previousToken: previous }).catch(() => null);
+    }
+}
+
 const accountReady = (async () => {
     await completeExternalSignIn();
-    try {
-        account = await (await authFetch("/auth/me")).json();
-    } catch {
-        account = { signedIn: false, providers: [], icons: [] };
+    account = await fetchAccount();
+    if (account && !account.signedIn) {
+        saveToken("");
+        if (await becomeGuest()) {
+            account = await fetchAccount();
+        }
     }
+    account ??= { signedIn: false, providers: [], icons: [] };
     // Every visit renews the login token, so it keeps working as long as the user comes back within 30 days.
     if (account.signedIn && account.accessToken) {
         saveToken(account.accessToken);
-    } else if (token && !account.signedIn) {
-        saveToken("");
+        await transferSeats();
+    }
+    if (account.kind === "Guest") {
+        localStorage.setItem(GUEST_KEY, JSON.stringify({ name: account.name, icon: account.icon }));
     }
     renderAccount();
     if (isNewExternalUser && account.signedIn) {
@@ -232,27 +276,21 @@ function iconElement(icon, className = "icon") {
     return span;
 }
 
-// Shows the user's icon and name (which open their profile, with Log out), or a Log in button.
+// Shows the user's icon and name, which open their profile. Nothing is shown if the server could not be reached.
 function renderAccount() {
     const bar = $("account");
-    if (account.signedIn) {
-        const name = document.createElement("span");
-        name.textContent = account.name;
-        const profile = smallButton("", openProfileDialog);
-        profile.classList.add("account-name");
-        profile.title = t("Your profile");
-        profile.replaceChildren(iconElement(account.icon), name);
-        bar.replaceChildren(profile);
-    } else {
-        const login = smallButton(t("Log in"), openLoginDialog);
-        login.classList.remove("secondary");
-        bar.replaceChildren(login);
+    if (!account.signedIn) {
+        bar.replaceChildren();
+        return;
     }
+    const name = document.createElement("span");
+    name.textContent = account.name;
+    const profile = smallButton("", openProfileDialog);
+    profile.classList.add("account-name");
+    profile.title = t("Your profile");
+    profile.replaceChildren(iconElement(account.icon), name);
+    bar.replaceChildren(profile);
 }
-
-document.querySelectorAll("[data-login]").forEach((button) => {
-    button.addEventListener("click", openLoginDialog);
-});
 
 // A row of icon buttons to choose from. Returns { get value() } with the chosen icon.
 function iconPicker(container, icons, selected) {
@@ -274,11 +312,15 @@ function iconPicker(container, icons, selected) {
 }
 
 // Sends an account request; on success saves the new login token and reloads, otherwise shows the error in the dialog.
+// If the request logs in another user (`changesUser`), the reloaded page gives them the previous user's seats.
 // Returns true if the page is reloading.
-async function submitAccount(url, body, errorElement) {
+async function submitAccount(url, body, errorElement, changesUser = false) {
     errorElement.textContent = "";
     const response = await postJson(url, body).catch(() => null);
     if (response?.ok) {
+        if (changesUser) {
+            sessionStorage.setItem(PREVIOUS_TOKEN_KEY, token);
+        }
         saveToken((await response.json()).accessToken);
         location.reload();
         return true;
@@ -296,9 +338,9 @@ async function submitAccount(url, body, errorElement) {
 }
 
 // Submits a dialog form's account request, showing `busyText` on its submit button meanwhile.
-function submitAccountForm(form, busyText, url, body) {
+function submitAccountForm(form, busyText, url, body, changesUser = false) {
     const button = form.querySelector('[type="submit"]');
-    return withBusyButton(button, busyText, () => submitAccount(url, body, form.querySelector(".error")));
+    return withBusyButton(button, busyText, () => submitAccount(url, body, form.querySelector(".error"), changesUser));
 }
 
 function createDialog(html) {
@@ -310,48 +352,80 @@ function createDialog(html) {
     return dialog;
 }
 
-let loginDialog = null;
-
-// Log in as a guest (name only), as a registered user, by creating an account, or with an external provider.
-function openLoginDialog() {
-    loginDialog ??= createLoginDialog();
-    loginDialog.querySelectorAll(".error").forEach((e) => { e.textContent = ""; });
-    loginDialog.showModal();
-}
-
-function createLoginDialog() {
+// The profile: change the display name and icon. Saved users can also upload a picture as their icon, and log out (to
+// become a new guest, with a random name and icon). Guests can log in, create an account (with the name and icon chosen
+// above), or sign in with an external provider. The new user keeps the seats the previous one held.
+function openProfileDialog() {
+    const isGuest = account.kind === "Guest";
+    const icons = account.uploadedIcon ? [account.uploadedIcon, ...account.icons] : account.icons;
     const dialog = createDialog(`
-        <h2>${t("Log in")}</h2>
-        <div class="tabs" role="tablist">
-            <button type="button" role="tab" data-tab="guest">${t("Guest")}</button>
-            <button type="button" role="tab" data-tab="login">${t("Log in")}</button>
-            <button type="button" role="tab" data-tab="register">${t("Create account")}</button>
-        </div>
-        <form data-panel="guest">
-            <p class="hint">${t("Play with just a name. Nothing is saved.")}</p>
-            <label>${t("Your name")} <input name="name" maxlength="30" autocomplete="nickname" required></label>
-            <div class="icon-picker"></div>
-            <p class="error" role="alert"></p>
-            <div class="actions"><button type="submit">${t("Play as guest")}</button><button type="button" class="secondary" data-close>${t("Cancel")}</button></div>
-        </form>
-        <form data-panel="login">
-            <label>${t("Username")} <input name="username" maxlength="20" autocomplete="username" required></label>
-            <label>${t("Password")} <input name="password" type="password" maxlength="100" autocomplete="current-password" required></label>
-            <p class="error" role="alert"></p>
-            <div class="actions"><button type="submit">${t("Log in")}</button><button type="button" class="secondary" data-close>${t("Cancel")}</button></div>
-        </form>
-        <form data-panel="register">
-            <label>${t("Username")} <input name="username" maxlength="20" autocomplete="username" required pattern="[A-Za-z0-9_]{3,20}"></label>
-            <p class="hint">${t("3 to 20 letters, digits or underscores. You log in with it; others see your display name.")}</p>
-            <label>${t("Password")} <input name="password" type="password" minlength="8" maxlength="100" autocomplete="new-password" required></label>
-            <p class="hint">${t("At least 8 characters. It cannot be reset, so keep it safe.")}</p>
+        <form data-profile>
+            <h2>${t("Your profile")}</h2>
+            <p class="hint" data-welcome hidden>${t("Welcome! Choose how other players see you.")}</p>
             <label>${t("Display name")} <input name="name" maxlength="30" autocomplete="nickname" required></label>
             <div class="icon-picker"></div>
+            <label class="upload" ${isGuest ? "hidden" : ""}>${t("Upload a picture")} <input name="picture" type="file" accept="image/*"></label>
             <p class="error" role="alert"></p>
-            <div class="actions"><button type="submit">${t("Create account")}</button><button type="button" class="secondary" data-close>${t("Cancel")}</button></div>
+            <div class="actions"><button type="submit">${t("Save")}</button><button type="button" class="secondary" data-close>${t("Cancel")}</button></div>
         </form>
-        <div class="login-providers"><p class="hint">${t("Or")}</p></div>`);
+        ${isGuest ? `
+        <div class="profile-account">
+            <p class="hint">${t("You are playing as a guest. Log in, or create an account to keep your name and icon on any device.")}</p>
+            <div class="tabs" role="tablist">
+                <button type="button" role="tab" data-tab="login">${t("Log in")}</button>
+                <button type="button" role="tab" data-tab="register">${t("Create account")}</button>
+            </div>
+            <form data-panel="login">
+                <label>${t("Username")} <input name="username" maxlength="20" autocomplete="username" required></label>
+                <label>${t("Password")} <input name="password" type="password" maxlength="100" autocomplete="current-password" required></label>
+                <p class="error" role="alert"></p>
+                <div class="actions"><button type="submit">${t("Log in")}</button></div>
+            </form>
+            <form data-panel="register">
+                <label>${t("Username")} <input name="username" maxlength="20" autocomplete="username" required pattern="[A-Za-z0-9_]{3,20}"></label>
+                <p class="hint">${t("3 to 20 letters, digits or underscores. You log in with it; others see your display name.")}</p>
+                <label>${t("Password")} <input name="password" type="password" minlength="8" maxlength="100" autocomplete="new-password" required></label>
+                <p class="hint">${t("At least 8 characters. It cannot be reset, so keep it safe.")}</p>
+                <p class="hint">${t("Your account gets the display name and icon chosen above.")}</p>
+                <p class="error" role="alert"></p>
+                <div class="actions"><button type="submit">${t("Create account")}</button></div>
+            </form>
+            <div class="login-providers"><p class="hint">${t("Or")}</p></div>
+        </div>` : `
+        <div class="actions profile-logout"><button type="button" class="secondary small" data-logout>${t("Log out")}</button></div>`}`);
+    const form = dialog.querySelector("[data-profile]");
+    const error = form.querySelector(".error");
+    form.elements.name.value = account.name;
+    form.querySelector("[data-welcome]").hidden = !isNewExternalUser;
+    const picker = iconPicker(form.querySelector(".icon-picker"), icons, account.icon);
 
+    form.elements.picture.addEventListener("change", async () => {
+        const file = form.elements.picture.files[0];
+        if (file) {
+            await withBusyButton(form.querySelector('[type="submit"]'), t("Uploading…"), () => uploadIcon(file, error));
+        }
+    });
+    form.addEventListener("submit", (event) => {
+        event.preventDefault();
+        submitAccountForm(form, t("Saving…"), "/auth/profile", { name: form.elements.name.value, icon: picker.value });
+    });
+    if (isGuest) {
+        setUpLogin(dialog, () => ({ name: form.elements.name.value, icon: picker.value }));
+    } else {
+        dialog.querySelector("[data-logout]").addEventListener("click", () => {
+            sessionStorage.setItem(PREVIOUS_TOKEN_KEY, token);
+            localStorage.removeItem(GUEST_KEY);
+            saveToken("");
+            location.reload();
+        });
+    }
+    dialog.addEventListener("close", () => dialog.remove());
+    dialog.showModal();
+}
+
+// The profile dialog's login part, for guests: Log in and Create account tabs, and a button per external provider.
+// `profile` gives the display name and icon for a new account.
+function setUpLogin(dialog, profile) {
     const providers = dialog.querySelector(".login-providers");
     providers.hidden = account.providers.length === 0;
     for (const provider of account.providers) {
@@ -365,6 +439,7 @@ function createLoginDialog() {
                 event.preventDefault();
                 return;
             }
+            sessionStorage.setItem(PREVIOUS_TOKEN_KEY, token);
             link.classList.add("is-busy");
             link.setAttribute("aria-disabled", "true");
             link.textContent = t("Connecting to {provider}…", { provider });
@@ -383,60 +458,17 @@ function createLoginDialog() {
         dialog.querySelectorAll("[data-panel]").forEach((p) => { p.hidden = p.dataset.panel !== tab; });
     };
     dialog.querySelectorAll("[data-tab]").forEach((b) => b.addEventListener("click", () => show(b.dataset.tab)));
-    show("guest");
+    show("login");
 
     const panel = (name) => dialog.querySelector(`[data-panel="${name}"]`);
-    const guestIcon = iconPicker(panel("guest").querySelector(".icon-picker"), account.icons, null);
-    const registerIcon = iconPicker(panel("register").querySelector(".icon-picker"), account.icons, null);
     const onSubmit = (name, busyText, url, body) => panel(name).addEventListener("submit", (event) => {
         event.preventDefault();
-        submitAccountForm(event.target, busyText, url, body(new FormData(event.target)));
+        submitAccountForm(event.target, busyText, url, body(new FormData(event.target)), true);
     });
-    onSubmit("guest", t("Logging in…"), "/auth/guest", (f) => ({ name: f.get("name"), icon: guestIcon.value }));
     onSubmit("login", t("Logging in…"), "/auth/login", (f) => ({ username: f.get("username"), password: f.get("password") }));
     onSubmit("register", t("Creating account…"), "/auth/register", (f) => ({
-        username: f.get("username"), password: f.get("password"), name: f.get("name"), icon: registerIcon.value,
+        username: f.get("username"), password: f.get("password"), ...profile(),
     }));
-    return dialog;
-}
-
-// Change the display name and icon, or log out. Saved users can also upload a picture as their icon.
-function openProfileDialog() {
-    const canUpload = account.kind !== "Guest";
-    const icons = account.uploadedIcon ? [account.uploadedIcon, ...account.icons] : account.icons;
-    const dialog = createDialog(`
-        <form>
-            <h2>${t("Your profile")}</h2>
-            <p class="hint" data-welcome hidden>${t("Welcome! Choose how other players see you.")}</p>
-            <label>${t("Display name")} <input name="name" maxlength="30" autocomplete="nickname" required></label>
-            <div class="icon-picker"></div>
-            <label class="upload" ${canUpload ? "" : "hidden"}>${t("Upload a picture")} <input name="picture" type="file" accept="image/*"></label>
-            <p class="error" role="alert"></p>
-            <div class="actions"><button type="submit">${t("Save")}</button><button type="button" class="secondary" data-close>${t("Cancel")}</button></div>
-            <div class="actions profile-logout"><button type="button" class="secondary small" data-logout>${t("Log out")}</button></div>
-        </form>`);
-    const form = dialog.querySelector("form");
-    const error = form.querySelector(".error");
-    form.querySelector("[data-logout]").addEventListener("click", () => {
-        saveToken("");
-        location.reload();
-    });
-    form.elements.name.value = account.name;
-    form.querySelector("[data-welcome]").hidden = !isNewExternalUser;
-    const picker = iconPicker(form.querySelector(".icon-picker"), icons, account.icon);
-
-    form.elements.picture.addEventListener("change", async () => {
-        const file = form.elements.picture.files[0];
-        if (file) {
-            await withBusyButton(form.querySelector('[type="submit"]'), t("Uploading…"), () => uploadIcon(file, error));
-        }
-    });
-    form.addEventListener("submit", (event) => {
-        event.preventDefault();
-        submitAccountForm(form, t("Saving…"), "/auth/profile", { name: form.elements.name.value, icon: picker.value });
-    });
-    dialog.addEventListener("close", () => dialog.remove());
-    dialog.showModal();
 }
 
 // Shrinks a picture to a 128×128 square in the browser and uploads it as the user's icon.
@@ -777,16 +809,11 @@ function startSessionPage(gameType, render, seatRole = (seat) => t("Seat {n}", {
         const empty = absent.length - away.length;
         const names = [...away, ...(empty === 1 ? [t("1 empty seat")] : empty > 1 ? [t("{n} empty seats", { n: empty })] : [])].join(", ");
         const text = state.phase === "Paused" ? t("Game paused: {names}", { names }) : t("Free seats: {names}", { names });
-        const items = [el("span", null, text)];
-        // Anyone can take a seat, after logging in; a player takes it as a second seat.
-        {
-            const label = !account?.signedIn ? t("Log in to take a seat") : view.isPlayer ? t("Take additional seat") : t("Take this seat");
-            const take = el("button", "small", label);
-            take.type = "button";
-            take.addEventListener("click", () => (account?.signedIn ? act("TakeSeat") : openLoginDialog()));
-            items.push(take);
-        }
-        banner.replaceChildren(...items);
+        // Anyone can take a seat; a player takes it as a second seat.
+        const take = el("button", "small", view.isPlayer ? t("Take additional seat") : t("Take this seat"));
+        take.type = "button";
+        take.addEventListener("click", () => act("TakeSeat"));
+        banner.replaceChildren(el("span", null, text), take);
     }
 
     // The session bar's role ("You: ⚪ White", or "👁 Watching") and, in its menu, how many players are seated.
@@ -804,7 +831,7 @@ function startSessionPage(gameType, render, seatRole = (seat) => t("Seat {n}", {
     function seatItem(state, seat) {
         const info = state.seats[seat];
         const action = view.isMe(seat) ? { text: t("Leave seat"), run: () => act("LeaveSeat", seat) }
-            : !info && account?.signedIn ? { text: t("Sit here"), run: () => act("TakeSeat") }
+            : !info ? { text: t("Sit here"), run: () => act("TakeSeat") }
                 : null;
 
         const tile = document.createElement(action ? "button" : "div");
@@ -1013,7 +1040,6 @@ function startSessionPage(gameType, render, seatRole = (seat) => t("Seat {n}", {
             $("seats").replaceChildren(...state.seats.flatMap((info, seat) => (info || seat === next ? [seatItem(state, seat)] : [])));
             $("lobby-options").hidden = state.optionList.length === 0;
             $("options-summary").textContent = `${t("Game options:")} ${optionsSummary(state)}`;
-            $("login-to-play").hidden = Boolean(account?.signedIn);
             $("start-game").hidden = !(view.isPlayer && taken >= state.minSeats);
             $("start-game").textContent = t(state.gameNumber > 0 ? "New game" : "Start");
             return;

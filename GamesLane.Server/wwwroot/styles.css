@@ -316,8 +316,19 @@ button:not(.cell):disabled {
 }
 
 .dialog > form,
-.dialog > .tabs {
+.profile-account > form,
+.profile-account > .tabs {
     margin-bottom: 0.75rem;
+}
+
+/* Logging in, for guests, below the profile form. */
+.profile-account {
+    padding-top: 0.6rem;
+    border-top: 1px solid var(--line);
+}
+
+.profile-account > .hint {
+    margin: 0;
 }
 
 .tabs {

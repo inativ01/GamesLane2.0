@@ -181,6 +181,12 @@ public abstract class GameSession : IGameSession
     }
 
     /// <summary>
+    /// Called by <see cref="TransferSeats"/>, while holding <see cref="Sync"/>, for a game that keeps more about its
+    /// users than their seats (e.g. requests to join). Returns true if anything changed.
+    /// </summary>
+    protected virtual bool OnUserReplaced(string fromUserKey, string toUserKey, PlayerProfile profile) => false;
+
+    /// <summary>
     /// Called after the session was loaded from a save (see <see cref="Restore"/>), while holding <see cref="Sync"/>:
     /// a session gives its game again what is not saved, such as its dice or deck.
     /// </summary>
@@ -329,6 +335,62 @@ public abstract class GameSession : IGameSession
             }
 
             _disconnectedSince[userKey] = now;
+            return true;
+        }
+    }
+
+    /// <summary>
+    /// Gives everything <paramref name="fromUserKey"/> holds in the session (their seats, player ID, and whether they are
+    /// reconnecting or Away) to <paramref name="toUserKey"/>, shown as <paramref name="profile"/>, when the same person
+    /// logs in or out. If <paramref name="toUserKey"/> is not connected, they count as disconnected since
+    /// <paramref name="fromUserKey"/> was, or since <paramref name="now"/>. Returns true if anything changed.
+    /// </summary>
+    public bool TransferSeats(string fromUserKey, string toUserKey, PlayerProfile profile, DateTimeOffset now)
+    {
+        lock (Sync)
+        {
+            if (fromUserKey == toUserKey)
+            {
+                return false;
+            }
+
+            var moved = false;
+            for (var i = 0; i < _seats.Length; i++)
+            {
+                if (_seats[i]?.UserKey == fromUserKey)
+                {
+                    _seats[i] = new Seat(toUserKey, profile);
+                    moved = true;
+                }
+            }
+
+            var changed = OnUserReplaced(fromUserKey, toUserKey, profile);
+            if (!moved && !changed)
+            {
+                return false;
+            }
+
+            if (!_playerIds.ContainsKey(toUserKey) && _playerIds.Remove(fromUserKey, out var playerId))
+            {
+                _playerIds[toUserKey] = playerId;
+            }
+
+            var wasDisconnected = _disconnectedSince.Remove(fromUserKey, out var since);
+            var wasAway = _away.Remove(fromUserKey);
+            if (moved && !IsConnected(toUserKey))
+            {
+                _disconnectedSince.TryAdd(toUserKey, wasDisconnected ? since : now);
+                if (wasAway)
+                {
+                    _away.Add(toUserKey);
+                }
+            }
+
+            if (moved)
+            {
+                OnSeatsChanged();
+            }
+
             return true;
         }
     }

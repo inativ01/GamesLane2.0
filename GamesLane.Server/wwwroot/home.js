@@ -1,10 +1,6 @@
 "use strict";
 
-// Main screen: start a new game (logged-in users only; others are asked to log in) or join one by code,
-// then go to that game's page. A game clicked while logged out is remembered in this tab and started once the
-// user has logged in (the page reloads after logging in, or returns here after Google sign-in).
-
-const PENDING_GAME_KEY = "pendingGame";
+// Main screen: start a new game or join one by code, then go to that game's page.
 
 function goToSession(gameType, sessionId) {
     location.href = `${GAME_PAGES[gameType]}?session=${sessionId}`;
@@ -34,7 +30,7 @@ async function startGame(gameType) {
     }
 }
 
-// The order of the games. Logged-in users drag a game by its handle to move it. A saved user's order is kept with
+// The order of the games. Users drag a game by its handle to move it. A saved user's order is kept with
 // their account; a guest's in this browser. It is applied whenever the main screen opens. Games not in the order (e.g.
 // new ones) keep their usual place after the others. Alt+Up and Alt+Down move the focused game with the keyboard.
 const GAME_ORDER_KEY = "gameOrder";
@@ -134,46 +130,7 @@ accountReady.then(() => {
 });
 
 document.querySelectorAll("[data-create]").forEach((button) => {
-    button.addEventListener("click", async () => {
-        await accountReady;
-        if (account.signedIn) {
-            startGame(button.dataset.create);
-            return;
-        }
-
-        // Remember the game while the login dialog is open; closing it without logging in forgets it.
-        // Logging in reloads the page (or leaves it for Google sign-in), so the dialog's close event does not fire then.
-        sessionStorage.setItem(PENDING_GAME_KEY, button.dataset.create);
-        openLoginDialog();
-        loginDialog.addEventListener("close", () => sessionStorage.removeItem(PENDING_GAME_KEY), { once: true });
-    });
-});
-
-// After logging in, start the game the user clicked. A new Google user first sees the profile dialog.
-// Until we know whether the user is logged in (the server may be waking up), show that the game is on its way.
-if (sessionStorage.getItem(PENDING_GAME_KEY)) {
-    showBusy(t("Starting your game…"), 0);
-}
-
-accountReady.then(() => {
-    const pending = sessionStorage.getItem(PENDING_GAME_KEY);
-    sessionStorage.removeItem(PENDING_GAME_KEY);
-    hideBusy();
-    if (!pending || !account.signedIn) {
-        return;
-    }
-
-    const openDialog = document.querySelector("dialog[open]");
-    if (openDialog) {
-        // Saving the profile reloads the page, so keep the game for that; closing the dialog starts it now.
-        sessionStorage.setItem(PENDING_GAME_KEY, pending);
-        openDialog.addEventListener("close", () => {
-            sessionStorage.removeItem(PENDING_GAME_KEY);
-            startGame(pending);
-        }, { once: true });
-    } else {
-        startGame(pending);
-    }
+    button.addEventListener("click", () => startGame(button.dataset.create));
 });
 
 $("join-form").addEventListener("submit", async (event) => {

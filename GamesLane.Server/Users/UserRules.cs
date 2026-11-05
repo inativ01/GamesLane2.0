@@ -47,6 +47,16 @@ public static partial class UserRules
     public static string DefaultIcon => BuiltInIcons[0];
 
     /// <summary>
+    /// A name for a new guest: <c>Guest-</c> and a random 3-digit number, e.g. <c>Guest-042</c>.
+    /// </summary>
+    public static string RandomGuestName() => $"Guest-{Random.Shared.Next(1000):D3}";
+
+    /// <summary>
+    /// A random one of the <see cref="BuiltInIcons"/>, for a new guest.
+    /// </summary>
+    public static string RandomIcon() => BuiltInIcons[Random.Shared.Next(BuiltInIcons.Count)];
+
+    /// <summary>
     /// Returns the trimmed display name, or null if it is empty or longer than <see cref="MaxNameLength"/> characters.
     /// </summary>
     public static string? NormalizeName(string? name) =>

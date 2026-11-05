@@ -15,39 +15,39 @@ How to use GamesLane and the rules of each game. For how it is built, see the [d
 
 ## Getting started
 
-1. Open the site (e.g. https://gameslane.onrender.com) and **Log in** (as a guest, with a username, or with Google).
+1. Open the site (e.g. https://gameslane.onrender.com). You are logged in automatically as a guest; to use an account, open your profile (your icon and name in the top bar) and log in.
 2. On the main screen, choose a game. A new **session** opens, with its game code and a join link.
-3. Send the link (or the code) to the others. Anyone who opens it can watch; logged-in users tap **Sit here** to take a seat.
+3. Send the link (or the code) to the others. Anyone who opens it can watch, or tap **Sit here** to take a seat.
 4. Once enough seats are taken, any seated player presses **Start**.
 
 A typical setup is a shared screen (such as a TV or laptop) connected as a spectator to show the board, while each player uses their own phone to view their hand and play. To try several players on one computer, use a separate browser tab for each user.
 
 ## Users and logging in
 
-- A **user** is a person who is logged in. At most one user is logged in per browser tab; there may be no user logged in. Different tabs may have different users.
+- A **user** is a person using the site. There is always exactly one user per browser tab; different tabs may have different users.
 - A user has a **user ID**, a **display name** and an **icon** (a built-in emoji, or an uploaded picture).
-- There are three ways to log in:
-  - **Guest:** just a name (and a built-in icon). Guests are not saved in the database.
+- There are three kinds of user:
+  - **Guest:** anyone who has not logged in with an account. A new visitor automatically becomes a guest named `Guest-` and a random 3-digit number (e.g. `Guest-042`), with a random built-in icon. Guests are not saved in the database.
   - **Registered user:** a unique username (3–20 letters, digits or `_`, any case) and a password (at least 8 characters), plus a display name and icon. Passwords cannot be reset, since no email is collected.
   - **Google** (or Microsoft): the account is saved by provider and account ID. The display name and icon default to the Google name and picture; changing them affects only GamesLane.
-- Registered and Google users can upload a picture as their icon; the page shrinks it to 128×128 before uploading.
+- The profile (the user's icon and name in the top bar) lets every user change their display name and icon. Guests can also **Log in**, **Create account** (which keeps the display name and icon chosen in the profile), or sign in with Google. Registered and Google users can upload a picture as their icon (the page shrinks it to 128×128 before uploading) and **Log out**, which makes them a new guest with a random name and icon.
 - A login lasts 30 days after the last visit. Saved users who are inactive for 30 days are deleted automatically.
 - Changing the display name or icon also updates it on any seat the user holds.
-- A guest exists only in the browser where they logged in; logging in again as a guest creates a new user.
-- Logging in or out mid-game leaves your seat Away (the game pauses, or in Rich man, poor man passes for you) until you log in again as the same user.
+- A guest exists only in the browser where they were created. Their name and icon are remembered in the browser, so a guest whose login has expired comes back with the same name and icon (as a new user).
+- Logging in, creating an account or logging out mid-game keeps your seats: they move to the new user, with the new name and icon. Other tabs that still use the previous user become spectators. Only sessions that are open on the server at the time move; a seat in a session nobody has open stays with the previous user.
 
 ## Main screen
 
 - A splash screen (the portrait or landscape picture, to suit the screen) is shown for 5 seconds when the app is first opened in a browser tab and whenever the GamesLane name in the top bar is used (on every page, the main screen too); then the main screen appears. It is not shown again when the page reloads (e.g. after logging in).
-- The top bar of every page shows the GamesLane name picture and, on the right, a **Log in** button when no user is logged in, or the user's icon and name, which open their profile: the display name and icon, and a **Log out** button.
-- A list of games. A new session can be started only when a user is logged in; choosing a game while logged out opens the login dialog, and the session is started once the user has logged in.
-- Logged-in users can reorder the games by dragging a game by its ⋮⋮ handle (mouse or touch; Alt+↑/↓ with the keyboard). A saved user's order (registered or Google) is saved with their account; a guest's is remembered in the browser. The order is applied whenever the main screen opens. Games not in a saved order (e.g. new ones) keep their usual place after the others.
-- A way to join a session by entering its code. This does not require a logged-in user.
+- The top bar of every page shows the GamesLane name picture and, on the right, the user's icon and name, which open their profile (see [Users and logging in](#users-and-logging-in)).
+- A list of games. Choosing a game starts a new session.
+- Users can reorder the games by dragging a game by its ⋮⋮ handle (mouse or touch; Alt+↑/↓ with the keyboard). A saved user's order (registered or Google) is saved with their account; a guest's is remembered in the browser. The order is applied whenever the main screen opens. Games not in a saved order (e.g. new ones) keep their usual place after the others.
+- A way to join a session by entering its code.
 - A link to the privacy policy (`/privacy.html`).
 
 ## Languages
 
-- English and Hebrew. Every page has a Hebrew translation (including the login and profile dialogs, the session lobby, the game options and the server's messages); the top bar shows the current language's flag; tapping it opens a menu of the languages, and choosing one reloads the page in it.
+- English and Hebrew. Every page has a Hebrew translation (including the profile dialog, the session lobby, the game options and the server's messages); the top bar shows the current language's flag; tapping it opens a menu of the languages, and choosing one reloads the page in it.
 - Hebrew pages read from right to left (the backgammon board stays as it is).
 - The choice is remembered in the browser; until the user chooses, Hebrew if the browser prefers it, otherwise English.
 - Pages without a translation (The Gang, Rock-paper-scissors, Tic-tac-toe) stay in English and show no flag.
@@ -55,7 +55,7 @@ A typical setup is a shared screen (such as a TV or laptop) connected as a spect
 ## Sessions
 
 - A **session** is one instance of a specific game, identified by a unique code.
-- A session can be created from the main screen, joined by entering its code, or opened directly from its URL. Joining does not require a logged-in user.
+- A session can be created from the main screen, joined by entering its code, or opened directly from its URL.
 - A session's status is **Lobby** (the session lobby), **Playing** (the game screen), **Paused** (the game screen, waiting for an absent player) or **Over** (the game has ended by itself and shows its result). Each game also has its own phases inside Playing, e.g. the exchange in Rich man, poor man or the reveal in The Gang. See [Disconnections and seats](#disconnections-and-seats).
 - The top of a session's page stays in place while the page scrolls. Under the top bar, the **session bar** (as tall as the top bar) shows the game's picture and name, the user's role in words (e.g. "You: ⚪ White", "You: X", "You: Player 3", or "👁 Watching"), the game code (🔑; clicking it copies it to the clipboard), and during a game a menu button (☰). The menu shows the invite link with **Copy** (and **Share** where the browser supports it), how many players are seated, and for players during a game **Leave my seat (watch)** and **End game for everyone** (after confirming). When it does not all fit on one line (e.g. on a phone), the session bar takes two: the game's picture and name, then the rest. The picture and name are on the left (on the right in Hebrew), and the other items on the right (on the left in Hebrew), on either line. During a game, a **status bar** under it shows the game's status and messages to the user, with the buttons of the turn where the game has them (e.g. Backgammon's 🎲 **Roll** and **Done**). While the user waits for others, the status bar is grey; when they have something to do (e.g. their move, or a button waiting for them such as **Next round**, **Next game**, **Next heist** or **Play again**), it turns gold, with a larger text, and flashes once. The colour alone shows whose turn it is, so the text has no "waiting" or "your turn" icons. The buttons between rounds and games (**Next round**, **Next game**, **Next heist**, **Play again**, **Back to the lobby**) are in the status bar. In games that keep a score (Tic-tac-toe, Rock-paper-scissors, Backgammon, Yatzee), a score row under the status, in the same colour, shows the round or game number (and the draws, or the match length), and each player's score (and pip count in Backgammon), with the player to act outlined. The round or match line is on its own; the players share the line under it when both fit, otherwise each has a line. The game options are shown and changed only in the session lobby.
 - Sessions are saved and kept for 30 days after their last activity, so players can come back to a game later, even after the server restarts. After that, its code no longer works.
@@ -63,7 +63,7 @@ A typical setup is a shared screen (such as a TV or laptop) connected as a spect
 ## Session lobby
 
 - A screen shared by all games, showing the game's **seats**.
-- Only a logged-in user can take a seat. Users do not choose a seat: the taken seats are always the first ones, followed by a single empty seat (**Sit here**), until all seats are taken. A user may take more than one seat (and then sees the private information of all of them).
+- Any user can take a seat. Users do not choose a seat: the taken seats are always the first ones, followed by a single empty seat (**Sit here**), until all seats are taken. A user may take more than one seat (and then sees the private information of all of them).
 - A user can leave a seat by tapping it. The seats after it then move up one, so there are no gaps.
 - On every page except the main screen, the GamesLane name in the top bar goes back to the main screen (for players, this gives up their seats).
 - A user who loses their connection (closed tab, phone asleep, network lost) keeps their seats for 60 seconds, and gets them back if they return in time; their seat shows a spinner meanwhile. In the lobby, the seats are then freed, as if they had left. During a game, see [Disconnections and seats](#disconnections-and-seats).
@@ -80,7 +80,7 @@ A typical setup is a shared screen (such as a TV or laptop) connected as a spect
 - When the minimum number of seats is taken, a **Start** button appears (**New game** after the first game). Any seated user can start the game.
 - While the session is in the lobby, an **Invite friends** panel shows the join link (`/join/{code}`), with **Copy link** and **Share…** buttons where the browser supports them.
 - In the lobby, everyone sees the chosen [game options](#game-options) on a big **Game options:** button; anyone in the session can change them.
-- Anyone not seated (logged in or not) is a **spectator**.
+- Anyone not seated is a **spectator**.
 
 ## Game screen
 
@@ -106,7 +106,7 @@ A typical setup is a shared screen (such as a TV or laptop) connected as a spect
   An **absent** seat is one that is Away or Vacant.
 - **Only while a game is in progress** (Playing or Paused) are Away seats kept. In the session lobby, and once a game is Over, an Away seat is freed.
 - **Coming back:** after a refresh or a dropped connection, the page reconnects by itself and the player keeps their seats: in the session lobby, as long as they return within 60 seconds; during a game, at any time, unless someone has taken their seat.
-- **Taking an absent seat:** during a game, anyone logged in can take an absent seat of the game with **Take this seat** (in the banner in the status bar, which names the Away players and counts the empty seats; a user who is not logged in sees **Log in to take a seat**). A player in the game can also take it as an additional seat (**Take additional seat**), and then plays both seats. Whoever takes it continues that player's game (their cards, checkers or chips). If the seat was Away, its holder loses it: when they come back, they are a spectator.
+- **Taking an absent seat:** during a game, anyone can take an absent seat of the game with **Take this seat** (in the banner in the status bar, which names the Away players and counts the empty seats). A player in the game can also take it as an additional seat (**Take additional seat**), and then plays both seats. Whoever takes it continues that player's game (their cards, checkers or chips). If the seat was Away, its holder loses it: when they come back, they are a spectator.
 - **What a game does with absent seats** depends on the game:
 
   | Game | With an absent seat | Effect |
@@ -207,7 +207,7 @@ A game can offer **options**, i.e. rule variants (so far The Gang's and backgamm
   3. **How each pair exchanges:** the poorer player must give their N highest cards: the game picks them, and the player confirms with **Give these cards**. The richer player taps any N cards and presses **Give**. Nobody gets any cards until every pair has given: then all the cards are exchanged at once, everyone gets their new cards together, and the poorest player starts. Nobody sees the cards they will receive before choosing the cards they give.
 - **An absent player during a game** (Away or Vacant, see [Disconnections and seats](#disconnections-and-seats)): their cards are held until the end of the game. They become inactive and pass automatically; if they are to start a round, the next active player in turn starts it. An Away player who comes back plays on. Anyone can take an absent seat (**Take this seat** in the banner, no approval needed) and continue the game in their place, with their cards and their place. If every player is absent, the game waits until someone comes back or takes a seat. An inactive player gets no finishing place. When the game ends and **Next game** is pressed, absent seats are removed, and the exchange is for the remaining number of players (the others keep their order, by the ranking); a player who becomes absent during the exchange is removed too.
 - **Fewer than 6 players:** a game in progress continues with however many active players are left, but there can be no exchange with fewer than 6 players: **Next game** then takes everyone back to the session lobby (a new game can start there once 6 are seated). Likewise, if players leave during the exchange and fewer than 6 remain, everyone goes back to the lobby.
-- **Joining:** during a game, nobody can take a seat other than a seat whose player left. During the exchange, an observer who is logged in can **Ask to join**; any player sees the request and can **Accept** it, choosing the newcomer's place (#1 to the last; the players from that place down move down one), or **Decline** it. A player who leaves during the exchange is dropped at once. Each time a player is added or dropped, one set of 2 to A is added to or removed from the deck (so each number still appears once per player), all the cards are shuffled and dealt again, any cards already given are cancelled, and the exchange starts again for the new number of players.
+- **Joining:** during a game, nobody can take a seat other than a seat whose player left. During the exchange, an observer can **Ask to join**; any player sees the request and can **Accept** it, choosing the newcomer's place (#1 to the last; the players from that place down move down one), or **Decline** it. A player who leaves during the exchange is dropped at once. Each time a player is added or dropped, one set of 2 to A is added to or removed from the deck (so each number still appears once per player), all the cards are shuffled and dealt again, any cards already given are cancelled, and the exchange starts again for the new number of players.
 - **Screens:**
   - **A player's phone** shows their hand sorted from low to high, with equal numbers together, overlapping as needed so the whole hand and the table fit on the screen without scrolling. They tap one or more cards of the same value, then **Select** to put them on the table, or **Pass**. Tapping a card when there is a throw to beat picks as many cards of that number as are needed. A user holding several seats sees one hand per seat.
   - **The table** (shown to everyone, and to observers such as a TV) shows the cards to beat and who threw them, then the round's winner; and the players in place order (#1, the rich man, to the last, the poor man), one line each, with their number of cards, whose turn it is, their last call in this round (**Pass**, or what they threw, e.g. "2×9"), who left, the finishing places so far, and during the exchange, how many cards each player gives and to whom (e.g. "Gives 4 cards to #8", then "✓ Gave 4 cards to #8" once given). After a game, it shows the next game's places.

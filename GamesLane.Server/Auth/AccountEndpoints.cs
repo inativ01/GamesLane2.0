@@ -1,8 +1,10 @@
 using System.Security.Claims;
 using GamesLane.Server.Data;
 using GamesLane.Server.Games;
+using GamesLane.Server.Hubs;
 using GamesLane.Server.Sessions;
 using GamesLane.Server.Users;
+using Microsoft.AspNetCore.SignalR;
 
 namespace GamesLane.Server.Auth;
 
@@ -10,6 +12,11 @@ namespace GamesLane.Server.Auth;
 /// The body of <c>POST /auth/guest</c> and <c>POST /auth/profile</c>.
 /// </summary>
 public record ProfileRequest(string? Name, string? Icon);
+
+/// <summary>
+/// The body of <c>POST /auth/transfer</c>: the login token the user had before logging in or out.
+/// </summary>
+public record TransferRequest(string? PreviousToken);
 
 /// <summary>
 /// The body of <c>POST /auth/register</c>.
@@ -22,15 +29,16 @@ public record RegisterRequest(string? Username, string? Password, string? Name, 
 public record LoginRequest(string? Username, string? Password);
 
 /// <summary>
-/// The account endpoints: who is logged in, logging in as a guest or registered user, registering, the profile
-/// (display name and icon), and saved game options. Every successful login or profile call returns a fresh login token,
-/// which the page keeps for this tab.
+/// The account endpoints: who is logged in, becoming a guest, logging in as a registered user, registering, moving seats
+/// to the new user after logging in or out, the profile (display name and icon), and saved game options. Every
+/// successful login or profile call returns a fresh login token, which the page keeps for this tab.
 /// </summary>
 public static class AccountEndpoints
 {
     /// <summary>
-    /// Maps <c>/auth/me</c>, <c>/auth/guest</c>, <c>/auth/register</c>, <c>/auth/login</c>, <c>/auth/profile</c>,
-    /// <c>/auth/icon</c>, <c>/api/icons/{id}</c>, <c>/api/game-order</c> and <c>/api/options/{gameType}</c>.
+    /// Maps <c>/auth/me</c>, <c>/auth/guest</c>, <c>/auth/register</c>, <c>/auth/login</c>, <c>/auth/transfer</c>,
+    /// <c>/auth/profile</c>, <c>/auth/icon</c>, <c>/api/icons/{id}</c>, <c>/api/game-order</c> and
+    /// <c>/api/options/{gameType}</c>.
     /// </summary>
     public static void MapAccountEndpoints(this WebApplication app)
     {
@@ -53,15 +61,42 @@ public static class AccountEndpoints
             });
         });
 
-        app.MapPost("/auth/guest", (ProfileRequest request, HttpContext context) =>
+        // A new guest. Without a valid name or icon (e.g. a first visit), they get a random name and icon; the page sends
+        // the guest's previous name and icon when their login token has expired.
+        app.MapPost("/auth/guest", (ProfileRequest? request, HttpContext context) =>
         {
-            if (UserRules.NormalizeName(request.Name) is not { } name)
+            var name = UserRules.NormalizeName(request?.Name) ?? UserRules.RandomGuestName();
+            var icon = UserRules.IsBuiltInIcon(request?.Icon) ? request.Icon : UserRules.RandomIcon();
+            return Token(context, AuthSetup.CreateUser($"guest:{Guid.NewGuid():N}", name, icon, AuthSetup.GuestKind));
+        });
+
+        // After logging in or out, gives the seats of the previous user (proven by their login token) to the current one,
+        // in every session in memory.
+        app.MapPost("/auth/transfer", async (TransferRequest request, HttpContext context, IGameSessionStore store,
+            IHubContext<GameHub> hub, TimeProvider timeProvider) =>
+        {
+            if (AuthSetup.GetProfile(context.User) is not { } profile)
             {
-                return Error($"Enter a name of 1 to {UserRules.MaxNameLength} characters.");
+                return Results.Unauthorized();
             }
 
-            var icon = UserRules.IsBuiltInIcon(request.Icon) ? request.Icon : UserRules.DefaultIcon;
-            return Token(context, AuthSetup.CreateUser($"guest:{Guid.NewGuid():N}", name, icon, AuthSetup.GuestKind));
+            if (AuthSetup.ReadToken(context, request.PreviousToken) is not { } previous || AuthSetup.GetUserId(previous) is null)
+            {
+                return Error("Your previous login has expired.");
+            }
+
+            var from = GameHub.GetUserKey(previous, "");
+            var to = GameHub.GetUserKey(context.User, "");
+            var now = timeProvider.GetUtcNow();
+            foreach (var session in store.All.ToList())
+            {
+                if (session.TransferSeats(from, to, profile, now))
+                {
+                    await GameHub.BroadcastState(hub.Clients, store, session);
+                }
+            }
+
+            return Results.NoContent();
         });
 
         app.MapPost("/auth/register", async (RegisterRequest request, HttpContext context, IUserService users) =>
