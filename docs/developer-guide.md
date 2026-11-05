@@ -99,6 +99,7 @@ docs/                          This guide and the user manual; original logo, na
 The seat states (Present, Reconnecting, Away, Vacant) and what each game does with absent seats are described in the [user manual](user-manual.md#disconnections-and-seats). In the code:
 
 - `GameSession` tracks each user's connections and when they disconnected. `UpdateAwaySeats` (called by `DisconnectedSeatsMonitor`) turns users disconnected for `ReconnectWindow` into Away; outside a game, their seats are freed.
+- **Noticing a lost connection:** the page closes its hub connection on `pagehide`, so closing a tab or leaving the page disconnects at once (a page the browser restores from its cache reloads). When a browser cannot say goodbye (a phone app closed or asleep, a lost network), the keep-alive messages tell: each side sends one every 5 seconds and treats 10 seconds of silence as a lost connection (`KeepAliveInterval` and `ClientTimeoutInterval` in `Program.cs`, `withKeepAliveInterval` and `withServerTimeout` in `common.js`; keep them matching, with the timeout at least twice the interval).
 - A game session chooses how it handles absent seats: by default the session is Paused while a game seat is absent; a session that overrides `ContinuesWithAbsentPlayers` (Rich man, poor man) keeps Playing, and reacts in `OnSeatsChanged` (e.g. `RichManPoorManGame.SetActive`).
 - Each game defines its maximum number of seats (up to 12) and the minimum needed to start (which may equal the maximum).
 - Private game information is not sent while the session is in the lobby.

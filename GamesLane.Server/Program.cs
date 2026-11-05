@@ -25,7 +25,14 @@ builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddHostedService<DisconnectedSeatsMonitor>();
 builder.Services.AddHostedService<ExpiredSessionCleanup>();
 builder.Services.ConfigureHttpJsonOptions(options => options.SerializerOptions.Converters.Add(new JsonStringEnumConverter()));
-builder.Services.AddSignalR()
+// Each side sends a keep-alive message every 5 seconds and treats 10 seconds of silence as a lost connection, so a
+// player whose phone or browser closed without saying goodbye shows as Reconnecting within about 10 seconds.
+// The page's settings in common.js must match.
+builder.Services.AddSignalR(options =>
+    {
+        options.KeepAliveInterval = TimeSpan.FromSeconds(5);
+        options.ClientTimeoutInterval = TimeSpan.FromSeconds(10);
+    })
     .AddJsonProtocol(options => options.PayloadSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 
 var app = builder.Build();

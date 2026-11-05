@@ -115,13 +115,31 @@ const accountReady = (async () => {
     return account;
 })();
 
+// A keep-alive message every 5 seconds, and 10 seconds of silence from the server count as a lost connection (matching
+// the server's settings in Program.cs).
 const connection = new signalR.HubConnectionBuilder()
     .withUrl("/hubs/game", { accessTokenFactory: () => token })
     .withAutomaticReconnect()
+    .withKeepAliveInterval(5000)
+    .withServerTimeout(10000)
     .build();
 
+let pageClosing = false;
 connection.onreconnecting(() => showError(t("Connection lost. Reconnecting…")));
-connection.onclose(() => showError(t("Connection lost. Reload the page to reconnect.")));
+connection.onclose(() => {
+    if (!pageClosing) showError(t("Connection lost. Reload the page to reconnect."));
+});
+
+// When the page closes (or the browser leaves it), the connection is closed on purpose, so the server knows at once
+// instead of waiting for the keep-alive messages to stop. A page the browser brings back from its cache reloads, to
+// connect again.
+window.addEventListener("pagehide", () => {
+    pageClosing = true;
+    connection.stop();
+});
+window.addEventListener("pageshow", (event) => {
+    if (event.persisted) location.reload();
+});
 
 // Connects to the server. A failed attempt is retried a few times over about 10 seconds, since the server may be
 // waking up or a new version going live; only then is the error shown.
