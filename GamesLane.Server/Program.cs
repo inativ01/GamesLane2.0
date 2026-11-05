@@ -43,11 +43,12 @@ app.MapGet("/health", () => Results.Ok("Healthy"));
 app.MapAccountEndpoints();
 app.MapExternalSignInEndpoints();
 
+// Public games cannot be joined by code, so they are not found here.
 app.MapGet("/api/sessions/{code}", async (string code, IGameSessionStore store) =>
-    await store.GetAsync(code) is { } session ? Results.Ok(SessionInfo(session)) : Results.NotFound());
+    await store.GetAsync(code) is { IsPublic: false } session ? Results.Ok(SessionInfo(session)) : Results.NotFound());
 
 app.MapGet("/join/{code}", async (string code, IGameSessionStore store) =>
-    await store.GetAsync(code) is { } session
+    await store.GetAsync(code) is { IsPublic: false } session
         ? Results.Redirect($"{GameSessionStore.PageFor(session.Type)}?session={session.Id}")
         : Results.Redirect($"/?session={Uri.EscapeDataString(code.ToUpperInvariant())}&notfound=1"));
 

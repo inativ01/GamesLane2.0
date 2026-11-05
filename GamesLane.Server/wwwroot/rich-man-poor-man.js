@@ -217,9 +217,9 @@ function playerItem(game, state, view, player) {
 }
 
 // During the exchange: players see who asks to join, and accept them at a place of their choice (the last place by
-// default) or decline. Others can ask to join, or withdraw their request.
+// default) or decline. Others can ask to join, or withdraw their request. Not in public games.
 function joinPanel(game, state, view) {
-    if (game.phase !== "Exchanging") {
+    if (game.phase !== "Exchanging" || state.isPublic) {
         return null;
     }
     const send = (method, ...args) => call(method, rich.sessionId, ...args).catch(() => {});

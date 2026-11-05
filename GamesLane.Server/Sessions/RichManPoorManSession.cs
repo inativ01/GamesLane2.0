@@ -173,7 +173,8 @@ public class RichManPoorManSession(string id, Action<Card[]>? shuffle = null, Ra
     {
         lock (Sync)
         {
-            error = !IsExchanging ? "You can ask to join during the card exchange, between games."
+            error = IsPublic ? "A public game cannot be joined once it has started."
+                : !IsExchanging ? "You can ask to join during the card exchange, between games."
                 : _requests.Any(r => r.UserKey == userKey) ? "You have already asked to join."
                 : Game.Order.Count >= RichManPoorManRules.MaxPlayers ? "The table is full."
                 : null;

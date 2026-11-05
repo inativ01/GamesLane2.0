@@ -468,7 +468,75 @@ input {
     font-size: 1.15rem;
 }
 
-/* Main screen */
+/* Main screen: public and private games side by side (one under the other on narrow screens); choosing to create or
+   join a game shows the list of games instead. */
+
+main.home {
+    max-width: 960px;
+}
+
+.menu-columns {
+    display: grid;
+    gap: 0 0.75rem;
+}
+
+@media (min-width: 700px) {
+    .menu-columns {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+.menu-columns[hidden] {
+    display: none;
+}
+
+.menu-column h2 + .hint {
+    margin-top: -0.4rem;
+}
+
+.menu-actions {
+    display: grid;
+    gap: 0.6rem;
+    margin-bottom: 1rem;
+}
+
+#picker {
+    max-width: 680px;
+    margin-inline: auto;
+}
+
+.picker-actions {
+    justify-content: center;
+    margin-top: 1rem;
+}
+
+/* Games in progress that wait for the user, each with Return and Leave. */
+.waiting-games {
+    display: grid;
+    gap: 0.5rem;
+    margin: 0.75rem 0;
+}
+
+.waiting-games[hidden] {
+    display: none;
+}
+
+.waiting-game {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.6rem 0.9rem;
+    border-radius: var(--radius);
+    background: #fbe7d6;
+    box-shadow: var(--shadow);
+}
+
+.waiting-game span {
+    flex: 1;
+    min-width: 12rem;
+    font-weight: 700;
+}
 
 .join-row {
     display: flex;

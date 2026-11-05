@@ -21,12 +21,13 @@ public class GameSessionStore(
     private readonly ILogger _logger = logger ?? NullLogger<GameSessionStore>.Instance;
     private readonly ConcurrentDictionary<string, IGameSession> _sessions = new(StringComparer.OrdinalIgnoreCase);
     private readonly ConcurrentDictionary<string, SemaphoreSlim> _saving = new(StringComparer.OrdinalIgnoreCase);
+    private readonly ConcurrentDictionary<string, DateTimeOffset> _lastSaved = new(StringComparer.OrdinalIgnoreCase);
 
     // Loading and unloading wait for each other, so a session is never in memory twice.
     private readonly SemaphoreSlim _loading = new(1, 1);
 
     /// <inheritdoc />
-    public async Task<IGameSession> CreateAsync(GameType type)
+    public async Task<IGameSession> CreateAsync(GameType type, Action<IGameSession>? prepare = null)
     {
         while (true)
         {
@@ -37,6 +38,7 @@ public class GameSessionStore(
             }
 
             var session = New(type, id);
+            prepare?.Invoke(session);
             if (_sessions.TryAdd(id, session))
             {
                 await SaveAsync(session);
@@ -92,13 +94,15 @@ public class GameSessionStore(
         await gate.WaitAsync();
         try
         {
+            var now = _time.GetUtcNow();
+            _lastSaved[session.Id] = now;
             await repository.SaveAsync(new SavedSession
             {
                 Id = session.Id.ToUpperInvariant(),
                 GameType = session.Type.ToString(),
                 Version = SessionSnapshot.Version(session.GetType()),
                 Data = session.Save(),
-                UpdatedAt = _time.GetUtcNow(),
+                UpdatedAt = now,
             });
         }
         catch (Exception ex)
@@ -117,17 +121,18 @@ public class GameSessionStore(
         await _loading.WaitAsync();
         try
         {
-            if (session.HasHadSeats)
+            if (!session.HasStarted || (session.IsPublic && !session.HasSeatedPlayers))
             {
-                await SaveAsync(session);
+                await repository.DeleteAsync(session.Id.ToUpperInvariant());
             }
             else
             {
-                await repository.DeleteAsync(session.Id.ToUpperInvariant());
+                await SaveAsync(session);
             }
 
             _sessions.TryRemove(new KeyValuePair<string, IGameSession>(session.Id, session));
             _saving.TryRemove(session.Id, out _);
+            _lastSaved.TryRemove(session.Id, out _);
         }
         finally
         {
@@ -137,6 +142,10 @@ public class GameSessionStore(
 
     /// <inheritdoc />
     public IEnumerable<IGameSession> All => _sessions.Values;
+
+    /// <inheritdoc />
+    public DateTimeOffset LastActivity(IGameSession session) =>
+        _lastSaved.TryGetValue(session.Id, out var saved) ? saved : DateTimeOffset.MinValue;
 
     /// <summary>
     /// A new, empty session of the given game with the given code.

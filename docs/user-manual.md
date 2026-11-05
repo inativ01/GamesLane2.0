@@ -8,6 +8,7 @@ How to use GamesLane and the rules of each game. For how it is built, see the [d
 - [Languages](#languages)
 - [Sessions](#sessions)
 - [Session lobby](#session-lobby)
+- [Public games](#public-games)
 - [Game screen](#game-screen)
 - [Disconnections and seats](#disconnections-and-seats)
 - [Game options](#game-options)
@@ -16,9 +17,11 @@ How to use GamesLane and the rules of each game. For how it is built, see the [d
 ## Getting started
 
 1. Open the site (e.g. https://gameslane.onrender.com). You are logged in automatically as a guest; to use an account, open your profile (your icon and name in the top bar) and log in.
-2. On the main screen, choose a game. A new **session** opens, with its game code and a join link.
+2. To play with family and friends, choose **Create a game** under **Private games**, then a game. A new **session** opens, with its game code and a join link.
 3. Send the link (or the code) to the others. Anyone who opens it can watch, or tap **Sit here** to take a seat.
 4. Once enough seats are taken, any seated player presses **Start**.
+
+To play with other people on GamesLane, use **Public games** instead (see [Public games](#public-games)).
 
 A typical setup is a shared screen (such as a TV or laptop) connected as a spectator to show the board, while each player uses their own phone to view their hand and play. To try several players on one computer, use a separate browser tab for each user.
 
@@ -40,9 +43,12 @@ A typical setup is a shared screen (such as a TV or laptop) connected as a spect
 
 - A splash screen (the portrait or landscape picture, to suit the screen) is shown for 5 seconds when the app is first opened in a browser tab and whenever the GamesLane name in the top bar is used (on every page, the main screen too); then the main screen appears. It is not shown again when the page reloads (e.g. after logging in).
 - The top bar of every page shows the GamesLane name picture and, on the right, the user's icon and name, which open their profile (see [Users and logging in](#users-and-logging-in)).
-- A list of games. Choosing a game starts a new session.
-- Users can reorder the games by dragging a game by its ⋮⋮ handle (mouse or touch; Alt+↑/↓ with the keyboard). A saved user's order (registered or Google) is saved with their account; a guest's is remembered in the browser. The order is applied whenever the main screen opens. Games not in a saved order (e.g. new ones) keep their usual place after the others.
-- A way to join a session by entering its code.
+- Two columns (one under the other on narrow screens such as phones):
+  - **Public games:** **Create a game** and **Join a game** (see [Public games](#public-games)).
+  - **Private games** (family and friends): **Create a game**, and a box to join a game by its code.
+- Each **Create a game** and **Join a game** button shows the list of games to choose from, with **Back to the main menu** (the browser's Back button also returns to the menu).
+- Users can reorder the games by dragging a game by its ⋮⋮ handle (mouse or touch; Alt+↑/↓ with the keyboard). The order is the same in all three lists: changing it in one changes it in all. A saved user's order (registered or Google) is saved with their account; a guest's is remembered in the browser. Games not in a saved order (e.g. new ones) keep their usual place after the others.
+- **Coming back to a game:** when the main screen opens, a user who holds a seat in a public game in progress that waits for them (their seat is Reconnecting or Away) is taken straight back to it (to the most recently active one, if there are several). For private games in progress that wait for them, the main screen shows "You have a game in progress: …" with **Return** and **Leave** (which gives up their seats).
 - A link to the privacy policy (`/privacy.html`).
 
 ## Languages
@@ -55,10 +61,11 @@ A typical setup is a shared screen (such as a TV or laptop) connected as a spect
 ## Sessions
 
 - A **session** is one instance of a specific game, identified by a unique code.
-- A session can be created from the main screen, joined by entering its code, or opened directly from its URL.
+- A session is **private** (family and friends) or **public**. A private session can be created from the main screen, joined by entering its code, or opened directly from its URL. A public session is created or joined only from the main screen (see [Public games](#public-games)).
 - A session's status is **Lobby** (the session lobby), **Playing** (the game screen), **Paused** (the game screen, waiting for an absent player) or **Over** (the game has ended by itself and shows its result). Each game also has its own phases inside Playing, e.g. the exchange in Rich man, poor man or the reveal in The Gang. See [Disconnections and seats](#disconnections-and-seats).
 - The top of a session's page stays in place while the page scrolls. Under the top bar, the **session bar** (as tall as the top bar) shows the game's picture and name, the user's role in words (e.g. "You: ⚪ White", "You: X", "You: Player 3", or "👁 Watching"), the game code (🔑; clicking it copies it to the clipboard), and during a game a menu button (☰). The menu shows the invite link with **Copy** (and **Share** where the browser supports it), how many players are seated, and for players during a game **Leave my seat (watch)** and **End game for everyone** (after confirming). When it does not all fit on one line (e.g. on a phone), the session bar takes two: the game's picture and name, then the rest. The picture and name are on the left (on the right in Hebrew), and the other items on the right (on the left in Hebrew), on either line. During a game, a **status bar** under it shows the game's status and messages to the user, with the buttons of the turn where the game has them (e.g. Backgammon's 🎲 **Roll** and **Done**). While the user waits for others, the status bar is grey; when they have something to do (e.g. their move, or a button waiting for them such as **Next round**, **Next game**, **Next heist** or **Play again**), it turns gold, with a larger text, and flashes once. The colour alone shows whose turn it is, so the text has no "waiting" or "your turn" icons. The buttons between rounds and games (**Next round**, **Next game**, **Next heist**, **Play again**, **Back to the lobby**) are in the status bar. In games that keep a score (Tic-tac-toe, Rock-paper-scissors, Backgammon, Yatzee), a score row under the status, in the same colour, shows the round or game number (and the draws, or the match length), and each player's score (and pip count in Backgammon), with the player to act outlined. The round or match line is on its own; the players share the line under it when both fit, otherwise each has a line. The game options are shown and changed only in the session lobby.
-- Sessions are saved and kept for 30 days after their last activity, so players can come back to a game later, even after the server restarts. After that, its code no longer works.
+- Sessions where a game has started are saved and kept for 30 days after their last activity, so players can come back to a game later, even after the server restarts. After that, its code no longer works.
+- A session whose game never started is deleted once nobody has had it open for 30 seconds, or for 10 minutes for a private session with players seated (so friends have time to open the link). A public session with nobody seated is deleted at once.
 
 ## Session lobby
 
@@ -67,7 +74,7 @@ A typical setup is a shared screen (such as a TV or laptop) connected as a spect
 - A user can leave a seat by tapping it. The seats after it then move up one, so there are no gaps.
 - On every page except the main screen, the GamesLane name in the top bar goes back to the main screen (for players, this gives up their seats).
 - A user who loses their connection (closed tab, phone asleep, network lost) keeps their seats for 60 seconds, and gets them back if they return in time; their seat shows a spinner meanwhile. In the lobby, the seats are then freed, as if they had left. During a game, see [Disconnections and seats](#disconnections-and-seats).
-- Creating a session does not seat the creator; they join the session and can then take a seat.
+- Creating a private session does not seat the creator; they join the session and can then take a seat.
 - Each game has its own number of seats and minimum to start:
 
   | Game | Seats | Needed to start |
@@ -81,6 +88,24 @@ A typical setup is a shared screen (such as a TV or laptop) connected as a spect
 - While the session is in the lobby, an **Invite friends** panel shows the join link (`/join/{code}`), with **Copy link** and **Share…** buttons where the browser supports them.
 - In the lobby, everyone sees the chosen [game options](#game-options) on a big **Game options:** button; anyone in the session can change them.
 - Anyone not seated is a **spectator**.
+
+The lobby of a public game differs in some ways; see [Public games](#public-games).
+
+## Public games
+
+Public games let users play with other people on GamesLane. Private games work as described above.
+
+- **Creating:** **Create a game** under **Public games**, then a game. The creator is seated at once.
+- **Joining:** **Join a game** under **Public games**, then a game. The user is seated at once in a random public game of that kind that is in its lobby with a free seat (it may be one they are already in, e.g. from another tab, as an additional seat). If there is none, they can **Create a new game** or go **Back to the main menu**.
+- **No code and no spectators:** a public game shows no game code, invite link or share buttons, and cannot be joined by code or link. Only its seated players can open it; there is no **Sit here** and no **Take this seat**.
+- **The creator** (shown as "Creator" on their seat) alone changes the [game options](#game-options) (others can only see them) and presses **Start** in the lobby. If the creator's seat is freed, the next seated player becomes the creator.
+- **Starting:**
+  - Games with a fixed number of players (Tic-tac-toe, Rock-paper-scissors, Backgammon) start by themselves when a player joins and fills the seats.
+  - Games with a minimum and a maximum (The Gang, Rich man, poor man, Yatzee): the creator can press **Start** once the minimum is seated; the game starts by itself when a player joins and fills the last seat.
+  - Returning to the lobby with all seats taken does not restart the game by itself.
+- **Leaving:** a player leaves with **Leave game** (on their seat in the lobby, or in the ☰ menu during a game) or by going back to the main screen; either way they give up their seats. During a game this ends the game at once for everyone (except Rich man, poor man, which goes on): everyone goes back to the lobby, which says e.g. "Ada left the game.", and random players can join again.
+- **Disconnections:** as in private games, a disconnected player keeps their seats for 60 seconds, then is Away. In the lobby their seat is then freed. During a game the game pauses (except Rich man, poor man), nobody can take the seat, and the other players can **End game for everyone**. A player whose seat was freed cannot open the game again: they go to the main screen, which says "You are no longer in this game."
+- **Joining a game in progress** is not possible, including Rich man, poor man's **Ask to join**.
 
 ## Game screen
 
@@ -121,7 +146,7 @@ A typical setup is a shared screen (such as a TV or laptop) connected as a spect
 
 A game can offer **options**, i.e. rule variants (so far The Gang's and backgammon's). A **choice** option is one of its choices. A **set** option (e.g. The Gang's challenge cards) is a list of choices, all on by default (for cards, each with its picture: tap a card to turn it on or off; a card that is off is greyed out). Some options are shown only when another option has a certain value (e.g. the card options only in Advanced mode).
 
-- In the session lobby, the chosen options are shown on a big button starting with **Game options:**. Anyone in the session can press it and change the options in the dialog it opens, spectators too. They apply to the next new game; a paused game keeps the options it started with.
+- In the session lobby, the chosen options are shown on a big button starting with **Game options:**. Anyone in the session can press it and change the options in the dialog it opens, spectators too. In a public game, only its creator can change them; other players can only see them. They apply to the next new game; a paused game keeps the options it started with.
 - Saved users (registered or Google, not guests) can **save** the options as their preferences for that game, and **load** them back in the dialog. A session starts with its creator's saved preferences.
 
 ## Games

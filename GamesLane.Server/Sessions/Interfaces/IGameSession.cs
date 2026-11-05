@@ -49,9 +49,41 @@ public interface IGameSession
     bool IsIdle(DateTimeOffset now, TimeSpan idleTime);
 
     /// <summary>
-    /// Whether a seat has ever been taken in this session.
+    /// Whether a game has ever been started in this session.
     /// </summary>
-    bool HasHadSeats { get; }
+    bool HasStarted { get; }
+
+    /// <summary>
+    /// Whether this is a public game: joined only from the main screen, at random, with no game code to share.
+    /// </summary>
+    bool IsPublic { get; }
+
+    /// <summary>
+    /// Whether any seat is taken.
+    /// </summary>
+    bool HasSeatedPlayers { get; }
+
+    /// <summary>
+    /// Whether a random player can join this session from the main screen: a public game in the lobby, with a player
+    /// and a free seat.
+    /// </summary>
+    bool IsOpenToJoin { get; }
+
+    /// <summary>
+    /// Makes this a public game. Call before anyone takes a seat; the first to take one is the host, who alone chooses
+    /// the options and starts the game.
+    /// </summary>
+    void MakePublic();
+
+    /// <summary>
+    /// Whether <paramref name="userKey"/> holds a seat.
+    /// </summary>
+    bool IsSeated(string userKey);
+
+    /// <summary>
+    /// Whether a game is in progress where <paramref name="userKey"/> holds a seat but is not connected.
+    /// </summary>
+    bool IsWaitingFor(string userKey);
 
     /// <summary>
     /// The session's state as JSON, to be loaded again with <see cref="Restore"/>. Open connections are not saved.

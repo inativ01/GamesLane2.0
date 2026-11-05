@@ -68,6 +68,8 @@ public record SeatInfo(string PlayerId, string Name, string Icon, SeatStatus Sta
 /// <see cref="GameNumber"/> is 0 until the first game starts; <see cref="Game"/> is the game-specific state, or null before then.
 /// <see cref="Options"/> are the chosen values of the game's options (<see cref="OptionList"/>), used by the next new game.
 /// <see cref="AbsentSeats"/> are, during a game, its seats that are Away or empty (they can be taken), in order.
+/// <see cref="IsPublic"/> tells a public game; <see cref="HostPlayerId"/> is its creator's player ID (who alone chooses
+/// the options and starts it), and <see cref="Notice"/> a message for everyone, e.g. that a player left the game.
 /// </summary>
 public record SessionState(
     string SessionId,
@@ -80,7 +82,16 @@ public record SessionState(
     object? Game,
     IReadOnlyList<GameOption> OptionList,
     IReadOnlyDictionary<string, string> Options,
-    IReadOnlyList<int> AbsentSeats);
+    IReadOnlyList<int> AbsentSeats,
+    bool IsPublic,
+    string? HostPlayerId,
+    string? Notice);
+
+/// <summary>
+/// A game in progress where the user holds a seat but is not connected (Reconnecting or Away), so the other players are
+/// waiting for them.
+/// </summary>
+public record WaitingGame(string SessionId, GameType GameType, bool IsPublic);
 
 /// <summary>
 /// Returned when a page enters a session: the public state, plus the caller's player ID if they are logged in, and
@@ -101,6 +112,10 @@ public record PrivateUpdate(string ConnectionId, object State);
 /// A user who disconnects keeps their seats for <see cref="ReconnectWindow"/>; then they are Away. In the lobby, and once
 /// a game is over, an Away user's seats are freed. During a game, they keep them until they come back or someone takes
 /// them; meanwhile the game pauses (unless <see cref="ContinuesWithAbsentPlayers"/>). Any seated player can end a game.
+/// A public game (see <see cref="MakePublic"/>) is joined only from the main screen, and seats nobody else: its creator
+/// (the host; when their seat is freed, the next seated player) alone chooses the options and starts it from the lobby,
+/// it starts by itself when a player joins and fills its seats, and a player who leaves it during a game ends the game
+/// (unless <see cref="ContinuesWithAbsentPlayers"/>).
 /// All public members are thread-safe; derived classes must lock <see cref="Sync"/> when accessing state.
 /// </summary>
 public abstract class GameSession : IGameSession
@@ -125,7 +140,9 @@ public abstract class GameSession : IGameSession
     private readonly Dictionary<string, string> _playerIds = [];
     private int[] _gameSeats = [];
     private bool _onGameScreen;
-    private bool _everSeated;
+    private bool _isPublic;
+    private string? _host;
+    private string? _notice;
     [NotSaved]
     private DateTimeOffset? _idleSince;
     private IReadOnlyDictionary<string, string> _options;
@@ -225,16 +242,92 @@ public abstract class GameSession : IGameSession
     }
 
     /// <summary>
-    /// Whether a seat has ever been taken in this session.
+    /// Whether a game has ever been started in this session.
     /// </summary>
-    public bool HasHadSeats
+    public bool HasStarted
     {
         get
         {
             lock (Sync)
             {
-                return _everSeated;
+                return GameNumber > 0;
             }
+        }
+    }
+
+    /// <summary>
+    /// Whether this is a public game (see <see cref="MakePublic"/>).
+    /// </summary>
+    public bool IsPublic
+    {
+        get
+        {
+            lock (Sync)
+            {
+                return _isPublic;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Whether any seat is taken.
+    /// </summary>
+    public bool HasSeatedPlayers
+    {
+        get
+        {
+            lock (Sync)
+            {
+                return _seats.Any(s => s is not null);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Whether a random player can join this session from the main screen: a public game in the lobby, with a player
+    /// and a free seat.
+    /// </summary>
+    public bool IsOpenToJoin
+    {
+        get
+        {
+            lock (Sync)
+            {
+                return _isPublic && !_onGameScreen && _seats.Any(s => s is null) && _seats.Any(s => s is not null);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Makes this a public game. Call before anyone takes a seat; the first to take one is the host.
+    /// </summary>
+    public void MakePublic()
+    {
+        lock (Sync)
+        {
+            _isPublic = true;
+        }
+    }
+
+    /// <summary>
+    /// Whether <paramref name="userKey"/> holds a seat.
+    /// </summary>
+    public bool IsSeated(string userKey)
+    {
+        lock (Sync)
+        {
+            return HoldsSeat(userKey);
+        }
+    }
+
+    /// <summary>
+    /// Whether a game is in progress where <paramref name="userKey"/> holds a seat but is not connected.
+    /// </summary>
+    public bool IsWaitingFor(string userKey)
+    {
+        lock (Sync)
+        {
+            return HasUnfinishedGame && _gameSeats.Any(s => _seats[s]?.UserKey == userKey) && !IsConnected(userKey);
         }
     }
 
@@ -375,6 +468,11 @@ public abstract class GameSession : IGameSession
                 _playerIds[toUserKey] = playerId;
             }
 
+            if (moved && _host == fromUserKey)
+            {
+                _host = toUserKey;
+            }
+
             var wasDisconnected = _disconnectedSince.Remove(fromUserKey, out var since);
             var wasAway = _away.Remove(fromUserKey);
             if (moved && !IsConnected(toUserKey))
@@ -458,7 +556,8 @@ public abstract class GameSession : IGameSession
                 return false;
             }
 
-            error = Phase == SessionPhase.Over ? "The game is over. Wait for the next game to take a seat."
+            error = _isPublic && _onGameScreen ? "A public game cannot be joined once it has started."
+                : Phase == SessionPhase.Over ? "The game is over. Wait for the next game to take a seat."
                 : !HasUnfinishedGame ? (_seats[seat] is null ? null : "That seat is taken.")
                 : !_gameSeats.Contains(seat) ? "The game has already started. You can watch it."
                 : !IsAbsent(seat) ? "That seat is taken."
@@ -470,7 +569,6 @@ public abstract class GameSession : IGameSession
 
             var previous = _seats[seat]?.UserKey;
             _seats[seat] = new Seat(userKey, profile);
-            _everSeated = true;
             PlayerIdFor(userKey);
             if (previous is not null && !HoldsSeat(previous))
             {
@@ -480,6 +578,15 @@ public abstract class GameSession : IGameSession
 
             _connections[connectionId] = userKey;
             MarkConnected(userKey);
+            if (_isPublic)
+            {
+                _host ??= userKey;
+                if (OccupiedSeats().Count() == MaxSeats)
+                {
+                    TryStartGame(out _);
+                }
+            }
+
             OnSeatsChanged();
             return true;
         }
@@ -522,7 +629,13 @@ public abstract class GameSession : IGameSession
                 return false;
             }
 
+            var leaver = LeaverOfPublicGame([seat]);
             VacateSeat(seat);
+            if (leaver is not null)
+            {
+                EndGameAfterLeaving(leaver);
+            }
+
             AfterSeatsChanged();
             OnSeatsChanged();
             CloseGapsInLobby();
@@ -561,20 +674,36 @@ public abstract class GameSession : IGameSession
                 return false;
             }
 
-            MoveSeatsUp();
-            var seats = OccupiedSeats().ToArray();
-            if (seats.Length < MinSeats)
+            if (_isPublic && !_onGameScreen && userKey != _host)
             {
-                error = $"At least {MinSeats} players must be seated.";
+                error = "Only the game's creator can start the game.";
                 return false;
             }
 
-            _gameSeats = seats;
-            GameNumber++;
-            StartNewGame(seats);
-            _onGameScreen = true;
-            return true;
+            return TryStartGame(out error);
         }
+    }
+
+    /// <summary>
+    /// Starts a new game for everyone seated, if enough are.
+    /// </summary>
+    private bool TryStartGame([NotNullWhen(false)] out string? error)
+    {
+        MoveSeatsUp();
+        var seats = OccupiedSeats().ToArray();
+        if (seats.Length < MinSeats)
+        {
+            error = $"At least {MinSeats} players must be seated.";
+            return false;
+        }
+
+        _gameSeats = seats;
+        GameNumber++;
+        _notice = null;
+        StartNewGame(seats);
+        _onGameScreen = true;
+        error = null;
+        return true;
     }
 
     /// <summary>
@@ -588,6 +717,12 @@ public abstract class GameSession : IGameSession
             if (Phase != SessionPhase.Lobby)
             {
                 error = "Options can only be changed in the lobby.";
+                return false;
+            }
+
+            if (_isPublic && userKey != _host)
+            {
+                error = "Only the game's creator can change the options.";
                 return false;
             }
 
@@ -682,7 +817,10 @@ public abstract class GameSession : IGameSession
                 GameNumber > 0 ? GetGameState() : null,
                 GameOptions.For(Type),
                 _options,
-                HasUnfinishedGame ? [.. AbsentGameSeats()] : []);
+                HasUnfinishedGame ? [.. AbsentGameSeats()] : [],
+                _isPublic,
+                _host is null ? null : PlayerIdFor(_host),
+                _notice);
         }
     }
 
@@ -767,7 +905,6 @@ public abstract class GameSession : IGameSession
         }
 
         _seats[seat] = new Seat(userKey, profile);
-        _everSeated = true;
         PlayerIdFor(userKey);
         MarkConnected(userKey);
         return seat;
@@ -790,6 +927,8 @@ public abstract class GameSession : IGameSession
             _disconnectedSince.Remove(taken.UserKey);
             _away.Remove(taken.UserKey);
         }
+
+        UpdateHost();
     }
 
     /// <summary>
@@ -837,6 +976,7 @@ public abstract class GameSession : IGameSession
     /// </summary>
     private int FreeSeats(string userKey)
     {
+        var leaver = LeaverOfPublicGame(OccupiedSeats().Where(s => _seats[s]!.UserKey == userKey));
         var freed = 0;
         for (var i = 0; i < _seats.Length; i++)
         {
@@ -851,12 +991,47 @@ public abstract class GameSession : IGameSession
         _away.Remove(userKey);
         if (freed > 0)
         {
+            UpdateHost();
+            if (leaver is not null)
+            {
+                EndGameAfterLeaving(leaver);
+            }
+
             AfterSeatsChanged();
             OnSeatsChanged();
             CloseGapsInLobby();
         }
 
         return freed;
+    }
+
+    /// <summary>
+    /// The name on <paramref name="seats"/> if giving them up ends a public game in progress (one of them plays it, and the
+    /// game does not go on without its players), otherwise null.
+    /// </summary>
+    private string? LeaverOfPublicGame(IEnumerable<int> seats) =>
+        _isPublic && HasUnfinishedGame && !ContinuesWithAbsentPlayers
+            ? seats.Where(s => _gameSeats.Contains(s)).Select(s => _seats[s]?.Profile.Name).FirstOrDefault()
+            : null;
+
+    /// <summary>
+    /// A player left a public game in progress: everyone goes back to the lobby, and is told who left.
+    /// </summary>
+    private void EndGameAfterLeaving(string name)
+    {
+        _notice = $"{name} left the game.";
+        EndGameInLobby();
+    }
+
+    /// <summary>
+    /// In a public game, when the host no longer holds a seat, the first seated player becomes the host.
+    /// </summary>
+    private void UpdateHost()
+    {
+        if (_isPublic && (_host is null || !HoldsSeat(_host)))
+        {
+            _host = _seats.FirstOrDefault(s => s is not null)?.UserKey;
+        }
     }
 
     /// <summary>

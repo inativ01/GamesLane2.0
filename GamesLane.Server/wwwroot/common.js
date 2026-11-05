@@ -766,9 +766,10 @@ function startSessionPage(gameType, render, seatRole = (seat) => t("Seat {n}", {
     const seatedCount = el("span", "session-menu-value");
     const standUp = menuAction(t("Leave my seat (watch)"), "secondary");
     const endGame = menuAction(t("End game for everyone"), "danger");
+    const inviteRow = el("div", "session-menu-row", el("span", null, t("Invite link")),
+        copyButton(joinUrl, t("Could not copy. Select the link and copy it manually.")), share);
     const menu = el("div", "session-menu",
-        el("div", "session-menu-row", el("span", null, t("Invite link")),
-            copyButton(joinUrl, t("Could not copy. Select the link and copy it manually.")), share),
+        inviteRow,
         el("div", "session-menu-row", el("span", null, t("Players:")), seatedCount),
         el("div", "session-menu-actions", standUp, endGame));
     menu.hidden = true;
@@ -798,9 +799,10 @@ function startSessionPage(gameType, render, seatRole = (seat) => t("Seat {n}", {
         const empty = absent.length - away.length;
         const names = [...away, ...(empty === 1 ? [t("1 empty seat")] : empty > 1 ? [t("{n} empty seats", { n: empty })] : [])].join(", ");
         const text = state.phase === "Paused" ? t("Game paused: {names}", { names }) : t("Free seats: {names}", { names });
-        // Anyone can take a seat; a player takes it as a second seat.
+        // Anyone can take a seat; a player takes it as a second seat. Nobody can in a public game.
         const take = el("button", "small", view.isPlayer ? t("Take additional seat") : t("Take this seat"));
         take.type = "button";
+        take.hidden = state.isPublic;
         take.addEventListener("click", () => act("TakeSeat"));
         banner.replaceChildren(el("span", null, text), take);
     }
@@ -816,11 +818,12 @@ function startSessionPage(gameType, render, seatRole = (seat) => t("Seat {n}", {
     }
 
     // A seat tile: a big icon, the name, and a note such as "Seat 2 · You". The user's own seat is a button to leave
-    // it; the empty seat is a button to sit there (the server gives the next available seat, which is this one).
+    // it; the empty seat is a button to sit there (the server gives the next available seat, which is this one). In a
+    // public game, leaving a seat leaves the game, and the empty seat waits for players joining from the main screen.
     function seatItem(state, seat) {
         const info = state.seats[seat];
-        const action = view.isMe(seat) ? { text: t("Leave seat"), run: () => act("LeaveSeat", seat) }
-            : !info ? { text: t("Sit here"), run: () => act("TakeSeat") }
+        const action = view.isMe(seat) ? (state.isPublic ? { text: t("Leave game"), run: leaveGame } : { text: t("Leave seat"), run: () => act("LeaveSeat", seat) })
+            : !info && !state.isPublic ? { text: t("Sit here"), run: () => act("TakeSeat") }
                 : null;
 
         const tile = document.createElement(action ? "button" : "div");
@@ -835,7 +838,8 @@ function startSessionPage(gameType, render, seatRole = (seat) => t("Seat {n}", {
         name.textContent = info ? info.name : t("Empty seat");
         const note = document.createElement("span");
         note.className = "seat-note";
-        note.textContent = [t("Seat {n}", { n: seat + 1 }), view.isMe(seat) && t("You"), info?.status === "Away" && t("Away"),
+        note.textContent = [t("Seat {n}", { n: seat + 1 }), view.isMe(seat) && t("You"),
+            state.isPublic && info && info.playerId === state.hostPlayerId && t("Creator"), info?.status === "Away" && t("Away"),
             info?.status === "Reconnecting" && t("Reconnecting…")]
             .filter(Boolean)
             .join(" · ");
@@ -878,11 +882,13 @@ function startSessionPage(gameType, render, seatRole = (seat) => t("Seat {n}", {
             .join(" · ");
     }
 
-    // Anyone in the session chooses the options for the next game. Saved users can also save them as their preferences
-    // (used automatically when they create a game) and load them back.
+    // Anyone in the session chooses the options for the next game; in a public game, only its creator (others only see
+    // them). Saved users can also save them as their preferences (used automatically when they create a game) and load
+    // them back.
     function openOptionsDialog() {
         const state = lastState;
-        const canSave = account?.signedIn && account.kind !== "Guest";
+        const canChange = !state.isPublic || isHost(state);
+        const canSave = canChange && account?.signedIn && account.kind !== "Guest";
         const dialog = createDialog(`
             <form>
                 <h2>${t("Game options")}</h2>
@@ -898,6 +904,11 @@ function startSessionPage(gameType, render, seatRole = (seat) => t("Seat {n}", {
         const form = dialog.querySelector("form");
         const note = form.querySelector("[data-note]");
         const error = form.querySelector(".error");
+        form.querySelector(".option-list").disabled = !canChange;
+        form.querySelector('[type="submit"]').hidden = !canChange;
+        if (!canChange) {
+            note.textContent = t("The game's creator chooses the options.");
+        }
 
         // One group per option: radio buttons for a choice, tick boxes for a set. Choices without hints sit in one row.
         // A choice with a picture (e.g. a card) shows it before the text; its box is hidden behind the picture.
@@ -1003,33 +1014,55 @@ function startSessionPage(gameType, render, seatRole = (seat) => t("Seat {n}", {
         if (taken < state.minSeats) {
             return t("Waiting for players ({taken}/{needed} needed)…", { taken, needed: state.minSeats });
         }
+        if (state.isPublic && !isHost(state)) {
+            const host = state.seats.find((s) => s && s.playerId === state.hostPlayerId);
+            return t("Waiting for {name} to start the game.", { name: host?.name ?? "" });
+        }
         return t("Ready to start.");
+    }
+
+    // Whether this user creates the public game: they alone choose its options and start it.
+    const isHost = (state) => Boolean(view.playerId) && state.hostPlayerId === view.playerId;
+
+    // Leaving a public game gives up the user's seats and goes back to the main screen, since nobody watches it.
+    let leaving = false;
+    async function leaveGame() {
+        leaving = true;
+        await call("LeaveSession", sessionId).catch(() => {});
+        location.href = "/";
     }
 
     function update(state) {
         lastState = state;
         view.mySeats = state.seats.flatMap((s, i) => (s && s.playerId === view.playerId ? [i] : []));
+        if (state.isPublic && !view.isPlayer) {
+            if (!leaving) location.replace("/?left=1");
+            return;
+        }
         const inLobby = state.phase === "Lobby";
         const taken = state.seats.filter(Boolean).length;
 
         $("session-lobby").hidden = !inLobby;
         $("game-screen").hidden = inLobby;
         $("status-bar").hidden = inLobby;
-        $("invite").hidden = !inLobby;
+        $("invite").hidden = !inLobby || state.isPublic;
+        $("session-code").closest(".code").hidden = state.isPublic;
+        inviteRow.hidden = state.isPublic;
         updateSessionInfo(state);
         menuButton.hidden = inLobby;
         if (inLobby) showMenu(false);
+        standUp.textContent = state.isPublic ? t("Leave game") : t("Leave my seat (watch)");
         standUp.hidden = inLobby || !view.isPlayer;
         endGame.hidden = inLobby || !view.isPlayer || state.phase === "Over";
 
         if (inLobby) {
-            $("lobby-status").textContent = lobbyStatus(state, taken);
+            $("lobby-status").textContent = [translateServerText(state.notice), lobbyStatus(state, taken)].filter(Boolean).join(" ");
             $("seat-count").textContent = `${taken} / ${state.seats.length}`;
             const next = nextSeat(state);
             $("seats").replaceChildren(...state.seats.flatMap((info, seat) => (info || seat === next ? [seatItem(state, seat)] : [])));
             $("lobby-options").hidden = state.optionList.length === 0;
             $("options-summary").textContent = `${t("Game options:")} ${optionsSummary(state)}`;
-            $("start-game").hidden = !(view.isPlayer && taken >= state.minSeats);
+            $("start-game").hidden = !(view.isPlayer && taken >= state.minSeats && (!state.isPublic || isHost(state)));
             $("start-game").textContent = t(state.gameNumber > 0 ? "New game" : "Start");
             return;
         }
@@ -1051,7 +1084,10 @@ function startSessionPage(gameType, render, seatRole = (seat) => t("Seat {n}", {
         showBusy(t("Opening the game…"));
         try {
             entry = await call("EnterSession", sessionId);
-        } catch {
+        } catch (err) {
+            if (/You are no longer in this game\./.test(err?.message ?? "")) {
+                location.replace("/?left=1");
+            }
             $("session").hidden = true;
             return;
         } finally {
@@ -1098,6 +1134,10 @@ function startSessionPage(gameType, render, seatRole = (seat) => t("Seat {n}", {
     $("to-lobby").addEventListener("click", () => act("ReturnToLobby"));
     standUp.addEventListener("click", () => {
         showMenu(false);
+        if (lastState?.isPublic) {
+            leaveGame();
+            return;
+        }
         view.mySeats.forEach((seat) => act("LeaveSeat", seat));
     });
 
@@ -1105,6 +1145,7 @@ function startSessionPage(gameType, render, seatRole = (seat) => t("Seat {n}", {
     document.querySelectorAll("[data-leave]").forEach((link) => {
         link.addEventListener("click", async (event) => {
             event.preventDefault();
+            leaving = true;
             await call("LeaveSession", sessionId).catch(() => {});
             location.href = link.href;
         });

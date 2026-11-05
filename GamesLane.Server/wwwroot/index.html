@@ -41,10 +41,36 @@
     <a href="/?splash" class="brand" title="Main screen" data-i18n-attr="title"><img class="brand-name" src="images/name.png" alt="GamesLane"></a>
     <div id="account" class="account"></div>
 </header>
-<main>
+<main class="home">
     <section id="home">
-        <div class="panel">
-            <h2 data-i18n>Start a new game</h2>
+        <div id="waiting-games" class="waiting-games" hidden></div>
+        <div id="menu" class="menu-columns">
+            <div class="panel menu-column">
+                <h2 data-i18n>Public games</h2>
+                <p class="hint" data-i18n>Play with other people on GamesLane.</p>
+                <div class="menu-actions">
+                    <button type="button" class="big" data-pick="public-create" data-i18n>Create a game</button>
+                    <button type="button" class="big secondary" data-pick="public-join" data-i18n>Join a game</button>
+                </div>
+            </div>
+            <div class="panel menu-column">
+                <h2 data-i18n>Private games</h2>
+                <p class="hint" data-i18n>Family and friends: share the game code or link with them.</p>
+                <div class="menu-actions">
+                    <button type="button" class="big" data-pick="private-create" data-i18n>Create a game</button>
+                </div>
+                <form id="join-form">
+                    <p class="hint" data-i18n>Got a code from a friend? Enter it to join the game.</p>
+                    <div class="join-row">
+                        <input id="code" maxlength="6" autocomplete="off" autocapitalize="characters" placeholder="CODE" aria-label="Game code" data-i18n-attr="placeholder,aria-label">
+                        <button type="submit" data-i18n>Join</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div id="picker" class="panel" hidden>
+            <h2 id="picker-title"></h2>
             <p id="arrange-hint" class="hint arrange-hint" hidden data-i18n>Drag a game by its ⋮⋮ handle to change the order.</p>
             <div id="game-list" class="game-list">
                 <button type="button" class="game-tile" data-create="TheGang">
@@ -102,17 +128,9 @@
                     <span class="game-go" aria-hidden="true">›</span>
                 </button>
             </div>
-        </div>
-
-        <div class="panel">
-            <h2 data-i18n>Join a game</h2>
-            <p class="hint" data-i18n>Got a code from a friend? Enter it to join the game.</p>
-            <form id="join-form">
-                <div class="join-row">
-                    <input id="code" maxlength="6" autocomplete="off" autocapitalize="characters" placeholder="CODE" aria-label="Game code" data-i18n-attr="placeholder,aria-label">
-                    <button type="submit" data-i18n>Join</button>
-                </div>
-            </form>
+            <div class="actions picker-actions">
+                <button id="picker-back" type="button" class="secondary" data-i18n>Back to the main menu</button>
+            </div>
         </div>
     </section>
 
