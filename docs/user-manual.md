@@ -44,8 +44,8 @@ A typical setup is a shared screen (such as a TV or laptop) connected as a spect
 - A splash screen (the portrait or landscape picture, to suit the screen) is shown for 5 seconds when the app is first opened in a browser tab and whenever the GamesLane name in the top bar is used (on every page, the main screen too); then the main screen appears. It is not shown again when the page reloads (e.g. after logging in).
 - The top bar of every page shows the GamesLane name picture and, on the right, the user's icon and name, which open their profile (see [Users and logging in](#users-and-logging-in)).
 - Two columns (one under the other on narrow screens such as phones):
-  - **Public games:** **Create a game** and **Join a game** (see [Public games](#public-games)).
   - **Private games** (family and friends): **Create a game**, and a box to join a game by its code.
+  - **Public games:** **Create a game** and **Join a game** (see [Public games](#public-games)).
 - Each **Create a game** and **Join a game** button shows the list of games to choose from, with **Back to the main menu** (the browser's Back button also returns to the menu).
 - Users can reorder the games by dragging a game by its ⋮⋮ handle (mouse or touch; Alt+↑/↓ with the keyboard). The order is the same in all three lists: changing it in one changes it in all. A saved user's order (registered or Google) is saved with their account; a guest's is remembered in the browser. Games not in a saved order (e.g. new ones) keep their usual place after the others.
 - **Coming back to a game:** when the main screen opens, a user who holds a seat in a public game in progress that waits for them (their seat is Reconnecting or Away) is taken straight back to it (to the most recently active one, if there are several). For private games in progress that wait for them, the main screen shows "You have a game in progress: …" with **Return** and **Leave** (which gives up their seats).
