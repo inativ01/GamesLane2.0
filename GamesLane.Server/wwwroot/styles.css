@@ -2801,10 +2801,10 @@ main.rich-poor .my-hand .actions {
     text-align: start;
 }
 
-/* Two columns even on a phone, so up to 12 players take at most 6 short rows. */
+/* One line per player, across the table, so each player's place, name, tags, cards and call are all in view. */
 .rp-players {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(min(13rem, calc(50% - 0.2rem)), 1fr));
+    grid-template-columns: 1fr;
     gap: 0.3rem;
     margin: 0;
     padding: 0;
@@ -2864,13 +2864,6 @@ main.rich-poor .my-hand .actions {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-}
-
-/* On a phone, each player stays on one line: no icon, and no Rich man / Poor man tags (#1 and the last place say it). */
-@media (max-width: 600px) {
-    .rp-players li :is(.icon, .rp-tag.rich, .rp-tag.poor) {
-        display: none;
-    }
 }
 
 /* Yatzee: the five dice in a row, and the scorecard with a column per player. */
