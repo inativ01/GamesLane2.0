@@ -696,6 +696,35 @@ footer {
     margin-top: 1rem;
 }
 
+footer a + a {
+    margin-inline-start: 1.25rem;
+}
+
+/* The feedback form: the comment box and the "Include my name" tick box. */
+textarea {
+    width: 100%;
+    font: inherit;
+    font-weight: 400;
+    padding: 0.6rem 0.75rem;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: #fff;
+    color: var(--ink);
+    resize: vertical;
+}
+
+textarea:focus-visible {
+    outline: 3px solid var(--focus);
+    outline-offset: 2px;
+}
+
+label.check {
+    flex-direction: row;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 400;
+}
+
 /* Session pages */
 
 /* The top of a session page stays in place: the header, the session bar (the game's picture and name, the user's role,

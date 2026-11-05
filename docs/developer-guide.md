@@ -62,6 +62,7 @@ GamesLane.Server/              ASP.NET Core backend
   Auth/AuthSetup.cs            Login tokens, rate limiting, Google/Microsoft sign-in
   Auth/AccountEndpoints.cs     Guests, registration, login, seat transfer, profile, icon and saved game options endpoints
   Data/                        Database (EF Core + PostgreSQL): tables, migrations, connection setup
+  Feedback/                    The feedback form's endpoint: FeedbackRules (a comment's checks and its GitHub issue), GitHubIssueTracker (creates the issue), FeedbackEndpoints (POST /api/feedback, rate limit)
   Users/                       User rules, user service, saved game options, and deletion of inactive users
   Hubs/GameHub.cs              SignalR hub for creating, joining and playing sessions
   Hubs/DisconnectedSeatsMonitor.cs  Marks users disconnected for 60 seconds as Away; removes sessions nobody has open (deletes those never started)
@@ -276,7 +277,7 @@ Each option has a key, a label and a list of choices with a default; `Games/Game
 | --- | --- |
 | `GET /api/sessions/{code}` | `{ sessionId, gameType, page }` for an existing private session, or 404 (also for public sessions) |
 | `GET /join/{code}` | Shareable join link; redirects to the private session's page (`<page>?session=CODE`), or if there is no such private session, to the main screen with the code filled in and a message |
-| `GET /auth/me` | `{ signedIn, kind, name, icon, uploadedIcon, gameOrder, accessToken, providers, icons }`. `gameOrder` is a saved user's order of the games (game names), or `null`; `accessToken` is a renewed login token; `providers` lists the external sign-in options that are configured; `icons` lists the built-in icons |
+| `GET /auth/me` | `{ signedIn, kind, name, icon, uploadedIcon, gameOrder, accessToken, providers, icons, feedback }`. `gameOrder` is a saved user's order of the games (game names), or `null`; `accessToken` is a renewed login token; `providers` lists the external sign-in options that are configured; `icons` lists the built-in icons; `feedback` tells whether comments can be sent (see [Feedback setup](#feedback-setup)) |
 | `POST /auth/guest` | Logs in as a new guest named `Guest-` and a random 3-digit number (e.g. `Guest-042`), with a random built-in icon. The token does not expire |
 | `POST /auth/transfer` | Body `{ previousToken }`, logged-in users only. Gives the seats of the user in `previousToken` to the current user in every session in memory (204), or `{ error }` (400) if the token is not valid or has expired |
 | `POST /auth/register` | Body `{ username, password, name, icon }`. Creates a registered user and logs in. Rate-limited |
@@ -289,6 +290,7 @@ Each option has a key, a label and a list of choices with a default; `Games/Game
 | `GET /api/options/{gameType}` | Saved users only. `{ saved, options }`: the user's saved options for the game, or its defaults (`saved: false`) |
 | `PUT /api/options/{gameType}` | Saved users only. Body: the options, e.g. `{ "mode": "Advanced" }`. Saves them as the user's preferences (204), or `{ error }` (400) |
 | `PUT /api/game-order` | Saved users only. Body: game names in the order to show them, e.g. `["Backgammon", "TheGang"]`, each existing and listed once. Saves the order (204), or `{ error }` (400) |
+| `POST /api/feedback` | Body `{ type, text, includeName, page, language }`, logged-in users only (guests too). `type` is `"Problem"`, `"Idea"` or `"Other"`; `text` has 1 to 2000 characters. Posts the comment as a GitHub issue and returns `{ url }`, its address. `{ error }` (400) for an invalid comment, 404 when feedback is not configured, 429 after 5 comments in an hour from the same user, `{ error }` (502) if GitHub refused or could not be reached |
 | `GET /health` | Health check |
 
 All the `POST /auth/...` endpoints except `/auth/external` and `/auth/transfer` return `{ accessToken }` on success, or `{ error }` (status 400) with a message to show.
@@ -305,6 +307,17 @@ Guests and username logins always work. Each external provider appears on the si
 | Microsoft | `Authentication__Microsoft__ClientId`, `Authentication__Microsoft__ClientSecret` | [Microsoft Entra admin center](https://entra.microsoft.com/) → App registrations → New registration, choosing "personal Microsoft accounts" plus work/school accounts; then Certificates & secrets → New client secret | `https://<your-site>/signin-microsoft` |
 
 For local testing, use `dotnet user-secrets` in `GamesLane.Server` and register `https://localhost:<port>/signin-google` (or `-microsoft`) as an extra redirect URI.
+
+## Feedback setup
+
+The feedback form (**Send feedback** on the main screen and in the game menu) posts each comment as an issue in the GitHub repository. It appears only when the server has a GitHub token; the token stays on the server and is never sent to pages.
+
+1. On GitHub: **Settings → Developer settings → Personal access tokens → Fine-grained tokens → Generate new token**. Give it a name (e.g. "GamesLane feedback") and an expiry date, choose **Only select repositories** and pick this repository, and under **Repository permissions** set **Issues** to **Read and write** (nothing else). Copy the token.
+2. On Render: **Environment** tab of the service → add `Feedback__GitHubToken` with the token, and save (the service restarts). Never commit the token to the repo.
+3. Optional: `Feedback__GitHubRepository` (`owner/name`) sends the issues to another repository; by default they go to `inativ01/GamesLane2.0`.
+4. When the token expires, create a new one and replace the variable; until then, sending fails with "Your comment could not be sent. Try again later."
+
+Each issue's title is the kind and the start of the comment (e.g. "[Idea] Add chess"); its text is the comment, then the kind, page, language and the sender's display name (or "name not shared"). Issues get the label `feedback`, plus `bug` for a problem or `enhancement` for an idea. Mentions (@name) in comments are broken up so they notify nobody. The repository is public, so the issues are public; the form says so. For local testing, use `dotnet user-secrets set 'Feedback:GitHubToken' '<token>'` (better with a test repository in `Feedback:GitHubRepository`).
 
 ## Running locally
 
@@ -376,6 +389,7 @@ _Last updated: 2026-11-05. Keep this section current; it is the hand-off point b
 7. Yatzee: first play-test.
 8. Uno: first play-test.
 9. Spanish, French and Portuguese: every page is translated; first check on Render (including long texts on phones), and native speakers to review the terms listed under [Translations](#translations).
+10. Feedback: create the GitHub token and set `Feedback__GitHubToken` on Render (see [Feedback setup](#feedback-setup)), then send a first comment.
 
 ## Working conventions
 - Ask before adding or upgrading packages.

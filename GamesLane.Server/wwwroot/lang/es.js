@@ -107,6 +107,27 @@ TRANSLATIONS.es = {
     "Waiting for {name} to start the game.": "Esperando a que {name} empiece la partida.",
     "The game's creator chooses the options.": "Quien creó la partida elige las opciones.",
 
+    // Shared: feedback
+    "Send feedback": "Enviar comentarios",
+    "Tell us about a problem, or share an idea.": "Cuéntanos de un problema o comparte una idea.",
+    "Kind of comment": "Tipo de comentario",
+    "Problem": "Problema",
+    "Idea": "Idea",
+    "Other": "Otro",
+    "Your comment": "Tu comentario",
+    "Include my name ({name})": "Incluir mi nombre ({name})",
+    "Comments are posted publicly on GitHub, so do not include personal details such as your email or phone number.":
+        "Los comentarios se publican en GitHub a la vista de todos, así que no incluyas datos personales como tu correo o tu teléfono.",
+    "Send comment": "Enviar",
+    "Sending…": "Enviando…",
+    "Thank you!": "¡Gracias!",
+    "Your comment was posted.": "Se publicó tu comentario.",
+    "See it on GitHub": "Verlo en GitHub",
+    "You have sent several comments. Try again in an hour.": "Ya enviaste varios comentarios. Inténtalo de nuevo en una hora.",
+    "Write a comment of 1 to {n} characters.": "Escribe un comentario de 1 a {n} caracteres.",
+    "Choose the kind of comment.": "Elige el tipo de comentario.",
+    "Your comment could not be sent. Try again later.": "No se pudo enviar tu comentario. Inténtalo más tarde.",
+
     // Main screen
     "Public games": "Partidas públicas",
     "Play with other people on GamesLane.": "Juega con otras personas en GamesLane.",
