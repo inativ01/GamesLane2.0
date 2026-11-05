@@ -82,7 +82,7 @@ function yatzeeTexts(game, state, view) {
         const action = game.rollsLeft === ROLLS ? t("Roll the dice")
             : game.rollsLeft > 0 ? t("Keep dice and roll again ({n} left), or choose a box", { n: game.rollsLeft })
                 : t("Choose a box to score");
-        status = `👉 🎲 ${several ? `${name(game.turn)}: ` : ""}${action}`;
+        status = `👉 ${several ? `${name(game.turn)}: ` : ""}${action}`;
     }
 
     let message = "";
