@@ -34,7 +34,7 @@
     <ul>
         <li>Los invitados (todos los que no han iniciado sesión con una cuenta) se guardan solo en el almacenamiento local de su navegador, nunca en el servidor, y no caducan.</li>
         <li>Las cuentas (con usuario o con Google/Microsoft) se guardan en una base de datos: la información anterior, más tu configuración de chat y sonido, y cuándo se creó la cuenta y cuándo se usó por última vez. <strong>Una cuenta que no se usa durante 30 días se borra automáticamente</strong>, junto con su imagen.</li>
-        <li>Las partidas se guardan solo en la memoria del servidor y se borran cuando el servidor se reinicia.</li>
+        <li>Las partidas se guardan en la base de datos para poder continuarlas después. Una partida que ya empezó se borra 30 días después de su última jugada o mensaje; una que nunca empezó se borra poco después de que todos la dejan.</li>
         <li>Cada partida guarda solo sus últimos 100 mensajes de chat, que se borran junto con la partida.</li>
         <li>Tu navegador guarda un token de inicio de sesión. Con una cuenta, mantiene tu sesión iniciada hasta 30 días después de tu última visita, o hasta que cierres sesión. Como invitado, guarda el nombre visible y el ícono del invitado, y dura hasta que borres los datos del sitio en tu navegador.</li>
         <li>Mientras inicias sesión con Google o Microsoft, se usa una cookie durante unos momentos para completar el inicio de sesión, y luego se elimina.</li>
