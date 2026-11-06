@@ -1,4 +1,5 @@
 using System.Text.RegularExpressions;
+using GamesLane.Server.Games.RichManPoorMan;
 
 namespace GamesLane.Server.Tests;
 
@@ -19,8 +20,11 @@ public partial class TranslationsTests
     [GeneratedRegex(@"\{(\w+)\}")]
     private static partial Regex Placeholder();
 
-    [GeneratedRegex(@"^\d+ \((masculine|feminine)\)$")]
-    private static partial Regex NumberWord();
+    [GeneratedRegex(@"const (SPOKEN_GROUPS|SPOKEN_VALUES) = [\[{](.*?)[\]}];", RegexOptions.Singleline)]
+    private static partial Regex SpokenTable();
+
+    [GeneratedRegex(@"""([^""]+)""")]
+    private static partial Regex Quoted();
 
     [GeneratedRegex(@"code: ""(\w+)""")]
     private static partial Regex LanguageCode();
@@ -32,8 +36,8 @@ public partial class TranslationsTests
     [MemberData(nameof(TranslatedLanguages))]
     public void Each_language_translates_the_same_texts_as_hebrew(string code)
     {
-        var hebrew = Translations("he").Keys.Where(key => !NumberWord().IsMatch(key)).ToHashSet();
-        var other = Translations(code).Keys.Where(key => !NumberWord().IsMatch(key)).ToHashSet();
+        var hebrew = Translations("he").Keys.ToHashSet();
+        var other = Translations(code).Keys.ToHashSet();
 
         Assert.Empty(hebrew.Except(other));
         Assert.Empty(other.Except(hebrew));
@@ -47,18 +51,27 @@ public partial class TranslationsTests
             var table = Translations(code);
             foreach (var (key, value) in table)
             {
-                var allowed = Names(key);
-                if (allowed.Contains("n"))
-                {
-                    allowed.UnionWith(["m", "f"]);
-                }
-                Assert.True(Names(value).IsSubsetOf(allowed), $"{code}: \"{value}\" has a varying part that \"{key}\" does not have.");
-                foreach (var gender in Names(value).Intersect(["m", "f"]))
-                {
-                    var suffix = gender == "m" ? "masculine" : "feminine";
-                    Assert.All(Enumerable.Range(2, 11), n => Assert.Contains($"{n} ({suffix})", table.Keys));
-                }
+                Assert.True(Names(value).IsSubsetOf(Names(key)), $"{code}: \"{value}\" has a varying part that \"{key}\" does not have.");
             }
+        }
+    }
+
+    [Fact]
+    public void Rich_man_poor_man_reads_every_throw_size_and_card_value_aloud_in_every_language()
+    {
+        var tables = SpokenTable().Matches(File.ReadAllText(Path.Combine(Wwwroot, "rich-man-poor-man.js")))
+            .ToDictionary(match => match.Groups[1].Value, match => Quoted().Matches(match.Groups[2].Value).Select(m => m.Groups[1].Value).ToList());
+        var groups = tables["SPOKEN_GROUPS"];
+        var values = tables["SPOKEN_VALUES"];
+
+        Assert.Equal(RichManPoorManRules.MaxPlayers, groups.Count);
+        Assert.All(groups, group => Assert.Equal(["card"], Names(group)));
+        Assert.Equal(RichManPoorManRules.CardsPerPlayer, values.Count);
+        foreach (var code in Translated)
+        {
+            var table = Translations(code);
+            Assert.All(groups.Concat(values), key => Assert.True(table.ContainsKey(key), $"{code}: \"{key}\" is not translated."));
+            Assert.All(groups, group => Assert.Contains("{card}", table[group]));
         }
     }
 

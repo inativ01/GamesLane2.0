@@ -253,13 +253,16 @@ function joinPanel(game, state, view) {
     return [el("p", "hint", t("The next game can take new players.")), ask];
 }
 
-// Reading the throws aloud, on a shared screen: e.g. "3 nines", in the page's language. Translations say the count
-// as {n} (digits), {m} or {f} (the number's word in its masculine or feminine form, e.g. "שני אסים", "שתי מלכות").
-const SPOKEN = {
-    2: ["A two", "{n} twos"], 3: ["A three", "{n} threes"], 4: ["A four", "{n} fours"], 5: ["A five", "{n} fives"],
-    6: ["A six", "{n} sixes"], 7: ["A seven", "{n} sevens"], 8: ["An eight", "{n} eights"], 9: ["A nine", "{n} nines"],
-    10: ["A ten", "{n} tens"], J: ["A jack", "{n} jacks"], Q: ["A queen", "{n} queens"], K: ["A king", "{n} kings"],
-    A: ["An ace", "{n} aces"],
+// Reading the throws aloud, on a shared screen: the group by its number of cards (1 to 12), then the card's value,
+// e.g. "Triplet of ace", in the page's language.
+const SPOKEN_GROUPS = [
+    "A single {card}", "Pair of {card}", "Triplet of {card}", "Quadruplet of {card}", "Quintuplet of {card}",
+    "Sextuplet of {card}", "Septuplet of {card}", "Octuplet of {card}", "Nonuplet of {card}", "Decuplet of {card}",
+    "Undecuplet of {card}", "Duodecuplet of {card}",
+];
+const SPOKEN_VALUES = {
+    2: "two", 3: "three", 4: "four", 5: "five", 6: "six", 7: "seven", 8: "eight", 9: "nine", 10: "ten",
+    J: "jack", Q: "queen", K: "king", A: "ace",
 };
 
 // Many computers have no voice for some languages (e.g. Hebrew), and another language's voice misreads the text, so
@@ -273,11 +276,13 @@ function missingVoice() {
     return language !== LANGUAGES[0] && voices.length > 0 && !voices.some(speaks(language));
 }
 
+// The varying parts are texts too, read in the same language as the key.
 function speak(key, values = {}) {
     speechSynthesis.cancel();
     if (!userSettings().sound) return;
     const lang = missingVoice() ? LANGUAGES[0] : language;
-    const text = lang === language ? t(key, values) : key.replace(/\{(\w+)\}/g, (match, name) => String(values[name] ?? match));
+    const say = (text) => (lang === language ? t(text) : text);
+    const text = say(key).replace(/\{(\w+)\}/g, (match, name) => (name in values ? say(values[name]) : match));
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = lang.locale;
     const voices = speechSynthesis.getVoices().filter(speaks(lang));
@@ -302,9 +307,7 @@ function updateSpeech(game, view) {
     heardThrows = game.throws;
     if (isNew && on && !button.hidden && game.lastThrow) {
         const cards = game.lastThrow.cards;
-        const [one, many] = SPOKEN[cards[0].slice(0, -1)];
-        const n = cards.length;
-        speak(n === 1 ? one : many, { n, m: t(`${n} (masculine)`), f: t(`${n} (feminine)`) });
+        speak(SPOKEN_GROUPS[cards.length - 1], { card: SPOKEN_VALUES[cards[0].slice(0, -1)] });
     }
 }
 
