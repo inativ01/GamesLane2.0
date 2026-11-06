@@ -192,23 +192,27 @@ function pile(game, state, view) {
 }
 
 // A player in the list: place, name, cards left, and their last call in this round (Pass, or what they threw, e.g.
-// "2×9"). An absent player shows "Away" (their seat can be taken from the banner in the status bar).
+// "2×9"), in the middle of the line. An absent player shows "Away" (their seat can be taken from the banner in the
+// status bar).
 function playerItem(game, state, view, player) {
-    const item = el("li", null, el("span", "rp-place", `#${player.place}`));
+    const start = el("span", "rp-start", el("span", "rp-place", `#${player.place}`));
+    const end = el("span", "rp-end");
+    const item = el("li", null, start);
     item.classList.toggle("turn", game.phase === "Playing" && game.turn === player.seat);
     item.classList.toggle("left", !player.isActive);
     item.classList.toggle("done", player.finished !== null);
-    item.append(state.seats[player.seat] ? seatLabel(state, player.seat, view) : el("span", "seat-label", t("A player who left")));
-    const tag = (text, className = "") => item.append(el("span", `rp-tag ${className}`, text));
-    if (player.place === 1) tag(t("Rich man"), "rich");
-    if (player.place === game.players.length) tag(t("Poor man"), "poor");
-    item.append(el("span", "rp-count", `🂠 ${player.cardCount}`));
+    start.append(state.seats[player.seat] ? seatLabel(state, player.seat, view) : el("span", "seat-label", t("A player who left")));
+    const tag = (text, className = "", group = end) => group.append(el("span", `rp-tag ${className}`, text));
+    if (player.place === 1) tag(t("Rich man"), "rich", start);
+    if (player.place === game.players.length) tag(t("Poor man"), "poor", start);
+    end.append(el("span", "rp-count", `🂠 ${player.cardCount}`));
     if (player.finished !== null) tag(`🏁 ${player.finished}`, "finished");
     if (game.phase === "Playing" && player.passed) {
-        tag(t("Pass"), "call pass");
+        tag(t("Pass"), "call pass", item);
     } else if (game.phase === "Playing" && player.roundThrow) {
-        tag(`${player.roundThrow.length}×${player.roundThrow[0].slice(0, -1)}`, "call");
+        tag(`${player.roundThrow.length}×${player.roundThrow[0].slice(0, -1)}`, "call", item);
     }
+    item.append(end);
     if (!player.isActive) tag(t("Away"), "away");
     // In the exchange, each player gives to their pair: #1 and the last place, #2 and the one before it, and so on.
     if (game.phase === "Exchanging" && player.exchangeCount > 0) {
