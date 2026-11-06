@@ -137,6 +137,11 @@ public class RichManPoorManGame : IRichManPoorManGame
             hand.Remove(card);
         }
 
+        if (CurrentThrow is null)
+        {
+            ClearCalls();
+        }
+
         Throws++;
         var thrown = RichManPoorManRules.Sorted(cards).ToArray();
         CurrentThrow = LastThrow = new RichManPoorManThrow(player, thrown);
@@ -443,21 +448,27 @@ public class RichManPoorManGame : IRichManPoorManGame
 
     /// <summary>
     /// Ends the round won by <paramref name="winner"/>, who starts the next one; if their hand is empty or they left, the
-    /// next active player in turn who still has cards starts it.
+    /// next active player in turn who still has cards starts it. The round's calls stay until the next round's first throw.
     /// </summary>
     private void EndRound(int winner)
     {
         LastRoundWinner = winner;
         CurrentThrow = null;
         _passedSinceThrow.Clear();
+        var starter = _players[winner];
+        Turn = starter.Active && starter.Hand.Count > 0 ? winner : NextInPlay(winner) ?? winner;
+    }
+
+    /// <summary>
+    /// Forgets every player's call (pass or throw) in the round that ended.
+    /// </summary>
+    private void ClearCalls()
+    {
         foreach (var state in _players.Values)
         {
             state.Passed = false;
             state.RoundThrow = null;
         }
-
-        var starter = _players[winner];
-        Turn = starter.Active && starter.Hand.Count > 0 ? winner : NextInPlay(winner) ?? winner;
     }
 
     /// <summary>

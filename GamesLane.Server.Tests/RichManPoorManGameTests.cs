@@ -83,10 +83,26 @@ public class RichManPoorManGameTests
         Assert.Null(game.CurrentThrow);
         Assert.Equal(5, game.Turn);
         Assert.Equal(5, game.LastRoundWinner);
-        Assert.False(game.HasPassed(4));
-        Assert.All(Six, p => Assert.Null(game.RoundThrow(p)));
         Assert.False(game.TryPass(5, out var startError));
         Assert.Equal("You start this round: throw cards of one number.", startError);
+    }
+
+    [Fact]
+    public void The_round_s_calls_stay_after_it_ends_until_the_winner_throws_to_start_the_next()
+    {
+        var game = new RichManPoorManGame(Six, RankSorted);
+        Throw(game, 0, "2S");
+        Throw(game, 5, "KS");
+        Pass(game, 4, 3, 2, 1, 0);
+
+        Assert.Null(game.CurrentThrow);
+        Assert.True(game.HasPassed(4));
+        Assert.Equal(["K♠"], Text(game.RoundThrow(5)!));
+
+        Throw(game, 5, "QH");
+        Assert.All(new[] { 0, 1, 2, 3, 4 }, p => Assert.False(game.HasPassed(p)));
+        Assert.All(new[] { 0, 1, 2, 3, 4 }, p => Assert.Null(game.RoundThrow(p)));
+        Assert.Equal(["Q♥"], Text(game.RoundThrow(5)!));
     }
 
     [Fact]

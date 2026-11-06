@@ -3190,6 +3190,25 @@ main.rich-poor .my-hand .actions {
     box-shadow: inset 0 0 0 3px var(--gold);
 }
 
+/* The place, name and tags on one side, the cards left on the other, at equal widths so the call between them is in
+   the middle of the line. */
+.rp-start,
+.rp-end {
+    display: flex;
+    flex: 1 1 0;
+    align-items: center;
+    gap: 0.15rem 0.35rem;
+    min-width: 0;
+}
+
+.rp-end {
+    justify-content: flex-end;
+}
+
+.rp-players li > .rp-tag.call {
+    flex: none;
+}
+
 .rp-players li.left {
     opacity: 0.65;
 }

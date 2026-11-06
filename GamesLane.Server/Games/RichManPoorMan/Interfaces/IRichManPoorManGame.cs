@@ -60,12 +60,14 @@ public interface IRichManPoorManGame
     int Throws { get; }
 
     /// <summary>
-    /// Whether <paramref name="player"/>'s last action in this round was to pass (not counting automatic passes).
+    /// Whether <paramref name="player"/>'s last action in this round was to pass (not counting automatic passes). After
+    /// a round ends, its calls stay until the next round's first throw.
     /// </summary>
     bool HasPassed(int player);
 
     /// <summary>
-    /// The cards <paramref name="player"/> last threw in this round, or null if they have not thrown in it.
+    /// The cards <paramref name="player"/> last threw in this round, or null if they have not thrown in it. After a
+    /// round ends, its calls stay until the next round's first throw.
     /// </summary>
     IReadOnlyList<Card>? RoundThrow(int player);
 

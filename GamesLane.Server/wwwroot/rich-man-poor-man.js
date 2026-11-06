@@ -9,6 +9,12 @@ const FACE_RANKS = { J: 11, Q: 12, K: 13, A: 14 };
 const rankOf = (card) => FACE_RANKS[card.slice(0, -1)] ?? Number(card.slice(0, -1));
 const SPEECH_KEY = "richManPoorMan.speech";
 
+// The hint to beat the throw on the table, by its number of cards: its group up to 4 cards, then the number.
+const BEAT_HINTS = {
+    1: "Throw a single card higher than '{card}', or pass.", 2: "Throw a pair of cards higher than '{card}', or pass.",
+    3: "Throw a triple of cards higher than '{card}', or pass.", 4: "Throw a quadruple of cards higher than '{card}', or pass.",
+};
+
 // The cards chosen in a hand: the seat, and the positions of the chosen cards in its hand (which comes sorted).
 let chosen = { seat: null, cards: "", picks: [] };
 let heardThrows = null;
@@ -106,8 +112,8 @@ function handPanel(game, state, view, hand) {
         const valid = picks.length > 0 && (!current
             || (picks.length === current.cards.length && rankOf(picks[0]) > rankOf(current.cards[0])));
         hint.textContent = !current ? t("You start this round: tap one or more cards of the same value to place on the table.")
-            : current.cards.length === 1 ? t("Throw 1 card higher than the table, or pass.")
-                : t("Throw {n} cards of one number higher than the table, or pass.", { n: current.cards.length });
+            : t(BEAT_HINTS[current.cards.length] ?? "Throw {n} cards higher than '{card}', or pass.",
+                { n: current.cards.length, card: current.cards[0].slice(0, -1) });
         button(t("Select"), () => send("ThrowCards", picks), valid);
         if (current) {
             button(t("Pass"), () => send("Pass"), true, true);
@@ -186,23 +192,27 @@ function pile(game, state, view) {
 }
 
 // A player in the list: place, name, cards left, and their last call in this round (Pass, or what they threw, e.g.
-// "2×9"). An absent player shows "Away" (their seat can be taken from the banner in the status bar).
+// "2×9"), in the middle of the line. An absent player shows "Away" (their seat can be taken from the banner in the
+// status bar).
 function playerItem(game, state, view, player) {
-    const item = el("li", null, el("span", "rp-place", `#${player.place}`));
+    const start = el("span", "rp-start", el("span", "rp-place", `#${player.place}`));
+    const end = el("span", "rp-end");
+    const item = el("li", null, start);
     item.classList.toggle("turn", game.phase === "Playing" && game.turn === player.seat);
     item.classList.toggle("left", !player.isActive);
     item.classList.toggle("done", player.finished !== null);
-    item.append(state.seats[player.seat] ? seatLabel(state, player.seat, view) : el("span", "seat-label", t("A player who left")));
-    const tag = (text, className = "") => item.append(el("span", `rp-tag ${className}`, text));
-    if (player.place === 1) tag(t("Rich man"), "rich");
-    if (player.place === game.players.length) tag(t("Poor man"), "poor");
-    item.append(el("span", "rp-count", `🂠 ${player.cardCount}`));
+    start.append(state.seats[player.seat] ? seatLabel(state, player.seat, view) : el("span", "seat-label", t("A player who left")));
+    const tag = (text, className = "", group = end) => group.append(el("span", `rp-tag ${className}`, text));
+    if (player.place === 1) tag(t("Rich man"), "rich", start);
+    if (player.place === game.players.length) tag(t("Poor man"), "poor", start);
+    end.append(el("span", "rp-count", `🂠 ${player.cardCount}`));
     if (player.finished !== null) tag(`🏁 ${player.finished}`, "finished");
     if (game.phase === "Playing" && player.passed) {
-        tag(t("Pass"), "call pass");
+        tag(t("Pass"), "call pass", item);
     } else if (game.phase === "Playing" && player.roundThrow) {
-        tag(`${player.roundThrow.length}×${player.roundThrow[0].slice(0, -1)}`, "call");
+        tag(`${player.roundThrow.length}×${player.roundThrow[0].slice(0, -1)}`, "call", item);
     }
+    item.append(end);
     if (!player.isActive) tag(t("Away"), "away");
     // In the exchange, each player gives to their pair: #1 and the last place, #2 and the one before it, and so on.
     if (game.phase === "Exchanging" && player.exchangeCount > 0) {
@@ -253,13 +263,22 @@ function joinPanel(game, state, view) {
     return [el("p", "hint", t("The next game can take new players.")), ask];
 }
 
-// Reading the throws aloud, on a shared screen: e.g. "3 nines", in the page's language. Translations say the count
-// as {n} (digits), {m} or {f} (the number's word in its masculine or feminine form, e.g. "שני אסים", "שתי מלכות").
-const SPOKEN = {
-    2: ["A two", "{n} twos"], 3: ["A three", "{n} threes"], 4: ["A four", "{n} fours"], 5: ["A five", "{n} fives"],
-    6: ["A six", "{n} sixes"], 7: ["A seven", "{n} sevens"], 8: ["An eight", "{n} eights"], 9: ["A nine", "{n} nines"],
-    10: ["A ten", "{n} tens"], J: ["A jack", "{n} jacks"], Q: ["A queen", "{n} queens"], K: ["A king", "{n} kings"],
-    A: ["An ace", "{n} aces"],
+// Reading the throws aloud, on a shared screen, in the page's language: a single card by its value (e.g. "A single
+// queen", a whole text, so translations can match the value's gender), and 2 to 12 cards as their group, then the
+// card's value (e.g. "Triplet of ace").
+const SPOKEN_SINGLES = {
+    2: "A single two", 3: "A single three", 4: "A single four", 5: "A single five", 6: "A single six",
+    7: "A single seven", 8: "A single eight", 9: "A single nine", 10: "A single ten", J: "A single jack",
+    Q: "A single queen", K: "A single king", A: "A single ace",
+};
+const SPOKEN_GROUPS = {
+    2: "Pair of {card}", 3: "Triplet of {card}", 4: "Quadruplet of {card}", 5: "Quintuplet of {card}",
+    6: "Sextuplet of {card}", 7: "Septuplet of {card}", 8: "Octuplet of {card}", 9: "Nonuplet of {card}",
+    10: "Decuplet of {card}", 11: "Undecuplet of {card}", 12: "Duodecuplet of {card}",
+};
+const SPOKEN_VALUES = {
+    2: "two", 3: "three", 4: "four", 5: "five", 6: "six", 7: "seven", 8: "eight", 9: "nine", 10: "ten",
+    J: "jack", Q: "queen", K: "king", A: "ace",
 };
 
 // Many computers have no voice for some languages (e.g. Hebrew), and another language's voice misreads the text, so
@@ -273,11 +292,13 @@ function missingVoice() {
     return language !== LANGUAGES[0] && voices.length > 0 && !voices.some(speaks(language));
 }
 
+// The varying parts are texts too, read in the same language as the key.
 function speak(key, values = {}) {
     speechSynthesis.cancel();
     if (!userSettings().sound) return;
     const lang = missingVoice() ? LANGUAGES[0] : language;
-    const text = lang === language ? t(key, values) : key.replace(/\{(\w+)\}/g, (match, name) => String(values[name] ?? match));
+    const say = (text) => (lang === language ? t(text) : text);
+    const text = say(key).replace(/\{(\w+)\}/g, (match, name) => (name in values ? say(values[name]) : match));
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = lang.locale;
     const voices = speechSynthesis.getVoices().filter(speaks(lang));
@@ -302,9 +323,8 @@ function updateSpeech(game, view) {
     heardThrows = game.throws;
     if (isNew && on && !button.hidden && game.lastThrow) {
         const cards = game.lastThrow.cards;
-        const [one, many] = SPOKEN[cards[0].slice(0, -1)];
-        const n = cards.length;
-        speak(n === 1 ? one : many, { n, m: t(`${n} (masculine)`), f: t(`${n} (feminine)`) });
+        const value = cards[0].slice(0, -1);
+        speak(cards.length === 1 ? SPOKEN_SINGLES[value] : SPOKEN_GROUPS[cards.length], { card: SPOKEN_VALUES[value] });
     }
 }
 
