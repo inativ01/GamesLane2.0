@@ -253,13 +253,19 @@ function joinPanel(game, state, view) {
     return [el("p", "hint", t("The next game can take new players.")), ask];
 }
 
-// Reading the throws aloud, on a shared screen: the group by its number of cards (1 to 12), then the card's value,
-// e.g. "Triplet of ace", in the page's language.
-const SPOKEN_GROUPS = [
-    "A single {card}", "Pair of {card}", "Triplet of {card}", "Quadruplet of {card}", "Quintuplet of {card}",
-    "Sextuplet of {card}", "Septuplet of {card}", "Octuplet of {card}", "Nonuplet of {card}", "Decuplet of {card}",
-    "Undecuplet of {card}", "Duodecuplet of {card}",
-];
+// Reading the throws aloud, on a shared screen, in the page's language: a single card by its value (e.g. "A single
+// queen", a whole text, so translations can match the value's gender), and 2 to 12 cards as their group, then the
+// card's value (e.g. "Triplet of ace").
+const SPOKEN_SINGLES = {
+    2: "A single two", 3: "A single three", 4: "A single four", 5: "A single five", 6: "A single six",
+    7: "A single seven", 8: "A single eight", 9: "A single nine", 10: "A single ten", J: "A single jack",
+    Q: "A single queen", K: "A single king", A: "A single ace",
+};
+const SPOKEN_GROUPS = {
+    2: "Pair of {card}", 3: "Triplet of {card}", 4: "Quadruplet of {card}", 5: "Quintuplet of {card}",
+    6: "Sextuplet of {card}", 7: "Septuplet of {card}", 8: "Octuplet of {card}", 9: "Nonuplet of {card}",
+    10: "Decuplet of {card}", 11: "Undecuplet of {card}", 12: "Duodecuplet of {card}",
+};
 const SPOKEN_VALUES = {
     2: "two", 3: "three", 4: "four", 5: "five", 6: "six", 7: "seven", 8: "eight", 9: "nine", 10: "ten",
     J: "jack", Q: "queen", K: "king", A: "ace",
@@ -307,7 +313,8 @@ function updateSpeech(game, view) {
     heardThrows = game.throws;
     if (isNew && on && !button.hidden && game.lastThrow) {
         const cards = game.lastThrow.cards;
-        speak(SPOKEN_GROUPS[cards.length - 1], { card: SPOKEN_VALUES[cards[0].slice(0, -1)] });
+        const value = cards[0].slice(0, -1);
+        speak(cards.length === 1 ? SPOKEN_SINGLES[value] : SPOKEN_GROUPS[cards.length], { card: SPOKEN_VALUES[value] });
     }
 }
 

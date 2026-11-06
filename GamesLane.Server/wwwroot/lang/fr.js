@@ -295,7 +295,10 @@ TRANSLATIONS.fr = {
     "The throws will be read aloud.": "Les coups seront lus à voix haute.",
 
     // Rich man, poor man: throws read aloud
-    "A single {card}": "Carte seule : {card}",
+    "A single two": "Un deux seul", "A single three": "Un trois seul", "A single four": "Un quatre seul", "A single five": "Un cinq seul",
+    "A single six": "Un six seul", "A single seven": "Un sept seul", "A single eight": "Un huit seul", "A single nine": "Un neuf seul",
+    "A single ten": "Un dix seul", "A single jack": "Un valet seul", "A single queen": "Une dame seule", "A single king": "Un roi seul",
+    "A single ace": "Un as seul",
     "Pair of {card}": "Paire : {card}",
     "Triplet of {card}": "Brelan : {card}",
     "Quadruplet of {card}": "Carré : {card}",

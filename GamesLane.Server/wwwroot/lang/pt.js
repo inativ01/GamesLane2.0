@@ -295,7 +295,11 @@ TRANSLATIONS.pt = {
     "The throws will be read aloud.": "As jogadas serão lidas em voz alta.",
 
     // Rich man, poor man: throws read aloud
-    "A single {card}": "Carta única: {card}",
+    "A single two": "Um dois sozinho", "A single three": "Um três sozinho", "A single four": "Um quatro sozinho",
+    "A single five": "Um cinco sozinho", "A single six": "Um seis sozinho", "A single seven": "Um sete sozinho",
+    "A single eight": "Um oito sozinho", "A single nine": "Um nove sozinho", "A single ten": "Um dez sozinho",
+    "A single jack": "Um valete sozinho", "A single queen": "Uma dama sozinha", "A single king": "Um rei sozinho",
+    "A single ace": "Um ás sozinho",
     "Pair of {card}": "Par de {card}",
     "Triplet of {card}": "Trinca de {card}",
     "Quadruplet of {card}": "Quadra de {card}",

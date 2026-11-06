@@ -295,7 +295,10 @@ TRANSLATIONS.es = {
     "The throws will be read aloud.": "Las tiradas se leerán en voz alta.",
 
     // Rich man, poor man: throws read aloud
-    "A single {card}": "Carta sola: {card}",
+    "A single two": "Un dos solo", "A single three": "Un tres solo", "A single four": "Un cuatro solo", "A single five": "Un cinco solo",
+    "A single six": "Un seis solo", "A single seven": "Un siete solo", "A single eight": "Un ocho solo", "A single nine": "Un nueve solo",
+    "A single ten": "Un diez solo", "A single jack": "Una jota sola", "A single queen": "Una reina sola", "A single king": "Un rey solo",
+    "A single ace": "Un as solo",
     "Pair of {card}": "Par de {card}",
     "Triplet of {card}": "Trío de {card}",
     "Quadruplet of {card}": "Cuarteto de {card}",

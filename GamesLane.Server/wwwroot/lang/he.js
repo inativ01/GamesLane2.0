@@ -295,7 +295,10 @@ TRANSLATIONS.he = {
     "The throws will be read aloud.": "הזריקות יוקראו בקול.",
 
     // Rich man, poor man: throws read aloud
-    "A single {card}": "קלף יחיד {card}",
+    "A single two": "שתיים יחיד", "A single three": "שלוש יחיד", "A single four": "ארבע יחיד", "A single five": "חמש יחיד",
+    "A single six": "שש יחיד", "A single seven": "שבע יחיד", "A single eight": "שמונה יחיד", "A single nine": "תשע יחיד",
+    "A single ten": "עשר יחיד", "A single jack": "נסיך יחיד", "A single queen": "מלכה יחידה", "A single king": "מלך יחיד",
+    "A single ace": "אס יחיד",
     "Pair of {card}": "זוג של {card}",
     "Triplet of {card}": "שלישיה של {card}",
     "Quadruplet of {card}": "רביעיה של {card}",

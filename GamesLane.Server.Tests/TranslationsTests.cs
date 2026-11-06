@@ -20,7 +20,7 @@ public partial class TranslationsTests
     [GeneratedRegex(@"\{(\w+)\}")]
     private static partial Regex Placeholder();
 
-    [GeneratedRegex(@"const (SPOKEN_GROUPS|SPOKEN_VALUES) = [\[{](.*?)[\]}];", RegexOptions.Singleline)]
+    [GeneratedRegex(@"const (SPOKEN_SINGLES|SPOKEN_GROUPS|SPOKEN_VALUES) = \{(.*?)\};", RegexOptions.Singleline)]
     private static partial Regex SpokenTable();
 
     [GeneratedRegex(@"""([^""]+)""")]
@@ -61,16 +61,19 @@ public partial class TranslationsTests
     {
         var tables = SpokenTable().Matches(File.ReadAllText(Path.Combine(Wwwroot, "rich-man-poor-man.js")))
             .ToDictionary(match => match.Groups[1].Value, match => Quoted().Matches(match.Groups[2].Value).Select(m => m.Groups[1].Value).ToList());
+        var singles = tables["SPOKEN_SINGLES"];
         var groups = tables["SPOKEN_GROUPS"];
         var values = tables["SPOKEN_VALUES"];
 
-        Assert.Equal(RichManPoorManRules.MaxPlayers, groups.Count);
+        Assert.Equal(RichManPoorManRules.CardsPerPlayer, singles.Count);
+        Assert.All(singles, single => Assert.Empty(Names(single)));
+        Assert.Equal(RichManPoorManRules.MaxPlayers - 1, groups.Count);
         Assert.All(groups, group => Assert.Equal(["card"], Names(group)));
         Assert.Equal(RichManPoorManRules.CardsPerPlayer, values.Count);
         foreach (var code in Translated)
         {
             var table = Translations(code);
-            Assert.All(groups.Concat(values), key => Assert.True(table.ContainsKey(key), $"{code}: \"{key}\" is not translated."));
+            Assert.All(singles.Concat(groups).Concat(values), key => Assert.True(table.ContainsKey(key), $"{code}: \"{key}\" is not translated."));
             Assert.All(groups, group => Assert.Contains("{card}", table[group]));
         }
     }
