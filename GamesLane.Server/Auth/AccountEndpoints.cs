@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using GamesLane.Server.Data;
+using GamesLane.Server.Feedback;
 using GamesLane.Server.Games;
 using GamesLane.Server.Hubs;
 using GamesLane.Server.Sessions;
@@ -42,7 +43,7 @@ public static class AccountEndpoints
     /// </summary>
     public static void MapAccountEndpoints(this WebApplication app)
     {
-        app.MapGet("/auth/me", async (HttpContext context, IUserService users, AuthProviders providers) =>
+        app.MapGet("/auth/me", async (HttpContext context, IUserService users, AuthProviders providers, IIssueTracker issues) =>
         {
             var user = await RefreshAsync(context.User, users);
             var savedId = AuthSetup.GetSavedUserId(user);
@@ -59,6 +60,7 @@ public static class AccountEndpoints
                 accessToken = user is null ? null : AuthSetup.IssueToken(context, user),
                 providers = providers.Names,
                 icons = UserRules.BuiltInIcons,
+                feedback = issues.IsConfigured,
             });
         });
 

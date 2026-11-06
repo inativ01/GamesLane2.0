@@ -107,6 +107,27 @@ TRANSLATIONS.pt = {
     "Waiting for {name} to start the game.": "Esperando {name} começar a partida.",
     "The game's creator chooses the options.": "Quem criou a partida escolhe as opções.",
 
+    // Shared: feedback
+    "Send feedback": "Enviar comentário",
+    "Tell us about a problem, or share an idea.": "Conte sobre um problema ou compartilhe uma ideia.",
+    "Kind of comment": "Tipo de comentário",
+    "Problem": "Problema",
+    "Idea": "Ideia",
+    "Other": "Outro",
+    "Your comment": "Seu comentário",
+    "Include my name ({name})": "Incluir meu nome ({name})",
+    "Comments are posted publicly on GitHub, so do not include personal details such as your email or phone number.":
+        "Os comentários são publicados abertamente no GitHub, então não inclua dados pessoais como seu e-mail ou telefone.",
+    "Send comment": "Enviar",
+    "Sending…": "Enviando…",
+    "Thank you!": "Obrigado!",
+    "Your comment was posted.": "Seu comentário foi publicado.",
+    "See it on GitHub": "Ver no GitHub",
+    "You have sent several comments. Try again in an hour.": "Você já enviou vários comentários. Tente de novo daqui a uma hora.",
+    "Write a comment of 1 to {n} characters.": "Escreva um comentário de 1 a {n} caracteres.",
+    "Choose the kind of comment.": "Escolha o tipo de comentário.",
+    "Your comment could not be sent. Try again later.": "Não foi possível enviar seu comentário. Tente mais tarde.",
+
     // Shared: chat
     "Chat": "Chat",
     "Open the chat": "Abrir o chat",

@@ -150,6 +150,7 @@ const accountReady = (async () => {
     }
     renderAccount();
     dispatchEvent(new Event(SETTINGS_EVENT));
+    setUpFeedbackLink();
     if (isNewExternalUser && account.signedIn) {
         openProfileDialog();
     }
@@ -483,6 +484,73 @@ function openProfileDialog() {
     }
     dialog.addEventListener("close", () => dialog.remove());
     dialog.showModal();
+}
+
+// The feedback form: a problem, an idea or another comment, posted by the server as a public GitHub issue, with the
+// page and language it was sent from. The sender's display name is included only if they tick the box. Once sent, it
+// thanks them and links to the issue.
+const FEEDBACK_MAX_LENGTH = 2000;
+
+function openFeedbackDialog() {
+    const types = ["Problem", "Idea", "Other"];
+    const dialog = createDialog(`
+        <form data-feedback-form>
+            <h2>${t("Send feedback")}</h2>
+            <p class="hint">${t("Tell us about a problem, or share an idea.")}</p>
+            <fieldset class="option inline">
+                <legend>${t("Kind of comment")}</legend>
+                ${types.map((type, i) => `<label class="option-choice"><input type="radio" name="type" value="${type}"${i === 0 ? " checked" : ""}><span class="option-text"><strong>${t(type)}</strong></span></label>`).join("")}
+            </fieldset>
+            <label>${t("Your comment")} <textarea name="text" rows="5" maxlength="${FEEDBACK_MAX_LENGTH}" required></textarea></label>
+            <label class="check"><input type="checkbox" name="includeName"> <span data-name></span></label>
+            <p class="hint">${t("Comments are posted publicly on GitHub, so do not include personal details such as your email or phone number.")}</p>
+            <p class="error" role="alert"></p>
+            <div class="actions"><button type="submit">${t("Send comment")}</button><button type="button" class="secondary" data-close>${t("Cancel")}</button></div>
+        </form>
+        <div data-thanks hidden>
+            <h2>${t("Thank you!")}</h2>
+            <p>${t("Your comment was posted.")} <a data-issue target="_blank" rel="noopener">${t("See it on GitHub")}</a></p>
+            <div class="actions"><button type="button" data-close>${t("Close")}</button></div>
+        </div>`);
+    const form = dialog.querySelector("[data-feedback-form]");
+    const error = form.querySelector(".error");
+    form.querySelector("[data-name]").textContent = t("Include my name ({name})", { name: account.name ?? "" });
+    form.addEventListener("submit", (event) => {
+        event.preventDefault();
+        withBusyButton(form.querySelector('[type="submit"]'), t("Sending…"), async () => {
+            error.textContent = "";
+            const response = await postJson("/api/feedback", {
+                type: form.elements.type.value,
+                text: form.elements.text.value,
+                includeName: form.elements.includeName.checked,
+                page: location.pathname,
+                language: language.code,
+            }).catch(() => null);
+            const result = await response?.json().catch(() => null);
+            if (response?.ok && result?.url?.startsWith("https://github.com/")) {
+                dialog.querySelector("[data-issue]").href = result.url;
+                form.hidden = true;
+                dialog.querySelector("[data-thanks]").hidden = false;
+                return;
+            }
+            error.textContent = response?.status === 429
+                ? t("You have sent several comments. Try again in an hour.")
+                : translateServerText(result?.error) ?? t(response ? "Something went wrong." : "Could not reach the server. Check your connection and try again.");
+        });
+    });
+    dialog.addEventListener("close", () => dialog.remove());
+    dialog.showModal();
+}
+
+// The main screen's "Send feedback" link, shown when the server can post comments.
+function setUpFeedbackLink() {
+    const link = document.getElementById("feedback-link");
+    if (!link) return;
+    link.hidden = !account.feedback;
+    link.addEventListener("click", (event) => {
+        event.preventDefault();
+        openFeedbackDialog();
+    });
 }
 
 // The profile dialog's login part, for guests: Log in and Create account tabs, and a button per external provider.
@@ -1042,8 +1110,8 @@ function startSessionPage(gameType, render, seatRole = (seat) => t("Seat {n}", {
     banner.setAttribute("role", "status");
     $("status-bar").append(banner);
 
-    // The session bar's menu (☰), during a game: the invite link to copy or share, how many players are seated, and for
-    // players, Leave my seat and End game for everyone.
+    // The session bar's menu (☰), during a game: the invite link to copy or share, how many players are seated, for
+    // players, Leave my seat and End game for everyone, and Send feedback when the server can post comments.
     const menuButton = el("button", "session-menu-button", "☰");
     menuButton.type = "button";
     menuButton.title = t("Game menu");
@@ -1063,12 +1131,18 @@ function startSessionPage(gameType, render, seatRole = (seat) => t("Seat {n}", {
     const seatedCount = el("span", "session-menu-value");
     const standUp = menuAction(t("Leave my seat (watch)"), "secondary");
     const endGame = menuAction(t("End game for everyone"), "danger");
+    const feedback = menuAction(t("Send feedback"), "secondary");
+    accountReady.then(() => { feedback.hidden = !account.feedback; });
+    feedback.addEventListener("click", () => {
+        showMenu(false);
+        openFeedbackDialog();
+    });
     const inviteRow = el("div", "session-menu-row", el("span", null, t("Invite link")),
         copyButton(joinUrl, t("Could not copy. Select the link and copy it manually.")), share);
     const menu = el("div", "session-menu",
         inviteRow,
         el("div", "session-menu-row", el("span", null, t("Players:")), seatedCount),
-        el("div", "session-menu-actions", standUp, endGame));
+        el("div", "session-menu-actions", standUp, endGame, feedback));
     menu.hidden = true;
     menu.setAttribute("role", "menu");
     const showMenu = (open) => {

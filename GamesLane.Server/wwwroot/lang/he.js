@@ -107,6 +107,27 @@ TRANSLATIONS.he = {
     "Waiting for {name} to start the game.": "ממתינים ש־{name} יתחיל את המשחק.",
     "The game's creator chooses the options.": "יוצר המשחק בוחר את האפשרויות.",
 
+    // Shared: feedback
+    "Send feedback": "שליחת משוב",
+    "Tell us about a problem, or share an idea.": "ספרו לנו על בעיה, או שתפו רעיון.",
+    "Kind of comment": "סוג ההערה",
+    "Problem": "בעיה",
+    "Idea": "רעיון",
+    "Other": "אחר",
+    "Your comment": "ההערה שלכם",
+    "Include my name ({name})": "לכלול את השם שלי ({name})",
+    "Comments are posted publicly on GitHub, so do not include personal details such as your email or phone number.":
+        "ההערות מתפרסמות בפומבי ב־GitHub, לכן אל תכללו פרטים אישיים כמו כתובת אימייל או מספר טלפון.",
+    "Send comment": "שליחה",
+    "Sending…": "שולחים…",
+    "Thank you!": "תודה!",
+    "Your comment was posted.": "ההערה שלכם פורסמה.",
+    "See it on GitHub": "לצפייה ב־GitHub",
+    "You have sent several comments. Try again in an hour.": "שלחתם כמה הערות. נסו שוב בעוד שעה.",
+    "Write a comment of 1 to {n} characters.": "כתבו הערה באורך 1 עד {n} תווים.",
+    "Choose the kind of comment.": "בחרו את סוג ההערה.",
+    "Your comment could not be sent. Try again later.": "לא ניתן היה לשלוח את ההערה. נסו שוב מאוחר יותר.",
+
     // Shared: chat
     "Chat": "צ'אט",
     "Open the chat": "פתיחת הצ'אט",

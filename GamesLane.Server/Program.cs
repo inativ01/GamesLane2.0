@@ -1,6 +1,7 @@
 using System.Text.Json.Serialization;
 using GamesLane.Server.Auth;
 using GamesLane.Server.Data;
+using GamesLane.Server.Feedback;
 using GamesLane.Server.Hubs;
 using GamesLane.Server.Sessions;
 using GamesLane.Server.Users;
@@ -15,6 +16,7 @@ if (builder.Configuration["PORT"] is { Length: > 0 } port)
 
 builder.AddGamesLaneDatabase();
 builder.AddGamesLaneAuth();
+builder.AddGamesLaneFeedback();
 builder.Services.AddHttpClient();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IGameOptionsService, GameOptionsService>();
@@ -49,6 +51,7 @@ app.UseRateLimiter();
 app.MapGet("/health", () => Results.Ok("Healthy"));
 app.MapAccountEndpoints();
 app.MapExternalSignInEndpoints();
+app.MapFeedbackEndpoints();
 
 // Public games cannot be joined by code, so they are not found here.
 app.MapGet("/api/sessions/{code}", async (string code, IGameSessionStore store) =>
