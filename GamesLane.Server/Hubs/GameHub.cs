@@ -32,6 +32,11 @@ public class GameHub(
     public const string PrivateStateUpdated = "PrivateStateUpdated";
 
     /// <summary>
+    /// The message everyone in a session receives with each new <see cref="ChatMessage"/>.
+    /// </summary>
+    public const string ChatMessageReceived = "ChatMessageReceived";
+
+    /// <summary>
     /// The caller's stable identity: their user ID if logged in, otherwise their connection.
     /// </summary>
     public static string GetUserKey(ClaimsPrincipal? user, string connectionId) =>
@@ -63,7 +68,7 @@ public class GameHub(
             await BroadcastState(session);
         }
 
-        return new SessionEntry(session.GetPublicState(), playerId, session.GetPrivateState(UserKey));
+        return new SessionEntry(session.GetPublicState(), playerId, session.GetPrivateState(UserKey), session.GetChat());
     }
 
     /// <summary>
@@ -190,6 +195,20 @@ public class GameHub(
     /// <inheritdoc />
     public Task ReturnToLobby(string sessionId) =>
         Act(sessionId, (IGameSession s, out string? error) => s.TryReturnToLobby(UserKey, out error));
+
+    /// <inheritdoc />
+    public async Task SendChatMessage(string sessionId, string text)
+    {
+        var profile = RequireProfile("Log in to chat.");
+        var session = await GetSession(sessionId);
+        if (!session.TrySendChat(UserKey, profile, text, timeProvider.GetUtcNow(), out var message, out var error))
+        {
+            throw new HubException(error);
+        }
+
+        await Clients.Group(SessionGroup(session.Id)).SendAsync(ChatMessageReceived, message);
+        await store.SaveAsync(session);
+    }
 
     /// <inheritdoc />
     public Task MakeMove(string sessionId, int seat, int cell) =>

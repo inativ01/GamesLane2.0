@@ -107,6 +107,22 @@ TRANSLATIONS.fr = {
     "Waiting for {name} to start the game.": "En attente que {name} lance la partie.",
     "The game's creator chooses the options.": "Le créateur de la partie choisit les options.",
 
+    // Shared: chat
+    "Chat": "Discussion",
+    "Open the chat": "Ouvrir la discussion",
+    "Close the chat": "Fermer la discussion",
+    "Chat: {n} new messages": "Discussion : {n} nouveaux messages",
+    "Chat in games": "Discussion dans les parties",
+    "Sounds (chat, games and reading aloud)": "Sons (discussion, jeux et lecture à voix haute)",
+    "Sound is off in your profile.": "Le son est désactivé dans ton profil.",
+    "Sound": "Son",
+    "No messages yet. Say hello!": "Pas encore de messages. Dis bonjour !",
+    "Write a message…": "Écris un message…",
+    "Send": "Envoyer",
+    "Log in to chat.": "Connecte-toi pour discuter.",
+    "Write a message of 1 to {n} characters.": "Écris un message de 1 à {n} caractères.",
+    "Open the game to chat.": "Ouvre la partie pour discuter.",
+
     // Main screen
     "Public games": "Parties publiques",
     "Play with other people on GamesLane.": "Joue avec d'autres personnes sur GamesLane.",

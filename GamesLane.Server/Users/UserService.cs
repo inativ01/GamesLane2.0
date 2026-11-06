@@ -235,6 +235,24 @@ public class UserService(
     }
 
     /// <inheritdoc />
+    public Task<UserSettings?> GetSettingsAsync(Guid userId) =>
+        db.Users.Where(u => u.Id == userId).Select(u => new UserSettings(u.ChatOn, u.SoundOn)).FirstOrDefaultAsync();
+
+    /// <inheritdoc />
+    public async Task<string?> SetSettingsAsync(Guid userId, UserSettings settings)
+    {
+        if (await db.Users.FindAsync(userId) is not { } user)
+        {
+            return "Your account no longer exists. Log in again.";
+        }
+
+        user.ChatOn = settings.Chat;
+        user.SoundOn = settings.Sound;
+        await db.SaveChangesAsync();
+        return null;
+    }
+
+    /// <inheritdoc />
     public Task<int> DeleteInactiveUsersAsync(DateTimeOffset cutoff) =>
         db.Users.Where(u => u.LastActiveAt < cutoff).ExecuteDeleteAsync();
 

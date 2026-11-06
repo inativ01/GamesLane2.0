@@ -37,7 +37,7 @@ public static class AccountEndpoints
 {
     /// <summary>
     /// Maps <c>/auth/me</c>, <c>/auth/guest</c>, <c>/auth/register</c>, <c>/auth/login</c>, <c>/auth/transfer</c>,
-    /// <c>/auth/profile</c>, <c>/auth/icon</c>, <c>/api/icons/{id}</c>, <c>/api/game-order</c> and
+    /// <c>/auth/profile</c>, <c>/auth/icon</c>, <c>/api/icons/{id}</c>, <c>/api/game-order</c>, <c>/api/settings</c> and
     /// <c>/api/options/{gameType}</c>.
     /// </summary>
     public static void MapAccountEndpoints(this WebApplication app)
@@ -55,6 +55,7 @@ public static class AccountEndpoints
                 icon = profile?.Icon,
                 uploadedIcon = savedId is { } id ? await users.GetUploadedIconPathAsync(id) : null,
                 gameOrder = savedId is { } orderId ? await users.GetGameOrderAsync(orderId) : null,
+                settings = savedId is { } settingsId ? await users.GetSettingsAsync(settingsId) : null,
                 accessToken = user is null ? null : AuthSetup.IssueToken(context, user),
                 providers = providers.Names,
                 icons = UserRules.BuiltInIcons,
@@ -171,6 +172,17 @@ public static class AccountEndpoints
             }
 
             return await users.SetGameOrderAsync(id, body) is { } error ? Error(error) : Results.NoContent();
+        });
+
+        // Saved users' chat and sound settings: { chat, sound }. Guests keep theirs in the browser.
+        app.MapPut("/api/settings", async (UserSettings settings, HttpContext context, IUserService users) =>
+        {
+            if (AuthSetup.GetSavedUserId(context.User) is not { } id)
+            {
+                return Results.Unauthorized();
+            }
+
+            return await users.SetSettingsAsync(id, settings) is { } error ? Error(error) : Results.NoContent();
         });
 
         // Saved users' preferred options per game: { saved, options }, with the game's defaults if none are saved.
