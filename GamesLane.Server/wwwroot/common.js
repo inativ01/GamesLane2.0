@@ -58,11 +58,51 @@ let busyElement = null;
 let busyTimer = null;
 
 // The current user, set once accountReady resolves:
-// { signedIn, kind, name, icon, uploadedIcon, gameOrder, providers, icons }. kind is "Guest", "Registered" or a provider
-// such as "Google"; gameOrder is a saved user's order of the games on the main screen, or null. Everyone is logged in,
-// as a guest at least; signedIn is false only if the server could not be reached.
+// { signedIn, kind, name, icon, uploadedIcon, gameOrder, settings, providers, icons }. kind is "Guest", "Registered" or a
+// provider such as "Google"; gameOrder is a saved user's order of the games on the main screen, or null; settings is a
+// saved user's { chat, sound } (see userSettings), or null. Everyone is logged in, as a guest at least; signedIn is
+// false only if the server could not be reached.
 let account = null;
 let isNewExternalUser = false;
+
+// The user's settings from their profile: chat (the chat in game sessions) and sound (every sound on the site: the
+// chat's chime, game sounds and reading aloud). A saved user's are saved with their account; a guest's in this
+// browser. Both are on until the user turns them off. Pages listen for the SETTINGS_EVENT event, sent when they are
+// known (once the user is) and whenever they change.
+const SETTINGS_KEY = "settings";
+const SETTINGS_EVENT = "settingschange";
+
+function userSettings() {
+    if (account?.settings) {
+        return account.settings;
+    }
+    let saved = null;
+    try {
+        saved = JSON.parse(localStorage.getItem(SETTINGS_KEY) ?? "null");
+    } catch {
+        // Unreadable settings count as the defaults.
+    }
+    return { chat: saved?.chat !== false, sound: saved?.sound !== false };
+}
+
+// Saves the settings (for a saved user, with their account). Returns false if they could not be saved.
+async function saveSettings(settings) {
+    if (account?.settings) {
+        const response = await authFetch("/api/settings", {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(settings),
+        }).catch(() => null);
+        if (!response?.ok) {
+            return false;
+        }
+        account.settings = settings;
+    } else {
+        localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+    }
+    dispatchEvent(new Event(SETTINGS_EVENT));
+    return true;
+}
 
 // The current user from the server, or null if it could not be reached.
 async function fetchAccount() {
@@ -109,6 +149,7 @@ const accountReady = (async () => {
         await transferSeats();
     }
     renderAccount();
+    dispatchEvent(new Event(SETTINGS_EVENT));
     setUpFeedbackLink();
     if (isNewExternalUser && account.signedIn) {
         openProfileDialog();
@@ -361,7 +402,8 @@ function createDialog(html) {
     return dialog;
 }
 
-// The profile: change the display name and icon. Saved users can also upload a picture as their icon, and log out (to
+// The profile: change the display name and icon, and turn the chat and sound on or off (see userSettings). Saved users
+// can also upload a picture as their icon, and log out (to
 // become a new guest, with a random name and icon). Guests can log in, create an account (with the name and icon chosen
 // above), or sign in with an external provider. The new user keeps the seats the previous one held.
 function openProfileDialog() {
@@ -374,6 +416,10 @@ function openProfileDialog() {
             <label>${t("Display name")} <input name="name" maxlength="30" autocomplete="nickname" required></label>
             <div class="icon-picker"></div>
             <label class="upload" ${isGuest ? "hidden" : ""}>${t("Upload a picture")} <input name="picture" type="file" accept="image/*"></label>
+            <div class="profile-settings">
+                <label class="setting"><input type="checkbox" name="chat"> <span>${t("Chat in games")}</span></label>
+                <label class="setting"><input type="checkbox" name="sound"> <span>${t("Sounds (chat, games and reading aloud)")}</span></label>
+            </div>
             <p class="error" role="alert"></p>
             <div class="actions"><button type="submit">${t("Save")}</button><button type="button" class="secondary" data-close>${t("Cancel")}</button></div>
         </form>
@@ -405,6 +451,8 @@ function openProfileDialog() {
     const form = dialog.querySelector("[data-profile]");
     const error = form.querySelector(".error");
     form.elements.name.value = account.name;
+    form.elements.chat.checked = userSettings().chat;
+    form.elements.sound.checked = userSettings().sound;
     form.querySelector("[data-welcome]").hidden = !isNewExternalUser;
     const picker = iconPicker(form.querySelector(".icon-picker"), icons, account.icon);
 
@@ -416,7 +464,14 @@ function openProfileDialog() {
     });
     form.addEventListener("submit", (event) => {
         event.preventDefault();
-        submitAccountForm(form, t("Saving…"), "/auth/profile", { name: form.elements.name.value, icon: picker.value });
+        const settings = { chat: form.elements.chat.checked, sound: form.elements.sound.checked };
+        withBusyButton(form.querySelector('[type="submit"]'), t("Saving…"), async () => {
+            if (!(await saveSettings(settings))) {
+                error.textContent = t("Something went wrong.");
+                return false;
+            }
+            return submitAccount("/auth/profile", { name: form.elements.name.value, icon: picker.value }, error);
+        });
     });
     if (isGuest) {
         setUpLogin(dialog, () => ({ name: form.elements.name.value, icon: picker.value }));
@@ -786,6 +841,230 @@ function showScores(state, view, facts, players) {
         ...players.map(chip));
 }
 
+// The session's chat, for everyone with the page open (players and watchers): 💬 in the session bar opens it, on the
+// side of the page (the whole screen on phones). While it is closed, each message from someone else adds to the unread
+// count on 💬, makes it flash, shows the message in a pop-up for a few seconds and plays a short sound. While it is
+// open, new messages only appear in it (and the sound plays if the tab is hidden). The chat and the sound follow the
+// user's settings (see userSettings), which the chat's Chat and Sound boxes change too: with the chat off, 💬 is hidden
+// and nothing is shown or played. Browsers play sound only once the user has tapped or pressed a key on the page.
+const CHAT_MAX_LENGTH = 300;
+
+function startChat(sessionId, view) {
+    const seenKey = `chatSeen:${sessionId}`;
+    const messages = new Map();
+    let seen = Number(sessionStorage.getItem(seenKey) ?? 0);
+    let audio = null;
+    let toastTimer = 0;
+
+    const button = el("button", "session-menu-button chat-button", "💬");
+    button.type = "button";
+    button.hidden = true;
+    button.setAttribute("aria-haspopup", "dialog");
+    button.setAttribute("aria-expanded", "false");
+    const badge = el("span", "chat-badge");
+    badge.hidden = true;
+    button.append(badge);
+
+    const close = el("button", "chat-close", "✕");
+    close.type = "button";
+    close.title = t("Close the chat");
+    close.setAttribute("aria-label", t("Close the chat"));
+    const setting = (key, text) => {
+        const box = el("input");
+        box.type = "checkbox";
+        box.name = key;
+        box.addEventListener("change", async () => {
+            box.disabled = true;
+            if (!(await saveSettings({ ...userSettings(), [key]: box.checked }))) {
+                box.checked = !box.checked;
+                showError(t("Something went wrong."));
+            }
+            box.disabled = false;
+        });
+        return el("label", "chat-setting", box, text);
+    };
+    const empty = el("p", "hint chat-empty", t("No messages yet. Say hello!"));
+    const list = el("ol", "chat-messages");
+    list.setAttribute("aria-live", "polite");
+    const body = el("div", "chat-body", empty, list);
+    const input = el("input");
+    input.type = "text";
+    input.maxLength = CHAT_MAX_LENGTH;
+    input.autocomplete = "off";
+    input.placeholder = t("Write a message…");
+    input.setAttribute("aria-label", t("Write a message…"));
+    const send = el("button", "small", t("Send"));
+    send.type = "submit";
+    const form = el("form", "chat-form", input, send);
+    const panel = el("aside", "chat-panel",
+        el("div", "chat-head", el("h2", null, t("Chat")), close),
+        el("div", "chat-settings", setting("chat", t("Chat")), setting("sound", t("Sound"))),
+        body,
+        form);
+    panel.hidden = true;
+    panel.setAttribute("role", "dialog");
+    panel.setAttribute("aria-label", t("Chat"));
+    const toast = el("button", "chat-toast");
+    toast.type = "button";
+    toast.hidden = true;
+    document.body.append(panel, toast);
+
+    const isOpen = () => !panel.hidden;
+    const chatOn = () => userSettings().chat;
+    const soundOn = () => chatOn() && userSettings().sound;
+    const fromOthers = (message) => message.playerId !== view.playerId;
+
+    function updateBadge() {
+        const unread = [...messages.values()].filter((m) => m.number > seen && fromOthers(m)).length;
+        badge.textContent = unread > 99 ? "99+" : String(unread);
+        badge.hidden = unread === 0 || !chatOn();
+        const label = badge.hidden ? t("Open the chat") : t("Chat: {n} new messages", { n: unread });
+        button.title = label;
+        button.setAttribute("aria-label", label);
+    }
+
+    function markSeen() {
+        seen = Math.max(seen, 0, ...messages.keys());
+        sessionStorage.setItem(seenKey, String(seen));
+        updateBadge();
+    }
+
+    function messageItem(message) {
+        const time = new Date(message.time).toLocaleTimeString(language.locale, { hour: "2-digit", minute: "2-digit" });
+        return el("li", fromOthers(message) ? "chat-message" : "chat-message mine",
+            iconElement(message.icon, "chat-icon"),
+            el("div", "chat-text",
+                el("span", "chat-meta", el("strong", null, message.name), " ", el("time", null, time)),
+                el("p", null, message.text)));
+    }
+
+    function render() {
+        const sorted = [...messages.values()].sort((a, b) => a.number - b.number);
+        list.replaceChildren(...sorted.map(messageItem));
+        empty.hidden = sorted.length > 0;
+        body.scrollTop = body.scrollHeight;
+    }
+
+    // A short two-note chime, made in the browser so no sound file is needed.
+    function chime() {
+        if (!soundOn()) return;
+        try {
+            audio ??= new AudioContext();
+            audio.resume().catch(() => {});
+            const start = audio.currentTime;
+            [880, 1320].forEach((frequency, i) => {
+                const at = start + i * 0.12;
+                const tone = audio.createOscillator();
+                const volume = audio.createGain();
+                tone.frequency.value = frequency;
+                volume.gain.setValueAtTime(0.0001, at);
+                volume.gain.exponentialRampToValueAtTime(0.2, at + 0.02);
+                volume.gain.exponentialRampToValueAtTime(0.0001, at + 0.15);
+                tone.connect(volume).connect(audio.destination);
+                tone.start(at);
+                tone.stop(at + 0.16);
+            });
+        } catch {
+            // No sound on this browser.
+        }
+    }
+
+    // Browsers allow sound only after the user has interacted with the page, so it is prepared on the first tap or key.
+    const unlockSound = () => {
+        try {
+            audio ??= new AudioContext();
+            audio.resume().catch(() => {});
+        } catch {
+            // No sound on this browser.
+        }
+    };
+    document.addEventListener("pointerdown", unlockSound, { once: true });
+    document.addEventListener("keydown", unlockSound, { once: true });
+
+    function notify(message) {
+        if (!chatOn()) return;
+        button.classList.remove("flash");
+        void button.offsetWidth;
+        button.classList.add("flash");
+        toast.replaceChildren(iconElement(message.icon, "chat-icon"),
+            el("span", null, el("strong", null, message.name), `: ${message.text}`));
+        toast.hidden = false;
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => { toast.hidden = true; }, 5000);
+        chime();
+    }
+
+    function show(open) {
+        panel.hidden = !open;
+        button.setAttribute("aria-expanded", String(open));
+        if (open) {
+            toast.hidden = true;
+            markSeen();
+            body.scrollTop = body.scrollHeight;
+            if (matchMedia("(hover: hover)").matches) input.focus();
+        }
+    }
+
+    button.addEventListener("click", () => show(!isOpen()));
+    close.addEventListener("click", () => show(false));
+    toast.addEventListener("click", () => show(true));
+    document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape" && isOpen()) show(false);
+    });
+    form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const text = input.value.trim();
+        if (!text) return;
+        send.disabled = true;
+        try {
+            await call("SendChatMessage", sessionId, text);
+            input.value = "";
+        } catch {
+            // call() has shown the error.
+        } finally {
+            send.disabled = false;
+            input.focus();
+        }
+    });
+
+    // With the chat off, 💬 and the chat are hidden. The boxes in the chat show the current settings.
+    function applySettings() {
+        const { chat, sound } = userSettings();
+        panel.querySelector('[name="chat"]').checked = chat;
+        panel.querySelector('[name="sound"]').checked = sound;
+        button.hidden = !chat;
+        if (!chat) {
+            show(false);
+            toast.hidden = true;
+        }
+        updateBadge();
+    }
+    addEventListener(SETTINGS_EVENT, applySettings);
+    accountReady.then(applySettings);
+
+    return {
+        button,
+        // The messages from entering the session (again, after reconnecting): no notifications, only the unread count.
+        load(history) {
+            history.forEach((m) => messages.set(m.number, m));
+            render();
+            if (isOpen()) markSeen(); else updateBadge();
+        },
+        receive(message) {
+            if (messages.has(message.number)) return;
+            messages.set(message.number, message);
+            render();
+            if (isOpen()) {
+                markSeen();
+                if (document.hidden && fromOthers(message)) chime();
+            } else {
+                updateBadge();
+                if (fromOthers(message)) notify(message);
+            }
+        },
+    };
+}
+
 /**
  * Runs a session page. The page URL is <page>?session=CODE. Anyone can watch; logged-in users can take seats.
  * While the session is in its lobby, the shared session lobby (#session-lobby) is shown; while a game is being
@@ -879,6 +1158,8 @@ function startSessionPage(gameType, render, seatRole = (seat) => t("Seat {n}", {
     });
     $("session-code").closest(".code").after(menuButton);
     $("session-info").closest(".session-bar").append(menu);
+    const chat = startChat(sessionId, view);
+    menuButton.before(chat.button);
 
     function updateBanner(state) {
         const absent = state.phase === "Paused" || state.phase === "Playing" ? state.absentSeats : [];
@@ -1196,6 +1477,7 @@ function startSessionPage(gameType, render, seatRole = (seat) => t("Seat {n}", {
         view.playerId = entry.playerId ?? null;
         view.private = entry.private ?? null;
         update(entry.state);
+        chat.load(entry.chat ?? []);
     }
 
     // The server sends the public state to everyone, then each player's private state to them only.
@@ -1211,6 +1493,7 @@ function startSessionPage(gameType, render, seatRole = (seat) => t("Seat {n}", {
         view.private = privateState;
         view.refresh();
     });
+    connection.on("ChatMessageReceived", (message) => chat.receive(message));
     connection.onreconnected(() => {
         showError("");
         enter();

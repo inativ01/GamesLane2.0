@@ -275,6 +275,7 @@ function missingVoice() {
 
 function speak(key, values = {}) {
     speechSynthesis.cancel();
+    if (!userSettings().sound) return;
     const lang = missingVoice() ? LANGUAGES[0] : language;
     const text = lang === language ? t(key, values) : key.replace(/\{(\w+)\}/g, (match, name) => String(values[name] ?? match));
     const utterance = new SpeechSynthesisUtterance(text);
@@ -284,15 +285,19 @@ function speak(key, values = {}) {
     speechSynthesis.speak(utterance);
 }
 
+// With sound off in the user's profile, the button is greyed out and says why, and nothing is read.
 function updateSpeech(game, view) {
     const button = $("rp-speech");
-    const on = localStorage.getItem(SPEECH_KEY) === "on";
+    const soundOn = userSettings().sound;
+    const on = soundOn && localStorage.getItem(SPEECH_KEY) === "on";
     button.hidden = view.isPlayer || !("speechSynthesis" in window);
+    button.disabled = !soundOn;
     button.textContent = on ? t("🔊 Reading throws aloud") : t("🔇 Read throws aloud");
     button.setAttribute("aria-pressed", String(on));
-    button.title = !button.hidden && missingVoice()
-        ? t("This device has no voice for this language, so the throws are read in English. On Windows, add one in Settings > Time & language > Speech.")
-        : "";
+    button.title = button.hidden ? ""
+        : !soundOn ? t("Sound is off in your profile.")
+            : missingVoice() ? t("This device has no voice for this language, so the throws are read in English. On Windows, add one in Settings > Time & language > Speech.")
+                : "";
     const isNew = heardThrows !== null && game.throws > heardThrows;
     heardThrows = game.throws;
     if (isNew && on && !button.hidden && game.lastThrow) {
@@ -315,6 +320,12 @@ $("rp-speech").addEventListener("click", () => {
 if ("speechSynthesis" in window) {
     speechSynthesis.addEventListener("voiceschanged", () => rich.refresh());
 }
+addEventListener(SETTINGS_EVENT, () => {
+    if (!userSettings().sound && "speechSynthesis" in window) {
+        speechSynthesis.cancel();
+    }
+    rich.refresh();
+});
 
 let currentGame = null;
 

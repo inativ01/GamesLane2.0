@@ -73,6 +73,12 @@ public interface IGameHub
     Task ReturnToLobby(string sessionId);
 
     /// <summary>
+    /// Logged-in users who have the session open (players and watchers). Sends a chat message of 1 to
+    /// <see cref="GameSession.MaxChatLength"/> characters to everyone in the session.
+    /// </summary>
+    Task SendChatMessage(string sessionId, string text);
+
+    /// <summary>
     /// Tic-tac-toe: places the mark of <paramref name="seat"/>, which the caller must hold, in <paramref name="cell"/> (0-8).
     /// </summary>
     Task MakeMove(string sessionId, int seat, int cell);

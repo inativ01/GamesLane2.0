@@ -707,6 +707,72 @@ public class GameSessionTests
         Assert.True(session.IsIdle(Now.AddMinutes(15), Idle));
     }
 
+    // Chat
+
+    [Fact]
+    public void Players_and_watchers_with_the_session_open_can_chat()
+    {
+        var session = Seated(new TicTacToeSession("ABC123"));
+        session.Enter(Carol, CarolProfile, "conn-c");
+
+        Assert.True(session.TrySendChat(Alice, AliceProfile, "  Hello\n  everyone  ", Now, out var first, out _));
+        Assert.True(session.TrySendChat(Carol, CarolProfile, "Good luck!", Now.AddSeconds(5), out var second, out _));
+
+        Assert.Equal(new ChatMessage(1, session.Enter(Alice, AliceProfile, "conn-a")!, "Alice", "🦊", "Hello everyone", Now), first);
+        Assert.Equal((2, "Carol", "Good luck!"), (second.Number, second.Name, second.Text));
+        Assert.Equal([first, second], session.GetChat());
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    [InlineData(null)]
+    public void Empty_chat_messages_are_refused(string? text)
+    {
+        var session = Seated(new TicTacToeSession("ABC123"));
+
+        Assert.False(session.TrySendChat(Alice, AliceProfile, text, Now, out _, out var error));
+        Assert.Equal("Write a message of 1 to 300 characters.", error);
+        Assert.Empty(session.GetChat());
+    }
+
+    [Fact]
+    public void Chat_messages_are_limited_in_length_and_need_the_session_open()
+    {
+        var session = Seated(new TicTacToeSession("ABC123"));
+
+        Assert.True(session.TrySendChat(Alice, AliceProfile, new string('a', GameSession.MaxChatLength), Now, out _, out _));
+        Assert.False(session.TrySendChat(Alice, AliceProfile, new string('a', GameSession.MaxChatLength + 1), Now, out _, out var tooLong));
+        Assert.Equal("Write a message of 1 to 300 characters.", tooLong);
+
+        Assert.False(session.TrySendChat(Carol, CarolProfile, "Hi", Now, out _, out var notOpen));
+        Assert.Equal("Open the game to chat.", notOpen);
+        session.Disconnect("conn-a", Now);
+        Assert.False(session.TrySendChat(Alice, AliceProfile, "Hi", Now, out _, out _));
+    }
+
+    [Fact]
+    public void Only_the_latest_chat_messages_are_kept_and_they_are_saved_with_the_session()
+    {
+        var session = Seated(new TicTacToeSession("ABC123"));
+        for (var i = 1; i <= GameSession.ChatHistoryLength + 5; i++)
+        {
+            session.TrySendChat(Alice, AliceProfile, $"Message {i}", Now, out _, out _);
+        }
+
+        var chat = session.GetChat();
+        Assert.Equal(GameSession.ChatHistoryLength, chat.Count);
+        Assert.Equal((6, "Message 6"), (chat[0].Number, chat[0].Text));
+        Assert.Equal(GameSession.ChatHistoryLength + 5, chat[^1].Number);
+
+        var loaded = new TicTacToeSession("ABC123");
+        loaded.Restore(session.Save(), Now);
+        Assert.Equal(chat, loaded.GetChat());
+        loaded.Enter(Bob, BobProfile, "conn-b2");
+        Assert.True(loaded.TrySendChat(Bob, BobProfile, "Back again", Now, out var next, out _));
+        Assert.Equal(GameSession.ChatHistoryLength + 6, next.Number);
+    }
+
     // Saving and loading
 
     [Fact]

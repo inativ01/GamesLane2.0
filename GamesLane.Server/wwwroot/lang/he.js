@@ -128,6 +128,22 @@ TRANSLATIONS.he = {
     "Choose the kind of comment.": "בחרו את סוג ההערה.",
     "Your comment could not be sent. Try again later.": "לא ניתן היה לשלוח את ההערה. נסו שוב מאוחר יותר.",
 
+    // Shared: chat
+    "Chat": "צ'אט",
+    "Open the chat": "פתיחת הצ'אט",
+    "Close the chat": "סגירת הצ'אט",
+    "Chat: {n} new messages": "צ'אט: {n} הודעות חדשות",
+    "Chat in games": "צ'אט במשחקים",
+    "Sounds (chat, games and reading aloud)": "צלילים (צ'אט, משחקים והקראה)",
+    "Sound is off in your profile.": "הצליל כבוי בפרופיל שלכם.",
+    "Sound": "צליל",
+    "No messages yet. Say hello!": "עדיין אין הודעות. תגידו שלום!",
+    "Write a message…": "כתבו הודעה…",
+    "Send": "שליחה",
+    "Log in to chat.": "התחברו כדי לכתוב בצ'אט.",
+    "Write a message of 1 to {n} characters.": "כתבו הודעה באורך 1 עד {n} תווים.",
+    "Open the game to chat.": "פתחו את המשחק כדי לכתוב בצ'אט.",
+
     // Main screen
     "Public games": "משחקים ציבוריים",
     "Play with other people on GamesLane.": "שחקו עם אנשים אחרים ב־GamesLane.",

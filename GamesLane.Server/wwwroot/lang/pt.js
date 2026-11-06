@@ -128,6 +128,22 @@ TRANSLATIONS.pt = {
     "Choose the kind of comment.": "Escolha o tipo de comentário.",
     "Your comment could not be sent. Try again later.": "Não foi possível enviar seu comentário. Tente mais tarde.",
 
+    // Shared: chat
+    "Chat": "Chat",
+    "Open the chat": "Abrir o chat",
+    "Close the chat": "Fechar o chat",
+    "Chat: {n} new messages": "Chat: {n} mensagens novas",
+    "Chat in games": "Chat nas partidas",
+    "Sounds (chat, games and reading aloud)": "Sons (chat, jogos e leitura em voz alta)",
+    "Sound is off in your profile.": "O som está desligado no seu perfil.",
+    "Sound": "Som",
+    "No messages yet. Say hello!": "Ainda não há mensagens. Diga oi!",
+    "Write a message…": "Escreva uma mensagem…",
+    "Send": "Enviar",
+    "Log in to chat.": "Entre na sua conta para conversar.",
+    "Write a message of 1 to {n} characters.": "Escreva uma mensagem de 1 a {n} caracteres.",
+    "Open the game to chat.": "Abra a partida para conversar.",
+
     // Main screen
     "Public games": "Partidas públicas",
     "Play with other people on GamesLane.": "Jogue com outras pessoas no GamesLane.",

@@ -53,10 +53,26 @@ public class User
     public string? GameOrder { get; set; }
 
     /// <summary>
+    /// Whether the user has the chat in game sessions (see <see cref="UserSettings"/>).
+    /// </summary>
+    public bool ChatOn { get; set; } = true;
+
+    /// <summary>
+    /// Whether the site plays sounds for the user (see <see cref="UserSettings"/>).
+    /// </summary>
+    public bool SoundOn { get; set; } = true;
+
+    /// <summary>
     /// The external accounts (e.g. Google) the user signs in with.
     /// </summary>
     public List<ExternalLogin> ExternalLogins { get; set; } = [];
 }
+
+/// <summary>
+/// A user's settings from their profile: <see cref="Chat"/> shows the chat in game sessions, and <see cref="Sound"/>
+/// lets the site play sounds (the chat's chime, game sounds and reading aloud). Both are on for new users.
+/// </summary>
+public record UserSettings(bool Chat, bool Sound);
 
 /// <summary>
 /// Links an external account (a provider such as Google, and the account's ID there) to a user.

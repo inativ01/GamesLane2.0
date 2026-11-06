@@ -80,6 +80,16 @@ public interface IUserService
     Task<string?> SetGameOrderAsync(Guid userId, IReadOnlyList<string>? games);
 
     /// <summary>
+    /// The user's chat and sound settings, or null if the user does not exist.
+    /// </summary>
+    Task<UserSettings?> GetSettingsAsync(Guid userId);
+
+    /// <summary>
+    /// Saves the user's chat and sound settings. Returns an error message, or null on success.
+    /// </summary>
+    Task<string?> SetSettingsAsync(Guid userId, UserSettings settings);
+
+    /// <summary>
     /// Deletes users (with their external accounts and icons) last active before <paramref name="cutoff"/>. Returns how many.
     /// </summary>
     Task<int> DeleteInactiveUsersAsync(DateTimeOffset cutoff);
