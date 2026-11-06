@@ -9,6 +9,12 @@ const FACE_RANKS = { J: 11, Q: 12, K: 13, A: 14 };
 const rankOf = (card) => FACE_RANKS[card.slice(0, -1)] ?? Number(card.slice(0, -1));
 const SPEECH_KEY = "richManPoorMan.speech";
 
+// The hint to beat the throw on the table, by its number of cards: its group up to 4 cards, then the number.
+const BEAT_HINTS = {
+    1: "Throw a single card higher than '{card}', or pass.", 2: "Throw a pair of cards higher than '{card}', or pass.",
+    3: "Throw a triple of cards higher than '{card}', or pass.", 4: "Throw a quadruple of cards higher than '{card}', or pass.",
+};
+
 // The cards chosen in a hand: the seat, and the positions of the chosen cards in its hand (which comes sorted).
 let chosen = { seat: null, cards: "", picks: [] };
 let heardThrows = null;
@@ -106,8 +112,8 @@ function handPanel(game, state, view, hand) {
         const valid = picks.length > 0 && (!current
             || (picks.length === current.cards.length && rankOf(picks[0]) > rankOf(current.cards[0])));
         hint.textContent = !current ? t("You start this round: tap one or more cards of the same value to place on the table.")
-            : current.cards.length === 1 ? t("Throw 1 card higher than the table, or pass.")
-                : t("Throw {n} cards of one number higher than the table, or pass.", { n: current.cards.length });
+            : t(BEAT_HINTS[current.cards.length] ?? "Throw {n} cards higher than '{card}', or pass.",
+                { n: current.cards.length, card: current.cards[0].slice(0, -1) });
         button(t("Select"), () => send("ThrowCards", picks), valid);
         if (current) {
             button(t("Pass"), () => send("Pass"), true, true);
