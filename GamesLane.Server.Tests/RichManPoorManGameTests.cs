@@ -99,10 +99,10 @@ public class RichManPoorManGameTests
         Assert.True(game.HasPassed(4));
         Assert.Equal(["K♠"], Text(game.RoundThrow(5)!));
 
-        Throw(game, 5, "QS");
+        Throw(game, 5, "QH");
         Assert.All(new[] { 0, 1, 2, 3, 4 }, p => Assert.False(game.HasPassed(p)));
         Assert.All(new[] { 0, 1, 2, 3, 4 }, p => Assert.Null(game.RoundThrow(p)));
-        Assert.Equal(["Q♠"], Text(game.RoundThrow(5)!));
+        Assert.Equal(["Q♥"], Text(game.RoundThrow(5)!));
     }
 
     [Fact]
