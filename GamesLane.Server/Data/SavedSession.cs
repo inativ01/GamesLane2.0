@@ -2,7 +2,7 @@ namespace GamesLane.Server.Data;
 
 /// <summary>
 /// A game session saved in the database, so it can be opened again later (after it was removed from memory, or after
-/// the server restarted). Sessions are deleted 30 days after their last activity.
+/// the server restarted). Sessions are deleted 6 hours after their last activity.
 /// </summary>
 public class SavedSession
 {

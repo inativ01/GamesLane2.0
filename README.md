@@ -11,8 +11,8 @@ It is a complete reimplementation of the original [GamesLane](https://github.com
 - **Games:** Tic-tac-toe, Rock-paper-scissors, Backgammon (matches with a doubling cube), The Gang (the cooperative poker game, 3–8 players, with its challenge and specialist cards) Rich man, poor man (a shedding card game, 6–12 players), Yatzee (the classic dice game, 1–8 players) and Uno (2–10 players, to a score target or as a pyramid).
 - **Play together in real time:** a private game with family and friends has a code and a join link; a public game matches you with other people on GamesLane. A typical setup is a shared screen (a TV or laptop) showing the table, while each player plays on their own phone.
 - **Accounts:** everyone starts as a guest (a random name and icon) and can log in with a username and password, or with Google.
-- **Never lose a game:** players who drop out get their seat back when they return, others can take over an absent seat, and sessions are saved for 30 days.
-- **Languages:** English, Hebrew (right to left), Spanish (Mexico), French (France) and Portuguese (Brazil).
+- **Never lose a game:** players who drop out get their seat back when they return, others can take over an absent seat, and sessions survive a server restart (they are kept for 6 hours after everyone has left).
+- **Languages:** English and Hebrew (right to left).
 
 ## Documentation
 
