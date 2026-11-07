@@ -71,6 +71,7 @@ public record SeatInfo(string PlayerId, string Name, string Icon, SeatStatus Sta
 /// <see cref="AbsentSeats"/> are, during a game, its seats that are Away or empty (they can be taken), in order.
 /// <see cref="IsPublic"/> tells a public game; <see cref="HostPlayerId"/> is its creator's player ID (who alone chooses
 /// the options and starts it), and <see cref="Notice"/> a message for everyone, e.g. that a player left the game.
+/// <see cref="ObserverCount"/> is the number of open connections to the session of users who hold no seat.
 /// </summary>
 public record SessionState(
     string SessionId,
@@ -86,7 +87,8 @@ public record SessionState(
     IReadOnlyList<int> AbsentSeats,
     bool IsPublic,
     string? HostPlayerId,
-    string? Notice);
+    string? Notice,
+    int ObserverCount);
 
 /// <summary>
 /// A game in progress where the user holds a seat but is not connected (Reconnecting or Away), so the other players are
@@ -436,13 +438,24 @@ public abstract class GameSession : IGameSession
     }
 
     /// <summary>
-    /// Forgets a closed connection. Returns true if this leaves a seated user with no connection.
+    /// Forgets a closed connection. Returns true if this changes the public state: it leaves a seated user with no
+    /// connection, or it was an observer's connection.
     /// </summary>
     public bool Disconnect(string connectionId, DateTimeOffset now)
     {
         lock (Sync)
         {
-            if (!_connections.Remove(connectionId, out var userKey) || IsConnected(userKey) || !HoldsSeat(userKey))
+            if (!_connections.Remove(connectionId, out var userKey))
+            {
+                return false;
+            }
+
+            if (!HoldsSeat(userKey))
+            {
+                return true;
+            }
+
+            if (IsConnected(userKey))
             {
                 return false;
             }
@@ -840,7 +853,8 @@ public abstract class GameSession : IGameSession
                 HasUnfinishedGame ? [.. AbsentGameSeats()] : [],
                 _isPublic,
                 _host is null ? null : PlayerIdFor(_host),
-                _notice);
+                _notice,
+                _connections.Values.Count(userKey => !HoldsSeat(userKey)));
         }
     }
 

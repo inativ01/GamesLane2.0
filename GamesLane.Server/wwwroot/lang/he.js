@@ -55,7 +55,7 @@ TRANSLATIONS.he = {
     "Invite link": "קישור הזמנה",
     "Share": "שיתוף",
     "Players:": "שחקנים:",
-    "{taken} of {total} seated": "{taken} מתוך {total} יושבים",
+    "{taken} of {total} seated · {observers} watching": "{taken} מתוך {total} יושבים · {observers} צופים",
     "Leave my seat (watch)": "לקום מהמקום שלי (לצפות)",
     "End game for everyone": "סיום המשחק לכולם",
     "Invite friends": "הזמנת חברים",

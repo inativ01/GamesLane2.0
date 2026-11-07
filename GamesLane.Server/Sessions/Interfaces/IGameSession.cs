@@ -25,7 +25,8 @@ public interface IGameSession
     string? Enter(string userKey, PlayerProfile? profile, string connectionId);
 
     /// <summary>
-    /// Forgets a closed connection. Returns true if this leaves a seated user with no connection.
+    /// Forgets a closed connection. Returns true if this changes the public state: it leaves a seated user with no
+    /// connection, or it was an observer's connection.
     /// </summary>
     bool Disconnect(string connectionId, DateTimeOffset now);
 
