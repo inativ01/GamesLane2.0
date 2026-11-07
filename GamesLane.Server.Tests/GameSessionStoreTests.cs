@@ -1,5 +1,6 @@
 using GamesLane.Server.Data;
 using GamesLane.Server.Sessions;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace GamesLane.Server.Tests;
 
@@ -158,19 +159,57 @@ public class GameSessionStoreTests
     }
 
     [Fact]
-    public async Task Sessions_with_no_activity_for_30_days_are_deleted()
+    public async Task The_cleanup_deletes_sessions_with_no_activity_for_6_hours_but_never_one_in_memory()
     {
         var repository = new MemoryRepository();
         var clock = new Clock();
         var store = new GameSessionStore(repository, clock);
-        var old = await store.CreateAsync(GameType.TicTacToe);
-        clock.Now += TimeSpan.FromDays(20);
-        var recent = await store.CreateAsync(GameType.TicTacToe);
-        clock.Now += TimeSpan.FromDays(11);
+        var old = await Started(store);
+        await store.UnloadAsync(old);
+        var open = await Started(store);
+        clock.Now += TimeSpan.FromHours(4);
+        var recent = await Started(store);
+        await store.UnloadAsync(recent);
+        clock.Now += TimeSpan.FromHours(3);
 
-        Assert.Equal(1, await repository.DeleteOlderThanAsync(clock.Now - ExpiredSessionCleanup.Expiry));
+        await new ExpiredSessionCleanup(repository, store, clock, NullLogger<ExpiredSessionCleanup>.Instance).CleanUpAsync();
+
         Assert.False(await repository.ExistsAsync(old.Id));
+        Assert.True(await repository.ExistsAsync(open.Id));
         Assert.True(await repository.ExistsAsync(recent.Id));
+    }
+
+    [Fact]
+    public async Task Removing_an_unchanged_session_from_memory_does_not_count_as_activity()
+    {
+        var repository = new MemoryRepository();
+        var clock = new Clock();
+        var store = new GameSessionStore(repository, clock);
+        var session = await Started(store);
+        await store.SaveAsync(session);
+        var savedAt = clock.Now;
+        clock.Now += TimeSpan.FromHours(1);
+        await store.UnloadAsync(session);
+        Assert.Equal(savedAt, (await repository.FindAsync(session.Id))!.UpdatedAt);
+
+        clock.Now += TimeSpan.FromHours(1);
+        await store.UnloadAsync((await store.GetAsync(session.Id))!);
+        Assert.Equal(savedAt, (await repository.FindAsync(session.Id))!.UpdatedAt);
+
+        var reopened = (await store.GetAsync(session.Id))!;
+        reopened.Enter("user:alice", Alice, "conn-a2");
+        await store.UnloadAsync(reopened);
+        Assert.Equal(clock.Now, (await repository.FindAsync(session.Id))!.UpdatedAt);
+    }
+
+    // A tic-tac-toe session with Alice and Bob seated and a game started.
+    private static async Task<IGameSession> Started(GameSessionStore store)
+    {
+        var session = await store.CreateAsync(GameType.TicTacToe);
+        session.TryTakeSeat("user:alice", Alice, "conn-a", 0, out _);
+        session.TryTakeSeat("user:bob", Bob, "conn-b", 1, out _);
+        session.TryNewGame("user:alice", 0, out _);
+        return session;
     }
 
     private sealed class Clock : TimeProvider

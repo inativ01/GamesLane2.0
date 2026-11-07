@@ -23,6 +23,10 @@ public class GameSessionStore(
     private readonly ConcurrentDictionary<string, SemaphoreSlim> _saving = new(StringComparer.OrdinalIgnoreCase);
     private readonly ConcurrentDictionary<string, DateTimeOffset> _lastSaved = new(StringComparer.OrdinalIgnoreCase);
 
+    // What each session in memory looked like when last saved or loaded, so removing it unchanged does not save it
+    // again (which would count as activity).
+    private readonly ConcurrentDictionary<string, string> _savedData = new(StringComparer.OrdinalIgnoreCase);
+
     // Loading and unloading wait for each other, so a session is never in memory twice.
     private readonly SemaphoreSlim _loading = new(1, 1);
 
@@ -78,6 +82,7 @@ public class GameSessionStore(
 
             loaded.Restore(saved.Data, saved.UpdatedAt);
             loaded.UpdateAwaySeats(_time.GetUtcNow());
+            _savedData[id] = loaded.Save();
             _sessions[id] = loaded;
             return loaded;
         }
@@ -95,13 +100,15 @@ public class GameSessionStore(
         try
         {
             var now = _time.GetUtcNow();
+            var data = session.Save();
             _lastSaved[session.Id] = now;
+            _savedData[session.Id] = data;
             await repository.SaveAsync(new SavedSession
             {
                 Id = session.Id.ToUpperInvariant(),
                 GameType = session.Type.ToString(),
                 Version = SessionSnapshot.Version(session.GetType()),
-                Data = session.Save(),
+                Data = data,
                 UpdatedAt = now,
             });
         }
@@ -125,7 +132,7 @@ public class GameSessionStore(
             {
                 await repository.DeleteAsync(session.Id.ToUpperInvariant());
             }
-            else
+            else if (!_savedData.TryGetValue(session.Id, out var saved) || saved != session.Save())
             {
                 await SaveAsync(session);
             }
@@ -133,6 +140,7 @@ public class GameSessionStore(
             _sessions.TryRemove(new KeyValuePair<string, IGameSession>(session.Id, session));
             _saving.TryRemove(session.Id, out _);
             _lastSaved.TryRemove(session.Id, out _);
+            _savedData.TryRemove(session.Id, out _);
         }
         finally
         {

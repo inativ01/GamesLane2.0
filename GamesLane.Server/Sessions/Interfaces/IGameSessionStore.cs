@@ -25,8 +25,8 @@ public interface IGameSessionStore
     Task SaveAsync(IGameSession session);
 
     /// <summary>
-    /// Removes the session from memory: it is saved first, or deleted if its game never started, or if it is a public
-    /// game with nobody seated.
+    /// Removes the session from memory: it is saved first if it changed since it was last saved or loaded, or deleted
+    /// if its game never started, or if it is a public game with nobody seated.
     /// </summary>
     Task UnloadAsync(IGameSession session);
 
