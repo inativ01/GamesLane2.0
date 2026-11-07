@@ -191,9 +191,9 @@ function pile(game, state, view) {
     return [el("p", "hint", t("No cards on the table yet."))];
 }
 
-// A player in the list: place, name, cards left, and their last call in this round (Pass, or what they threw, e.g.
-// "2×9"), in the middle of the line. An absent player shows "Away" (their seat can be taken from the banner in the
-// status bar).
+// A player in the list: place, name, cards left (or, once their hand is empty, their finishing place), and their last
+// call in this round (Pass, or what they threw, e.g. "2×9"), in the middle of the line. An absent player shows "Away"
+// (their seat can be taken from the banner in the status bar).
 function playerItem(game, state, view, player) {
     const start = el("span", "rp-start", el("span", "rp-place", `#${player.place}`));
     const end = el("span", "rp-end");
@@ -205,8 +205,11 @@ function playerItem(game, state, view, player) {
     const tag = (text, className = "", group = end) => group.append(el("span", `rp-tag ${className}`, text));
     if (player.place === 1) tag(t("Rich man"), "rich", start);
     if (player.place === game.players.length) tag(t("Poor man"), "poor", start);
-    end.append(el("span", "rp-count", `🂠 ${player.cardCount}`));
-    if (player.finished !== null) tag(`🏁 ${player.finished}`, "finished");
+    if (player.finished !== null) {
+        tag(`🏁 ${player.finished}`, "finished");
+    } else {
+        end.append(el("span", "rp-count", `🂠 ${player.cardCount}`));
+    }
     if (game.phase === "Playing" && player.passed) {
         tag(t("Pass"), "call pass", item);
     } else if (game.phase === "Playing" && player.roundThrow) {
