@@ -69,7 +69,8 @@ public record RichManPoorManHand(
 public record RichManPoorManPrivateState(IReadOnlyList<RichManPoorManHand> Hands);
 
 /// <summary>
-/// Rich man, poor man for 6 to 12 seats. The game's players are seat numbers: the first game seats them in seat order,
+/// Rich man, poor man for 6 to 12 seats. The game's players are seat numbers: the first game seats them in seat order
+/// (and starts with an exchange if <see cref="RichManPoorManOptions.FirstGame"/> says so),
 /// and each later game gives them their places by the last game's ranking. It never ends by itself: after each game, a
 /// player starts the next one. An absent player (Away, or whose seat is empty) passes automatically, and anyone can take
 /// their seat to continue in their place. When the next game starts, absent players are dropped (with fewer than 6 left,
@@ -327,7 +328,7 @@ public class RichManPoorManSession(string id, Action<Card[]>? shuffle = null, Ra
     protected override void StartNewGame(IReadOnlyList<int> seats)
     {
         _requests.Clear();
-        _game = new RichManPoorManGame(seats, shuffle, random);
+        _game = new RichManPoorManGame(seats, shuffle, random, RichManPoorManOptions.ExchangeFirst(Options));
     }
 
     /// <inheritdoc />

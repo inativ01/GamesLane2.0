@@ -223,6 +223,24 @@ public class RichManPoorManGameTests
     }
 
     [Fact]
+    public void The_first_game_can_start_with_an_exchange_by_the_order_given_and_the_poorest_player_starts()
+    {
+        var game = new RichManPoorManGame([3, 7, 1, 9, 0, 4], RankSorted, exchangeFirst: true);
+
+        Assert.Equal((1, RichManPoorManPhase.Exchanging), (game.GameNumber, game.Phase));
+        Assert.Equal([3, 2, 1, 1, 2, 3], game.Order.Select(game.ExchangeCount));
+        Assert.Equal(3, game.ExchangePartner(4));
+        foreach (var player in game.Order)
+        {
+            var gift = game.RequiredGift(player) ?? [.. game.Hand(player).Take(game.ExchangeCount(player))];
+            Assert.True(game.TryGive(player, gift, out var error), error);
+        }
+
+        Assert.Equal((RichManPoorManPhase.Playing, 4), (game.Phase, game.Turn));
+        Assert.Equal(3, game.Hand(3).Count(c => c.Rank == 14));
+    }
+
+    [Fact]
     public void A_player_added_or_dropped_in_the_exchange_changes_the_deck_by_one_set_and_every_pair_gives_again()
     {
         var game = Exchanging(Six);

@@ -296,6 +296,12 @@ TRANSLATIONS.he = {
     "🔊 Reading throws aloud": "🔊 הקראת הזריקות פעילה",
     "🔇 Read throws aloud": "🔇 הקראת הזריקות",
     "The throws will be read aloud.": "הזריקות יוקראו בקול.",
+    "First game": "המשחק הראשון",
+    "No exchange": "בלי החלפה",
+    "The first game is played without an exchange; the player with the most 2s starts.": "המשחק הראשון משוחק בלי החלפת קלפים; פותח מי שיש לו הכי הרבה 2.",
+    "Exchange by current standings": "החלפה לפי הדירוג הנוכחי",
+    "The seats are the places: seat 1 is the rich man and the last seat the poor man. The pairs exchange cards before the first game, and the poorest player starts.":
+        "סדר המקומות בלובי הוא הדירוג: מקום 1 הוא העשיר והמקום האחרון הוא העני. הזוגות מחליפים קלפים לפני המשחק הראשון, והעני ביותר פותח.",
 
     // Rich man, poor man: throws read aloud
     "A single two": "שתיים יחיד", "A single three": "שלוש יחיד", "A single four": "ארבע יחיד", "A single five": "חמש יחיד",

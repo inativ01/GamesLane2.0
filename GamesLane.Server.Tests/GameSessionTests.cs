@@ -1565,6 +1565,26 @@ public class GameSessionTests
     }
 
     [Fact]
+    public void Rich_man_poor_man_first_game_can_start_with_an_exchange_by_seat_order()
+    {
+        var session = RichManPoorMan(6);
+        Assert.True(session.TrySetOptions(Players[0],
+            new Dictionary<string, string> { [RichManPoorManOptions.FirstGame] = RichManPoorManOptions.Exchange }, out var error), error);
+        Assert.True(session.TryNewGame(Players[0], 0, out error), error);
+
+        var state = Rmpm(session);
+        Assert.Equal((1, RichManPoorManPhase.Exchanging), (state.GameNumber, state.Phase));
+        Assert.Equal([0, 1, 2, 3, 4, 5], state.Players.Select(p => p.Seat));
+        Assert.Equal([3, 2, 1, 1, 2, 3], state.Players.Select(p => p.ExchangeCount));
+        foreach (var player in state.Players)
+        {
+            Give(session, Players[player.Seat], player.Seat);
+        }
+
+        Assert.Equal((RichManPoorManPhase.Playing, 5), (Rmpm(session).Phase, Rmpm(session).Turn));
+    }
+
+    [Fact]
     public void Rich_man_poor_man_exchange_waits_for_an_away_player_until_they_come_back()
     {
         var session = RichManPoorMan(6);

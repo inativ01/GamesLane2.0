@@ -73,7 +73,7 @@ GamesLane.Server/              ASP.NET Core backend
   Games/RockPaperScissors/     Rock-paper-scissors rules
   Games/TheGang/               The Gang rules: cards, poker hand ranking, heists
   Games/Backgammon/            Backgammon rules: position, legal moves, turns, doubling cube, matches, options
-  Games/RichManPoorMan/        Rich man, poor man rules: the deck (one set of 2 to A per player), rounds, players who left, the exchange
+  Games/RichManPoorMan/        Rich man, poor man rules: the deck (one set of 2 to A per player), rounds, players who left, the exchange, options
   Games/Yatzee/                Yatzee rules: scoring each box (with the joker rule), scorecards and bonuses, turns
   Games/Uno/                   Uno rules: cards and deck, turns and action cards, drawing, UNO calls, hands and scores, the pyramid, options
   wwwroot/                     Web pages

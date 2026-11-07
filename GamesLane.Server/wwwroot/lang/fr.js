@@ -296,6 +296,12 @@ TRANSLATIONS.fr = {
     "🔊 Reading throws aloud": "🔊 Lecture des coups à voix haute",
     "🔇 Read throws aloud": "🔇 Lire les coups à voix haute",
     "The throws will be read aloud.": "Les coups seront lus à voix haute.",
+    "First game": "Première partie",
+    "No exchange": "Sans échange",
+    "The first game is played without an exchange; the player with the most 2s starts.": "La première partie se joue sans échange ; le joueur qui a le plus de 2 commence.",
+    "Exchange by current standings": "Échange selon le classement actuel",
+    "The seats are the places: seat 1 is the rich man and the last seat the poor man. The pairs exchange cards before the first game, and the poorest player starts.":
+        "L'ordre des places fait le classement : la place 1 est le riche et la dernière place le fauché. Les paires échangent des cartes avant la première partie, et le plus pauvre commence.",
 
     // Rich man, poor man: throws read aloud
     "A single two": "Un deux seul", "A single three": "Un trois seul", "A single four": "Un quatre seul", "A single five": "Un cinq seul",

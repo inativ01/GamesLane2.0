@@ -7,7 +7,8 @@ namespace GamesLane.Server.Games.RichManPoorMan;
 /// </summary>
 public enum RichManPoorManPhase
 {
-    /// <summary>After a new deal (from the second game on), the pairs of players exchange cards.</summary>
+    /// <summary>After a new deal (from the second game on, or in the first with <see cref="RichManPoorManOptions.FirstGame"/>
+    /// set to exchange), the pairs of players exchange cards.</summary>
     Exchanging,
 
     /// <summary>The rounds are played until every active player has emptied their hand.</summary>
@@ -105,4 +106,41 @@ public static class RichManPoorManRules
         ArgumentOutOfRangeException.ThrowIfLessThan(players, MinPlayers);
         ArgumentOutOfRangeException.ThrowIfGreaterThan(players, MaxPlayers);
     }
+}
+
+/// <summary>
+/// The options of rich man, poor man.
+/// </summary>
+public static class RichManPoorManOptions
+{
+    /// <summary>The key of the option for how the first game starts.</summary>
+    public const string FirstGame = "firstGame";
+
+    /// <summary>The first game is played without an exchange.</summary>
+    public const string NoExchange = "NoExchange";
+
+    /// <summary>The first game starts with an exchange, by the seat order.</summary>
+    public const string Exchange = "Exchange";
+
+    /// <summary>
+    /// All options, in the order they are shown.
+    /// </summary>
+    public static IReadOnlyList<GameOption> All { get; } =
+    [
+        new GameOption(
+            FirstGame,
+            "First game",
+            [
+                new GameOptionChoice(NoExchange, "No exchange", "The first game is played without an exchange; the player with the most 2s starts."),
+                new GameOptionChoice(Exchange, "Exchange by current standings",
+                    "The seats are the places: seat 1 is the rich man and the last seat the poor man. The pairs exchange cards before the first game, and the poorest player starts."),
+            ],
+            NoExchange),
+    ];
+
+    /// <summary>
+    /// Whether the first game starts with an exchange, in the chosen options (as kept by the session).
+    /// </summary>
+    public static bool ExchangeFirst(IReadOnlyDictionary<string, string> options) =>
+        options.GetValueOrDefault(FirstGame) == Exchange;
 }
