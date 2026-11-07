@@ -15,12 +15,15 @@ public class RichManPoorManGame : IRichManPoorManGame
     private readonly List<int> _order = [];
     private readonly HashSet<int> _passedSinceThrow = [];
     private readonly List<int> _ranking = [];
+    private readonly bool _exchangeFirst;
 
     /// <summary>
     /// Deals the first game, with the players at the places in <paramref name="order"/>. Its first round is started by
-    /// the player with the most 2s.
+    /// the player with the most 2s; with <paramref name="exchangeFirst"/>, the pairs exchange cards first, as in later
+    /// games, and the poorest player starts.
     /// </summary>
-    public RichManPoorManGame(IReadOnlyList<int> order, Action<Card[]>? shuffle = null, Random? random = null)
+    public RichManPoorManGame(
+        IReadOnlyList<int> order, Action<Card[]>? shuffle = null, Random? random = null, bool exchangeFirst = false)
     {
         RichManPoorManRules.CheckPlayers(order.Count);
         if (order.Distinct().Count() != order.Count)
@@ -30,7 +33,14 @@ public class RichManPoorManGame : IRichManPoorManGame
 
         _random = random ?? Random.Shared;
         _shuffle = shuffle ?? _random.Shuffle;
+        _exchangeFirst = exchangeFirst;
         SetPlayers(order);
+        if (exchangeFirst)
+        {
+            StartExchange();
+            return;
+        }
+
         Deal();
         Phase = RichManPoorManPhase.Playing;
         Turn = FirstStarter();
@@ -102,7 +112,9 @@ public class RichManPoorManGame : IRichManPoorManGame
     {
         var count = ExchangeCount(player);
         var hand = Player(player).Hand;
-        return count > 0 && IsPoorer(player) ? hand.GetRange(hand.Count - count, count) : null;
+        return Phase == RichManPoorManPhase.Exchanging && count > 0 && IsPoorer(player)
+            ? hand.GetRange(hand.Count - count, count)
+            : null;
     }
 
     /// <inheritdoc />
@@ -515,11 +527,12 @@ public class RichManPoorManGame : IRichManPoorManGame
     }
 
     /// <summary>
-    /// The number of cards the player at <paramref name="place"/> (0 for #1) exchanges in this game: none in the first game.
+    /// The number of cards the player at <paramref name="place"/> (0 for #1) exchanges in this game: none in the first game,
+    /// unless it starts with an exchange.
     /// </summary>
     private int ExchangeCountAt(int place)
     {
-        if (GameNumber == 1)
+        if (GameNumber == 1 && !_exchangeFirst)
         {
             return 0;
         }
