@@ -1565,6 +1565,56 @@ public class GameSessionTests
     }
 
     [Fact]
+    public void Rich_man_poor_man_exchange_waits_for_an_away_player_until_they_come_back()
+    {
+        var session = RichManPoorMan(6);
+        session.TryNewGame(Players[0], 0, out _);
+        PlayOut(session);
+        session.TryNextRound(Players[0], 1, out _);
+        var away = Rmpm(session).Players[^1].Seat;
+        session.Disconnect($"conn-{away}", Now);
+        Assert.True(session.UpdateAwaySeats(Now.Add(GameSession.ReconnectWindow)));
+
+        var state = Rmpm(session);
+        Assert.Equal((RichManPoorManPhase.Exchanging, 6), (state.Phase, state.Players.Count));
+        Assert.False(state.Players.Single(p => p.Seat == away).IsActive);
+        Assert.Equal(SessionPhase.Playing, session.GetPublicState().Phase);
+        Assert.Equal([away], session.GetPublicState().AbsentSeats);
+        foreach (var player in state.Players.Where(p => p.Seat != away))
+        {
+            Give(session, Players[player.Seat], player.Seat);
+        }
+
+        Assert.Equal(RichManPoorManPhase.Exchanging, Rmpm(session).Phase);
+        session.Enter(Players[away], new PlayerProfile($"P{away}", "🙂"), $"conn-{away}b");
+        Assert.True(Rmpm(session).Players.Single(p => p.Seat == away).IsActive);
+        Give(session, Players[away], away);
+        Assert.Equal(RichManPoorManPhase.Playing, Rmpm(session).Phase);
+    }
+
+    [Fact]
+    public void Rich_man_poor_man_someone_can_take_an_away_seat_in_the_exchange_and_give_in_their_place()
+    {
+        var session = RichManPoorMan(6);
+        session.TryNewGame(Players[0], 0, out _);
+        PlayOut(session);
+        session.TryNextRound(Players[0], 1, out _);
+        var away = Rmpm(session).Players[^1].Seat;
+        session.Disconnect($"conn-{away}", Now);
+        session.UpdateAwaySeats(Now.Add(GameSession.ReconnectWindow));
+
+        Sit(session, 7);
+        Assert.Equal("P7", session.GetPublicState().Seats[away]!.Name);
+        Assert.True(Rmpm(session).Players.Single(p => p.Seat == away).IsActive);
+        foreach (var player in Rmpm(session).Players)
+        {
+            Give(session, player.Seat == away ? Players[7] : Players[player.Seat], player.Seat);
+        }
+
+        Assert.Equal(RichManPoorManPhase.Playing, Rmpm(session).Phase);
+    }
+
+    [Fact]
     public void Rich_man_poor_man_players_accept_a_request_to_join_at_a_place_and_the_cards_are_dealt_again()
     {
         var session = RichManPoorMan(6);
@@ -1633,6 +1683,14 @@ public class GameSessionTests
         var profile = new PlayerProfile($"P{player}", "🙂");
         session.Enter(Players[player], profile, $"conn-{player}");
         Assert.True(session.TryTakeNextSeat(Players[player], profile, $"conn-{player}", out var error), error);
+    }
+
+    // Gives the seat's required cards in the exchange, or else its lowest cards.
+    private static void Give(RichManPoorManSession session, string user, int seat)
+    {
+        var hand = Assert.IsType<RichManPoorManPrivateState>(session.GetPrivateState(user)).Hands.Single(h => h.Seat == seat);
+        var count = Rmpm(session).Players.Single(p => p.Seat == seat).ExchangeCount;
+        Assert.True(session.TryGive(user, seat, [.. hand.RequiredGift ?? hand.Cards.Take(count)], out var error), error);
     }
 
     // Plays the game to its end: each round's starter throws all their cards of their lowest number, and everyone passes.

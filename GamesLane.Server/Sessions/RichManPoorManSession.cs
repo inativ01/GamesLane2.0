@@ -73,7 +73,8 @@ public record RichManPoorManPrivateState(IReadOnlyList<RichManPoorManHand> Hands
 /// and each later game gives them their places by the last game's ranking. It never ends by itself: after each game, a
 /// player starts the next one. An absent player (Away, or whose seat is empty) passes automatically, and anyone can take
 /// their seat to continue in their place. When the next game starts, absent players are dropped (with fewer than 6 left,
-/// everyone goes back to the session lobby); during its exchange, users ask to join and a player accepts them at a place.
+/// everyone goes back to the session lobby); its exchange waits for Away players to give, and users ask to join and a
+/// player accepts them at a place.
 /// </summary>
 public class RichManPoorManSession(string id, Action<Card[]>? shuffle = null, Random? random = null)
     : GameSession(id), IRichManPoorManSession
@@ -254,12 +255,13 @@ public class RichManPoorManSession(string id, Action<Card[]>? shuffle = null, Ra
 
     /// <inheritdoc />
     protected override string? SeatingDuringGameError(int seat) =>
-        _game?.Phase == RichManPoorManPhase.Exchanging ? "Ask to join: a player will choose your place." : null;
+        seat < 0 && _game?.Phase == RichManPoorManPhase.Exchanging ? "Ask to join: a player will choose your place." : null;
 
     /// <summary>
     /// Absent players pass automatically, and play again when they come back or someone takes their seat. During the
-    /// exchange, they are dropped (their seats are freed) and the cards are dealt again; with fewer than 6 players left,
-    /// everyone goes back to the session lobby.
+    /// exchange, the exchange waits for Away players to give (until they come back or someone takes their seat), while
+    /// players who left their seat are dropped and the cards are dealt again; with fewer than 6 players left, everyone
+    /// goes back to the session lobby.
     /// </summary>
     protected override void OnSeatsChanged()
     {
@@ -268,17 +270,17 @@ public class RichManPoorManSession(string id, Action<Card[]>? shuffle = null, Ra
             return;
         }
 
+        foreach (var seat in game.Order)
+        {
+            game.SetActive(seat, !IsAbsent(seat));
+        }
+
         if (game.Phase != RichManPoorManPhase.Exchanging)
         {
-            foreach (var seat in game.Order)
-            {
-                game.SetActive(seat, !IsAbsent(seat));
-            }
-
             return;
         }
 
-        var left = game.Order.Where(IsAbsent).ToArray();
+        var left = game.Order.Where(seat => HolderOf(seat) is null).ToArray();
         if (!IsPlaying || left.Length == 0)
         {
             return;

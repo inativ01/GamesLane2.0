@@ -71,9 +71,19 @@ function handPanel(game, state, view, hand) {
     const canChoose = myTurn || (giving && !required);
     const picks = chosenCards(hand);
     const highlight = required ? [...required] : [...picks];
+    // Given cards stay in the hand until the exchange; they show only in the row under it.
+    const given = [...(game.phase === "Exchanging" ? hand.gift ?? [] : [])];
+    const shown = hand.cards.flatMap((card, index) => {
+        const at = given.indexOf(card);
+        if (at < 0) {
+            return [[card, index]];
+        }
+        given.splice(at, 1);
+        return [];
+    });
 
     // Each card sits in a slot that narrows when the hand is wider than the screen, so the cards overlap to fit.
-    const cards = el("div", "card-row rp-cards", ...hand.cards.map((card, index) => {
+    const cards = el("div", "card-row rp-cards", ...shown.map(([card, index]) => {
         const face = cardElement(card);
         const marked = highlight.indexOf(card);
         if (marked >= 0) {
