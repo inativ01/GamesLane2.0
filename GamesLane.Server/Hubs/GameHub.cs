@@ -63,16 +63,14 @@ public class GameHub(
 
         await Groups.AddToGroupAsync(Context.ConnectionId, SessionGroup(session.Id));
         var playerId = session.Enter(UserKey, AuthSetup.GetProfile(Context.User), Context.ConnectionId);
-        if (playerId is not null)
-        {
-            await BroadcastState(session);
-        }
+        await (playerId is not null ? BroadcastState(session) : SendPublicState(session));
 
         return new SessionEntry(session.GetPublicState(), playerId, session.GetPrivateState(UserKey), session.GetChat());
     }
 
     /// <summary>
-    /// Marks the connection's user as disconnected in every session where they hold a seat.
+    /// Marks the connection's user as disconnected in every session where they hold a seat, and updates the observer
+    /// count of the sessions they were watching.
     /// Their seats are freed later by <see cref="DisconnectedSeatsMonitor"/> unless they reconnect.
     /// </summary>
     public override async Task OnDisconnectedAsync(Exception? exception)
@@ -81,7 +79,7 @@ public class GameHub(
         {
             if (session.Disconnect(Context.ConnectionId, timeProvider.GetUtcNow()))
             {
-                await BroadcastState(session);
+                await (session.IsSeated(UserKey) ? BroadcastState(session) : SendPublicState(session));
             }
         }
 
@@ -415,4 +413,11 @@ public class GameHub(
     /// Sends the session's public state to everyone in the session, and saves it.
     /// </summary>
     private Task BroadcastState(IGameSession session) => BroadcastState(Clients, store, session);
+
+    /// <summary>
+    /// Sends the session's public state to everyone in the session, without saving it: for changes that are not saved,
+    /// such as the observer count.
+    /// </summary>
+    private Task SendPublicState(IGameSession session) =>
+        Clients.Group(SessionGroup(session.Id)).SendAsync(StateUpdated, session.GetPublicState());
 }

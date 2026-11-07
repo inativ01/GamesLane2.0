@@ -55,7 +55,7 @@ TRANSLATIONS.fr = {
     "Invite link": "Lien d'invitation",
     "Share": "Partager",
     "Players:": "Joueurs :",
-    "{taken} of {total} seated": "{taken} sur {total} installés",
+    "{taken} of {total} seated · {observers} watching": "{taken} sur {total} installés · {observers} spectateurs",
     "Leave my seat (watch)": "Quitter ma place (regarder)",
     "End game for everyone": "Terminer la partie pour tous",
     "Invite friends": "Inviter des amis",

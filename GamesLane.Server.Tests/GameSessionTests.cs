@@ -660,6 +660,26 @@ public class GameSessionTests
         Assert.False(session.Disconnect("spectator", Now));
     }
 
+    [Fact]
+    public void The_observer_count_is_the_open_connections_of_users_without_a_seat()
+    {
+        var session = Seated(new TicTacToeSession("ABC123"));
+        session.Enter(Alice, AliceProfile, "conn-a2");
+        session.Enter(Carol, CarolProfile, "conn-c");
+        session.Enter(Carol, CarolProfile, "conn-c2");
+        session.Enter("connection:tv", null, "tv");
+        Assert.Equal(3, session.GetPublicState().ObserverCount);
+
+        Assert.True(session.Disconnect("conn-c", Now));
+        Assert.Equal(2, session.GetPublicState().ObserverCount);
+
+        Assert.True(session.LeaveAllSeats(Alice));
+        Assert.Equal(4, session.GetPublicState().ObserverCount);
+
+        Assert.True(session.TryTakeNextSeat(Carol, CarolProfile, "conn-c2", out var error), error);
+        Assert.Equal(3, session.GetPublicState().ObserverCount);
+    }
+
     // Idle sessions (removed from memory, but saved)
 
     private static readonly TimeSpan Idle = TimeSpan.FromMinutes(5);
@@ -818,8 +838,8 @@ public class GameSessionTests
             s => s.TryPlay(Bob, 1, "R4", null, out var e) ? null : e);
     }
 
-    // Saves the session, loads it into a new one, reconnects its users, and checks both give the same public state, and
-    // the same result for the next action.
+    // Saves the session, loads it into a new one, reconnects its users, and checks both give the same public state
+    // (except the observer count, as connections are not saved), and the same result for the next action.
     private static void AssertSameAfterReload<T>(T session, Func<T> create, Func<T, string?> nextAction) where T : GameSession
     {
         var loaded = create();
@@ -830,11 +850,13 @@ public class GameSessionTests
             loaded.Enter(userKey, null, $"re-{userKey}");
         }
 
-        Assert.Equal(Json(session.GetPublicState()), Json(loaded.GetPublicState()));
+        Assert.Equal(PublicJson(session), PublicJson(loaded));
         Assert.Equal(nextAction(session), nextAction(loaded));
-        Assert.Equal(Json(session.GetPublicState()), Json(loaded.GetPublicState()));
+        Assert.Equal(PublicJson(session), PublicJson(loaded));
         Assert.Equal(Json(users.Select(session.GetPrivateState)), Json(users.Select(loaded.GetPrivateState)));
     }
+
+    private static string PublicJson(GameSession session) => Json(session.GetPublicState() with { ObserverCount = 0 });
 
     private static string Json(object? value) => System.Text.Json.JsonSerializer.Serialize(value);
 

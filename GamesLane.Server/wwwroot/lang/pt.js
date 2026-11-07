@@ -55,7 +55,7 @@ TRANSLATIONS.pt = {
     "Invite link": "Link de convite",
     "Share": "Compartilhar",
     "Players:": "Jogadores:",
-    "{taken} of {total} seated": "{taken} de {total} sentados",
+    "{taken} of {total} seated · {observers} watching": "{taken} de {total} sentados · {observers} assistindo",
     "Leave my seat (watch)": "Sair do meu lugar (assistir)",
     "End game for everyone": "Encerrar a partida para todos",
     "Invite friends": "Convidar amigos",

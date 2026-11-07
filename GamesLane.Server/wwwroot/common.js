@@ -1110,8 +1110,8 @@ function startSessionPage(gameType, render, seatRole = (seat) => t("Seat {n}", {
     banner.setAttribute("role", "status");
     $("status-bar").append(banner);
 
-    // The session bar's menu (☰), during a game: the invite link to copy or share, how many players are seated, for
-    // players, Leave my seat and End game for everyone, and Send feedback when the server can post comments.
+    // The session bar's menu (☰): the invite link to copy or share, how many players are seated and how many watch, for
+    // players, Leave my seat and (during a game) End game for everyone, and Send feedback when the server can post comments.
     const menuButton = el("button", "session-menu-button", "☰");
     menuButton.type = "button";
     menuButton.title = t("Game menu");
@@ -1180,14 +1180,15 @@ function startSessionPage(gameType, render, seatRole = (seat) => t("Seat {n}", {
         banner.replaceChildren(el("span", null, text), take);
     }
 
-    // The session bar's role ("You: ⚪ White", or "👁 Watching") and, in its menu, how many players are seated.
+    // The session bar's role ("You: ⚪ White", or "👁 Watching") and, in its menu, how many players are seated and how
+    // many connections watch.
     function updateSessionInfo(state) {
         const role = view.isPlayer
             ? t("You: {seats}", { seats: view.mySeats.map((seat) => seatRole(seat, state)).join(", ") })
             : `👁 ${t("Watching")}`;
         $("session-info").replaceChildren(el("span", "session-fact", role));
-        seatedCount.textContent = t("{taken} of {total} seated",
-            { taken: state.seats.filter(Boolean).length, total: state.seats.length });
+        seatedCount.textContent = t("{taken} of {total} seated · {observers} watching",
+            { taken: state.seats.filter(Boolean).length, total: state.seats.length, observers: state.observerCount });
     }
 
     // A seat tile: a big icon, the name, and a note such as "Seat 2 · You". The user's own seat is a button to leave
@@ -1424,10 +1425,8 @@ function startSessionPage(gameType, render, seatRole = (seat) => t("Seat {n}", {
         $("session-code").closest(".code").hidden = state.isPublic;
         inviteRow.hidden = state.isPublic;
         updateSessionInfo(state);
-        menuButton.hidden = inLobby;
-        if (inLobby) showMenu(false);
         standUp.textContent = state.isPublic ? t("Leave game") : t("Leave my seat (watch)");
-        standUp.hidden = inLobby || !view.isPlayer;
+        standUp.hidden = !view.isPlayer;
         endGame.hidden = inLobby || !view.isPlayer || state.phase === "Over";
 
         if (inLobby) {
