@@ -112,7 +112,9 @@ public class RichManPoorManGame : IRichManPoorManGame
     {
         var count = ExchangeCount(player);
         var hand = Player(player).Hand;
-        return count > 0 && IsPoorer(player) ? hand.GetRange(hand.Count - count, count) : null;
+        return Phase == RichManPoorManPhase.Exchanging && count > 0 && IsPoorer(player)
+            ? hand.GetRange(hand.Count - count, count)
+            : null;
     }
 
     /// <inheritdoc />

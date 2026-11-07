@@ -104,7 +104,7 @@ public interface IRichManPoorManGame
 
     /// <summary>
     /// The cards <paramref name="player"/> must give, if they are the poorer of their pair: their highest cards. Null for
-    /// the richer player (who chooses) and for players who do not exchange.
+    /// the richer player (who chooses), for players who do not exchange, and outside the exchange.
     /// </summary>
     IReadOnlyList<Card>? RequiredGift(int player);
 

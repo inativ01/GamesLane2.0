@@ -1585,6 +1585,27 @@ public class GameSessionTests
     }
 
     [Fact]
+    public void Rich_man_poor_man_hands_can_be_read_after_the_exchange_when_a_poorer_player_has_fewer_cards_than_they_gave()
+    {
+        var session = RichManPoorMan(6);
+        session.TrySetOptions(Players[0],
+            new Dictionary<string, string> { [RichManPoorManOptions.FirstGame] = RichManPoorManOptions.Exchange }, out _);
+        session.TryNewGame(Players[0], 0, out _);
+        foreach (var player in Rmpm(session).Players)
+        {
+            Give(session, Players[player.Seat], player.Seat);
+        }
+
+        PlayOut(session);
+
+        foreach (var player in Rmpm(session).Players)
+        {
+            var hand = Assert.IsType<RichManPoorManPrivateState>(session.GetPrivateState(Players[player.Seat])).Hands.Single();
+            Assert.Null(hand.RequiredGift);
+        }
+    }
+
+    [Fact]
     public void Rich_man_poor_man_exchange_waits_for_an_away_player_until_they_come_back()
     {
         var session = RichManPoorMan(6);
