@@ -165,7 +165,7 @@ public class RichManPoorManGame : IRichManPoorManGame
             _ranking.Add(player);
         }
 
-        if (EndIfNobodyPlays())
+        if (EndIfDone())
         {
             LastRoundWinner = player;
         }
@@ -202,6 +202,29 @@ public class RichManPoorManGame : IRichManPoorManGame
     }
 
     /// <inheritdoc />
+    public bool TrySkip(int player, out string? error)
+    {
+        if (!TryCheckTurn(player, out error))
+        {
+            return false;
+        }
+
+        if (CurrentThrow is null)
+        {
+            Turn = NextWithCards(player);
+        }
+        else
+        {
+            Player(player).Passed = true;
+            _passedSinceThrow.Add(player);
+            PassTurn(player);
+        }
+
+        EndIfDone();
+        return true;
+    }
+
+    /// <inheritdoc />
     public bool TryGive(int player, IReadOnlyList<Card> cards, out string? error)
     {
         var count = ExchangeCount(player);
@@ -231,44 +254,7 @@ public class RichManPoorManGame : IRichManPoorManGame
     }
 
     /// <inheritdoc />
-    public void SetActive(int player, bool active)
-    {
-        var state = Player(player);
-        if (state.Active == active)
-        {
-            return;
-        }
-
-        state.Active = active;
-        if (Phase != RichManPoorManPhase.Playing || EndIfNobodyPlays())
-        {
-            return;
-        }
-
-        SkipInactiveTurn();
-    }
-
-    /// <summary>
-    /// If the player to act is not active, the next active player in turn acts instead: a round's starter is replaced,
-    /// and anyone else passes. While no active player has cards, the turn waits.
-    /// </summary>
-    private void SkipInactiveTurn()
-    {
-        if (_players[Turn].Active || !_players.Values.Any(s => s.Active && s.Hand.Count > 0))
-        {
-            return;
-        }
-
-        if (CurrentThrow is null)
-        {
-            Turn = NextInPlay(Turn) ?? Turn;
-        }
-        else
-        {
-            _passedSinceThrow.Add(Turn);
-            PassTurn(Turn);
-        }
-    }
+    public void SetActive(int player, bool active) => Player(player).Active = active;
 
     /// <inheritdoc />
     public bool TryNextGame(int game, IReadOnlyList<int> order, out string? error)
@@ -422,13 +408,12 @@ public class RichManPoorManGame : IRichManPoorManGame
         }
 
         Phase = RichManPoorManPhase.Playing;
-        var poorest = _order[^1];
-        Turn = _players[poorest].Active ? poorest : NextInPlay(poorest) ?? poorest;
+        Turn = _order[^1];
     }
 
     /// <summary>
-    /// After <paramref name="player"/> has thrown or passed: the turn goes to the next player in turn who has cards, and
-    /// players who left pass automatically. The round ends once everyone else with cards has passed since the last throw.
+    /// After <paramref name="player"/> has thrown or passed: the turn goes to the next player in turn who has cards. The
+    /// round ends once everyone else with cards has passed since the last throw.
     /// </summary>
     private void PassTurn(int player)
     {
@@ -448,27 +433,21 @@ public class RichManPoorManGame : IRichManPoorManGame
                 continue;
             }
 
-            if (_players[next].Active)
-            {
-                Turn = next;
-                return;
-            }
-
-            _passedSinceThrow.Add(next);
+            Turn = next;
+            return;
         }
     }
 
     /// <summary>
-    /// Ends the round won by <paramref name="winner"/>, who starts the next one; if their hand is empty or they left, the
-    /// next active player in turn who still has cards starts it. The round's calls stay until the next round's first throw.
+    /// Ends the round won by <paramref name="winner"/>, who starts the next one; if their hand is empty, the next player
+    /// in turn who still has cards starts it. The round's calls stay until the next round's first throw.
     /// </summary>
     private void EndRound(int winner)
     {
         LastRoundWinner = winner;
         CurrentThrow = null;
         _passedSinceThrow.Clear();
-        var starter = _players[winner];
-        Turn = starter.Active && starter.Hand.Count > 0 ? winner : NextInPlay(winner) ?? winner;
+        Turn = _players[winner].Hand.Count > 0 ? winner : NextWithCards(winner);
     }
 
     /// <summary>
@@ -484,17 +463,34 @@ public class RichManPoorManGame : IRichManPoorManGame
     }
 
     /// <summary>
-    /// Ends the game once no active player has cards left, while at least one player is active. With nobody active at
-    /// all (everyone left), the game waits for players to come back or take the seats. Returns whether it ended.
+    /// Ends the game once only one player has cards left, or once only inactive players have (while someone is active).
+    /// The last player with cards takes the last place if they are active; inactive players who still have cards are
+    /// dropped from the game (see <see cref="IRichManPoorManGame.Order"/>). Returns whether it ended.
     /// </summary>
-    private bool EndIfNobodyPlays()
+    private bool EndIfDone()
     {
-        if (_players.Values.Any(s => s.Active && s.Hand.Count > 0) || !_players.Values.Any(s => s.Active))
+        var holding = _order.Where(p => _players[p].Hand.Count > 0).ToArray();
+        var onlyInactiveHold = holding.All(p => !_players[p].Active) && _players.Values.Any(s => s.Active);
+        if (holding.Length > 1 && !onlyInactiveHold)
         {
             return false;
         }
 
+        foreach (var player in holding)
+        {
+            if (_players[player].Active)
+            {
+                _ranking.Add(player);
+            }
+            else
+            {
+                _order.Remove(player);
+                _players.Remove(player);
+            }
+        }
+
         CurrentThrow = null;
+        Turn = _order.Count > 0 ? _order[0] : Turn;
         Phase = RichManPoorManPhase.GameOver;
         return true;
     }
@@ -504,11 +500,6 @@ public class RichManPoorManGame : IRichManPoorManGame
     /// the last) who still has cards; <paramref name="player"/> itself if nobody else has.
     /// </summary>
     private int NextWithCards(int player) => NextWhere(player, s => s.Hand.Count > 0) ?? player;
-
-    /// <summary>
-    /// The next active player after <paramref name="player"/> in the direction of play who still has cards, or null.
-    /// </summary>
-    private int? NextInPlay(int player) => NextWhere(player, s => s.Active && s.Hand.Count > 0);
 
     private int? NextWhere(int player, Func<PlayerState, bool> condition)
     {
@@ -588,7 +579,7 @@ public class RichManPoorManGame : IRichManPoorManGame
         /// <summary>The cards the player last threw in this round, or null.</summary>
         public Card[]? RoundThrow { get; set; }
 
-        /// <summary>Whether the player is still playing (has not left).</summary>
+        /// <summary>Whether the player is connected.</summary>
         public bool Active { get; set; } = true;
 
         /// <summary>The cards given in this exchange, until all are exchanged.</summary>

@@ -38,7 +38,7 @@ public record RichManPoorManThrow(int Player, IReadOnlyList<Card> Cards)
 public static class RichManPoorManRules
 {
     /// <summary>The fewest players a game needs.</summary>
-    public const int MinPlayers = 6;
+    public const int MinPlayers = 4;
 
     /// <summary>The most players a game can have.</summary>
     public const int MaxPlayers = 12;
@@ -56,6 +56,8 @@ public static class RichManPoorManRules
     // partner here do not exchange.
     private static readonly Dictionary<int, int[]> Exchanges = new()
     {
+        [4] = [2, 1],
+        [5] = [2, 1],
         [6] = [3, 2, 1],
         [7] = [3, 2, 1],
         [8] = [4, 3, 2, 1],

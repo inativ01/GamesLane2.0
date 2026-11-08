@@ -101,6 +101,9 @@ public class TicTacToeSession(string id) : GameSession(id), ITicTacToeSession
     }
 
     /// <inheritdoc />
+    protected override IEnumerable<int> AwaitedSeats => _game.IsOver ? [] : [_game.CurrentTurn == Mark.X ? 0 : 1];
+
+    /// <inheritdoc />
     protected override object GetGameState() => new TicTacToeState(
         _round, _game.Board.ToArray(), _game.CurrentTurn, _game.Winner, _game.IsDraw, _scores.ToArray(), _draws);
 

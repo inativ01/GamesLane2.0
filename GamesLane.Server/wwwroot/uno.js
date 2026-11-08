@@ -250,6 +250,16 @@ function handPanel(game, state, view, hand) {
     return panel;
 }
 
+// Confetti for the user's success: winning a hand or the game, or emptying their hand in a pyramid.
+function noticeSuccess(game, state, view) {
+    const winner = game.phase === "GameOver" ? game.winner : game.phase === "HandOver" ? game.lastResult?.seat : null;
+    if (winner != null && view.isMe(winner)) {
+        celebrate(state, `${game.phase}-${game.handNumber}`);
+    }
+    game.players.filter((p) => p.finished !== null && view.isMe(p.seat))
+        .forEach((p) => celebrate(state, `finished-${game.handNumber}-${p.seat}`));
+}
+
 const uno = startSessionPage("Uno", (game, state, view) => {
     currentGame = game;
     if (game.phase !== "Playing") {
@@ -258,6 +268,7 @@ const uno = startSessionPage("Uno", (game, state, view) => {
     showScores(state, view, game.end === "Score" ? [t("Hand {n}", { n: game.handNumber }), t("To {n} points", { n: game.target })] : [],
         game.end === "Score" ? game.players.map((p) => ({ seat: p.seat, score: p.score, acting: game.phase === "Playing" && p.seat === game.turn })) : []);
     $("status").textContent = statusText(game, state, view);
+    noticeSuccess(game, state, view);
     const message = game.events.map((e) => eventText(game, state, view, e)).filter(Boolean).join(" ");
     $("uno-message").textContent = message;
     $("uno-message").hidden = !message;

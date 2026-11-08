@@ -129,28 +129,46 @@ public class RichManPoorManGameTests
     // Players who leave
 
     [Fact]
-    public void A_player_who_left_passes_automatically_and_if_they_are_to_start_the_next_active_player_starts()
+    public void An_inactive_player_keeps_their_turn_until_it_is_skipped_and_a_skipped_starter_hands_the_round_on()
     {
         var game = new RichManPoorManGame(Six, RankSorted);
         Throw(game, 0, "2S");
         game.SetActive(5, false);
 
+        Assert.Equal(5, game.Turn);
+        Assert.True(game.TrySkip(5, out var error), error);
+        Assert.True(game.HasPassed(5));
         Assert.Equal(4, game.Turn);
-        Assert.False(game.HasPassed(5));
+        Assert.False(game.TrySkip(5, out error));
+        Assert.Equal("It is not your turn.", error);
         Pass(game, 4, 3, 2, 1);
+        Assert.Equal(0, game.LastRoundWinner);
         Assert.Equal(0, game.Turn);
 
         game.SetActive(0, false);
+        Assert.True(game.TrySkip(0, out error), error);
+        Assert.Null(game.CurrentThrow);
+        Assert.Equal(5, game.Turn);
+        Assert.True(game.TrySkip(5, out error), error);
         Assert.Equal(4, game.Turn);
         Throw(game, 4, "10S");
         Assert.Equal(3, game.Turn);
-        game.SetActive(5, true);
-        Pass(game, 3, 2, 1);
-        Assert.Equal(5, game.Turn);
     }
 
     [Fact]
-    public void When_everyone_leaves_the_game_waits_and_goes_on_when_a_player_comes_back()
+    public void The_game_ends_once_only_inactive_players_have_cards_and_they_are_dropped()
+    {
+        var game = FinishedBySeat0();
+
+        Assert.Equal(RichManPoorManPhase.GameOver, game.Phase);
+        Assert.Equal([0], game.Ranking);
+        Assert.Equal([0], game.Order);
+        Assert.Equal([0], game.NextOrder);
+        Assert.Equal("The game is over.", Refused(game, 0, "2S"));
+    }
+
+    [Fact]
+    public void When_everyone_is_inactive_the_game_does_not_end()
     {
         var game = new RichManPoorManGame(Six, RankSorted);
         Throw(game, 0, "2S");
@@ -159,25 +177,11 @@ public class RichManPoorManGameTests
             game.SetActive(player, false);
         }
 
+        Assert.True(game.TrySkip(5, out var error), error);
         Assert.Equal(RichManPoorManPhase.Playing, game.Phase);
-        Assert.Empty(game.Ranking);
-
-        game.SetActive(3, true);
-        Assert.Equal(RichManPoorManPhase.Playing, game.Phase);
+        game.SetActive(4, true);
+        Throw(game, 4, "10S");
         Assert.Equal(3, game.Turn);
-        Assert.True(game.TryThrow(3, Cards(game.Hand(3)[0].ToString()), out var error), error);
-    }
-
-    [Fact]
-    public void The_game_ends_once_every_active_player_has_emptied_their_hand_and_leavers_get_no_place()
-    {
-        var game = FinishedBySeat0();
-
-        Assert.Equal(RichManPoorManPhase.GameOver, game.Phase);
-        Assert.Equal([0], game.Ranking);
-        Assert.Equal(13, game.Hand(3).Count);
-        Assert.Equal([0, 1, 2, 3, 4, 5], game.NextOrder);
-        Assert.Equal("The game is over.", Refused(game, 0, "2S"));
     }
 
     // The exchange
@@ -254,8 +258,11 @@ public class RichManPoorManGameTests
 
         Assert.True(game.TryRemovePlayer(9, out error), error);
         Assert.Equal(78, game.Order.Sum(p => game.Hand(p).Count));
+        Assert.True(game.TryRemovePlayer(5, out error), error);
+        Assert.True(game.TryRemovePlayer(4, out error), error);
+        Assert.Equal([2, 1, 1, 2], game.Order.Select(game.ExchangeCount));
         Assert.False(game.TryRemovePlayer(3, out error));
-        Assert.Equal("At least 6 players are needed for the exchange.", error);
+        Assert.Equal("At least 4 players are needed for the exchange.", error);
         Assert.False(game.TryAddPlayer(0, 0, out error));
         Assert.Equal("That player is already playing.", error);
     }
@@ -272,7 +279,32 @@ public class RichManPoorManGameTests
         Assert.Equal(2, exchanging.GameNumber);
     }
 
-    // Seat 0 (#1, with the lowest cards) is the only active player and empties their hand.
+    [Fact]
+    public void The_game_ends_when_only_one_player_has_cards_left_and_they_take_the_last_place()
+    {
+        var game = new RichManPoorManGame([0, 1, 2, 3], RankSorted);
+        for (var moves = 0; moves < 500 && game.Phase == RichManPoorManPhase.Playing; moves++)
+        {
+            if (game.CurrentThrow is null)
+            {
+                var hand = game.Hand(game.Turn);
+                Throw(game, game.Turn, Text(hand.Where(c => c.Rank == hand[0].Rank)));
+            }
+            else
+            {
+                Pass(game, game.Turn);
+            }
+        }
+
+        Assert.Equal(RichManPoorManPhase.GameOver, game.Phase);
+        Assert.Equal([0, 3, 2, 1], game.Ranking);
+        Assert.NotEmpty(game.Hand(1));
+        Assert.Equal("The game is over.", Refused(game, 1, Text(game.Hand(1).Take(1))));
+        Assert.True(game.TryNextGame(1, game.NextOrder, out var error), error);
+        Assert.Equal([2, 1, 1, 2], game.Order.Select(game.ExchangeCount));
+    }
+
+    // Seat 0 (#1, with the lowest cards) is the only active player and empties their hand; the others' turns are skipped.
     private static RichManPoorManGame FinishedBySeat0()
     {
         var game = new RichManPoorManGame(Six, RankSorted);
@@ -281,9 +313,15 @@ public class RichManPoorManGameTests
             game.SetActive(player, false);
         }
 
-        Throw(game, 0, "2S", "2H", "2D", "2C", "2S", "2H");
-        Throw(game, 0, "3S", "3H", "3D", "3C", "3S", "3H");
-        Throw(game, 0, "4S");
+        foreach (var cards in new[] { new[] { "2S", "2H", "2D", "2C", "2S", "2H" }, ["3S", "3H", "3D", "3C", "3S", "3H"], ["4S"] })
+        {
+            Throw(game, 0, cards);
+            while (game.Phase == RichManPoorManPhase.Playing && game.Turn != 0)
+            {
+                Assert.True(game.TrySkip(game.Turn, out var error), error);
+            }
+        }
+
         return game;
     }
 

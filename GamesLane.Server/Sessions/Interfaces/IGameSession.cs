@@ -20,9 +20,26 @@ public interface IGameSession
 
     /// <summary>
     /// Registers a connection that opened the session page. If <paramref name="profile"/> is given (the user is logged in),
-    /// updates the name and icon on the user's seats and returns the user's player ID.
+    /// updates the name and icon on the user's seats and returns the user's player ID. A logged-in user without a seat who
+    /// opens or reconnects to a private game in progress is offered its absent seats if it has any.
     /// </summary>
     string? Enter(string userKey, PlayerProfile? profile, string connectionId);
+
+    /// <summary>
+    /// Whether <paramref name="userKey"/> is offered an absent seat of the game in progress (see <see cref="Enter"/>).
+    /// </summary>
+    bool HasSeatOffer(string userKey);
+
+    /// <summary>
+    /// <paramref name="userKey"/> declines their seat offer and watches the game, until they open it or reconnect again.
+    /// Returns true if they had an offer.
+    /// </summary>
+    bool DeclineSeatOffer(string userKey);
+
+    /// <summary>
+    /// A player skips the turn of <paramref name="seat"/>, an absent seat the game waits for, in a game that allows it.
+    /// </summary>
+    bool TrySkipPlayer(string userKey, int seat, [NotNullWhen(false)] out string? error);
 
     /// <summary>
     /// Forgets a closed connection. Returns true if this changes the public state: it leaves a seated user with no
@@ -97,8 +114,9 @@ public interface IGameSession
     void Restore(string data, DateTimeOffset savedAt);
 
     /// <summary>
-    /// Takes a seat, showing the user's name and icon on it: in the lobby, an empty seat; during a game, an absent seat
-    /// of the game (empty or Away), continuing that player's game.
+    /// Takes a seat, showing the user's name and icon on it: in the lobby, an empty seat; during a game, for a user
+    /// offered a seat only, an absent seat of the game (empty, or its holder is not connected), continuing that player's
+    /// game.
     /// </summary>
     bool TryTakeSeat(string userKey, PlayerProfile profile, string connectionId, int seat, [NotNullWhen(false)] out string? error);
 
@@ -136,7 +154,7 @@ public interface IGameSession
     void UseSavedOptions(IReadOnlyDictionary<string, string>? options);
 
     /// <summary>
-    /// Ends the game in progress (Playing or Paused) and takes everyone back to the session lobby. The seats then move
+    /// Ends the game in progress and takes everyone back to the session lobby. The seats then move
     /// up, other users can join, and a new game can be started.
     /// </summary>
     bool TryEndGame(string userKey, [NotNullWhen(false)] out string? error);

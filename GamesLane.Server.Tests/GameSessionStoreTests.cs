@@ -83,13 +83,13 @@ public class GameSessionStoreTests
         Assert.NotSame(session, loaded);
         Assert.Same(loaded, await store.GetAsync(session.Id));
         var state = loaded.GetPublicState();
-        Assert.Equal(SessionPhase.Paused, state.Phase);
+        Assert.Equal([1], state.WaitingSeats);
         Assert.All(state.Seats, s => Assert.Equal(SeatStatus.Away, s!.Status));
         Assert.Equal(session.GetPublicState().Seats.Select(s => s!.PlayerId), state.Seats.Select(s => s!.PlayerId));
 
         loaded.Enter("user:alice", Alice, "conn-a2");
         loaded.Enter("user:bob", Bob, "conn-b2");
-        Assert.Equal(SessionPhase.Playing, loaded.GetPublicState().Phase);
+        Assert.Empty(loaded.GetPublicState().WaitingSeats);
         Assert.True(loaded.TryMove("user:bob", 1, 0, out var error), error);
     }
 

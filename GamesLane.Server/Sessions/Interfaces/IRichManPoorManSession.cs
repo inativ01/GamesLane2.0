@@ -3,11 +3,12 @@ using System.Diagnostics.CodeAnalysis;
 namespace GamesLane.Server.Sessions;
 
 /// <summary>
-/// Rich man, poor man for 6 to 12 seats, game after game; it never ends by itself. The next game starts with
+/// Rich man, poor man for 4 to 12 seats, game after game; it never ends by itself. The next game starts with
 /// <see cref="IRoundBasedSession.TryNextRound"/> (the round is the game number). Cards are short text such as "10♥".
-/// A player who leaves during a game keeps their cards and passes automatically, and anyone can take their seat and
-/// continue in their place; at the next game's exchange, players who left are dropped. During the exchange, a user can
-/// ask to join, and any player can accept them at a place of their choice.
+/// An absent player keeps their cards and their turn, which the other players can skip; a newcomer can take their seat
+/// and continue in their place. A game that ends with only absent players holding cards drops them; at the next game's
+/// exchange, seats left empty are dropped. During the exchange, a user can ask to join, and any player can accept them
+/// at a place of their choice.
 /// </summary>
 public interface IRichManPoorManSession : IRoundBasedSession
 {

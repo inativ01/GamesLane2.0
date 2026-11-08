@@ -3,7 +3,7 @@ using GamesLane.Server.Games.TheGang;
 namespace GamesLane.Server.Games.RichManPoorMan;
 
 /// <summary>
-/// Rich man, poor man for 6 to 12 players, game after game. A player is identified by a number of the caller's choice
+/// Rich man, poor man for 4 to 12 players, game after game. A player is identified by a number of the caller's choice
 /// (the session uses seat numbers); each game gives the players places from #1 (the rich man) to the last (the poor
 /// man), in <see cref="Order"/>. The first game uses the order given; each later game re-seats them by the last game's
 /// ranking, deals again, and the pairs exchange cards before playing.
@@ -12,10 +12,11 @@ namespace GamesLane.Server.Games.RichManPoorMan;
 /// strictly higher number or passes. The round ends when everyone else has passed since the last throw, or at once when
 /// Aces are thrown; the last thrower wins it and starts the next one (or, if their hand is empty, the next player in turn
 /// who still has cards).
-/// A player who is not active (who left) keeps their cards until the game ends and passes automatically; if they are to
-/// start a round, the next active player in turn starts it instead. The game ends once every active player has emptied
-/// their hand. Players who left are dropped at the next game; during the exchange, players can be added or dropped,
-/// which deals the cards again for the new number of players.
+/// A player who is not active (disconnected) keeps their cards and their turn; the others can skip their turn
+/// (<see cref="TrySkip"/>). The game ends once only one player has cards left (they take the last place if they are
+/// active), or once only inactive players have cards left; inactive players who still have cards are then dropped from
+/// the game. During the exchange, players can be added or dropped, which deals the cards again for the new number of
+/// players.
 /// </summary>
 public interface IRichManPoorManGame
 {
@@ -30,7 +31,8 @@ public interface IRichManPoorManGame
     RichManPoorManPhase Phase { get; }
 
     /// <summary>
-    /// The players in this game's places, from #1 (the rich man) to the last (the poor man).
+    /// The players in this game's places, from #1 (the rich man) to the last (the poor man). Players dropped when the game
+    /// ends are no longer in it.
     /// </summary>
     IReadOnlyList<int> Order { get; }
 
@@ -60,7 +62,7 @@ public interface IRichManPoorManGame
     int Throws { get; }
 
     /// <summary>
-    /// Whether <paramref name="player"/>'s last action in this round was to pass (not counting automatic passes). After
+    /// Whether <paramref name="player"/>'s last action in this round was to pass (or their turn was skipped). After
     /// a round ends, its calls stay until the next round's first throw.
     /// </summary>
     bool HasPassed(int player);
@@ -72,7 +74,7 @@ public interface IRichManPoorManGame
     IReadOnlyList<Card>? RoundThrow(int player);
 
     /// <summary>
-    /// Whether <paramref name="player"/> is active, i.e. has not left the game (see <see cref="SetActive"/>).
+    /// Whether <paramref name="player"/> is active, i.e. connected (see <see cref="SetActive"/>).
     /// </summary>
     bool IsActive(int player);
 
@@ -82,13 +84,14 @@ public interface IRichManPoorManGame
     int? LastRoundWinner { get; }
 
     /// <summary>
-    /// The players who have emptied their hands in this game, in the order they did.
+    /// The players who have emptied their hands in this game, in the order they did, and once it is over, the last player
+    /// if they still had cards.
     /// </summary>
     IReadOnlyList<int> Ranking { get; }
 
     /// <summary>
-    /// The order for the next game: <see cref="Ranking"/>, then any players without a finishing place (who left before
-    /// emptying their hand), in their current order.
+    /// The order for the next game: <see cref="Ranking"/>, then any players without a finishing place, in their current
+    /// order.
     /// </summary>
     IReadOnlyList<int> NextOrder { get; }
 
@@ -129,6 +132,12 @@ public interface IRichManPoorManGame
     bool TryPass(int player, out string? error);
 
     /// <summary>
+    /// Skips the turn of <paramref name="player"/> (e.g. who is disconnected): they pass, or if they are to start the
+    /// round, the next player in turn who has cards starts it.
+    /// </summary>
+    bool TrySkip(int player, out string? error);
+
+    /// <summary>
     /// <paramref name="player"/> gives <paramref name="cards"/> to their exchange partner: the poorer player must give
     /// <see cref="RequiredGift"/>, the richer any cards of theirs, as many as <see cref="ExchangeCount"/>. Nobody gets
     /// any cards until every pair has given; then all the cards are exchanged at once and the poorest player starts.
@@ -136,14 +145,13 @@ public interface IRichManPoorManGame
     bool TryGive(int player, IReadOnlyList<Card> cards, out string? error);
 
     /// <summary>
-    /// Marks <paramref name="player"/> as active (playing) or not (they left). An inactive player keeps their cards and
-    /// passes automatically.
+    /// Marks <paramref name="player"/> as active (connected) or not. An inactive player keeps their cards and their turn.
     /// </summary>
     void SetActive(int player, bool active);
 
     /// <summary>
     /// Starts the game after game <paramref name="game"/>, once it is over, with the players in <paramref name="order"/>
-    /// (usually <see cref="NextOrder"/> without the players who left): deals again for them, and the pairs exchange
+    /// (usually <see cref="NextOrder"/> without the players who left their seat): deals again for them, and the pairs exchange
     /// cards. If that game has already started, nothing changes.
     /// </summary>
     bool TryNextGame(int game, IReadOnlyList<int> order, out string? error);

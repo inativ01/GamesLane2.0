@@ -49,6 +49,9 @@ const ticTacToe = startSessionPage("TicTacToe", (game, state, view) => {
     });
 
     $("status").textContent = ticTacToeStatus(game, state, view);
+    if (isRoundOver(game) && !game.isDraw && view.isMe(seatOf(game.winner))) {
+        celebrate(state, `round-${game.round}`);
+    }
     $("next-round").hidden = !(view.isPlayer && isRoundOver(game));
     showScores(state, view, [t("Round {n}", { n: game.round }), t("Draws: {n}", { n: game.draws })], MARKS.map((mark, seat) => ({
         seat, before: el("span", "score-mark", mark), score: game.scores[seat], acting: !isRoundOver(game) && seat === turnSeat,

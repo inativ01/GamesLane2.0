@@ -128,6 +128,10 @@ public class UnoSession(string id, Action<UnoCard[]>? shuffle = null) : GameSess
     protected override void OnRestored() => _game?.Reattach(shuffle);
 
     /// <inheritdoc />
+    protected override IEnumerable<int> AwaitedSeats =>
+        _game is { Phase: UnoPhase.Playing } game ? [GameSeats[game.Turn]] : [];
+
+    /// <inheritdoc />
     protected override object GetGameState()
     {
         var game = Game;
