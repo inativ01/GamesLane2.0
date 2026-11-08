@@ -42,8 +42,8 @@ public static class YanivCards
     /// Whether <paramref name="cards"/> can be discarded together, and the order they go on the open pile: one card; a
     /// series of 2 to 4 cards of the same value (jokers stand for any card), jokers first, then the others in the order
     /// given; or a straight of 3 or more cards of one suit in a row (jokers stand for any missing card), from lowest to
-    /// highest. Jokers left over in a straight extend it downwards, or upwards once it reaches the ace; those that end up
-    /// above its highest card go under its lowest instead. So a joker is never on top unless every card is a joker.
+    /// highest. Jokers left over in a straight extend it downwards, or upwards once it reaches the ace. So a joker is on
+    /// top only when it must follow the highest card of a straight from the ace (e.g. A-2-joker), or every card is a joker.
     /// </summary>
     public static bool TryArrange(IReadOnlyList<Card> cards, out Card[] ordered)
     {
@@ -76,13 +76,13 @@ public static class YanivCards
 
         var down = Math.Min(spare, low - 1);
         low -= down;
-        var above = spare - down;
-        if (high + above > 13)
+        high += spare - down;
+        if (high > 13)
         {
             return false;
         }
 
-        ordered = [.. Enumerable.Repeat(Card.Joker, above), .. Enumerable.Range(low, high - low + 1)
+        ordered = [.. Enumerable.Range(low, high - low + 1)
             .Select(p => positions.Contains(p) ? others.First(c => Position(c) == p) : Card.Joker)];
         return true;
     }

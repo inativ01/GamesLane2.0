@@ -27,26 +27,26 @@ public class YanivGameTests
     [InlineData("Q♦ Q♣ Q♠", "Q♦ Q♣ Q♠")]
     [InlineData("7♥ 7♠ JOKER", "JOKER 7♥ 7♠")]
     [InlineData("7♣ 5♣ 6♣", "5♣ 6♣ 7♣")]
-    [InlineData("Q♥ 9♥ JOKER J♥", "9♥ 10♥ J♥ Q♥")]
+    [InlineData("Q♥ 9♥ JOKER J♥", "9♥ JOKER J♥ Q♥")]
     [InlineData("A♦ 3♦ 2♦", "A♦ 2♦ 3♦")]
-    [InlineData("5♠ 6♠ JOKER", "4♠ 5♠ 6♠")]
-    [InlineData("Q♠ K♠ JOKER", "J♠ Q♠ K♠")]
-    [InlineData("A♦ 2♦ JOKER", "3♦ A♦ 2♦")]
-    [InlineData("2♣ JOKER JOKER", "JOKER JOKER 2♣")]
-    [InlineData("2♣ 4♣ JOKER JOKER", "A♣ 2♣ 3♣ 4♣")]
+    [InlineData("5♠ 6♠ JOKER", "JOKER 5♠ 6♠")]
+    [InlineData("Q♠ K♠ JOKER", "JOKER Q♠ K♠")]
+    [InlineData("2♣ 4♣ JOKER JOKER", "JOKER 2♣ JOKER 4♣")]
     [InlineData("JOKER JOKER", "JOKER JOKER")]
-    public void A_single_card_a_series_or_a_straight_can_be_discarded_and_a_joker_is_never_on_top(string cards, string onThePile)
+    public void A_single_card_a_series_or_a_straight_can_be_discarded_and_a_joker_goes_under_the_other_cards(string cards, string onThePile)
     {
         Assert.True(YanivCards.TryArrange(Cards(cards), out var ordered));
-        // A joker is shown here as the card it stands for.
-        var expected = Cards(onThePile);
-        Assert.Equal(expected.Length, ordered.Length);
-        Assert.All(ordered.Zip(expected), pair => Assert.True(pair.First.IsJoker || pair.First == pair.Second, $"{pair.First} is not {pair.Second}"));
-        Assert.Equal(Cards(cards).Count(c => c.IsJoker), ordered.Count(c => c.IsJoker));
-        if (ordered.Length > 1 && ordered.Any(c => !c.IsJoker))
-        {
-            Assert.False(ordered[^1].IsJoker);
-        }
+        Assert.Equal(Cards(onThePile), ordered);
+    }
+
+    [Theory]
+    [InlineData("A♦ 2♦ JOKER", "A♦ 2♦ JOKER")]
+    [InlineData("A♣ 3♣ JOKER JOKER", "A♣ JOKER 3♣ JOKER")]
+    public void A_joker_that_must_follow_the_highest_card_of_a_straight_from_the_ace_goes_on_top(string cards, string onThePile)
+    {
+        Assert.True(YanivCards.TryArrange(Cards(cards), out var ordered));
+        Assert.Equal(Cards(onThePile), ordered);
+        Assert.True(ordered[^1].IsJoker);
     }
 
     [Theory]

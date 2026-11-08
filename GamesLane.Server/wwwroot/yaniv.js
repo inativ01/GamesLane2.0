@@ -19,7 +19,7 @@ const cardsText = (cards) => cards.map(cardText).join(" ");
 
 // The cards in the order they go on the open pile, or null if they cannot be discarded together: one card; 2 to 4 of
 // the same value (jokers stand for any card), jokers first; or 3 or more in a row of one suit, from lowest to highest,
-// spare jokers going below it (or, above an ace, under it), so a joker is never on top (as the server).
+// spare jokers going below it, or above it once it starts at the ace (as the server).
 function arrange(cards) {
     const others = cards.filter((c) => !isJoker(c));
     const jokers = cards.length - others.length;
@@ -30,15 +30,13 @@ function arrange(cards) {
     if (cards.length < 3 || others.length === 0 || new Set(others.map(suitOf)).size !== 1) return null;
     const positions = others.map(position).sort((a, b) => a - b);
     if (new Set(positions).size !== positions.length) return null;
-    const high = positions[positions.length - 1];
-    const spare = jokers - (high - positions[0] + 1 - positions.length);
+    const spare = jokers - (positions[positions.length - 1] - positions[0] + 1 - positions.length);
     if (spare < 0) return null;
     const down = Math.min(spare, positions[0] - 1);
     const low = positions[0] - down;
-    const above = spare - down;
-    if (high + above > 13) return null;
-    return [...Array(above).fill(JOKER),
-        ...Array.from({ length: high - low + 1 }, (_, i) => others.find((c) => position(c) === low + i) ?? JOKER)];
+    const high = positions[positions.length - 1] + spare - down;
+    if (high > 13) return null;
+    return Array.from({ length: high - low + 1 }, (_, i) => others.find((c) => position(c) === low + i) ?? JOKER);
 }
 
 // The cards chosen in a hand: the seat, and the positions of the chosen cards in its hand (which comes sorted).
