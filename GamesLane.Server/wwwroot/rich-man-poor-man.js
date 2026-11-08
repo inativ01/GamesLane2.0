@@ -36,8 +36,9 @@ function myHands(view) {
     return view.private?.hands ?? [];
 }
 
-// Tapping a card: while throwing, cards of one number (with a throw to beat, as many as it has at once); while giving,
-// any cards up to the number to give. Tapping a chosen card puts it back.
+// Tapping a card: while throwing, cards of one number. The first card of a number picks all the hand's cards of that
+// number (with a throw to beat, as many as it has); the starter of a round can then tap some to put them back. While
+// giving, any cards up to the number to give. Tapping a chosen card puts it back.
 function pickCard(game, hand, index) {
     const key = hand.cards.join(",");
     if (chosen.seat !== hand.seat || chosen.cards !== key) {
@@ -53,9 +54,8 @@ function pickCard(game, hand, index) {
         const rank = rankOf(hand.cards[index]);
         const same = picks.length && rankOf(hand.cards[picks[0]]) === rank ? picks : [];
         const need = game.currentThrow?.cards.length;
-        chosen.picks = need && same.length === 0
-            ? hand.cards.flatMap((c, i) => (rankOf(c) === rank ? [i] : [])).slice(0, need)
-            : [...same, index];
+        const all = hand.cards.flatMap((c, i) => (rankOf(c) === rank ? [i] : []));
+        chosen.picks = same.length === 0 ? all.slice(0, need ?? all.length) : [...same, index];
     }
     rich.refresh();
 }
