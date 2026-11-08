@@ -3,6 +3,7 @@ using GamesLane.Server.Games.Backgammon;
 using GamesLane.Server.Games.RichManPoorMan;
 using GamesLane.Server.Games.TheGang;
 using GamesLane.Server.Games.Uno;
+using GamesLane.Server.Games.Yaniv;
 using GamesLane.Server.Sessions;
 
 namespace GamesLane.Server.Games;
@@ -76,6 +77,7 @@ public static class GameOptions
         GameType.Backgammon => BackgammonOptions.All,
         GameType.Uno => UnoOptions.All,
         GameType.RichManPoorMan => RichManPoorManOptions.All,
+        GameType.Yaniv => YanivOptions.All,
         _ => [],
     };
 

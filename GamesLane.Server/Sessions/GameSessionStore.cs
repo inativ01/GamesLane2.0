@@ -167,6 +167,7 @@ public class GameSessionStore(
         GameType.RichManPoorMan => new RichManPoorManSession(id),
         GameType.Yatzee => new YatzeeSession(id),
         GameType.Uno => new UnoSession(id),
+        GameType.Yaniv => new YanivSession(id),
         _ => throw new ArgumentOutOfRangeException(nameof(type), type, "Unknown game type."),
     };
 
@@ -182,6 +183,7 @@ public class GameSessionStore(
         GameType.RichManPoorMan => "/rich-man-poor-man.html",
         GameType.Yatzee => "/yatzee.html",
         GameType.Uno => "/uno.html",
+        GameType.Yaniv => "/yaniv.html",
         _ => throw new ArgumentOutOfRangeException(nameof(type), type, "Unknown game type."),
     };
 }
