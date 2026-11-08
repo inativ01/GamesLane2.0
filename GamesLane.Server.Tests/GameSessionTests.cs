@@ -4,6 +4,7 @@ using GamesLane.Server.Games.RockPaperScissors;
 using GamesLane.Server.Games.TheGang;
 using GamesLane.Server.Games.TicTacToe;
 using GamesLane.Server.Games.Uno;
+using GamesLane.Server.Games.Yaniv;
 using GamesLane.Server.Games.Yatzee;
 using GamesLane.Server.Hubs;
 using GamesLane.Server.Sessions;
@@ -907,6 +908,11 @@ public class GameSessionTests
         uno.TryPlay(Alice, 0, "R1", null, out _);
         AssertSameAfterReload(uno, () => new UnoSession("ABC123", UnshuffledUno),
             s => s.TryPlay(Bob, 1, "R4", null, out var e) ? null : e);
+
+        var yaniv = Started(new YanivSession("ABC123", UnshuffledYaniv));
+        yaniv.TryDiscard(Alice, 0, ["2♣", "3♣", "4♣"], false, out _);
+        AssertSameAfterReload(yaniv, () => new YanivSession("ABC123", UnshuffledYaniv),
+            s => s.TryDiscard(Bob, 1, ["7♣"], true, out var e) ? null : e);
     }
 
     // Saves the session, loads it into a new one, reconnects its users, and checks both give the same public state
@@ -1607,6 +1613,80 @@ public class GameSessionTests
 
     private static UnoState Uno(UnoSession session) =>
         Assert.IsType<UnoState>(session.GetPublicState().Game);
+
+    // Yaniv
+
+    // Leaves the deck in order: seat 0 gets 2♣ 3♣ 4♣ 5♣ 6♣, seat 1 gets 7♣ 8♣ 9♣ 10♣ J♣, and Q♣ is on top of the closed pile.
+    private static void UnshuffledYaniv(Card[] deck)
+    {
+    }
+
+    [Fact]
+    public void Yaniv_seats_play_their_own_cards_which_only_they_see()
+    {
+        var session = Started(new YanivSession("ABC123", UnshuffledYaniv));
+        Assert.False(session.TryDiscard(Bob, 0, ["2♣"], false, out var error));
+        Assert.Equal("Only players in this game can make moves.", error);
+        Assert.False(session.TryDiscard(Alice, 0, ["XX"], false, out error));
+        Assert.Equal("Unknown card.", error);
+
+        var hand = Assert.IsType<YanivPrivateState>(session.GetPrivateState(Alice)).Hands.Single();
+        Assert.Equal((0, 20, false), (hand.Seat, hand.HandScore, hand.CanCallYaniv));
+        Assert.Equal(["2♣", "3♣", "4♣", "5♣", "6♣"], hand.Cards);
+        Assert.True(session.TryDiscard(Alice, 0, ["4♣", "2♣", "3♣"], false, out error), error);
+
+        var state = Yaniv(session);
+        Assert.Equal(("4♣", 1, 3), (state.OpenTop, state.Turn, state.OpenPile));
+        Assert.Equal((0, false, null, false), (state.LastTurn!.Seat, state.LastTurn.TookOpen, state.LastTurn.Taken, state.LastTurn.Skipped));
+        Assert.Equal(["2♣", "3♣", "4♣"], state.LastTurn.Cards);
+        Assert.Equal([3, 5], state.Players.Select(p => p.CardCount));
+        Assert.True(session.TryDiscard(Bob, 1, ["7♣"], true, out error), error);
+        Assert.Equal("4♣", Yaniv(session).LastTurn!.Taken);
+        Assert.False(session.TryNextRound(Alice, 1, out error));
+        Assert.Equal("This round is not finished yet.", error);
+    }
+
+    [Fact]
+    public void Yaniv_starts_with_the_chosen_options_and_an_absent_player_can_be_skipped()
+    {
+        var session = Seated(new YanivSession("ABC123", UnshuffledYaniv));
+        Assert.True(session.TrySetOptions(Alice, new Dictionary<string, string>
+        {
+            [YanivOptions.End] = "Score", [YanivOptions.Target] = "100", [YanivOptions.Bonus] = "No",
+        }, out var error), error);
+        Assert.True(session.TryNewGame(Alice, 0, out error), error);
+        Assert.Equal((YanivEndMode.Score, 100, false), (Yaniv(session).End, Yaniv(session).Target, Yaniv(session).Bonus));
+
+        session.Disconnect("conn-a", Now);
+        AssertWaiting(session, [0], canSkip: true);
+        Assert.True(session.TrySkipPlayer(Bob, 0, out error), error);
+        Assert.Equal(1, Yaniv(session).Turn);
+        Assert.True(Yaniv(session).LastTurn!.Skipped);
+    }
+
+    [Fact]
+    public void A_public_Yaniv_game_skips_away_players_and_goes_on_when_a_player_leaves()
+    {
+        var session = Public(new YanivSession("ABC123", UnshuffledYaniv));
+        session.TryTakeNextSeat(Alice, AliceProfile, "conn-a", out _);
+        session.TryTakeNextSeat(Bob, BobProfile, "conn-b", out _);
+        session.TryTakeNextSeat(Carol, CarolProfile, "conn-c", out _);
+        session.TryNewGame(Alice, 0, out _);
+
+        session.Disconnect("conn-b", Now);
+        session.UpdateAwaySeats(Now.Add(GameSession.ReconnectWindow));
+        Assert.True(session.TryDiscard(Alice, 0, ["2♣"], false, out var error), error);
+        Assert.Equal(2, Yaniv(session).Turn);
+        Assert.True(Yaniv(session).LastTurn!.Skipped);
+
+        Assert.True(session.TryLeaveSeat(Carol, 2, out error), error);
+        var state = session.GetPublicState();
+        Assert.Equal(SessionPhase.Playing, state.Phase);
+        Assert.Equal(0, Yaniv(session).Turn);
+    }
+
+    private static YanivState Yaniv(YanivSession session) =>
+        Assert.IsType<YanivState>(session.GetPublicState().Game);
 
     // Rich man, poor man
 

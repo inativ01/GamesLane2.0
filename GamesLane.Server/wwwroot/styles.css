@@ -3086,16 +3086,19 @@ main.backgammon {
 }
 
 /* Rich man, poor man: the user's own hands on top, and the table (the cards to beat and the players) on green felt. */
-main.rich-poor {
+main.rich-poor,
+main.yaniv {
     max-width: 980px;
 }
 
 /* During a game, less space above the hand, so the hand and the table fit on the screen. */
-main.rich-poor:has(#game-screen:not([hidden])) {
+main.rich-poor:has(#game-screen:not([hidden])),
+main.yaniv:has(#game-screen:not([hidden])) {
     padding-top: 0.25rem;
 }
 
-main.rich-poor .my-hand {
+main.rich-poor .my-hand,
+main.yaniv .my-hand {
     margin: 0.3rem 0;
     padding: 0.5rem 0.75rem;
 }
@@ -3115,7 +3118,8 @@ main.rich-poor .my-hand .actions .rp-select {
 }
 
 /* The user's turn: the hand's border glows and pulses, and its title says "Your turn". */
-main.rich-poor .my-hand.my-turn {
+main.rich-poor .my-hand.my-turn,
+main.yaniv .my-hand.my-turn {
     box-shadow: 0 0 0 3px var(--gold), 0 0 18px rgba(230, 169, 60, 0.75);
     animation: rp-turn-pulse 1.2s ease-in-out infinite alternate;
 }
@@ -3127,12 +3131,14 @@ main.rich-poor .my-hand.my-turn {
 }
 
 @media (prefers-reduced-motion: reduce) {
-    main.rich-poor .my-hand.my-turn {
+    main.rich-poor .my-hand.my-turn,
+    main.yaniv .my-hand.my-turn {
         animation: none;
     }
 }
 
-main.rich-poor .my-hand-title {
+main.rich-poor .my-hand-title,
+main.yaniv .my-hand-title {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
@@ -3824,6 +3830,151 @@ main.uno {
 .uno-call {
     background: #d7262e;
     font-weight: 900;
+}
+
+/* Yaniv: the piles on top (closed, open, and the cards about to be discarded next to the open pile), the user's hand
+   with its score centred under it, then the players' table (shared with Rich man, poor man). */
+.yaniv-piles {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: 0.6rem 1rem;
+    direction: ltr;
+}
+
+button.yaniv-pile {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.2rem;
+    padding: 0.3rem;
+    border: 0;
+    border-radius: 0.5rem;
+    background: none;
+    color: #e9f2ea;
+    font-size: 0.85rem;
+}
+
+button.yaniv-pile:not(:disabled):hover,
+button.yaniv-pile:not(:disabled):focus-visible {
+    background: rgba(255, 255, 255, 0.12);
+}
+
+button.yaniv-pile:not(:disabled) .card {
+    box-shadow: 0 0 0 3px var(--gold), 0 4px 10px rgba(0, 0, 0, 0.3);
+}
+
+button.yaniv-pile:disabled {
+    opacity: 1;
+    cursor: default;
+}
+
+.yaniv-pile .card {
+    font-size: clamp(1.4rem, min(6vw, 4vh), 2.4rem);
+}
+
+.card.yaniv-no-card {
+    background: rgba(255, 255, 255, 0.12);
+    box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.4);
+}
+
+.yaniv-staged {
+    display: flex;
+    gap: 0.15rem;
+    padding: 0.3rem;
+    border: 2px dashed rgba(255, 255, 255, 0.6);
+    border-radius: 0.5rem;
+}
+
+.yaniv-staged[hidden] {
+    display: none;
+}
+
+.yaniv-staged.invalid {
+    border-color: #f08a7a;
+    opacity: 0.7;
+}
+
+.yaniv-staged .card {
+    font-size: clamp(1.1rem, min(4.5vw, 3vh), 1.8rem);
+}
+
+.yaniv-message {
+    margin: 0.4rem 0 0;
+    color: #e9f2ea;
+    text-align: center;
+}
+
+.yaniv-result {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+    gap: 0.4rem;
+    margin-top: 0.5rem;
+}
+
+.yaniv-result[hidden] {
+    display: none;
+}
+
+.yaniv-result-hand {
+    padding: 0.35rem 0.5rem;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.92);
+    color: var(--ink);
+}
+
+.yaniv-result-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.2rem 0.4rem;
+    margin-bottom: 0.3rem;
+    font-size: 0.9rem;
+}
+
+.yaniv-tags {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+}
+
+.yaniv-points {
+    margin-inline-start: auto;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.rp-tag.yaniv { background: var(--gold); font-weight: 800; }
+.rp-tag.assaf { background: #d7262e; color: #fff; font-weight: 800; }
+
+/* Under the cards: the hand score in the middle, and on the user's turn with 7 or less, Yaniv! next to it. */
+.yaniv-hand-foot {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: 0.4rem 1rem;
+    margin-top: 0.3rem;
+}
+
+.yaniv-score {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 800;
+    text-align: center;
+}
+
+button.yaniv-call {
+    padding: 0.45rem 1.4rem;
+    background: #d7262e;
+    font-size: 1.15rem;
+    font-weight: 900;
+}
+
+.yaniv-player-score {
+    margin-inline-start: 0.5rem;
+    white-space: nowrap;
 }
 
 @media (max-width: 420px) {

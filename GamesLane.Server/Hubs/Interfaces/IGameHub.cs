@@ -298,6 +298,18 @@ public interface IGameHub
     Task CatchUno(string sessionId, int seat, int targetSeat);
 
     /// <summary>
+    /// Yaniv: <paramref name="seat"/>, which the caller must hold, discards <paramref name="cards"/> (short text such as
+    /// "10♥" or "JOKER": one card, 2 to 4 of the same value, or 3 or more in a row of one suit) and takes the open pile's
+    /// top card (<paramref name="takeOpen"/>) or a card from the closed pile.
+    /// </summary>
+    Task Discard(string sessionId, int seat, string[]? cards, bool takeOpen);
+
+    /// <summary>
+    /// Yaniv: <paramref name="seat"/>, which the caller must hold, calls Yaniv on its turn with a hand score of 7 or less.
+    /// </summary>
+    Task CallYaniv(string sessionId, int seat);
+
+    /// <summary>
     /// The Gang: reveals the next hand, if <paramref name="revealed"/> hands have been revealed so far.
     /// </summary>
     Task RevealNext(string sessionId, int revealed);

@@ -378,6 +378,14 @@ public class GameHub(
         Act(sessionId, (IUnoSession s, out string? error) => s.TryCatchUno(UserKey, seat, targetSeat, out error));
 
     /// <inheritdoc />
+    public Task Discard(string sessionId, int seat, string[]? cards, bool takeOpen) =>
+        Act(sessionId, (IYanivSession s, out string? error) => s.TryDiscard(UserKey, seat, cards, takeOpen, out error));
+
+    /// <inheritdoc />
+    public Task CallYaniv(string sessionId, int seat) =>
+        Act(sessionId, (IYanivSession s, out string? error) => s.TryCallYaniv(UserKey, seat, out error));
+
+    /// <inheritdoc />
     public Task RevealNext(string sessionId, int revealed) =>
         Act(sessionId, (ITheGangSession s, out string? error) => s.TryRevealNext(UserKey, revealed, out error));
 

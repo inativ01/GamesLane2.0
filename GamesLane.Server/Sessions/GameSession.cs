@@ -15,6 +15,7 @@ public enum GameType
     RichManPoorMan,
     Yatzee,
     Uno,
+    Yaniv,
 }
 
 /// <summary>
@@ -427,6 +428,12 @@ public abstract class GameSession : IGameSession
     /// holding <see cref="Sync"/>.
     /// </summary>
     protected bool IsAbsent(int seat) => _seats[seat] is not { } taken || !IsConnected(taken.UserKey);
+
+    /// <summary>
+    /// Whether <paramref name="seat"/> is empty, or its holder has been disconnected for <see cref="ReconnectWindow"/> or
+    /// more (Away). Call while holding <see cref="Sync"/>.
+    /// </summary>
+    protected bool IsAwayOrVacant(int seat) => _seats[seat] is not { } taken || _away.Contains(taken.UserKey);
 
     /// <summary>
     /// The session's status, from the screen it shows and whether the game is over.
