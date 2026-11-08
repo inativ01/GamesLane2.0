@@ -715,14 +715,60 @@ function el(tag, className, ...content) {
 }
 
 // Confetti falling over the page for a success of the user (e.g. winning a round, or the team reaching its goal in a
-// cooperative game). Each success is celebrated once: `key` names it within the session's game (e.g. the round), and
-// it is remembered for the browser tab, so reloading the page does not show it again. Not shown with reduced motion.
+// cooperative game), with a short fanfare unless sound is off in the user's profile. Each success is celebrated once:
+// `key` names it within the session's game (e.g. the round), and it is remembered for the browser tab, so reloading
+// the page does not show it again. The confetti is not shown with reduced motion; the fanfare still plays.
 const CONFETTI_COLORS = ["#e6a93c", "#c2561a", "#2f7d45", "#3f6fd8", "#c0281b", "#8a4fd8", "#f4efe6"];
+
+// The fanfare is made by the browser, so no sound file is needed. Browsers only allow sound after the user has tapped
+// the page, so it is set up on each tap and resumed when the page is shown again; on iPhones it is played as media, so
+// the silent switch does not mute it.
+let celebrationAudio = null;
+addEventListener("pointerdown", () => {
+    if (navigator.audioSession) {
+        try {
+            navigator.audioSession.type = "playback";
+        } catch {
+            // Not supported on this browser.
+        }
+    }
+    try {
+        celebrationAudio ??= new AudioContext();
+        celebrationAudio.resume().catch(() => {});
+    } catch {
+        // No sound on this browser.
+    }
+}, { capture: true });
+document.addEventListener("visibilitychange", () => {
+    if (!document.hidden) celebrationAudio?.resume().catch(() => {});
+});
+
+function playFanfare() {
+    const audio = celebrationAudio;
+    if (!audio || !userSettings().sound) return;
+    (audio.state === "running" ? Promise.resolve() : audio.resume()).then(() => {
+        const start = audio.currentTime;
+        // A rising C major arpeggio, its last note held.
+        [[523, 0, 0.18], [659, 0.12, 0.18], [784, 0.24, 0.18], [1047, 0.36, 0.6]].forEach(([frequency, delay, length]) => {
+            const tone = audio.createOscillator();
+            const volume = audio.createGain();
+            tone.type = "triangle";
+            tone.frequency.value = frequency;
+            volume.gain.setValueAtTime(0.0001, start + delay);
+            volume.gain.exponentialRampToValueAtTime(0.3, start + delay + 0.02);
+            volume.gain.exponentialRampToValueAtTime(0.0001, start + delay + length);
+            tone.connect(volume).connect(audio.destination);
+            tone.start(start + delay);
+            tone.stop(start + delay + length + 0.02);
+        });
+    }).catch(() => {});
+}
 
 function celebrate(state, key) {
     const stored = `confetti:${params.get("session") ?? ""}:${state.gameNumber}:${key}`;
     if (sessionStorage.getItem(stored)) return;
     sessionStorage.setItem(stored, "1");
+    playFanfare();
     if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     const layer = el("div", "confetti");
     layer.setAttribute("aria-hidden", "true");
