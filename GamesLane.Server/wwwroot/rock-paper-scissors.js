@@ -69,7 +69,7 @@ const rps = startSessionPage("RockPaperScissors", (game, state, view) => {
     $("next-round").hidden = !(view.isPlayer && game.isRoundComplete);
 
     $("status").textContent = rpsStatus(game, state, view);
-    if (game.isRoundComplete && game.roundWinner !== null && view.isMe(game.roundWinner) && !view.isMe(1 - game.roundWinner)) {
+    if (game.isRoundComplete && game.roundWinner !== null && view.isMe(game.roundWinner)) {
         celebrate(state, `round-${game.round}`);
     }
     $("hands").replaceChildren(...game.hands.map((_, seat) => handCard(game, state, seat, view)));

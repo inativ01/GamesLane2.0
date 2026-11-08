@@ -250,10 +250,8 @@ function handPanel(game, state, view, hand) {
     return panel;
 }
 
-// Confetti for the user's success: winning a hand or the game, or emptying their hand in a pyramid. Not when the user
-// holds every seat.
+// Confetti for the user's success: winning a hand or the game, or emptying their hand in a pyramid.
 function noticeSuccess(game, state, view) {
-    if (game.players.every((p) => view.isMe(p.seat))) return;
     const winner = game.phase === "GameOver" ? game.winner : game.phase === "HandOver" ? game.lastResult?.seat : null;
     if (winner != null && view.isMe(winner)) {
         celebrate(state, `${game.phase}-${game.handNumber}`);

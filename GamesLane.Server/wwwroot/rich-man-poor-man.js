@@ -2,9 +2,8 @@
 
 // Rich man, poor man: players throw cards of one number, each throw beating the last with as many cards of a higher
 // number, and the first to empty their hand is the next game's rich man. Each player's own cards come in view.private.
-// The page shows the user's own hands on top, and the table (everything observers see) below; on phones, the cards on
-// the table also show above the hands, and players open the table with Show table. On a shared screen, the throws can
-// be read aloud.
+// The page shows the cards on the table on top, then the user's own hands, then the players' table (players can hide
+// it). On a shared screen, the throws can be read aloud.
 
 const FACE_RANKS = { J: 11, Q: 12, K: 13, A: 14 };
 const rankOf = (card) => FACE_RANKS[card.slice(0, -1)] ?? Number(card.slice(0, -1));
@@ -12,8 +11,7 @@ const SPEECH_KEY = "richManPoorMan.speech";
 const TABLE_SHOWN_KEY = "richManPoorMan.tableShown";
 const MIN_PLAYERS = 4;
 
-// Phones: a hand of more than TWO_ROWS_FROM cards takes two rows, the cards on the table are shown above the hand,
-// and players see the table only once they show it (the choice is remembered on this device).
+// Phones: a hand of more than TWO_ROWS_FROM cards takes two rows, and the players' table is hidden until shown.
 const narrowScreen = matchMedia("(max-width: 600px)");
 const TWO_ROWS_FROM = 8;
 
@@ -378,17 +376,34 @@ addEventListener(SETTINGS_EVENT, () => {
 });
 
 // When the turn comes to this user: a rising three-note chime made by the browser (unless sound is off in their
-// profile) and, on phones that can, a short vibration. Browsers only allow sound after the user has tapped the page,
-// so the sound is set up on the first tap.
+// profile) and, on phones that can (not iPhones), a short vibration. Browsers only allow sound after the user has
+// tapped the page, so the sound is set up on the first tap and resumed on every tap and whenever the page is shown
+// again (iPhones pause it in the background). On iPhones, the sound is played as media, so the silent switch does not
+// mute it.
 let audio = null;
-addEventListener("pointerdown", () => {
+const resumeSound = () => {
+    if (navigator.audioSession) {
+        try {
+            navigator.audioSession.type = "playback";
+        } catch {
+            // Not supported on this browser.
+        }
+    }
     audio ??= new AudioContext();
-    audio.resume().catch(() => {});
-}, { capture: true });
+    return audio.resume();
+};
+addEventListener("pointerdown", () => resumeSound().catch(() => {}), { capture: true });
+document.addEventListener("visibilitychange", () => {
+    if (!document.hidden && audio) audio.resume().catch(() => {});
+});
 
 function notifyTurn() {
     navigator.vibrate?.([180, 90, 180]);
-    if (!audio || audio.state !== "running" || !userSettings().sound) return;
+    if (!audio || !userSettings().sound) return;
+    (audio.state === "running" ? Promise.resolve() : audio.resume()).then(playTurnChime).catch(() => {});
+}
+
+function playTurnChime() {
     const start = audio.currentTime;
     [[660, 0], [880, 0.13], [1320, 0.26]].forEach(([frequency, delay]) => {
         const tone = audio.createOscillator();
@@ -422,27 +437,31 @@ function noticeFinished(game, state, view) {
 }
 
 let currentGame = null;
-let tableShown = localStorage.getItem(TABLE_SHOWN_KEY) === "1";
+// The players' table: until a player shows or hides it (remembered on this device), hidden on phones and shown on
+// computers. Observers always see it.
+const tableShown = () => {
+    const saved = localStorage.getItem(TABLE_SHOWN_KEY);
+    return saved === null ? !narrowScreen.matches : saved === "1";
+};
 
+// From the top, for everyone: the cards on the table, the user's own hands, then the players' table.
 const rich = startSessionPage("RichManPoorMan", (game, state, view) => {
     currentGame = game;
     noticeTurn(game, view);
     noticeFinished(game, state, view);
-    const phone = view.isPlayer && narrowScreen.matches;
+    const shown = !view.isPlayer || tableShown();
     document.body.classList.toggle("observer", !view.isPlayer);
     $("status").textContent = statusText(game, state, view);
     $("rp-game").textContent = t("Game {n}", { n: game.gameNumber });
-    $("rp-top").hidden = !phone;
-    $("rp-top").replaceChildren(...(phone ? pile(game, state, view) : []));
+    $("rp-top").replaceChildren(...pile(game, state, view));
     $("rp-hands").replaceChildren(...myHands(view).filter((h) => placeOf(game, h.seat))
         .map((hand) => handPanel(game, state, view, hand)));
     const join = joinPanel(game, state, view);
     $("rp-join").hidden = !join;
     $("rp-join").replaceChildren(...(join ?? []));
-    $("rp-toggle-table").hidden = !phone;
-    $("rp-toggle-table").textContent = t(tableShown ? "Hide table" : "Show table");
-    $("rp-table-body").hidden = phone && !tableShown;
-    $("rp-pile").replaceChildren(...pile(game, state, view));
+    $("rp-toggle-table").hidden = !view.isPlayer;
+    $("rp-toggle-table").textContent = t(shown ? "Hide table" : "Show table");
+    $("rp-players").hidden = !shown;
     $("rp-players").replaceChildren(...game.players.map((p) => playerItem(game, state, view, p)));
     $("next-round").hidden = !(view.isPlayer && game.phase === "GameOver");
     updateSpeech(game, view);
@@ -453,8 +472,7 @@ const rich = startSessionPage("RichManPoorMan", (game, state, view) => {
 
 $("next-round").addEventListener("click", () => call("NextRound", rich.sessionId, currentGame?.gameNumber ?? 0).catch(() => {}));
 $("rp-toggle-table").addEventListener("click", () => {
-    tableShown = !tableShown;
-    localStorage.setItem(TABLE_SHOWN_KEY, tableShown ? "1" : "0");
+    localStorage.setItem(TABLE_SHOWN_KEY, tableShown() ? "0" : "1");
     rich.refresh();
 });
 narrowScreen.addEventListener("change", () => rich.refresh());

@@ -702,8 +702,8 @@ const gang = startSessionPage("TheGang", (game, state, view) => {
     gangState = game;
     noticeStolenChips(game, view);
     $("status").textContent = gangStatus(game, state, view);
-    // A cooperative game: every player gets confetti when the gang opens the vault.
-    if (game.phase === "HeistOver" && game.succeeded && view.isPlayer) {
+    // A cooperative game: everyone, players and observers, gets confetti whenever the gang opens a vault.
+    if (game.phase === "HeistOver" && game.succeeded) {
         celebrate(state, `heist-${game.heist}`);
     }
 

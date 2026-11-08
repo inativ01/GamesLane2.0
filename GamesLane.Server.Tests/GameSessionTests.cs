@@ -440,6 +440,26 @@ public class GameSessionTests
         Assert.False(session.HasSeatOffer(Bob));
     }
 
+    [Fact]
+    public void Only_disconnected_seats_are_offered_and_the_list_follows_players_coming_back()
+    {
+        var session = StartedTheGang();
+        session.Disconnect("conn-b", Now);
+        session.Disconnect("conn-c", Now);
+        session.Enter("user:dan", new PlayerProfile("Dan", "🐻"), "conn-d");
+        Assert.True(session.HasSeatOffer("user:dan"));
+        Assert.Equal([1, 2], session.GetPublicState().AbsentSeats);
+        Assert.False(session.TryTakeSeat("user:dan", new PlayerProfile("Dan", "🐻"), "conn-d", 0, out var error));
+        Assert.Equal("That seat is taken.", error);
+
+        session.Enter(Bob, BobProfile, "conn-b2");
+        Assert.Equal([2], session.GetPublicState().AbsentSeats);
+        Assert.False(session.TryTakeSeat("user:dan", new PlayerProfile("Dan", "🐻"), "conn-d", 1, out error));
+        Assert.Equal("That seat is taken.", error);
+        session.Enter(Carol, CarolProfile, "conn-c2");
+        Assert.Empty(session.GetPublicState().AbsentSeats);
+    }
+
     // Absent players and waiting
 
     [Fact]

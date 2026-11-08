@@ -49,7 +49,7 @@ const ticTacToe = startSessionPage("TicTacToe", (game, state, view) => {
     });
 
     $("status").textContent = ticTacToeStatus(game, state, view);
-    if (isRoundOver(game) && !game.isDraw && view.isMe(seatOf(game.winner)) && !view.isMe(1 - seatOf(game.winner))) {
+    if (isRoundOver(game) && !game.isDraw && view.isMe(seatOf(game.winner))) {
         celebrate(state, `round-${game.round}`);
     }
     $("next-round").hidden = !(view.isPlayer && isRoundOver(game));

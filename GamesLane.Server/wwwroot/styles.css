@@ -3254,18 +3254,13 @@ main.rich-poor .my-hand-title {
     font-size: clamp(1.4rem, min(6vw, 4vh), 2.4rem);
 }
 
-/* On phones, the cards on the table above the hand, on the same felt as the table. */
+/* The cards on the table, on top for everyone, on the same felt as the players' table. */
 .rp-top {
-    min-height: 0;
     margin: 0.3rem 0;
     padding: 0.4rem 0.6rem;
     border-radius: var(--radius);
     background: radial-gradient(circle at 50% 30%, #2f6b45, #173f27);
     color: #fff;
-}
-
-.rp-top[hidden] {
-    display: none;
 }
 
 .rp-pile-cards.faded {
@@ -3286,9 +3281,13 @@ main.rich-poor .my-hand-title {
     display: grid;
     grid-template-columns: 1fr;
     gap: 0.3rem;
-    margin: 0;
+    margin: 0.4rem 0 0;
     padding: 0;
     list-style: none;
+}
+
+.rp-players[hidden] {
+    display: none;
 }
 
 .rp-players li {

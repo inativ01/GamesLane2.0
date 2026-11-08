@@ -492,7 +492,7 @@ const backgammon = startSessionPage("Backgammon", (game, state, view) => {
     const { status, message } = backgammonTexts(game, state, view);
     $("status").textContent = status;
     const winner = game.result?.seat;
-    if ((game.phase === "GameOver" || game.phase === "MatchOver") && winner != null && view.isMe(winner) && !view.isMe(1 - winner)) {
+    if ((game.phase === "GameOver" || game.phase === "MatchOver") && winner != null && view.isMe(winner)) {
         celebrate(state, `game-${game.gameNumber}`);
     }
     $("bg-message").textContent = message;
