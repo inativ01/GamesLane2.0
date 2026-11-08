@@ -18,24 +18,27 @@ const cardText = (card) => (isJoker(card) ? t("Joker") : card);
 const cardsText = (cards) => cards.map(cardText).join(" ");
 
 // The cards in the order they go on the open pile, or null if they cannot be discarded together: one card; 2 to 4 of
-// the same value (jokers stand for any card); or 3 or more in a row of one suit, from lowest to highest (as the server).
+// the same value (jokers stand for any card), jokers first; or 3 or more in a row of one suit, from lowest to highest,
+// spare jokers going below it (or, above an ace, under it), so a joker is never on top (as the server).
 function arrange(cards) {
     const others = cards.filter((c) => !isJoker(c));
     const jokers = cards.length - others.length;
     if (cards.length === 0) return null;
-    if (cards.length === 1 || (cards.length <= 4 && new Set(others.map(rankOf)).size <= 1)) return [...cards];
+    if (cards.length === 1 || (cards.length <= 4 && new Set(others.map(rankOf)).size <= 1)) {
+        return [...Array(jokers).fill(JOKER), ...others];
+    }
     if (cards.length < 3 || others.length === 0 || new Set(others.map(suitOf)).size !== 1) return null;
     const positions = others.map(position).sort((a, b) => a - b);
     if (new Set(positions).size !== positions.length) return null;
-    let low = positions[0];
-    let high = positions[positions.length - 1];
-    const spare = jokers - (high - low + 1 - positions.length);
+    const high = positions[positions.length - 1];
+    const spare = jokers - (high - positions[0] + 1 - positions.length);
     if (spare < 0) return null;
-    const up = Math.min(spare, 13 - high);
-    high += up;
-    low -= spare - up;
-    if (low < 1) return null;
-    return Array.from({ length: high - low + 1 }, (_, i) => others.find((c) => position(c) === low + i) ?? JOKER);
+    const down = Math.min(spare, positions[0] - 1);
+    const low = positions[0] - down;
+    const above = spare - down;
+    if (high + above > 13) return null;
+    return [...Array(above).fill(JOKER),
+        ...Array.from({ length: high - low + 1 }, (_, i) => others.find((c) => position(c) === low + i) ?? JOKER)];
 }
 
 // The cards chosen in a hand: the seat, and the positions of the chosen cards in its hand (which comes sorted).
@@ -171,7 +174,8 @@ function renderResult(game, state, view) {
     }));
 }
 
-// One of the user's hands: its cards (as buttons to choose on its turn) and its hand score, centred under them.
+// One of the user's hands: its cards (as buttons to choose on its turn), its hand score centred under them, and on its
+// turn with 7 or less, the Yaniv! button next to the score.
 function handPanel(game, state, view, hand) {
     const myTurn = game.phase === "Playing" && game.turn === hand.seat;
     const picks = chosenCards(hand);
@@ -190,8 +194,14 @@ function handPanel(game, state, view, hand) {
     });
     const title = myHands(game, view).length > 1 ? playerName(state, hand.seat) : t("Your cards");
     const head = el("div", "my-hand-title", title, ...(myTurn ? [el("span", "rp-your-turn", `👉 ${t("Your turn")}`)] : []));
-    return el("div", `my-hand rp-hand yaniv-hand${myTurn ? " my-turn" : ""}`, head, el("div", "card-row rp-cards", ...slots),
-        el("p", "yaniv-score", t("Hand score: {n}", { n: hand.handScore })));
+    const foot = el("div", "yaniv-hand-foot", el("p", "yaniv-score", t("Hand score: {n}", { n: hand.handScore })));
+    if (myTurn && hand.canCallYaniv) {
+        const call = el("button", "yaniv-call", t("Yaniv!"));
+        call.type = "button";
+        call.addEventListener("click", () => send("CallYaniv", hand.seat));
+        foot.append(call);
+    }
+    return el("div", `my-hand rp-hand yaniv-hand${myTurn ? " my-turn" : ""}`, head, el("div", "card-row rp-cards", ...slots), foot);
 }
 
 // A player in the table: name, Yaniv once called, cards in hand and points; players who are out are faded.
@@ -241,14 +251,9 @@ const yaniv = startSessionPage("Yaniv", (game, state, view) => {
     $("yaniv-toggle-table").textContent = t(shown ? "Hide table" : "Show table");
     $("yaniv-players").hidden = !shown;
     $("yaniv-players").replaceChildren(...game.players.map((p) => playerItem(game, state, view, p)));
-    $("yaniv-call").hidden = !handToPlay(game, view)?.canCallYaniv;
     $("next-round").hidden = !(view.isPlayer && game.phase === "RoundOver");
 });
 
-$("yaniv-call").addEventListener("click", () => {
-    const hand = currentGame && handToPlay(currentGame, yaniv);
-    if (hand) send("CallYaniv", hand.seat);
-});
 $("next-round").addEventListener("click", () => send("NextRound", currentGame?.roundNumber ?? 0));
 $("yaniv-toggle-table").addEventListener("click", () => {
     localStorage.setItem(TABLE_SHOWN_KEY, tableShown() ? "0" : "1");

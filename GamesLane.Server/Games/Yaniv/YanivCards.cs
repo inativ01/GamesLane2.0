@@ -40,15 +40,16 @@ public static class YanivCards
 
     /// <summary>
     /// Whether <paramref name="cards"/> can be discarded together, and the order they go on the open pile: one card; a
-    /// series of 2 to 4 cards of the same value (jokers stand for any card), in the order given; or a straight of 3 or
-    /// more cards of one suit in a row (jokers stand for any missing card), from lowest to highest. Jokers left over in
-    /// a straight extend it upwards, or downwards once it reaches the king.
+    /// series of 2 to 4 cards of the same value (jokers stand for any card), jokers first, then the others in the order
+    /// given; or a straight of 3 or more cards of one suit in a row (jokers stand for any missing card), from lowest to
+    /// highest. Jokers left over in a straight extend it downwards, or upwards once it reaches the ace; those that end up
+    /// above its highest card go under its lowest instead. So a joker is never on top unless every card is a joker.
     /// </summary>
     public static bool TryArrange(IReadOnlyList<Card> cards, out Card[] ordered)
     {
-        ordered = [.. cards];
         var others = cards.Where(c => !c.IsJoker).ToList();
         var jokers = cards.Count - others.Count;
+        ordered = [.. cards.Where(c => c.IsJoker), .. others];
         if (cards.Count == 1 || (cards.Count <= 4 && others.Select(c => c.Rank).Distinct().Count() <= 1))
         {
             return true;
@@ -73,15 +74,15 @@ public static class YanivCards
             return false;
         }
 
-        var up = Math.Min(spare, 13 - high);
-        high += up;
-        low -= spare - up;
-        if (low < 1)
+        var down = Math.Min(spare, low - 1);
+        low -= down;
+        var above = spare - down;
+        if (high + above > 13)
         {
             return false;
         }
 
-        ordered = [.. Enumerable.Range(low, high - low + 1)
+        ordered = [.. Enumerable.Repeat(Card.Joker, above), .. Enumerable.Range(low, high - low + 1)
             .Select(p => positions.Contains(p) ? others.First(c => Position(c) == p) : Card.Joker)];
         return true;
     }

@@ -25,20 +25,28 @@ public class YanivGameTests
     [InlineData("7♥", "7♥")]
     [InlineData("7♥ 7♣", "7♥ 7♣")]
     [InlineData("Q♦ Q♣ Q♠", "Q♦ Q♣ Q♠")]
-    [InlineData("7♥ JOKER 7♠", "7♥ JOKER 7♠")]
+    [InlineData("7♥ 7♠ JOKER", "JOKER 7♥ 7♠")]
     [InlineData("7♣ 5♣ 6♣", "5♣ 6♣ 7♣")]
     [InlineData("Q♥ 9♥ JOKER J♥", "9♥ 10♥ J♥ Q♥")]
     [InlineData("A♦ 3♦ 2♦", "A♦ 2♦ 3♦")]
-    [InlineData("5♠ 6♠ JOKER", "5♠ 6♠ 7♠")]
+    [InlineData("5♠ 6♠ JOKER", "4♠ 5♠ 6♠")]
     [InlineData("Q♠ K♠ JOKER", "J♠ Q♠ K♠")]
-    public void A_single_card_a_series_or_a_straight_can_be_discarded(string cards, string onThePile)
+    [InlineData("A♦ 2♦ JOKER", "3♦ A♦ 2♦")]
+    [InlineData("2♣ JOKER JOKER", "JOKER JOKER 2♣")]
+    [InlineData("2♣ 4♣ JOKER JOKER", "A♣ 2♣ 3♣ 4♣")]
+    [InlineData("JOKER JOKER", "JOKER JOKER")]
+    public void A_single_card_a_series_or_a_straight_can_be_discarded_and_a_joker_is_never_on_top(string cards, string onThePile)
     {
         Assert.True(YanivCards.TryArrange(Cards(cards), out var ordered));
-        // A joker in a straight is shown here as the card it stands for.
+        // A joker is shown here as the card it stands for.
         var expected = Cards(onThePile);
         Assert.Equal(expected.Length, ordered.Length);
         Assert.All(ordered.Zip(expected), pair => Assert.True(pair.First.IsJoker || pair.First == pair.Second, $"{pair.First} is not {pair.Second}"));
         Assert.Equal(Cards(cards).Count(c => c.IsJoker), ordered.Count(c => c.IsJoker));
+        if (ordered.Length > 1 && ordered.Any(c => !c.IsJoker))
+        {
+            Assert.False(ordered[^1].IsJoker);
+        }
     }
 
     [Theory]

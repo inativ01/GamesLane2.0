@@ -3948,11 +3948,28 @@ button.yaniv-pile:disabled {
 .rp-tag.yaniv { background: var(--gold); font-weight: 800; }
 .rp-tag.assaf { background: #d7262e; color: #fff; font-weight: 800; }
 
+/* Under the cards: the hand score in the middle, and on the user's turn with 7 or less, Yaniv! next to it. */
+.yaniv-hand-foot {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: 0.4rem 1rem;
+    margin-top: 0.3rem;
+}
+
 .yaniv-score {
-    margin: 0.3rem 0 0;
+    margin: 0;
     font-size: 1.1rem;
     font-weight: 800;
     text-align: center;
+}
+
+button.yaniv-call {
+    padding: 0.45rem 1.4rem;
+    background: #d7262e;
+    font-size: 1.15rem;
+    font-weight: 900;
 }
 
 .yaniv-player-score {
