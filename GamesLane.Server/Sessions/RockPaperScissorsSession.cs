@@ -72,6 +72,11 @@ public class RockPaperScissorsSession(string id) : GameSession(id), IRockPaperSc
     /// <inheritdoc />
     protected override void StartNewGame(IReadOnlyList<int> seats) => _game = new RockPaperScissorsGame();
 
+    /// <inheritdoc />
+    protected override IEnumerable<int> AwaitedSeats => _game.IsRoundComplete
+        ? []
+        : Enumerable.Range(0, RockPaperScissorsGame.PlayerCount).Where(seat => _game.Picks[seat] == Choice.None);
+
     /// <summary>
     /// The public <see cref="RockPaperScissorsState"/>. Picks are hidden until both seats have picked.
     /// </summary>

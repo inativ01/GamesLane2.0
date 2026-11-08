@@ -34,10 +34,28 @@ public interface IGameHub
     Task<IReadOnlyList<WaitingGame>> WaitingGames();
 
     /// <summary>
-    /// Takes the next available seat (in the lobby, the first empty one; during a game, the first absent seat of the
-    /// game) as the logged-in user, using their display name. Not in public games, which are joined from the main screen.
+    /// Takes the next available seat (in the lobby, the first empty one; during a game, for a user offered a seat, the
+    /// first absent seat of the game) as the logged-in user, using their display name. Not in public games, which are
+    /// joined from the main screen.
     /// </summary>
     Task TakeSeat(string sessionId);
+
+    /// <summary>
+    /// Logged-in users offered a seat when they opened a game in progress (<see cref="SessionEntry.SeatOffer"/>). Takes
+    /// the absent game seat <paramref name="seat"/> and continues that player's game.
+    /// </summary>
+    Task TakeOfferedSeat(string sessionId, int seat);
+
+    /// <summary>
+    /// Declines the caller's seat offer: they watch the game and can no longer take a seat in it.
+    /// </summary>
+    Task DeclineSeatOffer(string sessionId);
+
+    /// <summary>
+    /// Players in the game only. Skips the turn of <paramref name="seat"/>, an absent seat the game waits for
+    /// (<see cref="SessionState.WaitingSeats"/>), in a game that can skip it (<see cref="SessionState.CanSkipWaiting"/>).
+    /// </summary>
+    Task SkipPlayer(string sessionId, int seat);
 
     /// <summary>
     /// Gives up one of the caller's seats (used for Leave seat and Stand up).
@@ -62,7 +80,7 @@ public interface IGameHub
     Task SetOptions(string sessionId, Dictionary<string, string>? options);
 
     /// <summary>
-    /// Seated users only. Ends the game in progress (Playing or Paused) and takes everyone back to the session lobby,
+    /// Seated users only. Ends the game in progress and takes everyone back to the session lobby,
     /// so other users can join and a new game can be started.
     /// </summary>
     Task EndGame(string sessionId);

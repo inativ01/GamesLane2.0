@@ -814,7 +814,7 @@ function listItem(...content) {
     return item;
 }
 
-// A seat's name as shown on the game screen. An Away holder is marked "(away)"; a reconnecting one gets a spinner
+// A seat's name as shown on the game screen. An Away holder is marked "(away)"; any disconnected holder gets a spinner
 // (see seatLabel).
 function seatName(state, seat, view) {
     const info = state.seats[seat];
@@ -824,12 +824,12 @@ function seatName(state, seat, view) {
     return info.name + (view.isMe(seat) ? ` ${t("(you)")}` : "") + (info.status === "Away" ? ` ${t("(away)")}` : "");
 }
 
-// A small spinner for a seat whose holder is reconnecting.
-function reconnectingSpinner() {
+// A small spinner for a seat whose holder is disconnected.
+function reconnectingSpinner(label = t("Reconnecting…")) {
     const spinner = el("span", "seat-spinner");
-    spinner.title = t("Reconnecting…");
+    spinner.title = label;
     spinner.setAttribute("role", "img");
-    spinner.setAttribute("aria-label", t("Reconnecting…"));
+    spinner.setAttribute("aria-label", label);
     return spinner;
 }
 
@@ -843,8 +843,8 @@ function seatLabel(state, seat, view, prefix = "") {
         label.append(iconElement(info.icon));
     }
     label.append(seatName(state, seat, view));
-    if (info?.status === "Reconnecting") {
-        label.append(reconnectingSpinner());
+    if (info && info.status !== "Present") {
+        label.append(reconnectingSpinner(t(info.status === "Away" ? "Away" : "Reconnecting…")));
     }
     return label;
 }
@@ -1098,7 +1098,9 @@ function startChat(sessionId, view) {
  * view.mySeats lists the seats this tab's user holds; view.isMe(seat) tells whether they hold a seat.
  * view.private is this user's private game information (e.g. their cards), for games that have it, or null.
  * The session bar shows the user's role ("You: …"): seatRole(seat, state) gives a seat's name (by default "Seat 2"), or
- * "Watching" for an observer. While a game is on, the status bar under it shows #status and the absent players' banner.
+ * "Watching" for an observer. While a game is on, the status bar under it shows #status; while the game waits for
+ * disconnected players, its players see a "Waiting for …" pop-up (see updateWaiting), and a newcomer opening a game with
+ * disconnected players is offered their seats (see updateSeatOffer).
  */
 function startSessionPage(gameType, render, seatRole = (seat) => t("Seat {n}", { n: seat + 1 })) {
     const sessionId = (params.get("session") ?? "").toUpperCase();
@@ -1129,12 +1131,86 @@ function startSessionPage(gameType, render, seatRole = (seat) => t("Seat {n}", {
     // The one empty seat shown in the lobby: the next available one, or -1 if there is none.
     const nextSeat = (state) => state.seats.findIndex((s) => !s);
 
-    // In the status bar: a banner while the game waits for absent players, or has absent seats that can be taken, with
-    // Take this seat for logged-in users.
-    const banner = el("div", "absent-banner");
-    banner.hidden = true;
-    banner.setAttribute("role", "status");
-    $("status-bar").append(banner);
+    const holderName = (state, seat) => state.seats[seat]?.name ?? t("Empty seat");
+
+    // While the game waits for disconnected players (state.waitingSeats), its players see a pop-up "Waiting for …" with
+    // one button: Skip player where the game can skip them (state.canSkipWaiting), otherwise End game (after
+    // confirming). It closes by itself once the game no longer waits, e.g. when the player comes back.
+    const waiting = el("dialog", "dialog waiting-dialog");
+    waiting.addEventListener("cancel", (event) => event.preventDefault());
+    document.body.append(waiting);
+
+    function updateWaiting(state) {
+        const seats = state.phase === "Playing" && view.isPlayer ? state.waitingSeats : [];
+        if (seats.length === 0) {
+            if (waiting.open) waiting.close();
+            return;
+        }
+        const button = el("button", state.canSkipWaiting ? "" : "danger", t(state.canSkipWaiting ? "Skip player" : "End game"));
+        button.type = "button";
+        button.addEventListener("click", () => {
+            if (state.canSkipWaiting) {
+                act("SkipPlayer", seats[0]);
+            } else if (confirm(t("End the game? Its progress is lost, and everyone goes back to the lobby."))) {
+                act("EndGame");
+            }
+        });
+        waiting.replaceChildren(
+            el("h2", null, t("Waiting for {name}", { name: seats.map((seat) => holderName(state, seat)).join(", ") }),
+                reconnectingSpinner(t("Away"))),
+            el("p", "hint", t(state.canSkipWaiting
+                ? "This player is disconnected. Wait for them to come back, or skip their turn."
+                : "This player is disconnected. Wait for them to come back, or end the game.")),
+            el("div", "actions center", button));
+        if (!waiting.open) waiting.showModal();
+    }
+
+    // A newcomer who opens a game with disconnected players (entry.seatOffer) is offered their seats once, before they
+    // watch: they take one, or choose Watch. A seat taken by someone else, or whose player comes back, leaves the list;
+    // with none left, the user watches.
+    let seatOffer = false;
+    const offer = el("dialog", "dialog seat-offer");
+    offer.addEventListener("cancel", (event) => {
+        event.preventDefault();
+        declineSeatOffer();
+    });
+    document.body.append(offer);
+
+    function declineSeatOffer() {
+        seatOffer = false;
+        if (offer.open) offer.close();
+        call("DeclineSeatOffer", sessionId).catch(() => {});
+    }
+
+    function updateSeatOffer(state) {
+        if (!seatOffer) return;
+        const seats = state.phase === "Playing" && !view.isPlayer ? state.absentSeats : [];
+        if (seats.length === 0) {
+            if (view.isPlayer) {
+                seatOffer = false;
+                if (offer.open) offer.close();
+            } else {
+                declineSeatOffer();
+            }
+            return;
+        }
+        const watch = el("button", "secondary", t("Watch"));
+        watch.type = "button";
+        watch.addEventListener("click", declineSeatOffer);
+        offer.replaceChildren(
+            el("h2", null, t("Join this game?")),
+            el("p", "hint", t("These players are disconnected. Take one of their seats to play on in their place, or watch the game.")),
+            el("ul", "seat-offer-list", ...seats.map((seat) => {
+                const take = el("button", "small", t("Take this seat"));
+                take.type = "button";
+                take.addEventListener("click", () => act("TakeOfferedSeat", seat));
+                const info = state.seats[seat];
+                return el("li", null, iconElement(info?.icon ?? "+"),
+                    el("span", "seat-offer-name", `${seatRole(seat, state)} · ${holderName(state, seat)}`), take);
+            })),
+            el("div", "actions center", watch));
+        if (!offer.open) offer.showModal();
+    }
 
     // The session bar's menu (☰): the invite link to copy or share, how many players are seated and how many watch, for
     // players, Leave my seat and (during a game) End game for everyone, and Send feedback when the server can post comments.
@@ -1186,25 +1262,6 @@ function startSessionPage(gameType, render, seatRole = (seat) => t("Seat {n}", {
     $("session-info").closest(".session-bar").append(menu);
     const chat = startChat(sessionId, view);
     menuButton.before(chat.button);
-
-    function updateBanner(state) {
-        const absent = state.phase === "Paused" || state.phase === "Playing" ? state.absentSeats : [];
-        banner.hidden = absent.length === 0;
-        if (banner.hidden) {
-            return;
-        }
-        // Away players by name, then the empty seats as a count.
-        const away = absent.filter((seat) => state.seats[seat]).map((seat) => state.seats[seat].name);
-        const empty = absent.length - away.length;
-        const names = [...away, ...(empty === 1 ? [t("1 empty seat")] : empty > 1 ? [t("{n} empty seats", { n: empty })] : [])].join(", ");
-        const text = state.phase === "Paused" ? t("Game paused: {names}", { names }) : t("Free seats: {names}", { names });
-        // Anyone can take a seat; a player takes it as a second seat. Nobody can in a public game.
-        const take = el("button", "small", view.isPlayer ? t("Take additional seat") : t("Take this seat"));
-        take.type = "button";
-        take.hidden = state.isPublic;
-        take.addEventListener("click", () => act("TakeSeat"));
-        banner.replaceChildren(el("span", null, text), take);
-    }
 
     // The session bar's role ("You: ⚪ White", or "👁 Watching") and, in its menu, how many players are seated and how
     // many connections watch.
@@ -1455,6 +1512,8 @@ function startSessionPage(gameType, render, seatRole = (seat) => t("Seat {n}", {
         standUp.hidden = !view.isPlayer;
         endGame.hidden = inLobby || !view.isPlayer || state.phase === "Over";
 
+        updateWaiting(state);
+        updateSeatOffer(state);
         if (inLobby) {
             $("lobby-status").textContent = [translateServerText(state.notice), lobbyStatus(state, taken)].filter(Boolean).join(" ");
             $("seat-count").textContent = `${taken} / ${state.seats.length}`;
@@ -1468,7 +1527,6 @@ function startSessionPage(gameType, render, seatRole = (seat) => t("Seat {n}", {
         }
 
         $("play-again").hidden = $("to-lobby").hidden = !(view.isPlayer && state.phase === "Over");
-        updateBanner(state);
         render(state.game, state, view);
         // Games mark their status with 👉 (the user has to act) or ⏳ (waiting for others). The marks only choose the
         // bar's colour (gold or grey) and are not shown.
@@ -1501,6 +1559,7 @@ function startSessionPage(gameType, render, seatRole = (seat) => t("Seat {n}", {
 
         view.playerId = entry.playerId ?? null;
         view.private = entry.private ?? null;
+        seatOffer = Boolean(entry.seatOffer);
         update(entry.state);
         chat.load(entry.chat ?? []);
     }

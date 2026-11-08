@@ -2591,27 +2591,59 @@ button.big {
     box-shadow: 0 4px 14px rgba(194, 86, 26, 0.35);
 }
 
-/* A game waiting for an absent player (Paused), or with absent seats that can be taken. */
-.absent-banner {
+/* The game waits for a disconnected player: "Waiting for …" with a spinner, and Skip player or End game. */
+.waiting-dialog {
+    text-align: center;
+}
+
+.waiting-dialog h2 {
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
     align-items: center;
+    gap: 0.3rem;
+}
+
+.waiting-dialog .actions {
+    margin-top: 0.75rem;
+}
+
+button.danger {
+    background: var(--red);
+}
+
+button.danger:not(:disabled):hover {
+    background: #8a2718;
+}
+
+/* A newcomer is offered the disconnected players' seats: one line per seat, with Take this seat; Watch below. */
+.seat-offer-list {
+    display: grid;
+    gap: 0.4rem;
+    margin: 0.75rem 0;
+    padding: 0;
+    list-style: none;
+}
+
+.seat-offer-list li {
+    display: flex;
+    align-items: center;
     gap: 0.5rem;
-    margin: 0.2rem 0;
-    padding: 0.25rem 0.8rem;
-    font-size: 0.9rem;
-    border-radius: var(--radius);
-    background: #fff4d6;
-    box-shadow: inset 0 0 0 2px var(--gold);
+    padding: 0.35rem 0.5rem;
+    border-radius: 10px;
+    background: var(--surface-soft);
+}
+
+.seat-offer-name {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
     font-weight: 600;
 }
 
-.absent-banner[hidden] {
-    display: none;
-}
-
-/* A seat whose holder is reconnecting: a small spinner next to the name. */
+/* A seat whose holder is disconnected: a small spinner next to the name. */
 .seat-spinner {
     display: inline-block;
     width: 0.85em;
@@ -3320,7 +3352,6 @@ main.rich-poor .my-hand-title {
 
 .rp-tag.rich { background: var(--gold); }
 .rp-tag.poor { background: #d9d2c6; }
-.rp-tag.away { background: #f3d3cc; color: var(--red); }
 .rp-tag.finished { background: #d6efd9; color: #1f6b35; }
 .rp-tag.call { background: #fff3d6; color: var(--ink); font-weight: 800; direction: ltr; }
 .rp-tag.call.pass { background: var(--surface-soft); color: var(--muted); }

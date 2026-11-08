@@ -125,6 +125,18 @@ public class BackgammonSession(string id, Func<int>? rollDie = null) : GameSessi
         _game = new BackgammonGame(BackgammonOptions.RulesFrom(Options), rollDie);
 
     /// <inheritdoc />
+    protected override IEnumerable<int> AwaitedSeats => _game is not { } game ? [] : game.Phase switch
+    {
+        // At the opening, each seat that has not rolled its die yet, or both after a tie.
+        BackgammonPhase.Opening => game.OpeningDice is [{ } white, { } black] && white == black
+            ? [0, 1]
+            : Enumerable.Range(0, 2).Where(seat => game.OpeningDice[seat] is null),
+        BackgammonPhase.Rolling or BackgammonPhase.Moving => [game.Turn],
+        BackgammonPhase.Doubled => [1 - game.Turn],
+        _ => [],
+    };
+
+    /// <inheritdoc />
     protected override void OnRestored() => _game?.Reattach(rollDie);
 
     /// <inheritdoc />

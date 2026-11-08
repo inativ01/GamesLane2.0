@@ -208,6 +208,37 @@ public class TheGangSession(string id, Func<IReadOnlyList<Card>>? newDeck = null
     protected override void OnRestored() => _game?.Reattach(_newDeck, _random, SameHolder);
 
     /// <summary>
+    /// While preparing, the players who have not done their step; while betting, the player who must show or discard a
+    /// card, or else the player who must confirm new pocket cards, or else those choosing a card for a joker, or else
+    /// those not ready; while revealing, the voters who have not agreed on an open scan's guess. Anyone can reveal the
+    /// next hand or start the next heist.
+    /// </summary>
+    protected override IEnumerable<int> AwaitedSeats
+    {
+        get
+        {
+            if (_game is not { } game)
+            {
+                return [];
+            }
+
+            var players = Enumerable.Range(0, game.PlayerCount);
+            var jokers = players.Where(p => game.JokerOffer(p) is not null).ToArray();
+            IEnumerable<int> awaited = game.Phase switch
+            {
+                TheGangPhase.Preparing => players.Where(p => !game.IsPrepared(p)),
+                TheGangPhase.Betting when game.PendingPlayer is { } pending && game.PendingStep != TheGangStep.None => [pending],
+                TheGangPhase.Betting when game.RedrawnPlayer is { } redrawn && !game.IsRedrawConfirmed => [redrawn],
+                TheGangPhase.Betting when jokers.Length > 0 => jokers,
+                TheGangPhase.Betting => players.Where(p => !game.IsReady(p)),
+                TheGangPhase.Reveal => game.Decisions.Where(d => d.IsOpen).SelectMany(d => d.Voters.Except(d.Agreed)),
+                _ => [],
+            };
+            return awaited.Select(p => GameSeats[p]);
+        }
+    }
+
+    /// <summary>
     /// Whether players <paramref name="a"/> and <paramref name="b"/> are held by the same user.
     /// </summary>
     private bool SameHolder(int a, int b) => HolderOf(GameSeats[a]) is { } holder && holder == HolderOf(GameSeats[b]);

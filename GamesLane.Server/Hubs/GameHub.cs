@@ -65,7 +65,8 @@ public class GameHub(
         var playerId = session.Enter(UserKey, AuthSetup.GetProfile(Context.User), Context.ConnectionId);
         await (playerId is not null ? BroadcastState(session) : SendPublicState(session));
 
-        return new SessionEntry(session.GetPublicState(), playerId, session.GetPrivateState(UserKey), session.GetChat());
+        return new SessionEntry(session.GetPublicState(), playerId, session.GetPrivateState(UserKey), session.GetChat(),
+            session.HasSeatOffer(UserKey));
     }
 
     /// <summary>
@@ -162,6 +163,27 @@ public class GameHub(
 
         await Act(sessionId, (IGameSession s, out string? error) => s.TryTakeNextSeat(UserKey, profile, Context.ConnectionId, out error));
     }
+
+    /// <inheritdoc />
+    public async Task TakeOfferedSeat(string sessionId, int seat)
+    {
+        var profile = RequireProfile("Log in to take a seat.");
+        await Act(sessionId, (IGameSession s, out string? error) => s.TryTakeSeat(UserKey, profile, Context.ConnectionId, seat, out error));
+    }
+
+    /// <inheritdoc />
+    public async Task DeclineSeatOffer(string sessionId)
+    {
+        var session = await GetSession(sessionId);
+        if (session.DeclineSeatOffer(UserKey))
+        {
+            await store.SaveAsync(session);
+        }
+    }
+
+    /// <inheritdoc />
+    public Task SkipPlayer(string sessionId, int seat) =>
+        Act(sessionId, (IGameSession s, out string? error) => s.TrySkipPlayer(UserKey, seat, out error));
 
     /// <inheritdoc />
     public Task LeaveSeat(string sessionId, int seat) =>

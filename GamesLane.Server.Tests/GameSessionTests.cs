@@ -177,13 +177,13 @@ public class GameSessionTests
         var session = Started(new TicTacToeSession("ABC123"));
         session.Disconnect("conn-a", Now);
         session.UpdateAwaySeats(Now.Add(GameSession.ReconnectWindow));
-        Assert.Equal(SessionPhase.Paused, session.GetPublicState().Phase);
+        Assert.Equal([0], session.GetPublicState().WaitingSeats);
 
         Assert.True(session.TransferSeats(Alice, NewAlice, NewAliceProfile, Now.AddMinutes(5)));
         Assert.Equal(SeatStatus.Away, session.GetPublicState().Seats[0]!.Status);
 
         session.Enter(NewAlice, NewAliceProfile, "conn-a2");
-        Assert.Equal(SessionPhase.Playing, session.GetPublicState().Phase);
+        Assert.Empty(session.GetPublicState().WaitingSeats);
     }
 
     [Fact]
@@ -262,7 +262,8 @@ public class GameSessionTests
         var session = PublicTicTacToe();
         session.Disconnect("conn-b", Now);
         session.UpdateAwaySeats(Now.Add(GameSession.ReconnectWindow));
-        Assert.Equal(SessionPhase.Paused, session.GetPublicState().Phase);
+        session.Enter(Carol, CarolProfile, "conn-c");
+        Assert.False(session.HasSeatOffer(Carol));
 
         Assert.False(session.TryTakeNextSeat(Carol, CarolProfile, "conn-c", out var error));
         Assert.Equal("A public game cannot be joined once it has started.", error);
@@ -390,53 +391,97 @@ public class GameSessionTests
     }
 
     [Fact]
-    public void During_a_game_only_its_absent_seats_can_be_taken()
+    public void During_a_game_only_a_newcomer_offered_a_seat_can_take_an_absent_seat()
     {
         var session = Started(new TicTacToeSession("ABC123"));
+        Assert.False(session.TryTakeSeat(Carol, CarolProfile, "conn-c", 0, out var error));
+        Assert.Equal("That seat is taken.", error);
         session.Disconnect("conn-b", Now);
 
-        Assert.False(session.TryTakeSeat(Carol, CarolProfile, "conn-c", 1, out var error));
-        Assert.Equal("That seat is taken.", error);
-        Assert.False(session.TryTakeNextSeat(Carol, CarolProfile, "conn-c", out error));
-        Assert.Equal("The game has already started. You can watch it.", error);
+        Assert.False(session.TryTakeSeat(Carol, CarolProfile, "conn-c", 1, out error));
+        Assert.Equal("Only a newcomer opening the game can take a disconnected player's seat.", error);
+        Assert.False(session.TryTakeNextSeat(Alice, AliceProfile, "conn-a", out error));
+        Assert.Equal("Only a newcomer opening the game can take a disconnected player's seat.", error);
 
         var gang = StartedTheGang();
         Assert.False(gang.TryTakeSeat("user:dan", new PlayerProfile("Dan", "🐻"), "conn-d", 3, out error));
         Assert.Equal("The game has already started. You can watch it.", error);
     }
 
-    // Absent players and pausing
+    [Fact]
+    public void A_newcomer_is_offered_the_absent_seats_once_and_can_watch_instead()
+    {
+        var session = Started(new TicTacToeSession("ABC123"));
+        session.Enter(Carol, CarolProfile, "conn-c");
+        Assert.False(session.HasSeatOffer(Carol));
+        session.Disconnect("conn-b", Now);
+        session.Enter(Carol, CarolProfile, "conn-c2");
+        Assert.False(session.HasSeatOffer(Carol));
+
+        const string Dan = "user:dan";
+        const string Eve = "user:eve";
+        session.Enter(Dan, new PlayerProfile("Dan", "🐻"), "conn-d");
+        session.Enter(Eve, new PlayerProfile("Eve", "🦉"), "conn-e");
+        Assert.True(session.HasSeatOffer(Dan));
+        Assert.True(session.HasSeatOffer(Eve));
+        Assert.Null(session.Enter("connection:tv", null, "tv"));
+        Assert.False(session.HasSeatOffer("connection:tv"));
+
+        Assert.True(session.DeclineSeatOffer(Eve));
+        Assert.False(session.HasSeatOffer(Eve));
+        session.Enter(Eve, new PlayerProfile("Eve", "🦉"), "conn-e2");
+        Assert.False(session.HasSeatOffer(Eve));
+        Assert.False(session.TryTakeSeat(Eve, new PlayerProfile("Eve", "🦉"), "conn-e2", 1, out var error));
+        Assert.Equal("Only a newcomer opening the game can take a disconnected player's seat.", error);
+
+        Assert.True(session.TryTakeSeat(Dan, new PlayerProfile("Dan", "🐻"), "conn-d", 1, out error), error);
+        Assert.False(session.HasSeatOffer(Dan));
+        session.Enter(Bob, BobProfile, "conn-b2");
+        Assert.False(session.HasSeatOffer(Bob));
+    }
+
+    // Absent players and waiting
 
     [Fact]
-    public void Leaving_a_game_pauses_it_on_the_game_screen_and_present_players_can_still_play()
+    public void Leaving_a_game_leaves_an_absent_seat_and_the_game_waits_for_it_on_its_turn()
     {
         var session = Started(new TicTacToeSession("ABC123"));
 
         Assert.True(session.TryLeaveSeat(Bob, 1, out _));
 
         var state = session.GetPublicState();
-        Assert.Equal(SessionPhase.Paused, state.Phase);
+        Assert.Equal(SessionPhase.Playing, state.Phase);
         Assert.Equal([1], state.AbsentSeats);
+        Assert.Empty(state.WaitingSeats);
         Assert.True(session.TryMove(Alice, 0, 0, out var error), error);
         Assert.False(session.TryMove(Alice, 0, 1, out error));
         Assert.Equal("It is not your turn.", error);
+
+        state = session.GetPublicState();
+        AssertWaiting(session, [1], canSkip: false);
+        Assert.False(session.TrySkipPlayer(Alice, 1, out error));
+        Assert.Equal("This player cannot be skipped. You can end the game.", error);
+        Assert.True(session.TryEndGame(Alice, out error), error);
     }
 
     [Fact]
-    public void A_disconnected_player_is_away_after_the_reconnect_window_and_the_game_pauses()
+    public void A_disconnected_player_is_absent_at_once_and_away_after_the_reconnect_window()
     {
         var session = Started(new TicTacToeSession("ABC123"));
+        session.TryMove(Alice, 0, 0, out _);
         session.Disconnect("conn-b", Now);
-        Assert.Equal(SessionPhase.Playing, session.GetPublicState().Phase);
-        Assert.Equal(SeatStatus.Reconnecting, session.GetPublicState().Seats[1]!.Status);
+        var state = session.GetPublicState();
+        Assert.Equal(SeatStatus.Reconnecting, state.Seats[1]!.Status);
+        Assert.Equal([1], state.AbsentSeats);
+        AssertWaiting(session, [1], canSkip: false);
 
         Assert.True(session.UpdateAwaySeats(Now.Add(GameSession.ReconnectWindow)));
 
-        var state = session.GetPublicState();
-        Assert.Equal(SessionPhase.Paused, state.Phase);
+        state = session.GetPublicState();
+        Assert.Equal(SessionPhase.Playing, state.Phase);
         Assert.Equal(SeatStatus.Away, state.Seats[1]!.Status);
         Assert.Equal("Bob", state.Seats[1]!.Name);
-        Assert.Equal([1], state.AbsentSeats);
+        Assert.Equal([1], state.WaitingSeats);
         Assert.False(session.UpdateAwaySeats(Now.AddHours(5)));
     }
 
@@ -456,16 +501,17 @@ public class GameSessionTests
     }
 
     [Fact]
-    public void Anyone_can_take_an_away_seat_and_continue_that_players_game()
+    public void A_newcomer_can_take_an_away_seat_and_continue_that_players_game()
     {
         var session = Started(new TicTacToeSession("ABC123"));
         session.TryMove(Alice, 0, 0, out _);
         session.Disconnect("conn-b", Now);
         session.UpdateAwaySeats(Now.Add(GameSession.ReconnectWindow));
+        session.Enter(Carol, CarolProfile, "conn-c");
 
         Assert.True(session.TryTakeNextSeat(Carol, CarolProfile, "conn-c", out var error), error);
 
-        Assert.Equal(SessionPhase.Playing, session.GetPublicState().Phase);
+        Assert.Empty(session.GetPublicState().WaitingSeats);
         Assert.Equal("Carol", session.GetPublicState().Seats[1]!.Name);
         Assert.True(session.TryMove(Carol, 1, 4, out error), error);
         session.Enter(Bob, BobProfile, "conn-b2");
@@ -474,25 +520,24 @@ public class GameSessionTests
     }
 
     [Fact]
-    public void A_player_can_take_an_empty_seat_of_the_game_as_a_second_seat_and_play_both()
+    public void A_player_cannot_take_an_empty_seat_of_the_game_as_a_second_seat()
     {
         var session = Started(new TicTacToeSession("ABC123"));
         session.TryLeaveSeat(Bob, 1, out _);
 
-        Assert.True(session.TryTakeNextSeat(Alice, AliceProfile, "conn-a", out var error), error);
-
-        Assert.Equal(SessionPhase.Playing, session.GetPublicState().Phase);
-        Assert.Equal(["Alice", "Alice"], session.GetPublicState().Seats.Select(s => s!.Name));
-        Assert.True(session.TryMove(Alice, 0, 0, out error), error);
-        Assert.True(session.TryMove(Alice, 1, 4, out error), error);
+        Assert.False(session.TryTakeNextSeat(Alice, AliceProfile, "conn-a", out var error));
+        Assert.Equal("Only a newcomer opening the game can take a disconnected player's seat.", error);
+        session.Enter(Bob, BobProfile, "conn-b2");
+        Assert.False(session.HasSeatOffer(Bob));
     }
 
     [Fact]
-    public void A_new_user_in_the_empty_seat_continues_the_paused_game()
+    public void A_new_user_in_the_empty_seat_continues_the_game()
     {
         var session = Started(new TicTacToeSession("ABC123"));
         session.TryMove(Alice, 0, 0, out _);
         session.TryLeaveSeat(Bob, 1, out _);
+        session.Enter(Carol, CarolProfile, "conn-c");
 
         Assert.True(session.TryTakeSeat(Carol, CarolProfile, "conn-c", 1, out var error), error);
 
@@ -526,7 +571,7 @@ public class GameSessionTests
     }
 
     [Fact]
-    public void A_paused_game_can_be_ended_and_replaced_with_fewer_players()
+    public void A_game_with_an_empty_seat_can_be_ended_and_replaced_with_fewer_players()
     {
         var session = TheGang();
         foreach (var (user, profile, conn) in new[] { (Alice, AliceProfile, "conn-a"), (Bob, BobProfile, "conn-b"),
@@ -544,7 +589,7 @@ public class GameSessionTests
     }
 
     [Fact]
-    public void Leaving_all_seats_frees_them_and_pauses_the_game()
+    public void Leaving_all_seats_frees_them_and_the_game_waits()
     {
         var session = new TicTacToeSession("ABC123");
         session.TryTakeSeat(Alice, AliceProfile, "conn-a", 0, out _);
@@ -556,8 +601,9 @@ public class GameSessionTests
 
         var state = session.GetPublicState();
         Assert.All(state.Seats, Assert.Null);
-        Assert.Equal(SessionPhase.Paused, state.Phase);
+        Assert.Equal(SessionPhase.Playing, state.Phase);
         Assert.Equal([0, 1], state.AbsentSeats);
+        Assert.Equal([0], state.WaitingSeats);
     }
 
     // After a game ends
@@ -1001,18 +1047,24 @@ public class GameSessionTests
     }
 
     [Fact]
-    public void Rock_paper_scissors_scores_survive_a_pause()
+    public void Rock_paper_scissors_scores_survive_a_new_player_and_the_game_waits_for_a_missing_pick()
     {
         var session = Started(new RockPaperScissorsSession("ABC123"));
         session.TryPick(Alice, 0, Choice.Rock, out _);
         session.TryPick(Bob, 1, Choice.Scissors, out _);
 
         session.TryLeaveSeat(Bob, 1, out _);
-        Assert.Equal(SessionPhase.Paused, session.GetPublicState().Phase);
+        session.Enter(Carol, CarolProfile, "conn-c");
         session.TryTakeSeat(Carol, CarolProfile, "conn-c", 1, out _);
+        session.TryNextRound(Alice, 1, out _);
+        session.Disconnect("conn-c", Now);
+        Assert.Empty(session.GetPublicState().WaitingSeats);
+        session.TryPick(Alice, 0, Choice.Paper, out _);
+        Assert.Equal([1], session.GetPublicState().WaitingSeats);
+        session.Enter(Carol, CarolProfile, "conn-c2");
 
         Assert.Equal([1, 0], session.GetState().Hands.Select(h => h.Score));
-        Assert.True(session.TryNextRound(Carol, 1, out var error), error);
+        Assert.True(session.TryPick(Carol, 1, Choice.Rock, out var error), error);
     }
 
     [Fact]
@@ -1304,15 +1356,21 @@ public class GameSessionTests
     }
 
     [Fact]
-    public void Leaving_during_a_heist_pauses_the_game_and_a_new_player_continues_that_hand()
+    public void Leaving_during_a_heist_the_game_waits_once_the_others_are_ready_and_a_new_player_continues_that_hand()
     {
         var session = StartedTheGang();
         session.TryTakeChip(Alice, 0, 2, out _);
         session.TryLeaveSeat(Alice, 0, out _);
 
-        Assert.Equal(SessionPhase.Paused, session.GetPublicState().Phase);
+        Assert.Empty(session.GetPublicState().WaitingSeats);
+        session.TryTakeChip(Bob, 1, 1, out _);
+        session.TryTakeChip(Carol, 2, 3, out _);
+        session.TrySetReady(Bob, 1, true, out _);
+        session.TrySetReady(Carol, 2, true, out _);
+        AssertWaiting(session, [0], canSkip: false);
+        session.Enter("user:dan", new PlayerProfile("Dan", "🐢"), "conn-d");
         Assert.True(session.TryTakeSeat("user:dan", new PlayerProfile("Dan", "🐢"), "conn-d", 0, out var error), error);
-        Assert.Equal(SessionPhase.Playing, session.GetPublicState().Phase);
+        Assert.Empty(session.GetPublicState().WaitingSeats);
 
         Assert.Equal(2, Gang(session).Chips[0][0]);
         var dan = Assert.IsType<TheGangPrivateState>(session.GetPrivateState("user:dan")).Hands.Single();
@@ -1321,6 +1379,22 @@ public class GameSessionTests
     }
 
     // Backgammon
+
+    [Fact]
+    public void Backgammon_waits_for_an_absent_seat_only_once_the_present_one_has_done_its_part()
+    {
+        var session = Started(new BackgammonSession("ABC123", Dice(6, 1, 6, 1)));
+        session.Disconnect("conn-b", Now);
+        Assert.Empty(session.GetPublicState().WaitingSeats);
+
+        Assert.True(session.TryRoll(Alice, 0, out var error), error);
+        AssertWaiting(session, [1], canSkip: false);
+        session.Enter(Bob, BobProfile, "conn-b2");
+        Assert.True(session.TryRoll(Bob, 1, out error), error);
+        Assert.Empty(session.GetPublicState().WaitingSeats);
+        session.Disconnect("conn-a", Now);
+        AssertWaiting(session, [0], canSkip: false);
+    }
 
     [Fact]
     public void Backgammon_seat_0_plays_white_and_seat_1_black_with_the_chosen_options()
@@ -1514,7 +1588,7 @@ public class GameSessionTests
     private static readonly string[] Players = [.. Enumerable.Range(0, 9).Select(i => $"user:p{i}")];
 
     [Fact]
-    public void Rich_man_poor_man_needs_4_seats_and_a_player_who_leaves_passes_automatically_until_someone_takes_their_seat()
+    public void Rich_man_poor_man_needs_4_seats_and_a_player_who_leaves_keeps_their_turn_until_skipped_or_replaced()
     {
         var session = RichManPoorMan(3);
         Assert.False(session.TryNewGame(Players[0], 0, out var error));
@@ -1530,8 +1604,12 @@ public class GameSessionTests
         Assert.True(session.TryLeaveSeat(Players[5], 5, out error), error);
         var left = Rmpm(session).Players.Single(p => p.Seat == 5);
         Assert.Equal((false, 13), (left.IsActive, left.CardCount));
+        Assert.Equal(5, Rmpm(session).Turn);
+        AssertWaiting(session, [5], canSkip: true);
+        Assert.True(session.TrySkipPlayer(Players[1], 5, out error), error);
         Assert.Equal(4, Rmpm(session).Turn);
-        Assert.Equal(SessionPhase.Playing, session.GetPublicState().Phase);
+        Assert.True(Rmpm(session).Players.Single(p => p.Seat == 5).Passed);
+        Assert.Empty(session.GetPublicState().WaitingSeats);
 
         Sit(session, 6);
         Assert.True(Rmpm(session).Players.Single(p => p.Seat == 5).IsActive);
@@ -1544,26 +1622,47 @@ public class GameSessionTests
     }
 
     [Fact]
-    public void Rich_man_poor_man_never_pauses_an_away_player_passes_and_is_dropped_at_the_exchange()
+    public void Rich_man_poor_man_a_disconnected_players_turn_waits_until_they_come_back_or_are_skipped()
     {
-        var session = RichManPoorMan(7);
+        var session = RichManPoorMan(4);
         session.TryNewGame(Players[0], 0, out _);
+        session.TryThrow(Players[0], 0, ["2S"], out _);
         session.Disconnect("conn-3", Now);
-        Assert.True(Rmpm(session).Players.Single(p => p.Seat == 3).IsActive);
 
-        session.UpdateAwaySeats(Now.Add(GameSession.ReconnectWindow));
-        Assert.Equal(SessionPhase.Playing, session.GetPublicState().Phase);
         Assert.False(Rmpm(session).Players.Single(p => p.Seat == 3).IsActive);
+        AssertWaiting(session, [3], canSkip: true);
         session.Enter(Players[3], new PlayerProfile("P3", "🙂"), "conn-3b");
         Assert.True(Rmpm(session).Players.Single(p => p.Seat == 3).IsActive);
+        Assert.Empty(session.GetPublicState().WaitingSeats);
+        Assert.True(session.TrySkipPlayer(Players[1], 3, out var error), error);
+        Assert.Equal(3, Rmpm(session).Turn);
 
         session.Disconnect("conn-3b", Now);
-        session.UpdateAwaySeats(Now.Add(GameSession.ReconnectWindow));
-        PlayOut(session);
-        Assert.True(session.TryNextRound(Players[0], 1, out var error), error);
+        Assert.False(session.TrySkipPlayer("user:someone", 3, out error));
+        Assert.Equal("Only players in this game can do that.", error);
+        Assert.True(session.TrySkipPlayer(Players[1], 3, out error), error);
+        Assert.Equal(2, Rmpm(session).Turn);
+    }
 
-        Assert.Equal(6, Rmpm(session).Players.Count);
-        Assert.Null(session.GetPublicState().Seats[3]);
+    [Fact]
+    public void Rich_man_poor_man_ends_when_the_last_connected_player_finishes_and_drops_the_disconnected_players_with_cards()
+    {
+        var session = RichManPoorMan(6);
+        session.TryNewGame(Players[0], 0, out _);
+        session.Disconnect("conn-4", Now);
+        session.Disconnect("conn-5", Now);
+
+        PlayOut(session, skipAbsent: true);
+
+        var state = Rmpm(session);
+        Assert.Equal([0, 1, 2, 3], state.Players.Select(p => p.Seat).Order());
+        Assert.Equal(4, state.Ranking.Count);
+        Assert.Null(session.GetPublicState().Seats[4]);
+        Assert.Null(session.GetPublicState().Seats[5]);
+        session.Enter(Players[4], new PlayerProfile("P4", "🙂"), "conn-4b");
+        Assert.False(session.HasSeatOffer(Players[4]));
+        Assert.True(session.TryNextRound(Players[0], 1, out var error), error);
+        Assert.Equal((RichManPoorManPhase.Exchanging, 4), (Rmpm(session).Phase, Rmpm(session).Players.Count));
     }
 
     [Fact]
@@ -1630,14 +1729,14 @@ public class GameSessionTests
     }
 
     [Fact]
-    public void Rich_man_poor_man_exchange_waits_for_an_away_player_until_they_come_back()
+    public void Rich_man_poor_man_a_player_who_finished_then_disconnected_stays_and_the_exchange_waits_for_them()
     {
         var session = RichManPoorMan(6);
         session.TryNewGame(Players[0], 0, out _);
         PlayOut(session);
-        session.TryNextRound(Players[0], 1, out _);
-        var away = Rmpm(session).Players[^1].Seat;
+        var away = Rmpm(session).Ranking[^1];
         session.Disconnect($"conn-{away}", Now);
+        Assert.True(session.TryNextRound(Players[0], 1, out var error), error);
         Assert.True(session.UpdateAwaySeats(Now.Add(GameSession.ReconnectWindow)));
 
         var state = Rmpm(session);
@@ -1645,12 +1744,16 @@ public class GameSessionTests
         Assert.False(state.Players.Single(p => p.Seat == away).IsActive);
         Assert.Equal(SessionPhase.Playing, session.GetPublicState().Phase);
         Assert.Equal([away], session.GetPublicState().AbsentSeats);
+        Assert.Empty(session.GetPublicState().WaitingSeats);
         foreach (var player in state.Players.Where(p => p.Seat != away))
         {
             Give(session, Players[player.Seat], player.Seat);
         }
 
         Assert.Equal(RichManPoorManPhase.Exchanging, Rmpm(session).Phase);
+        AssertWaiting(session, [away], canSkip: false);
+        Assert.False(session.TrySkipPlayer(Players[0], away, out error));
+        Assert.Equal("This player cannot be skipped. You can end the game.", error);
         session.Enter(Players[away], new PlayerProfile($"P{away}", "🙂"), $"conn-{away}b");
         Assert.True(Rmpm(session).Players.Single(p => p.Seat == away).IsActive);
         Give(session, Players[away], away);
@@ -1759,14 +1862,18 @@ public class GameSessionTests
     }
 
     // Plays the game to its end: each round's starter throws all their cards of their lowest number, and everyone passes.
-    // Seat i must be held by player i.
-    private static void PlayOut(RichManPoorManSession session)
+    // With skipAbsent, player 0 skips the turns the game waits for. Seat i must be held by player i.
+    private static void PlayOut(RichManPoorManSession session, bool skipAbsent = false)
     {
         for (var moves = 0; moves < 1000 && Rmpm(session).Phase == RichManPoorManPhase.Playing; moves++)
         {
             var seat = Rmpm(session).Turn;
             string? error;
-            if (Rmpm(session).CurrentThrow is null)
+            if (skipAbsent && session.GetPublicState().WaitingSeats.Contains(seat))
+            {
+                Assert.True(session.TrySkipPlayer(Players[0], seat, out error), error);
+            }
+            else if (Rmpm(session).CurrentThrow is null)
             {
                 var cards = Assert.IsType<RichManPoorManPrivateState>(session.GetPrivateState(Players[seat])).Hands
                     .Single(h => h.Seat == seat).Cards;
@@ -1785,6 +1892,14 @@ public class GameSessionTests
         Assert.IsType<RichManPoorManState>(session.GetPublicState().Game);
 
     private static RockPaperScissorsSession StartedRpsSession() => Started(new RockPaperScissorsSession("ABC123"));
+
+    // The game waits for these absent seats, and can skip them or not.
+    private static void AssertWaiting(GameSession session, int[] seats, bool canSkip)
+    {
+        var state = session.GetPublicState();
+        Assert.Equal(seats, state.WaitingSeats);
+        Assert.Equal(canSkip, state.CanSkipWaiting);
+    }
 
     private static T Seated<T>(T session) where T : GameSession
     {

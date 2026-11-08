@@ -81,6 +81,9 @@ public class YatzeeSession(string id, Func<int>? rollDie = null) : GameSession(i
     protected override void OnRestored() => _game?.Reattach(rollDie);
 
     /// <inheritdoc />
+    protected override IEnumerable<int> AwaitedSeats => _game is { IsOver: false } game ? [GameSeats[game.Turn]] : [];
+
+    /// <inheritdoc />
     protected override object GetGameState()
     {
         var game = Game;

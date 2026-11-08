@@ -194,7 +194,7 @@ function pile(game, state, view) {
         return [el("p", "hint", t("The pairs are exchanging cards. Nobody gets new cards until all have given."))];
     }
     if (game.phase === "GameOver") {
-        const left = game.players.filter((p) => !state.seats[p.seat] || state.seats[p.seat].status === "Away").length;
+        const left = game.players.filter((p) => !state.seats[p.seat]).length;
         const staying = game.players.length - left;
         const ranked = game.ranking.filter((seat) => state.seats[seat]);
         return [
@@ -220,8 +220,8 @@ function pile(game, state, view) {
 }
 
 // A player in the list: place, name, cards left (or, once their hand is empty, their finishing place), and their last
-// call in this round (Pass, or what they threw, e.g. "2×9"), in the middle of the line. An absent player shows "Away"
-// (their seat can be taken from the banner in the status bar).
+// call in this round (Pass, or what they threw, e.g. "2×9"), in the middle of the line. A disconnected player is faded,
+// with a spinner by their name.
 function playerItem(game, state, view, player) {
     const start = el("span", "rp-start", el("span", "rp-place", `#${player.place}`));
     const end = el("span", "rp-end");
@@ -244,7 +244,6 @@ function playerItem(game, state, view, player) {
         tag(`${player.roundThrow.length}×${player.roundThrow[0].slice(0, -1)}`, "call", item);
     }
     item.append(end);
-    if (!player.isActive) tag(t("Away"), "away");
     // In the exchange, each player gives to their pair: #1 and the last place, #2 and the one before it, and so on.
     if (game.phase === "Exchanging" && player.exchangeCount > 0) {
         const n = player.exchangeCount;
