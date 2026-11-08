@@ -1099,8 +1099,8 @@ function startChat(sessionId, view) {
  * view.private is this user's private game information (e.g. their cards), for games that have it, or null.
  * The session bar shows the user's role ("You: …"): seatRole(seat, state) gives a seat's name (by default "Seat 2"), or
  * "Watching" for an observer. While a game is on, the status bar under it shows #status; while the game waits for
- * disconnected players, its players see a "Waiting for …" pop-up (see updateWaiting), and a newcomer opening a game with
- * disconnected players is offered their seats (see updateSeatOffer).
+ * disconnected players, its players see a "Waiting for …" pop-up (see updateWaiting), and a user without a seat opening
+ * or reconnecting to a game with disconnected players is offered their seats (see updateSeatOffer).
  */
 function startSessionPage(gameType, render, seatRole = (seat) => t("Seat {n}", { n: seat + 1 })) {
     const sessionId = (params.get("session") ?? "").toUpperCase();
@@ -1165,9 +1165,9 @@ function startSessionPage(gameType, render, seatRole = (seat) => t("Seat {n}", {
         if (!waiting.open) waiting.showModal();
     }
 
-    // A newcomer who opens a game with disconnected players (entry.seatOffer) is offered their seats once, before they
-    // watch: they take one, or choose Watch. A seat taken by someone else, or whose player comes back, leaves the list;
-    // with none left, the user watches.
+    // A user without a seat who opens or reconnects to a game with disconnected players (entry.seatOffer) is offered
+    // their seats: they take one, or choose Watch. A seat taken by someone else, or whose player comes back, leaves the
+    // list; with none left, the user watches.
     let seatOffer = false;
     const offer = el("dialog", "dialog seat-offer");
     offer.addEventListener("cancel", (event) => {

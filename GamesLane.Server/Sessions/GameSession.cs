@@ -125,8 +125,9 @@ public record PrivateUpdate(string ConnectionId, object State);
 /// ones: when a seat is freed, the seats after it move up.
 /// A user who disconnects keeps their seats for <see cref="ReconnectWindow"/>; then they are Away. In the lobby, and once
 /// a game is over, an Away user's seats are freed. During a game, they keep them until they come back or a newcomer
-/// takes them: a user who opens the game while it has absent seats is offered them once (see <see cref="HasSeatOffer"/>);
-/// players and watchers cannot take them. A disconnected player's seat is absent at once; the game goes on until it
+/// takes them: a user without a seat who opens the game, or reconnects to it, while it has absent seats is offered them
+/// (see <see cref="HasSeatOffer"/>); players, and watchers who are not offered a seat, cannot take them. A
+/// disconnected player's seat is absent at once; the game goes on until it
 /// needs them (see <see cref="AwaitedSeats"/>), and then the players can skip them where the game allows it
 /// (<see cref="TrySkipPlayer"/>), or end the game. Any seated player can end a game.
 /// A public game (see <see cref="MakePublic"/>) is joined only from the main screen, and seats nobody else: its creator
@@ -175,10 +176,8 @@ public abstract class GameSession : IGameSession
     private IReadOnlyDictionary<string, string> _options;
     private readonly List<ChatMessage> _chat = [];
     private int _chatCount;
-    // During a game: the users offered an absent seat when they opened it, and the users who watch it (who can no
-    // longer take a seat in it).
+    // During a game: the users offered an absent seat when they last opened it or reconnected to it.
     private readonly HashSet<string> _seatOffers = [];
-    private readonly HashSet<string> _watchers = [];
 
     /// <summary>
     /// Creates an empty session in the lobby, with the game's default options. Throws if the game's seat counts are invalid.
@@ -450,7 +449,7 @@ public abstract class GameSession : IGameSession
     /// <summary>
     /// Registers a connection that opened the session page. If <paramref name="profile"/> is given (the user is logged in),
     /// updates the name and icon on the user's seats and returns the user's player ID. A logged-in user without a seat
-    /// who opens a private game in progress for the first time is offered its absent seats if it has any (see
+    /// who opens or reconnects to a private game in progress is offered its absent seats if it has any (see
     /// <see cref="HasSeatOffer"/>); otherwise they watch it.
     /// </summary>
     public string? Enter(string userKey, PlayerProfile? profile, string connectionId)
@@ -469,9 +468,13 @@ public abstract class GameSession : IGameSession
                 seat!.Profile = profile;
             }
 
-            if (HasUnfinishedGame && !_isPublic && !HoldsSeat(userKey) && !_watchers.Contains(userKey))
+            if (HasUnfinishedGame && !_isPublic && !HoldsSeat(userKey) && OfferedSeats().Any())
             {
-                (OfferedSeats().Any() ? _seatOffers : _watchers).Add(userKey);
+                _seatOffers.Add(userKey);
+            }
+            else
+            {
+                _seatOffers.Remove(userKey);
             }
 
             return PlayerIdFor(userKey);
@@ -479,8 +482,9 @@ public abstract class GameSession : IGameSession
     }
 
     /// <summary>
-    /// Whether <paramref name="userKey"/> is offered an absent seat of the game in progress: they opened it, without a
-    /// seat, while it had absent seats, and have neither taken one nor chosen to watch (see <see cref="DeclineSeatOffer"/>).
+    /// Whether <paramref name="userKey"/> is offered an absent seat of the game in progress: they last opened it, or
+    /// reconnected to it, without a seat while it had absent seats, and have neither taken one nor chosen to watch (see
+    /// <see cref="DeclineSeatOffer"/>).
     /// </summary>
     public bool HasSeatOffer(string userKey)
     {
@@ -491,20 +495,14 @@ public abstract class GameSession : IGameSession
     }
 
     /// <summary>
-    /// <paramref name="userKey"/> declines their seat offer and watches the game; they can no longer take a seat in it.
+    /// <paramref name="userKey"/> declines their seat offer and watches the game, until they open it or reconnect again.
     /// Returns true if they had an offer.
     /// </summary>
     public bool DeclineSeatOffer(string userKey)
     {
         lock (Sync)
         {
-            if (!_seatOffers.Remove(userKey))
-            {
-                return false;
-            }
-
-            _watchers.Add(userKey);
-            return true;
+            return _seatOffers.Remove(userKey);
         }
     }
 
@@ -613,11 +611,6 @@ public abstract class GameSession : IGameSession
                 _seatOffers.Add(toUserKey);
             }
 
-            if (_watchers.Remove(fromUserKey))
-            {
-                _watchers.Add(toUserKey);
-            }
-
             var wasDisconnected = _disconnectedSince.Remove(fromUserKey, out var since);
             var wasAway = _away.Remove(fromUserKey);
             if (moved && !IsConnected(toUserKey))
@@ -682,7 +675,7 @@ public abstract class GameSession : IGameSession
 
     /// <summary>
     /// Takes a seat. In the lobby, an empty seat. During a game, only a user offered a seat (see <see cref="HasSeatOffer"/>)
-    /// can take an absent seat of the game (empty, or its holder is not connected, who then loses it and watches), unless
+    /// can take an absent seat of the game (empty, or its holder is not connected, who then loses it), unless
     /// the game refuses it (see <see cref="SeatingDuringGameError"/>); the newcomer continues that player's game. Not once
     /// a game is over.
     /// </summary>
@@ -707,7 +700,7 @@ public abstract class GameSession : IGameSession
                 : !HasUnfinishedGame ? (_seats[seat] is null ? null : "That seat is taken.")
                 : !_gameSeats.Contains(seat) ? "The game has already started. You can watch it."
                 : !IsAbsent(seat) ? "That seat is taken."
-                : !_seatOffers.Contains(userKey) ? "Only a newcomer opening the game can take a disconnected player's seat."
+                : !_seatOffers.Contains(userKey) ? "Only a user opening the game without a seat can take a disconnected player's seat."
                 : SeatingDuringGameError(seat);
             if (error is not null)
             {
@@ -722,10 +715,6 @@ public abstract class GameSession : IGameSession
             {
                 _disconnectedSince.Remove(previous);
                 _away.Remove(previous);
-                if (HasUnfinishedGame)
-                {
-                    _watchers.Add(previous);
-                }
             }
 
             _connections[connectionId] = userKey;
@@ -770,7 +759,7 @@ public abstract class GameSession : IGameSession
 
     /// <summary>
     /// Gives up one of the user's seats. During a game, the seat is then absent, and a user left without a seat watches
-    /// the game (they cannot take a seat in it again).
+    /// the game.
     /// </summary>
     public bool TryLeaveSeat(string userKey, int seat, [NotNullWhen(false)] out string? error)
     {
@@ -855,10 +844,7 @@ public abstract class GameSession : IGameSession
         _notice = null;
         StartNewGame(seats);
         _onGameScreen = true;
-        // Whoever has the game open without a seat when it starts watches it.
         _seatOffers.Clear();
-        _watchers.Clear();
-        _watchers.UnionWith(_connections.Values.Where(user => !HoldsSeat(user)));
         error = null;
         return true;
     }
@@ -1120,8 +1106,7 @@ public abstract class GameSession : IGameSession
 
     /// <summary>
     /// Empties <paramref name="seat"/> without any other effect (for a game that removes players itself, e.g. players
-    /// who left at a card exchange). During a game, a user left without a seat watches it. Call while holding
-    /// <see cref="Sync"/>.
+    /// who left at a card exchange). Call while holding <see cref="Sync"/>.
     /// </summary>
     protected void VacateSeat(int seat)
     {
@@ -1135,10 +1120,6 @@ public abstract class GameSession : IGameSession
         {
             _disconnectedSince.Remove(taken.UserKey);
             _away.Remove(taken.UserKey);
-            if (HasUnfinishedGame)
-            {
-                _watchers.Add(taken.UserKey);
-            }
         }
 
         UpdateHost();
@@ -1157,7 +1138,6 @@ public abstract class GameSession : IGameSession
     {
         _onGameScreen = false;
         _seatOffers.Clear();
-        _watchers.Clear();
         FreeAwaySeats();
         CloseGapsInLobby();
     }
@@ -1206,11 +1186,6 @@ public abstract class GameSession : IGameSession
         _away.Remove(userKey);
         if (freed > 0)
         {
-            if (HasUnfinishedGame)
-            {
-                _watchers.Add(userKey);
-            }
-
             UpdateHost();
             if (leaver is not null)
             {

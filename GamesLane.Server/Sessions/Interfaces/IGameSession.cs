@@ -21,7 +21,7 @@ public interface IGameSession
     /// <summary>
     /// Registers a connection that opened the session page. If <paramref name="profile"/> is given (the user is logged in),
     /// updates the name and icon on the user's seats and returns the user's player ID. A logged-in user without a seat who
-    /// opens a private game in progress for the first time is offered its absent seats if it has any.
+    /// opens or reconnects to a private game in progress is offered its absent seats if it has any.
     /// </summary>
     string? Enter(string userKey, PlayerProfile? profile, string connectionId);
 
@@ -31,7 +31,8 @@ public interface IGameSession
     bool HasSeatOffer(string userKey);
 
     /// <summary>
-    /// <paramref name="userKey"/> declines their seat offer and watches the game. Returns true if they had an offer.
+    /// <paramref name="userKey"/> declines their seat offer and watches the game, until they open it or reconnect again.
+    /// Returns true if they had an offer.
     /// </summary>
     bool DeclineSeatOffer(string userKey);
 

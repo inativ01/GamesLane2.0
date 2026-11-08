@@ -84,7 +84,7 @@ TRANSLATIONS.pt = {
     "Join this game?": "Entrar nesta partida?",
     "These players are disconnected. Take one of their seats to play on in their place, or watch the game.": "Estes jogadores estão desconectados. Pegue o lugar de um deles para continuar jogando no lugar dele, ou assista à partida.",
     "Watch": "Assistir",
-    "Only a newcomer opening the game can take a disconnected player's seat.": "Só quem acabou de abrir a partida pode pegar o lugar de um jogador desconectado.",
+    "Only a user opening the game without a seat can take a disconnected player's seat.": "Só quem abre a partida sem um lugar pode pegar o lugar de um jogador desconectado.",
     "This player cannot be skipped. You can end the game.": "Não dá para pular este jogador. Você pode encerrar a partida.",
     "This player cannot be skipped.": "Não dá para pular este jogador.",
     "Seat {n}": "Lugar {n}",

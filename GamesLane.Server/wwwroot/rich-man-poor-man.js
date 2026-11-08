@@ -68,7 +68,42 @@ function cardRow(cards, className = "") {
     return el("div", `card-row ${className}`, ...cards.map((c) => cardElement(c)));
 }
 
-// One of the user's hands: its cards (as buttons when they can be chosen), a hint, and its buttons.
+// Whether the hand has something to do now: throw or pass on its turn, or give its cards in the exchange.
+function mustAct(game, hand) {
+    const me = placeOf(game, hand.seat);
+    return game.phase === "Playing" ? game.turn === hand.seat && me.finished === null
+        : game.phase === "Exchanging" && me.exchangeCount > 0 && !hand.gift;
+}
+
+// What the hand does now, shown in the status bar: e.g. "Throw a single card higher than '7', or pass.", "Choose 2
+// cards to give to Dana.", or its finishing place.
+function handHint(game, state, hand) {
+    const me = placeOf(game, hand.seat);
+    const partner = hand.partnerSeat !== null ? playerName(state, hand.partnerSeat) : "";
+    if (game.phase === "Exchanging") {
+        return me.exchangeCount === 0 ? t("You do not exchange cards in this game.")
+            : hand.gift ? t("Your cards are given. Everyone gets their new cards once all have given.")
+                : hand.requiredGift ? t("Give your {n} highest cards to {name}.", { n: hand.requiredGift.length, name: partner })
+                    : t("Choose {n} cards to give to {name}.", { n: me.exchangeCount, name: partner });
+    }
+    if (me.finished !== null) {
+        return t(hand.cards.length ? "You are the last player: place {n} for the next game." : "You emptied your hand: place {n} for the next game.",
+            { n: me.finished });
+    }
+    if (game.phase !== "Playing") {
+        return "";
+    }
+    if (game.turn !== hand.seat) {
+        return t("Waiting for {name}", { name: playerName(state, game.turn) });
+    }
+    const current = game.currentThrow;
+    return !current ? t("You start this round: tap one or more cards of the same value to place on the table.")
+        : t(BEAT_HINTS[current.cards.length] ?? "Throw {n} cards higher than '{card}', or pass.",
+            { n: current.cards.length, card: current.cards[0].slice(0, -1) });
+}
+
+// One of the user's hands: its cards (as buttons when they can be chosen) and its buttons. What to do is said in the
+// status bar (see handHint).
 function handPanel(game, state, view, hand) {
     const me = placeOf(game, hand.seat);
     const myTurn = game.phase === "Playing" && game.turn === hand.seat;
@@ -115,7 +150,6 @@ function handPanel(game, state, view, hand) {
     const head = el("div", "my-hand-title", `${title} · #${me.place}`,
         ...(turn ? [el("span", "rp-your-turn", `👉 ${t("Your turn")}`)] : []));
     const panel = el("div", `my-hand rp-hand${turn ? " my-turn" : ""}`, head, ...rows);
-    const hint = el("p", "hint");
     const buttons = el("div", "actions");
     const button = (text, onClick, enabled = true, secondary = false, className = "") => {
         const b = el("button", `${secondary ? "secondary" : ""} ${className}`.trim(), text);
@@ -134,36 +168,26 @@ function handPanel(game, state, view, hand) {
         const current = game.currentThrow;
         const valid = picks.length > 0 && (!current
             || (picks.length === current.cards.length && rankOf(picks[0]) > rankOf(current.cards[0])));
-        hint.textContent = !current ? t("You start this round: tap one or more cards of the same value to place on the table.")
-            : t(BEAT_HINTS[current.cards.length] ?? "Throw {n} cards higher than '{card}', or pass.",
-                { n: current.cards.length, card: current.cards[0].slice(0, -1) });
         // Pass and Select at opposite ends of the panel, so one is not tapped instead of the other.
         if (current) {
             button(t("Pass"), () => send("Pass"), true, true, "rp-pass");
         }
         button(t("Select"), () => send("ThrowCards", picks), valid, false, "rp-select");
     } else if (game.phase === "Playing" || game.phase === "GameOver") {
-        hint.textContent = me.finished !== null
-            ? t(hand.cards.length ? "You are the last player: place {n} for the next game." : "You emptied your hand: place {n} for the next game.",
-                { n: me.finished })
-            : game.phase === "Playing" ? t("Waiting for {name}…", { name: playerName(state, game.turn) }) : "";
         if (hand.received && game.phase === "Playing" && !game.lastThrow) {
             panel.append(el("p", "hint", t("You received from {name}:", { name: partner })), cardRow(hand.received, "small"));
         }
-    } else if (me.exchangeCount === 0) {
-        hint.textContent = t("You do not exchange cards in this game.");
     } else if (hand.gift) {
-        hint.textContent = t("Your cards are given. Everyone gets their new cards once all have given.");
         panel.append(cardRow(hand.gift, "small"));
     } else if (required) {
-        hint.textContent = t("Give your {n} highest cards to {name}.", { n: required.length, name: partner });
         button(t("Give these cards"), () => send("GiveCards", required));
-    } else {
-        hint.textContent = t("Choose {n} cards to give to {name}.", { n: me.exchangeCount, name: partner });
+    } else if (me.exchangeCount > 0) {
         button(t("Give"), () => send("GiveCards", picks), picks.length === me.exchangeCount);
     }
 
-    panel.append(hint, buttons);
+    if (buttons.childElementCount) {
+        panel.append(buttons);
+    }
     return panel;
 }
 
@@ -172,18 +196,22 @@ function about(state, view, seat, you, other, values = {}) {
     return view.isMe(seat) && view.mySeats.length === 1 ? t(you, values) : t(other, { name: playerName(state, seat), ...values });
 }
 
+// The status bar: for a player, what their hand does now (the hand that must act, if they hold several, named); for
+// observers, the exchange's progress or whose turn it is. After a game, that it is over.
 function statusText(game, state, view) {
+    const over = game.phase === "GameOver" ? `🏁 ${t("Game {n} is over.", { n: game.gameNumber })}` : "";
+    const hands = myHands(view).filter((h) => placeOf(game, h.seat));
+    if (hands.length > 0) {
+        const hand = hands.find((h) => mustAct(game, h)) ?? hands[0];
+        const name = hands.length > 1 ? `${playerName(state, hand.seat)}: ` : "";
+        const hint = handHint(game, state, hand);
+        return [over, hint && `${mustAct(game, hand) ? "👉" : "⏳"} ${name}${hint}`].filter(Boolean).join(" ");
+    }
     if (game.phase === "Exchanging") {
         const givers = game.players.filter((p) => p.exchangeCount > 0);
-        const mine = givers.some((p) => view.isMe(p.seat) && !p.hasGiven);
-        return `${mine ? "👉 " : ""}🔄 ${t("Card exchange: {given}/{total} given", { given: givers.filter((p) => p.hasGiven).length, total: givers.length })}`;
+        return `🔄 ${t("Card exchange: {given}/{total} given", { given: givers.filter((p) => p.hasGiven).length, total: givers.length })}`;
     }
-    if (game.phase === "GameOver") {
-        return `🏁 ${t("Game {n} is over.", { n: game.gameNumber })}`;
-    }
-    const mine = view.isMe(game.turn) && view.mySeats.length === 1;
-    return mine ? `👉 ${t(game.currentThrow ? "Throw higher cards than the ones on the table, or pass" : "You start the round")}`
-        : `⏳ ${t("Waiting for {name}", { name: playerName(state, game.turn) })}`;
+    return over || `⏳ ${t("Waiting for {name}", { name: playerName(state, game.turn) })}`;
 }
 
 // The middle of the table: the throw to beat, or the last throw (faded) and who won its round. After a game, the ranking.

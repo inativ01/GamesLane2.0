@@ -391,7 +391,7 @@ public class GameSessionTests
     }
 
     [Fact]
-    public void During_a_game_only_a_newcomer_offered_a_seat_can_take_an_absent_seat()
+    public void During_a_game_only_a_user_offered_a_seat_can_take_an_absent_seat()
     {
         var session = Started(new TicTacToeSession("ABC123"));
         Assert.False(session.TryTakeSeat(Carol, CarolProfile, "conn-c", 0, out var error));
@@ -399,9 +399,9 @@ public class GameSessionTests
         session.Disconnect("conn-b", Now);
 
         Assert.False(session.TryTakeSeat(Carol, CarolProfile, "conn-c", 1, out error));
-        Assert.Equal("Only a newcomer opening the game can take a disconnected player's seat.", error);
+        Assert.Equal("Only a user opening the game without a seat can take a disconnected player's seat.", error);
         Assert.False(session.TryTakeNextSeat(Alice, AliceProfile, "conn-a", out error));
-        Assert.Equal("Only a newcomer opening the game can take a disconnected player's seat.", error);
+        Assert.Equal("Only a user opening the game without a seat can take a disconnected player's seat.", error);
 
         var gang = StartedTheGang();
         Assert.False(gang.TryTakeSeat("user:dan", new PlayerProfile("Dan", "🐻"), "conn-d", 3, out error));
@@ -409,14 +409,15 @@ public class GameSessionTests
     }
 
     [Fact]
-    public void A_newcomer_is_offered_the_absent_seats_once_and_can_watch_instead()
+    public void A_user_without_a_seat_is_offered_the_absent_seats_each_time_they_open_or_reconnect_and_can_watch_instead()
     {
         var session = Started(new TicTacToeSession("ABC123"));
         session.Enter(Carol, CarolProfile, "conn-c");
         Assert.False(session.HasSeatOffer(Carol));
         session.Disconnect("conn-b", Now);
-        session.Enter(Carol, CarolProfile, "conn-c2");
         Assert.False(session.HasSeatOffer(Carol));
+        session.Enter(Carol, CarolProfile, "conn-c2");
+        Assert.True(session.HasSeatOffer(Carol));
 
         const string Dan = "user:dan";
         const string Eve = "user:eve";
@@ -429,15 +430,17 @@ public class GameSessionTests
 
         Assert.True(session.DeclineSeatOffer(Eve));
         Assert.False(session.HasSeatOffer(Eve));
+        Assert.False(session.TryTakeSeat(Eve, new PlayerProfile("Eve", "🦉"), "conn-e", 1, out var error));
+        Assert.Equal("Only a user opening the game without a seat can take a disconnected player's seat.", error);
         session.Enter(Eve, new PlayerProfile("Eve", "🦉"), "conn-e2");
-        Assert.False(session.HasSeatOffer(Eve));
-        Assert.False(session.TryTakeSeat(Eve, new PlayerProfile("Eve", "🦉"), "conn-e2", 1, out var error));
-        Assert.Equal("Only a newcomer opening the game can take a disconnected player's seat.", error);
+        Assert.True(session.HasSeatOffer(Eve));
 
         Assert.True(session.TryTakeSeat(Dan, new PlayerProfile("Dan", "🐻"), "conn-d", 1, out error), error);
         Assert.False(session.HasSeatOffer(Dan));
         session.Enter(Bob, BobProfile, "conn-b2");
         Assert.False(session.HasSeatOffer(Bob));
+        session.Enter(Eve, new PlayerProfile("Eve", "🦉"), "conn-e3");
+        Assert.False(session.HasSeatOffer(Eve));
     }
 
     [Fact]
@@ -546,9 +549,11 @@ public class GameSessionTests
         session.TryLeaveSeat(Bob, 1, out _);
 
         Assert.False(session.TryTakeNextSeat(Alice, AliceProfile, "conn-a", out var error));
-        Assert.Equal("Only a newcomer opening the game can take a disconnected player's seat.", error);
+        Assert.Equal("Only a user opening the game without a seat can take a disconnected player's seat.", error);
+        session.Enter(Alice, AliceProfile, "conn-a2");
+        Assert.False(session.HasSeatOffer(Alice));
         session.Enter(Bob, BobProfile, "conn-b2");
-        Assert.False(session.HasSeatOffer(Bob));
+        Assert.True(session.HasSeatOffer(Bob));
     }
 
     [Fact]

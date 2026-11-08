@@ -41,13 +41,13 @@ public interface IGameHub
     Task TakeSeat(string sessionId);
 
     /// <summary>
-    /// Logged-in users offered a seat when they opened a game in progress (<see cref="SessionEntry.SeatOffer"/>). Takes
+    /// Logged-in users offered a seat when they opened or reconnected to a game in progress (<see cref="SessionEntry.SeatOffer"/>). Takes
     /// the absent game seat <paramref name="seat"/> and continues that player's game.
     /// </summary>
     Task TakeOfferedSeat(string sessionId, int seat);
 
     /// <summary>
-    /// Declines the caller's seat offer: they watch the game and can no longer take a seat in it.
+    /// Declines the caller's seat offer: they watch the game until they open it or reconnect again.
     /// </summary>
     Task DeclineSeatOffer(string sessionId);
 

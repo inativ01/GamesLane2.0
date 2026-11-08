@@ -84,7 +84,7 @@ TRANSLATIONS.he = {
     "Join this game?": "להצטרף למשחק?",
     "These players are disconnected. Take one of their seats to play on in their place, or watch the game.": "השחקנים האלה לא מחוברים. אפשר לתפוס את המקום של אחד מהם ולהמשיך לשחק במקומו, או לצפות במשחק.",
     "Watch": "צפייה",
-    "Only a newcomer opening the game can take a disconnected player's seat.": "רק מי שמצטרף עכשיו למשחק יכול לתפוס מקום של שחקן שלא מחובר.",
+    "Only a user opening the game without a seat can take a disconnected player's seat.": "רק מי שפותח את המשחק בלי מקום יכול לתפוס מקום של שחקן שלא מחובר.",
     "This player cannot be skipped. You can end the game.": "אי אפשר לדלג על השחקן הזה. אפשר לסיים את המשחק.",
     "This player cannot be skipped.": "אי אפשר לדלג על השחקן הזה.",
     "Seat {n}": "מקום {n}",
