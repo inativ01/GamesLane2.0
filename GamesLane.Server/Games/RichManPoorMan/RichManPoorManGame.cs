@@ -484,12 +484,18 @@ public class RichManPoorManGame : IRichManPoorManGame
     }
 
     /// <summary>
-    /// Ends the game once no active player has cards left, while at least one player is active. With nobody active at
-    /// all (everyone left), the game waits for players to come back or take the seats. Returns whether it ended.
+    /// Ends the game once only one player has cards left (they take the last place without playing them), or once no
+    /// active player has cards left while at least one player is active. With nobody active at all (everyone left), the
+    /// game waits for players to come back or take the seats. Returns whether it ended.
     /// </summary>
     private bool EndIfNobodyPlays()
     {
-        if (_players.Values.Any(s => s.Active && s.Hand.Count > 0) || !_players.Values.Any(s => s.Active))
+        var holding = _order.Where(p => _players[p].Hand.Count > 0).ToArray();
+        if (holding.Length == 1)
+        {
+            _ranking.Add(holding[0]);
+        }
+        else if (_players.Values.Any(s => s.Active && s.Hand.Count > 0) || !_players.Values.Any(s => s.Active))
         {
             return false;
         }

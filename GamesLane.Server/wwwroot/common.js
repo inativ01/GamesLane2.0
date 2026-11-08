@@ -714,6 +714,32 @@ function el(tag, className, ...content) {
     return element;
 }
 
+// Confetti falling over the page for a success of the user (e.g. winning a round, or the team reaching its goal in a
+// cooperative game). Each success is celebrated once: `key` names it within the session's game (e.g. the round), and
+// it is remembered for the browser tab, so reloading the page does not show it again. Not shown with reduced motion.
+const CONFETTI_COLORS = ["#e6a93c", "#c2561a", "#2f7d45", "#3f6fd8", "#c0281b", "#8a4fd8", "#f4efe6"];
+
+function celebrate(state, key) {
+    const stored = `confetti:${params.get("session") ?? ""}:${state.gameNumber}:${key}`;
+    if (sessionStorage.getItem(stored)) return;
+    sessionStorage.setItem(stored, "1");
+    if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const layer = el("div", "confetti");
+    layer.setAttribute("aria-hidden", "true");
+    for (let i = 0; i < 140; i++) {
+        const piece = el("span", "confetti-piece");
+        piece.style.setProperty("--x", `${Math.random() * 100}vw`);
+        piece.style.setProperty("--drift", `${(Math.random() - 0.5) * 40}vw`);
+        piece.style.setProperty("--spin", `${(Math.random() - 0.5) * 1440}deg`);
+        piece.style.animationDelay = `${Math.random() * 0.8}s`;
+        piece.style.animationDuration = `${2.4 + Math.random() * 1.8}s`;
+        piece.style.background = CONFETTI_COLORS[i % CONFETTI_COLORS.length];
+        layer.append(piece);
+    }
+    document.body.append(layer);
+    setTimeout(() => layer.remove(), 5200);
+}
+
 // Where the suit symbols go on number cards, as [x%, y%] on the card face, as on classic playing cards.
 // Symbols in the lower half are drawn upside down.
 const PIP_LAYOUTS = (() => {
@@ -1187,8 +1213,8 @@ function startSessionPage(gameType, render, seatRole = (seat) => t("Seat {n}", {
             ? t("You: {seats}", { seats: view.mySeats.map((seat) => seatRole(seat, state)).join(", ") })
             : `👁 ${t("Watching")}`;
         $("session-info").replaceChildren(el("span", "session-fact", role));
-        seatedCount.textContent = t("{taken} of {total} seated · {observers} watching",
-            { taken: state.seats.filter(Boolean).length, total: state.seats.length, observers: state.observerCount });
+        seatedCount.textContent = t("{taken} players · {observers} watching",
+            { taken: state.seats.filter(Boolean).length, observers: state.observerCount });
     }
 
     // A seat tile: a big icon, the name, and a note such as "Seat 2 · You". The user's own seat is a button to leave

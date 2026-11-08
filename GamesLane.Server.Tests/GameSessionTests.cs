@@ -1514,11 +1514,13 @@ public class GameSessionTests
     private static readonly string[] Players = [.. Enumerable.Range(0, 9).Select(i => $"user:p{i}")];
 
     [Fact]
-    public void Rich_man_poor_man_needs_6_seats_and_a_player_who_leaves_passes_automatically_until_someone_takes_their_seat()
+    public void Rich_man_poor_man_needs_4_seats_and_a_player_who_leaves_passes_automatically_until_someone_takes_their_seat()
     {
-        var session = RichManPoorMan(5);
+        var session = RichManPoorMan(3);
         Assert.False(session.TryNewGame(Players[0], 0, out var error));
-        Assert.Equal("At least 6 players must be seated.", error);
+        Assert.Equal("At least 4 players must be seated.", error);
+        Sit(session, 3);
+        Sit(session, 4);
         Sit(session, 5);
         Assert.True(session.TryNewGame(Players[0], 0, out error), error);
         Assert.Equal(0, Rmpm(session).Turn);
@@ -1565,23 +1567,23 @@ public class GameSessionTests
     }
 
     [Fact]
-    public void Rich_man_poor_man_drops_players_who_left_at_the_exchange_and_goes_back_to_the_lobby_with_fewer_than_6()
+    public void Rich_man_poor_man_drops_players_who_left_at_the_exchange_and_goes_back_to_the_lobby_with_fewer_than_4()
     {
-        var session = RichManPoorMan(7);
+        var session = RichManPoorMan(5);
         session.TryNewGame(Players[0], 0, out _);
         PlayOut(session);
-        Assert.Equal(7, Rmpm(session).Ranking.Count);
-        Assert.True(session.TryLeaveSeat(Players[6], 6, out var error), error);
+        Assert.Equal(5, Rmpm(session).Ranking.Count);
+        Assert.True(session.TryLeaveSeat(Players[4], 4, out var error), error);
 
         Assert.True(session.TryNextRound(Players[0], 1, out error), error);
         var state = Rmpm(session);
-        Assert.Equal((2, RichManPoorManPhase.Exchanging, 6), (state.GameNumber, state.Phase, state.Players.Count));
-        Assert.DoesNotContain(state.Players, p => p.Seat == 6);
-        Assert.Equal([3, 2, 1, 1, 2, 3], state.Players.Select(p => p.ExchangeCount));
+        Assert.Equal((2, RichManPoorManPhase.Exchanging, 4), (state.GameNumber, state.Phase, state.Players.Count));
+        Assert.DoesNotContain(state.Players, p => p.Seat == 4);
+        Assert.Equal([2, 1, 1, 2], state.Players.Select(p => p.ExchangeCount));
         Assert.False(session.TryTakeNextSeat(Players[7], new PlayerProfile("P7", "🙂"), "conn-7", out error));
         Assert.Equal("Ask to join: a player will choose your place.", error);
 
-        Assert.True(session.TryLeaveSeat(Players[5], 5, out error), error);
+        Assert.True(session.TryLeaveSeat(Players[3], 3, out error), error);
         Assert.Equal(SessionPhase.Lobby, session.GetPublicState().Phase);
         Assert.Empty(session.GetPublicState().AbsentSeats);
     }

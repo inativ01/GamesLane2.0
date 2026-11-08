@@ -63,6 +63,9 @@
         </div>
 
         <div id="game-screen" hidden>
+            <!-- On phones, the cards on the table above the player's own cards, also while the table is hidden. -->
+            <div id="rp-top" class="rp-pile rp-top" hidden></div>
+
             <!-- This user's own cards and buttons, one panel per seat they hold. -->
             <div id="rp-hands"></div>
 
@@ -74,9 +77,12 @@
                 <div class="rp-table-head">
                     <span id="rp-game" class="rp-game"></span>
                     <button id="rp-speech" type="button" class="secondary small" hidden></button>
+                    <button id="rp-toggle-table" type="button" class="secondary small" hidden>Show table</button>
                 </div>
-                <div id="rp-pile" class="rp-pile"></div>
-                <ol id="rp-players" class="rp-players"></ol>
+                <div id="rp-table-body">
+                    <div id="rp-pile" class="rp-pile"></div>
+                    <ol id="rp-players" class="rp-players"></ol>
+                </div>
             </section>
         </div>
     </section>

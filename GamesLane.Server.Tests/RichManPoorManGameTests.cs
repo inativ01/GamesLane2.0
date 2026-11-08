@@ -254,8 +254,11 @@ public class RichManPoorManGameTests
 
         Assert.True(game.TryRemovePlayer(9, out error), error);
         Assert.Equal(78, game.Order.Sum(p => game.Hand(p).Count));
+        Assert.True(game.TryRemovePlayer(5, out error), error);
+        Assert.True(game.TryRemovePlayer(4, out error), error);
+        Assert.Equal([2, 1, 1, 2], game.Order.Select(game.ExchangeCount));
         Assert.False(game.TryRemovePlayer(3, out error));
-        Assert.Equal("At least 6 players are needed for the exchange.", error);
+        Assert.Equal("At least 4 players are needed for the exchange.", error);
         Assert.False(game.TryAddPlayer(0, 0, out error));
         Assert.Equal("That player is already playing.", error);
     }
@@ -270,6 +273,31 @@ public class RichManPoorManGameTests
         var exchanging = Exchanging(Six);
         Assert.True(exchanging.TryNextGame(1, [0, 1, 2, 3, 4, 5], out _));
         Assert.Equal(2, exchanging.GameNumber);
+    }
+
+    [Fact]
+    public void The_game_ends_when_only_one_player_has_cards_left_and_they_take_the_last_place()
+    {
+        var game = new RichManPoorManGame([0, 1, 2, 3], RankSorted);
+        for (var moves = 0; moves < 500 && game.Phase == RichManPoorManPhase.Playing; moves++)
+        {
+            if (game.CurrentThrow is null)
+            {
+                var hand = game.Hand(game.Turn);
+                Throw(game, game.Turn, Text(hand.Where(c => c.Rank == hand[0].Rank)));
+            }
+            else
+            {
+                Pass(game, game.Turn);
+            }
+        }
+
+        Assert.Equal(RichManPoorManPhase.GameOver, game.Phase);
+        Assert.Equal([0, 3, 2, 1], game.Ranking);
+        Assert.NotEmpty(game.Hand(1));
+        Assert.Equal("The game is over.", Refused(game, 1, Text(game.Hand(1).Take(1))));
+        Assert.True(game.TryNextGame(1, game.NextOrder, out var error), error);
+        Assert.Equal([2, 1, 1, 2], game.Order.Select(game.ExchangeCount));
     }
 
     // Seat 0 (#1, with the lowest cards) is the only active player and empties their hand.

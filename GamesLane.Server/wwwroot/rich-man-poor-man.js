@@ -2,12 +2,20 @@
 
 // Rich man, poor man: players throw cards of one number, each throw beating the last with as many cards of a higher
 // number, and the first to empty their hand is the next game's rich man. Each player's own cards come in view.private.
-// The page shows the user's own hands on top, and the table (everything observers see) below. On a shared screen, the
-// throws can be read aloud.
+// The page shows the user's own hands on top, and the table (everything observers see) below; on phones, the cards on
+// the table also show above the hands, and players open the table with Show table. On a shared screen, the throws can
+// be read aloud.
 
 const FACE_RANKS = { J: 11, Q: 12, K: 13, A: 14 };
 const rankOf = (card) => FACE_RANKS[card.slice(0, -1)] ?? Number(card.slice(0, -1));
 const SPEECH_KEY = "richManPoorMan.speech";
+const TABLE_SHOWN_KEY = "richManPoorMan.tableShown";
+const MIN_PLAYERS = 4;
+
+// Phones: a hand of more than TWO_ROWS_FROM cards takes two rows, the cards on the table are shown above the hand,
+// and players see the table only once they show it (the choice is remembered on this device).
+const narrowScreen = matchMedia("(max-width: 600px)");
+const TWO_ROWS_FROM = 8;
 
 // The hint to beat the throw on the table, by its number of cards: its group up to 4 cards, then the number.
 const BEAT_HINTS = {
@@ -82,8 +90,9 @@ function handPanel(game, state, view, hand) {
         return [];
     });
 
-    // Each card sits in a slot that narrows when the hand is wider than the screen, so the cards overlap to fit.
-    const cards = el("div", "card-row rp-cards", ...shown.map(([card, index]) => {
+    // Each card sits in a slot that narrows when the hand is wider than the screen, so the cards overlap to fit. On a
+    // phone, a long hand is split into two rows.
+    const slots = shown.map(([card, index]) => {
         const face = cardElement(card);
         const marked = highlight.indexOf(card);
         if (marked >= 0) {
@@ -98,14 +107,20 @@ function handPanel(game, state, view, hand) {
         button.setAttribute("aria-pressed", String(marked >= 0));
         button.addEventListener("click", () => pickCard(game, hand, index));
         return el("span", "rp-slot", button);
-    }));
+    });
+    const half = narrowScreen.matches && slots.length > TWO_ROWS_FROM ? Math.ceil(slots.length / 2) : slots.length;
+    const rows = [slots.slice(0, half), slots.slice(half)].filter((row) => row.length)
+        .map((row) => el("div", "card-row rp-cards", ...row));
 
     const title = myHands(view).length > 1 ? playerName(state, hand.seat) : t("Your cards");
-    const panel = el("div", "my-hand rp-hand", el("div", "my-hand-title", `${title} · #${me.place}`), cards);
+    const turn = myTurn && me.finished === null;
+    const head = el("div", "my-hand-title", `${title} · #${me.place}`,
+        ...(turn ? [el("span", "rp-your-turn", `👉 ${t("Your turn")}`)] : []));
+    const panel = el("div", `my-hand rp-hand${turn ? " my-turn" : ""}`, head, ...rows);
     const hint = el("p", "hint");
     const buttons = el("div", "actions");
-    const button = (text, onClick, enabled = true, secondary = false) => {
-        const b = el("button", secondary ? "secondary" : "", text);
+    const button = (text, onClick, enabled = true, secondary = false, className = "") => {
+        const b = el("button", `${secondary ? "secondary" : ""} ${className}`.trim(), text);
         b.type = "button";
         b.disabled = !enabled;
         b.addEventListener("click", onClick);
@@ -124,12 +139,15 @@ function handPanel(game, state, view, hand) {
         hint.textContent = !current ? t("You start this round: tap one or more cards of the same value to place on the table.")
             : t(BEAT_HINTS[current.cards.length] ?? "Throw {n} cards higher than '{card}', or pass.",
                 { n: current.cards.length, card: current.cards[0].slice(0, -1) });
-        button(t("Select"), () => send("ThrowCards", picks), valid);
+        // Pass and Select at opposite ends of the panel, so one is not tapped instead of the other.
         if (current) {
-            button(t("Pass"), () => send("Pass"), true, true);
+            button(t("Pass"), () => send("Pass"), true, true, "rp-pass");
         }
+        button(t("Select"), () => send("ThrowCards", picks), valid, false, "rp-select");
     } else if (game.phase === "Playing" || game.phase === "GameOver") {
-        hint.textContent = me.finished !== null ? t("You emptied your hand: place {n} for the next game.", { n: me.finished })
+        hint.textContent = me.finished !== null
+            ? t(hand.cards.length ? "You are the last player: place {n} for the next game." : "You emptied your hand: place {n} for the next game.",
+                { n: me.finished })
             : game.phase === "Playing" ? t("Waiting for {name}…", { name: playerName(state, game.turn) }) : "";
         if (hand.received && game.phase === "Playing" && !game.lastThrow) {
             panel.append(el("p", "hint", t("You received from {name}:", { name: partner })), cardRow(hand.received, "small"));
@@ -182,7 +200,7 @@ function pile(game, state, view) {
         return [
             ...(ranked.length ? [el("p", "rp-pile-who", t("The next game's places:")),
                 el("ol", "rp-ranking", ...ranked.map((seat) => el("li", null, seatLabel(state, seat, view))))] : []),
-            ...(staying < 6 ? [el("p", "hint", t("Fewer than 6 players are left: Next game goes back to the lobby."))] : []),
+            ...(staying < MIN_PLAYERS ? [el("p", "hint", t("Fewer than 4 players are left: Next game goes back to the lobby."))] : []),
         ];
     }
     const current = game.currentThrow;
@@ -360,18 +378,71 @@ addEventListener(SETTINGS_EVENT, () => {
     rich.refresh();
 });
 
+// When the turn comes to this user: a rising three-note chime made by the browser (unless sound is off in their
+// profile) and, on phones that can, a short vibration. Browsers only allow sound after the user has tapped the page,
+// so the sound is set up on the first tap.
+let audio = null;
+addEventListener("pointerdown", () => {
+    audio ??= new AudioContext();
+    audio.resume().catch(() => {});
+}, { capture: true });
+
+function notifyTurn() {
+    navigator.vibrate?.([180, 90, 180]);
+    if (!audio || audio.state !== "running" || !userSettings().sound) return;
+    const start = audio.currentTime;
+    [[660, 0], [880, 0.13], [1320, 0.26]].forEach(([frequency, delay]) => {
+        const tone = audio.createOscillator();
+        const volume = audio.createGain();
+        tone.type = "triangle";
+        tone.frequency.value = frequency;
+        volume.gain.setValueAtTime(0.0001, start + delay);
+        volume.gain.exponentialRampToValueAtTime(0.35, start + delay + 0.02);
+        volume.gain.exponentialRampToValueAtTime(0.0001, start + delay + 0.25);
+        tone.connect(volume).connect(audio.destination);
+        tone.start(start + delay);
+        tone.stop(start + delay + 0.28);
+    });
+}
+
+// Whether it was this user's turn at the last update (null before the first), to notify them once when it comes.
+let wasMyTurn = null;
+
+function noticeTurn(game, view) {
+    const mine = game.phase === "Playing" && view.isMe(game.turn) && placeOf(game, game.turn)?.finished === null;
+    if (mine && wasMyTurn === false) {
+        notifyTurn();
+    }
+    wasMyTurn = mine;
+}
+
+// Confetti for each of the user's hands that has just been emptied (not for the last player, who keeps their cards).
+function noticeFinished(game, state, view) {
+    myHands(view).filter((hand) => hand.cards.length === 0 && placeOf(game, hand.seat)?.finished)
+        .forEach((hand) => celebrate(state, `${game.gameNumber}-${hand.seat}`));
+}
+
 let currentGame = null;
+let tableShown = localStorage.getItem(TABLE_SHOWN_KEY) === "1";
 
 const rich = startSessionPage("RichManPoorMan", (game, state, view) => {
     currentGame = game;
+    noticeTurn(game, view);
+    noticeFinished(game, state, view);
+    const phone = view.isPlayer && narrowScreen.matches;
     document.body.classList.toggle("observer", !view.isPlayer);
     $("status").textContent = statusText(game, state, view);
     $("rp-game").textContent = t("Game {n}", { n: game.gameNumber });
+    $("rp-top").hidden = !phone;
+    $("rp-top").replaceChildren(...(phone ? pile(game, state, view) : []));
     $("rp-hands").replaceChildren(...myHands(view).filter((h) => placeOf(game, h.seat))
         .map((hand) => handPanel(game, state, view, hand)));
     const join = joinPanel(game, state, view);
     $("rp-join").hidden = !join;
     $("rp-join").replaceChildren(...(join ?? []));
+    $("rp-toggle-table").hidden = !phone;
+    $("rp-toggle-table").textContent = t(tableShown ? "Hide table" : "Show table");
+    $("rp-table-body").hidden = phone && !tableShown;
     $("rp-pile").replaceChildren(...pile(game, state, view));
     $("rp-players").replaceChildren(...game.players.map((p) => playerItem(game, state, view, p)));
     $("next-round").hidden = !(view.isPlayer && game.phase === "GameOver");
@@ -382,3 +453,9 @@ const rich = startSessionPage("RichManPoorMan", (game, state, view) => {
 });
 
 $("next-round").addEventListener("click", () => call("NextRound", rich.sessionId, currentGame?.gameNumber ?? 0).catch(() => {}));
+$("rp-toggle-table").addEventListener("click", () => {
+    tableShown = !tableShown;
+    localStorage.setItem(TABLE_SHOWN_KEY, tableShown ? "1" : "0");
+    rich.refresh();
+});
+narrowScreen.addEventListener("change", () => rich.refresh());

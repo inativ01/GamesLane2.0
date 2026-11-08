@@ -2748,6 +2748,37 @@ a.button.is-busy {
     }
 }
 
+/* Confetti for a success (see celebrate in common.js): pieces fall from above the screen, drifting and spinning. */
+.confetti {
+    position: fixed;
+    inset: 0;
+    z-index: 40;
+    overflow: hidden;
+    pointer-events: none;
+}
+
+.confetti-piece {
+    position: absolute;
+    top: -2rem;
+    left: var(--x);
+    width: 0.55rem;
+    height: 0.9rem;
+    border-radius: 2px;
+    animation: confetti-fall 3s cubic-bezier(0.25, 0.6, 0.5, 1) both;
+}
+
+.confetti-piece:nth-child(3n) {
+    width: 0.7rem;
+    height: 0.7rem;
+    border-radius: 50%;
+}
+
+@keyframes confetti-fall {
+    to {
+        transform: translate(var(--drift), 110vh) rotate(var(--spin));
+    }
+}
+
 /* The Gang on wide screens. Players: their hand on the left, the table on the right. */
 @media (min-width: 1000px) {
     main.gang {
@@ -3041,14 +3072,55 @@ main.rich-poor .my-hand .hint {
     margin: 0.2rem 0;
 }
 
+/* Pass and Select at opposite ends, so one is not tapped instead of the other. */
 main.rich-poor .my-hand .actions {
+    justify-content: space-between;
     margin-top: 0.3rem;
 }
 
-/* The hand, from low to high left to right in every language. Each card's slot narrows when the hand is wider than
-   the panel, so the cards overlap and still show their top-left corner; the last card keeps its full width. */
+main.rich-poor .my-hand .actions .rp-select {
+    margin-inline-start: auto;
+}
+
+/* The user's turn: the hand's border glows and pulses, and its title says "Your turn". */
+main.rich-poor .my-hand.my-turn {
+    box-shadow: 0 0 0 3px var(--gold), 0 0 18px rgba(230, 169, 60, 0.75);
+    animation: rp-turn-pulse 1.2s ease-in-out infinite alternate;
+}
+
+@keyframes rp-turn-pulse {
+    to {
+        box-shadow: 0 0 0 4px var(--orange), 0 0 30px rgba(230, 120, 40, 0.9);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    main.rich-poor .my-hand.my-turn {
+        animation: none;
+    }
+}
+
+main.rich-poor .my-hand-title {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.3rem 0.6rem;
+}
+
+.rp-your-turn {
+    padding: 0.1rem 0.6rem;
+    border-radius: 999px;
+    background: var(--gold);
+    color: var(--ink);
+    font-size: 1rem;
+    font-weight: 800;
+}
+
+/* The hand, from low to high left to right in every language. The cards overlap, each showing its top-left corner,
+   and their slots narrow further when the hand is wider than the panel; the last card keeps its full width. A long
+   hand on a phone takes two rows. */
 .rp-hand .rp-cards {
-    --rp-card: clamp(0.9rem, min(4vw, 2.6vh), 1.5rem);
+    --rp-card: clamp(1.8rem, min(8vw, 5.2vh), 3rem);
     display: flex;
     flex-wrap: nowrap;
     justify-content: flex-start;
@@ -3060,7 +3132,7 @@ main.rich-poor .my-hand .actions {
 }
 
 .rp-slot {
-    flex: 0 1 calc(2.7 * var(--rp-card) + 0.25rem);
+    flex: 0 1 calc(1.6 * var(--rp-card));
     min-width: 0;
 }
 
@@ -3147,7 +3219,21 @@ main.rich-poor .my-hand .actions {
 }
 
 .rp-pile-cards .card {
-    font-size: clamp(0.9rem, min(4vw, 2.6vh), 1.6rem);
+    font-size: clamp(1.4rem, min(6vw, 4vh), 2.4rem);
+}
+
+/* On phones, the cards on the table above the hand, on the same felt as the table. */
+.rp-top {
+    min-height: 0;
+    margin: 0.3rem 0;
+    padding: 0.4rem 0.6rem;
+    border-radius: var(--radius);
+    background: radial-gradient(circle at 50% 30%, #2f6b45, #173f27);
+    color: #fff;
+}
+
+.rp-top[hidden] {
+    display: none;
 }
 
 .rp-pile-cards.faded {

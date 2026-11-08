@@ -3,7 +3,7 @@ using GamesLane.Server.Games.TheGang;
 namespace GamesLane.Server.Games.RichManPoorMan;
 
 /// <summary>
-/// Rich man, poor man for 6 to 12 players, game after game. A player is identified by a number of the caller's choice
+/// Rich man, poor man for 4 to 12 players, game after game. A player is identified by a number of the caller's choice
 /// (the session uses seat numbers); each game gives the players places from #1 (the rich man) to the last (the poor
 /// man), in <see cref="Order"/>. The first game uses the order given; each later game re-seats them by the last game's
 /// ranking, deals again, and the pairs exchange cards before playing.
@@ -13,8 +13,8 @@ namespace GamesLane.Server.Games.RichManPoorMan;
 /// Aces are thrown; the last thrower wins it and starts the next one (or, if their hand is empty, the next player in turn
 /// who still has cards).
 /// A player who is not active (who left) keeps their cards until the game ends and passes automatically; if they are to
-/// start a round, the next active player in turn starts it instead. The game ends once every active player has emptied
-/// their hand. Players who left are dropped at the next game; during the exchange, players can be added or dropped,
+/// start a round, the next active player in turn starts it instead. The game ends once only one player has cards left
+/// (they take the last place), or once every active player has emptied their hand. Players who left are dropped at the next game; during the exchange, players can be added or dropped,
 /// which deals the cards again for the new number of players.
 /// </summary>
 public interface IRichManPoorManGame

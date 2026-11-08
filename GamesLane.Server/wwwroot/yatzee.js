@@ -184,6 +184,11 @@ const yatzee = startSessionPage("Yatzee", (game, state, view) => {
         game.players.map((player) => ({ seat: player.seat, score: player.total, acting: !game.isOver && player.seat === game.turn })));
     const { status, message } = yatzeeTexts(game, state, view);
     $("status").textContent = status;
+    // Confetti for the winner, and for a player alone at the end of their game; not when the user holds every seat.
+    const solo = game.players.length === 1;
+    if (game.isOver && game.winners.some((seat) => view.isMe(seat)) && (solo || !game.players.every((p) => view.isMe(p.seat)))) {
+        celebrate(state, "over");
+    }
     $("yz-message").textContent = message;
     $("yz-message").hidden = !message;
     renderDice(game, canAct, rolling);
