@@ -830,9 +830,13 @@ const ROAD_RANKS = {
     "+": "M4 40H56M30 12V68",
 };
 
-// Ranks drawn as a plus sign and a digit side by side, in a box 100 wide: Draw Two, and Wild Draw Four's middle.
-const WIDE_ROAD_RANKS = { "+2": 2, "+4": 4 };
+// Ranks drawn as a plus sign and a digit side by side, in a box 100 wide: Draw Two, and the middle of Wild Draw Four
+// and of the +3 cards.
+const WIDE_ROAD_RANKS = { "+2": 2, "+3": 3, "+4": 4 };
 const PLUS_ROAD = "M4 40H30M17 27V53";
+
+// The slash across a crossed-out +3, from bottom left to top right of the +3's box.
+const CROSS_OUT = "M4 78L96 2";
 
 // Middles drawn as roads in their own box, one road per part (classes part-1, part-2 …, so each can have its own rim
 // color): TAKI in block letters of straight lines, TA above KI, in a 100 × 120 box (one part per letter); and a crown
@@ -981,9 +985,10 @@ function classicCard(card, text) {
 // all in the suit's color. "JOKER" is a joker. In the GamesLane style only, also "0♥" to "9♥", "S♥" (Skip),
 // "R♥" (Reverse), "+2♥", "+♥" (a big plus sign) and "TAKI♥" (TA above KI in the middle, TAKI written downwards in the
 // corners); "WILD" is drawn like the joker, and "+4" (Wild Draw Four) like it with a road "+4" in the middle and "+4"
-// across the corners; "TAKI" (no suit) like the joker with TA above KI in the middle, each letter's rim in a suit
-// color in turn; "CROWN" like the joker with a crown rimmed in gold in the middle and a gold ♛ in the corners.
-// Without text, a face-down card.
+// across the corners; "+3" like +4, and "+3X" like +3 crossed out (a red slash across the middle, a line through the
+// corners); "TAKI" (no suit) like the joker with TA above KI in the middle, each letter's rim in a suit color in turn;
+// "CROWN" like the joker with a crown rimmed in gold in the middle and a gold ♛ in the corners. Without text, a
+// face-down card.
 function cardElement(text, style = userSettings().cards) {
     const card = el("span", "card");
     if (!text) {
@@ -998,9 +1003,15 @@ function cardElement(text, style = userSettings().cards) {
     if (text === "JOKER" || text === "WILD") {
         return jokerCard(card, text, el("span", "joker-logo"));
     }
-    if (text === "+4") {
-        card.classList.add("plus-four");
-        return jokerCard(card, text, roadRank(text));
+    if (text === "+4" || text === "+3" || text === "+3X") {
+        const rank = text.slice(0, 2);
+        const road = roadRank(rank);
+        card.classList.add("plus-draw");
+        if (text === "+3X") {
+            card.classList.add("crossed");
+            road.append(svgElement("path", { class: "cross-out-edge", d: CROSS_OUT }), svgElement("path", { class: "cross-out", d: CROSS_OUT }));
+        }
+        return jokerCard(card, rank, road);
     }
     if (text === "TAKI") {
         card.classList.add("taki-joker");

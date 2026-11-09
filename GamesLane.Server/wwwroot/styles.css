@@ -1553,9 +1553,9 @@ svg.card-suit {
 .joker-word span:nth-child(4n + 3) { color: #e5a400; }
 .joker-word span:nth-child(4n + 4) { color: #1d5bd6; }
 
-/* Wild Draw Four: "+4" across the corners, as large as the +2's rank; red and green in the top left, blue and yellow
-   in the bottom right. */
-.card.plus-four .joker-word {
+/* Wild Draw Four and the +3 cards: "+4" or "+3" across the corners, as large as the +2's rank; red and green in the
+   top left, blue and yellow in the bottom right. */
+.card.plus-draw .joker-word {
     top: 0.2em;
     font-size: 0.6em;
     line-height: 1;
@@ -1563,12 +1563,28 @@ svg.card-suit {
     writing-mode: horizontal-tb;
 }
 
-.card.plus-four .joker-word.bottom {
+.card.plus-draw .joker-word.bottom {
     bottom: 0.2em;
 }
 
-.card.plus-four .joker-word.bottom span:nth-child(1) { color: #1d5bd6; }
-.card.plus-four .joker-word.bottom span:nth-child(2) { color: #e5a400; }
+.card.plus-draw .joker-word.bottom span:nth-child(1) { color: #1d5bd6; }
+.card.plus-draw .joker-word.bottom span:nth-child(2) { color: #e5a400; }
+
+/* A crossed-out +3: a red slash edged in white across the middle, and a line through the corners. */
+.card-road .cross-out-edge,
+.card-road .cross-out {
+    fill: none;
+    stroke-linecap: round;
+}
+
+.card-road .cross-out-edge { stroke: #fff; stroke-width: 15; }
+.card-road .cross-out { stroke: #d62828; stroke-width: 9; }
+
+.card.crossed .joker-word {
+    text-decoration: line-through;
+    text-decoration-color: #1b1b1b;
+    text-decoration-thickness: 0.12em;
+}
 
 /* TAKI without a suit: each letter's rim in the color of the same letter in the corners. */
 .card.taki-joker .road-rim.part-1 { stroke: #d62828; }
