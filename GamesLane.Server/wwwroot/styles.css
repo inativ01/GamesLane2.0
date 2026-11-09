@@ -3751,17 +3751,33 @@ button.yz-option:not(:disabled):hover {
     opacity: 0.6;
 }
 
-/* Final Card: on top, the piles on the felt (closed and open on the left; the color to play and the direction on the
-   right); the user's hands in boxes that glow on their turn; then the players' table, all shared with Rich man, poor
+/* Final Card: the color to play and the direction on the right of the status bar; on top, the piles centered on the
+   felt; the user's hands in boxes that glow on their turn; then the players' table, all shared with Rich man, poor
    man and Yaniv. The cards are GamesLane playing cards (.card), each color drawn as the suit of that color. */
 main.final-card {
     max-width: 980px;
 }
 
+.status-bar:has(.final-card-play:not(:empty)) .status {
+    margin-inline-start: auto;
+}
+
+.final-card-play {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-inline-start: auto;
+    font-weight: 700;
+}
+
+.final-card-play:empty {
+    display: none;
+}
+
 .final-card-piles {
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: center;
     gap: 0.6rem 1rem;
 }
 
@@ -3810,15 +3826,6 @@ button.final-card-pile:disabled {
 .final-card-pile .card.chose-green { box-shadow: 0 0 0 0.22em #23913a; }
 .final-card-pile .card.chose-blue { box-shadow: 0 0 0 0.22em #1d5bd6; }
 
-.final-card-pile-info {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 0.3rem;
-    margin-inline-start: auto;
-    font-weight: 700;
-}
-
 .final-card-color {
     padding: 0.1rem 0.6rem;
     border-radius: 999px;
@@ -3834,13 +3841,6 @@ button.final-card-pile:disabled {
 .final-card-direction {
     font-size: 1.6rem;
     line-height: 1;
-}
-
-.final-card-pending {
-    padding: 0.1rem 0.6rem;
-    border-radius: 999px;
-    background: var(--gold);
-    color: var(--ink);
 }
 
 .final-card-message {

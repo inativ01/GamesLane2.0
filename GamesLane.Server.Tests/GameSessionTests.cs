@@ -1603,14 +1603,23 @@ public class GameSessionTests
         Assert.True(session.TrySetOptions(Alice, new Dictionary<string, string>
         {
             [FinalCardOptions.End] = "Pyramid", [FinalCardOptions.Stacking] = "FourOnTwo", [FinalCardOptions.Draw] = "UntilPlayable",
-            [FinalCardOptions.WildDrawFour] = "Challenge",
+            [FinalCardOptions.WildDrawFour] = "NoColor",
         }, out var error), error);
         Assert.True(session.TryNewGame(Alice, 0, out error), error);
 
         var state = FinalCard(session);
-        Assert.Equal((FinalCardEndMode.Pyramid, FinalCardStacking.FourOnTwo, true, FinalCardWildDrawFour.Challenge),
+        Assert.Equal((FinalCardEndMode.Pyramid, FinalCardStacking.FourOnTwo, true, FinalCardWildDrawFour.NoColor),
             (state.End, state.Stacking, state.DrawUntilPlayable, state.WildDrawFour));
         Assert.All(state.Players, p => Assert.Equal(7, p.HandSize));
+    }
+
+    [Fact]
+    public void Final_card_defaults_to_the_official_rules()
+    {
+        var state = FinalCard(Started(new FinalCardSession("ABC123", UnshuffledFinalCard)));
+
+        Assert.Equal((FinalCardEndMode.Score, 500, FinalCardStacking.None, false, FinalCardWildDrawFour.Challenge),
+            (state.End, state.Target, state.Stacking, state.DrawUntilPlayable, state.WildDrawFour));
     }
 
     private static FinalCardState FinalCard(FinalCardSession session) =>

@@ -5,10 +5,10 @@ namespace GamesLane.Server.Sessions;
 
 /// <summary>
 /// A player as everyone sees them: their seat, how many cards they hold, their points (in a game to a score target), the
-/// cards they were last dealt (in a pyramid), their finishing place (in a pyramid, null until they finish), and whether
-/// they are protected: they called Final Card and hold one card.
+/// cards they were last dealt (in a pyramid), their finishing place (in a pyramid, null until they finish), whether
+/// they are protected (they called Final Card and hold one card), and the penalty cards they have to draw.
 /// </summary>
-public record FinalCardPlayerState(int Seat, int CardCount, int Score, int HandSize, int? Finished, bool Protected);
+public record FinalCardPlayerState(int Seat, int CardCount, int Score, int HandSize, int? Finished, bool Protected, int PenaltyCards);
 
 /// <summary>
 /// Something that happened in the last action: the seat it is about, what, and the card (short text), count, chosen color
@@ -24,8 +24,9 @@ public record FinalCardResultState(int Seat, int Points);
 /// <summary>
 /// Public Final Card state. <see cref="Turn"/>, <see cref="Ranking"/> and <see cref="Winner"/> are seats; <see cref="Players"/>
 /// are in seat order. <see cref="Direction"/> is 1 in seat order, -1 after a Reverse. <see cref="HasDrawn"/> tells that
-/// the seat to play has drawn a card it may play or keep, and <see cref="CanChallenge"/> that it can challenge the Wild
-/// Draw Four played on it. <see cref="Actions"/> counts the actions, so a page can tell a new one.
+/// the seat to play has drawn a card it may play or keep, <see cref="CanChallenge"/> that it can challenge the Wild
+/// Draw Four played on it, and <see cref="WaitingForPenalty"/> that it waits for other players to draw their penalty
+/// cards. <see cref="Actions"/> counts the actions, so a page can tell a new one.
 /// </summary>
 public record FinalCardState(
     FinalCardEndMode End,
@@ -43,6 +44,7 @@ public record FinalCardState(
     int PendingDraw,
     bool HasDrawn,
     bool CanChallenge,
+    bool WaitingForPenalty,
     IReadOnlyList<FinalCardPlayerState> Players,
     IReadOnlyList<FinalCardEventState> Events,
     int Actions,
@@ -129,7 +131,10 @@ public class FinalCardSession(string id, Action<FinalCardCard[]>? shuffle = null
 
     /// <inheritdoc />
     protected override IEnumerable<int> AwaitedSeats =>
-        _game is { Phase: FinalCardPhase.Playing } game ? [GameSeats[game.Turn]] : [];
+        _game is { Phase: FinalCardPhase.Playing } game
+            ? Enumerable.Range(0, game.Players).Where(p => game.PenaltyCards(p) > 0 || (p == game.Turn && !game.IsWaitingForPenalty))
+                .Select(p => GameSeats[p])
+            : [];
 
     /// <inheritdoc />
     protected override object GetGameState()
@@ -153,13 +158,15 @@ public class FinalCardSession(string id, Action<FinalCardCard[]>? shuffle = null
             game.PendingDraw,
             game.DrawnCard is not null,
             game.CanChallenge,
+            game.IsWaitingForPenalty,
             [.. Enumerable.Range(0, game.Players).Select(p => new FinalCardPlayerState(
                 seats[p],
                 game.Hand(p).Count,
                 game.Scores[p],
                 game.HandSize(p),
                 game.Rules.End == FinalCardEndMode.Pyramid && ranking.Contains(p) ? ranking.IndexOf(p) + 1 : null,
-                game.CalledFinalCard(p) && game.Hand(p).Count == 1))],
+                game.CalledFinalCard(p) && game.Hand(p).Count == 1,
+                game.PenaltyCards(p)))],
             [.. game.Events.Select(e => new FinalCardEventState(
                 seats[e.Player], e.Kind, e.Card?.ToString(), e.Count, e.Color, e.By is { } by ? seats[by] : null))],
             game.Actions,

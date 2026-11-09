@@ -53,8 +53,20 @@ public interface IFinalCardGame
     /// <summary>Whether a player has called Final Card for their last card, which protects them while they hold it.</summary>
     bool CalledFinalCard(int player);
 
-    /// <summary>Whether a player holds one card without having called Final Card, so another player can catch them.</summary>
+    /// <summary>
+    /// Whether a player holds one card without having called Final Card (and has no penalty cards to draw), so another
+    /// player can catch them.
+    /// </summary>
     bool CanBeCaught(int player);
+
+    /// <summary>
+    /// The penalty cards a player has to draw (from a Draw Two or Wild Draw Four that cannot be stacked, a challenge, or
+    /// being caught without calling Final Card). They draw them with <see cref="TryDraw"/>, before anything else.
+    /// </summary>
+    int PenaltyCards(int player);
+
+    /// <summary>Whether the turn has passed to the player to play while another player still has penalty cards to draw: they wait for them.</summary>
+    bool IsWaitingForPenalty { get; }
 
     /// <summary>
     /// Whether the player to play can challenge the Wild Draw Four just played on them (with the challenge rule; not one
@@ -87,8 +99,10 @@ public interface IFinalCardGame
     bool TryPlay(int player, FinalCardCard card, FinalCardColor? color, out string? error);
 
     /// <summary>
-    /// <paramref name="player"/>, whose turn it is, draws: the cards to draw from a stack, or else one card (or, with the
-    /// option, cards until one can be played). If the card drawn can be played they may play it, otherwise the turn passes.
+    /// <paramref name="player"/> draws. With penalty cards to draw (see <see cref="PenaltyCards"/>), they draw them all, at any
+    /// time during a hand; the turn does not change. Otherwise, on their turn: the cards to draw from a stack, or else one
+    /// card (or, with the option, cards until one can be played). If the card drawn can be played they may play it,
+    /// otherwise the turn passes.
     /// </summary>
     bool TryDraw(int player, out string? error);
 
@@ -97,16 +111,16 @@ public interface IFinalCardGame
 
     /// <summary>
     /// <paramref name="player"/>, whose turn it is, challenges the Wild Draw Four played on them (see
-    /// <see cref="CanChallenge"/>). If its player held a card of the color that was to play, they draw the cards to draw
-    /// and <paramref name="player"/> plays on; otherwise <paramref name="player"/> draws them and 2 more, and misses their
-    /// turn.
+    /// <see cref="CanChallenge"/>). If its player held a card of the color that was to play, they have the cards to draw as
+    /// penalty cards and <paramref name="player"/> plays on; otherwise <paramref name="player"/> has them and 2 more as
+    /// penalty cards, and misses their turn.
     /// </summary>
     bool TryChallenge(int player, out string? error);
 
     /// <summary>
     /// <paramref name="player"/> calls Final Card, at any time during a hand. It protects them if they hold one card, or two on
     /// their turn with one they can play, and are not protected yet; and every other player who can be caught (see
-    /// <see cref="CanBeCaught"/>) draws 2 cards. Refused when it does neither.
+    /// <see cref="CanBeCaught"/>) has 2 penalty cards to draw. Refused when it does neither.
     /// </summary>
     bool TryCallFinalCard(int player, out string? error);
 

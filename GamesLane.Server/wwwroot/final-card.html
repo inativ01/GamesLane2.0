@@ -35,6 +35,8 @@
             <button id="play-again" type="button" class="small" hidden data-i18n>Play again</button>
             <button id="to-lobby" type="button" class="secondary small" hidden data-i18n>Back to the lobby</button>
         </span>
+        <!-- On the right: the color to play and the direction of play. -->
+        <span id="final-card-play" class="final-card-play"></span>
         <ul id="scores" class="score-row"></ul>
     </div>
 </div>
@@ -64,7 +66,7 @@
         </div>
 
         <div id="game-screen" hidden>
-            <!-- On top for everyone: the closed and open piles, the color and direction of play, and what just happened. -->
+            <!-- On top for everyone: the closed and open piles, and what just happened. -->
             <section class="rp-top" aria-label="Piles" data-i18n-attr="aria-label">
                 <div id="final-card-piles" class="final-card-piles"></div>
                 <p id="final-card-message" class="final-card-message" hidden></p>

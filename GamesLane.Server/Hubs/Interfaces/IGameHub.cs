@@ -275,8 +275,9 @@ public interface IGameHub
     Task PlayCard(string sessionId, int seat, string? card, FinalCardColor? color);
 
     /// <summary>
-    /// Final Card: <paramref name="seat"/>, which the caller must hold, draws the cards stacked for it, or else a card (or, with
-    /// the option, cards until it can play). If it can play the card drawn, it plays or keeps it; otherwise its turn ends.
+    /// Final Card: <paramref name="seat"/>, which the caller must hold, draws its penalty cards (at any time during a hand), or
+    /// else on its turn the cards stacked for it, or a card (or, with the option, cards until it can play). If it can play
+    /// the card drawn, it plays or keeps it; otherwise its turn ends.
     /// </summary>
     Task DrawCard(string sessionId, int seat);
 
@@ -287,15 +288,15 @@ public interface IGameHub
 
     /// <summary>
     /// Final Card, with the challenge option: <paramref name="seat"/>, which the caller must hold and whose turn it is,
-    /// challenges the Wild Draw Four played on it. If its player held a card of the color that was to play, they draw
-    /// the cards instead; otherwise <paramref name="seat"/> draws them and 2 more, and misses its turn.
+    /// challenges the Wild Draw Four played on it. If its player held a card of the color that was to play, they have the
+    /// cards as penalty cards instead; otherwise <paramref name="seat"/> has them and 2 more, and misses its turn.
     /// </summary>
     Task Challenge(string sessionId, int seat);
 
     /// <summary>
     /// Final Card: <paramref name="seat"/>, which the caller must hold, calls Final Card, at any time during a hand: it protects
     /// the seat on its final card (or on its turn before playing its second to last), and every other seat holding one card
-    /// unprotected draws 2 cards.
+    /// unprotected has 2 penalty cards to draw.
     /// </summary>
     Task CallFinalCard(string sessionId, int seat);
 

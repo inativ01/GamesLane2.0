@@ -35,14 +35,29 @@ public class FinalCardGameTests
     }
 
     [Theory]
-    [InlineData("RS", 1, 1, 7)]
-    [InlineData("RR", 2, -1, 7)]
-    [InlineData("R+2", 1, 1, 9)]
-    public void An_action_card_turned_up_acts_on_the_first_player(string turnedUp, int turn, int direction, int firstHand)
+    [InlineData("RS", 1, 1, 0)]
+    [InlineData("RR", 2, -1, 0)]
+    [InlineData("R+2", 1, 1, 2)]
+    public void An_action_card_turned_up_acts_on_the_first_player(string turnedUp, int turn, int direction, int penalty)
     {
         var game = Deal(null, turnedUp, "", Reds, Reds, "B1 B2 B3 B4 B5 B6 B7");
 
-        Assert.Equal((turn, direction, firstHand), (game.Turn, game.Direction, game.Hand(0).Count));
+        Assert.Equal((turn, direction, 7, penalty), (game.Turn, game.Direction, game.Hand(0).Count, game.PenaltyCards(0)));
+    }
+
+    [Fact]
+    public void A_draw_two_turned_up_waits_for_the_first_player_to_draw_their_penalty_cards()
+    {
+        var game = Deal(null, "R+2", "", Reds, Reds);
+        Assert.True(game.IsWaitingForPenalty);
+        Assert.Empty(game.Playable(1));
+        AssertRefused(game.TryPlay(1, Card("R2"), null, out var error), error, "Wait until the penalty cards are drawn.");
+
+        Assert.True(game.TryDraw(0, out error), error);
+
+        Assert.Equal(new FinalCardEvent(0, FinalCardEventKind.Drew, Count: 2), game.Events.Single());
+        Assert.Equal((9, 0, 1, false), (game.Hand(0).Count, game.PenaltyCards(0), game.Turn, game.IsWaitingForPenalty));
+        Assert.True(game.TryPlay(1, Card("R2"), null, out error), error);
     }
 
     [Fact]
@@ -72,7 +87,7 @@ public class FinalCardGameTests
     [Fact]
     public void A_wild_card_sets_the_color_and_a_wild_draw_four_needs_no_card_of_the_color()
     {
-        var game = Deal(null, "R5", "G5", "W W+4 R1 B1 G1 Y1 B2", Reds);
+        var game = Deal(new FinalCardRules(WildDrawFour: FinalCardWildDrawFour.NoColor), "R5", "G5", "W W+4 R1 B1 G1 Y1 B2", Reds);
 
         AssertRefused(game.TryPlay(0, Card("W+4"), FinalCardColor.Blue, out var error), error,
             "You can play a Wild Draw Four only when you have no card of the color to play.");
@@ -137,10 +152,31 @@ public class FinalCardGameTests
 
         Assert.True(game.TryCallFinalCard(1, out error), error);
 
-        Assert.Equal(3, game.Hand(0).Count);
+        Assert.Equal((1, 2), (game.Hand(0).Count, game.PenaltyCards(0)));
         Assert.Equal(new FinalCardEvent(0, FinalCardEventKind.Caught, Count: 2, By: 1), game.Events[^1]);
         Assert.False(game.CanBeCaught(0));
         AssertRefused(game.TryCallFinalCard(1, out error), error, "Nobody to catch.");
+        AssertRefused(game.TryPlay(0, Card("B5"), null, out error), error, "Draw your penalty cards first.");
+
+        Assert.True(game.TryDraw(0, out error), error);
+        Assert.Equal((3, 0, 0), (game.Hand(0).Count, game.PenaltyCards(0), game.Turn));
+    }
+
+    [Fact]
+    public void A_player_caught_during_another_players_turn_does_not_stop_it_but_the_next_turn_waits_for_them()
+    {
+        var game = DownToOne();
+        Assert.True(game.TryCallFinalCard(1, out var error), error);
+        Assert.Equal(2, game.PenaltyCards(0));
+        Assert.False(game.IsWaitingForPenalty);
+
+        Assert.True(game.TryPlay(1, Card("G0"), null, out error), error);
+
+        Assert.Equal((0, true), (game.Turn, game.IsWaitingForPenalty));
+        Assert.Empty(game.Playable(0));
+        Assert.True(game.TryDraw(0, out error), error);
+        Assert.Equal((false, 3, 0), (game.IsWaitingForPenalty, game.Hand(0).Count, game.Turn));
+        Assert.True(game.TryDraw(0, out error), error);
     }
 
     [Fact]
@@ -175,7 +211,7 @@ public class FinalCardGameTests
 
         Assert.Equal(new FinalCardEvent(1, FinalCardEventKind.CalledFinalCard), game.Events[^2]);
         Assert.Equal(new FinalCardEvent(0, FinalCardEventKind.Caught, Count: 2, By: 1), game.Events[^1]);
-        Assert.Equal((3, 1), (game.Hand(0).Count, game.Hand(1).Count));
+        Assert.Equal((1, 1, 2), (game.Hand(0).Count, game.Hand(1).Count, game.PenaltyCards(0)));
         Assert.True(game.CalledFinalCard(1));
     }
 
@@ -295,7 +331,8 @@ public class FinalCardGameTests
         Assert.All(game.Scores.Where((_, p) => p != game.Winner), score => Assert.True(score < 200));
     }
 
-    // Plays to the end: the player to play plays their first card they can (calling Final Card first), otherwise draws.
+    // Plays to the end: a player with penalty cards draws them; otherwise the player to play plays their first card they
+    // can (calling Final Card first), or draws.
     private static void PlayOut(FinalCardGame game, Action? afterEach = null)
     {
         for (var actions = 0; actions < 20000 && !game.IsOver; actions++)
@@ -304,6 +341,13 @@ public class FinalCardGameTests
             if (game.Phase == FinalCardPhase.HandOver)
             {
                 Assert.True(game.TryNextHand(game.HandNumber, out error), error);
+                continue;
+            }
+
+            if (Enumerable.Range(0, game.Players).FirstOrDefault(p => game.PenaltyCards(p) > 0, -1) is var owing and >= 0)
+            {
+                Assert.True(game.TryDraw(owing, out error), error);
+                afterEach?.Invoke();
                 continue;
             }
 
@@ -332,13 +376,33 @@ public class FinalCardGameTests
     [Fact]
     public void A_wild_draw_four_makes_the_next_player_draw_4_and_miss_their_turn()
     {
-        var game = Deal(null, "R5", "", "W+4 B1 B2 B3 B4 B6 B7", Reds);
+        var game = Deal(new FinalCardRules(WildDrawFour: FinalCardWildDrawFour.NoColor), "R5", "", "W+4 B1 B2 B3 B4 B6 B7", Reds);
 
         Assert.True(game.TryPlay(0, Card("W+4"), FinalCardColor.Yellow, out var error), error);
 
-        Assert.Equal((11, 0, FinalCardColor.Yellow), (game.Hand(1).Count, game.Turn, game.Color));
-        Assert.Equal([FinalCardEventKind.Played, FinalCardEventKind.Drew, FinalCardEventKind.Skipped], game.Events.Select(e => e.Kind));
-        Assert.Equal(new FinalCardEvent(1, FinalCardEventKind.Drew, Count: 4), game.Events[1]);
+        Assert.Equal((7, 4, 0, FinalCardColor.Yellow), (game.Hand(1).Count, game.PenaltyCards(1), game.Turn, game.Color));
+        Assert.Equal([FinalCardEventKind.Played, FinalCardEventKind.Penalty, FinalCardEventKind.Skipped], game.Events.Select(e => e.Kind));
+        Assert.Equal(new FinalCardEvent(1, FinalCardEventKind.Penalty, Count: 4), game.Events[1]);
+        Assert.True(game.IsWaitingForPenalty);
+        AssertRefused(game.TryDraw(0, out error), error, "Wait until the penalty cards are drawn.");
+        AssertRefused(game.TryPlay(1, Card("R2"), null, out error), error, "Draw your penalty cards first.");
+
+        Assert.True(game.TryDraw(1, out error), error);
+
+        Assert.Equal((11, 0, 0, false), (game.Hand(1).Count, game.PenaltyCards(1), game.Turn, game.IsWaitingForPenalty));
+        Assert.True(game.TryDraw(0, out error), error);
+    }
+
+    [Fact]
+    public void Penalty_cards_not_drawn_when_the_hand_ends_are_drawn_and_count_for_the_winner()
+    {
+        var game = DownToTwo(new FinalCardRules(FinalCardEndMode.Score), final: "GS G+2");
+        Assert.True(game.TryPlay(0, Card("GS"), null, out var error), error);
+
+        Assert.True(game.TryPlay(0, Card("G+2"), null, out error), error);
+
+        Assert.Equal((FinalCardPhase.HandOver, 9, 0), (game.Phase, game.Hand(1).Count, game.PenaltyCards(1)));
+        Assert.Equal(126 + game.Hand(1).Skip(7).Sum(c => c.Points), game.LastResult!.Points);
     }
 
     [Fact]
@@ -412,7 +476,7 @@ public class FinalCardGameTests
 
         Assert.True(game.TryPlay(0, Card("W+4"), FinalCardColor.Blue, out var error), error);
 
-        Assert.Equal((11, 0), (game.Hand(1).Count, game.Turn));
+        Assert.Equal((7, 4, 0), (game.Hand(1).Count, game.PenaltyCards(1), game.Turn));
     }
 
     [Fact]
@@ -426,8 +490,11 @@ public class FinalCardGameTests
         Assert.True(game.TryChallenge(1, out error), error);
 
         Assert.Equal(new FinalCardEvent(1, FinalCardEventKind.ChallengeWon, Count: 4, By: 0), game.Events.Single());
-        Assert.Equal((10, 7, 1, 0), (game.Hand(0).Count, game.Hand(1).Count, game.Turn, game.PendingDraw));
+        Assert.Equal((6, 4, 7, 1, 0), (game.Hand(0).Count, game.PenaltyCards(0), game.Hand(1).Count, game.Turn, game.PendingDraw));
         Assert.False(game.CanChallenge);
+        Assert.False(game.IsWaitingForPenalty);
+        Assert.True(game.TryDraw(0, out error), error);
+        Assert.Equal((10, 1), (game.Hand(0).Count, game.Turn));
     }
 
     [Fact]
@@ -440,7 +507,8 @@ public class FinalCardGameTests
 
         Assert.Equal([new FinalCardEvent(1, FinalCardEventKind.ChallengeLost, Count: 6, By: 0), new FinalCardEvent(1, FinalCardEventKind.Skipped)],
             game.Events);
-        Assert.Equal((6, 13, 0, 0), (game.Hand(0).Count, game.Hand(1).Count, game.Turn, game.PendingDraw));
+        Assert.Equal((6, 7, 6, 0, 0), (game.Hand(0).Count, game.Hand(1).Count, game.PenaltyCards(1), game.Turn, game.PendingDraw));
+        Assert.True(game.IsWaitingForPenalty);
     }
 
     [Fact]
@@ -467,7 +535,7 @@ public class FinalCardGameTests
         Assert.True(last.TryPlay(0, Card("GS"), null, out error), error);
         Assert.True(last.TryPlay(0, Card("W+4"), FinalCardColor.Blue, out error), error);
         Assert.False(last.CanChallenge);
-        Assert.Equal((11, 0), (last.Hand(1).Count, last.PendingDraw));
+        Assert.Equal((7, 4, 0), (last.Hand(1).Count, last.PenaltyCards(1), last.PendingDraw));
     }
 
     private static readonly FinalCardRules Challenging = new(WildDrawFour: FinalCardWildDrawFour.Challenge);

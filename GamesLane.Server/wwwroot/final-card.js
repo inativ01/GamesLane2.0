@@ -58,8 +58,10 @@ function about(state, view, seat, you, other, values = {}) {
     return view.isMe(seat) && view.mySeats.length === 1 ? t(you, values) : t(other, { name: playerName(state, seat), ...values });
 }
 
+const drawText = (n) => (n > 1 ? t("Draw {n} cards", { n }) : t("Draw a card"));
+
 // The status line: 👉 when the viewer must act (the status bar then turns gold), ⏳ while they wait, 🏁 after a hand and
-// 🏆 for the winner.
+// 🏆 for the winner. Penalty cards to draw come first.
 function statusText(game, state, view) {
     if (game.phase === "GameOver") {
         return game.end === "Score"
@@ -70,6 +72,14 @@ function statusText(game, state, view) {
         const result = game.lastResult;
         return `🏁 ${about(state, view, result.seat, "You win hand {n} and score {points} points.", "{name} wins hand {n} and scores {points} points.",
             { n: game.handNumber, points: result.points })}`;
+    }
+    const owing = game.players.filter((p) => p.penaltyCards > 0);
+    const mine = owing.find((p) => view.isMe(p.seat));
+    if (mine) {
+        return `👉 ${view.mySeats.length > 1 ? `${playerName(state, mine.seat)}: ` : ""}${drawText(mine.penaltyCards)}`;
+    }
+    if (game.waitingForPenalty) {
+        return `⏳ ${t("Waiting for {name} to draw cards", { name: owing.map((p) => playerName(state, p.seat)).join(", ") })}`;
     }
     if (!view.isMe(game.turn)) {
         return `⏳ ${t("Waiting for {name}", { name: playerName(state, game.turn) })}`;
@@ -95,6 +105,8 @@ function eventText(game, state, view, e) {
             return e.count === 0 ? t("There are no cards left to draw.")
                 : e.count === 1 ? say("You drew a card.", "{name} drew a card.")
                     : say("You drew {n} cards.", "{name} drew {n} cards.", { n: e.count });
+        case "Penalty":
+            return say("You must draw {n} cards.", "{name} must draw {n} cards.", { n: e.count });
         case "Skipped":
             return say("You miss your turn.", "{name} misses a turn.");
         case "Passed":
@@ -103,9 +115,9 @@ function eventText(game, state, view, e) {
             return say("You called Final Card!", "{name} called Final Card!");
         case "Caught": {
             const values = { by: playerName(state, e.bySeat), name: playerName(state, e.seat), n: e.count };
-            return view.isMe(e.seat) && view.mySeats.length === 1 ? t("{by} caught you without Final Card: you drew {n} cards.", values)
-                : view.isMe(e.bySeat) && view.mySeats.length === 1 ? t("You caught {name} without Final Card: {name} drew {n} cards.", values)
-                    : t("{by} caught {name} without Final Card: {name} drew {n} cards.", values);
+            return view.isMe(e.seat) && view.mySeats.length === 1 ? t("{by} caught you without Final Card: you must draw {n} cards.", values)
+                : view.isMe(e.bySeat) && view.mySeats.length === 1 ? t("You caught {name} without Final Card: {name} must draw {n} cards.", values)
+                    : t("{by} caught {name} without Final Card: {name} must draw {n} cards.", values);
         }
         case "ChallengeWon":
             return say("You challenged the Wild Draw Four and were right: {by} draws {n} cards.",
@@ -124,8 +136,15 @@ function eventText(game, state, view, e) {
 
 const send = (method, ...args) => call(method, page.sessionId, ...args).catch(() => {});
 
-// The top of the table, for everyone: the closed pile (face down, with its count; tap it to draw on your turn) and the
-// open pile on the left; the color to play, the direction of play and any cards stacked for the next player on the right.
+// Whether a seat can draw now: its penalty cards at any time during a hand, otherwise on its turn before it has drawn.
+function canDraw(game, seat) {
+    const player = playerOf(game, seat);
+    return game.phase === "Playing" && (player.penaltyCards > 0
+        || (game.turn === seat && !game.hasDrawn && !game.waitingForPenalty));
+}
+
+// The top of the table, for everyone, centered: the closed pile (face down, with its count; tap it to draw) and the open
+// pile.
 function renderPiles(game, view) {
     const pile = (face, label, title) => {
         const button = el("button", "final-card-pile", face, el("span", "final-card-pile-label", label));
@@ -134,23 +153,22 @@ function renderPiles(game, view) {
         button.setAttribute("aria-label", title);
         return button;
     };
+    const drawer = view.mySeats.find((seat) => playerOf(game, seat) && canDraw(game, seat));
     const closed = pile(cardElement(), String(game.drawPile), t("Draw pile: {n} cards", { n: game.drawPile }));
-    closed.disabled = !(game.phase === "Playing" && view.isMe(game.turn) && !game.hasDrawn);
-    closed.addEventListener("click", () => send("DrawCard", game.turn));
+    closed.disabled = drawer === undefined;
+    closed.addEventListener("click", () => send("DrawCard", drawer));
     const open = pile(finalCard(game.topCard, game.color), t("Open pile"), cardName(game.topCard));
     open.disabled = true;
+    $("final-card-piles").replaceChildren(el("div", "final-card-pile-cards", closed, open));
+}
 
+// In the status bar, on the right: the color to play and the direction of play.
+function renderPlay(game) {
     const color = el("span", `final-card-color ${game.color.toLowerCase()}`, t(game.color));
     color.title = t("Color to play");
     const direction = el("span", "final-card-direction", game.direction === 1 ? "↻" : "↺");
     direction.title = t(game.direction === 1 ? "Play goes in seat order" : "Play goes in reverse seat order");
-    const info = el("div", "final-card-pile-info", color, direction);
-    if (game.pendingDraw > 0) {
-        const pending = el("span", "final-card-pending", `+${game.pendingDraw}`);
-        pending.title = t("Cards to draw: {n}", { n: game.pendingDraw });
-        info.append(pending);
-    }
-    $("final-card-piles").replaceChildren(el("div", "final-card-pile-cards", closed, open), info);
+    $("final-card-play").replaceChildren(color, direction);
 }
 
 // A player in the table: name, 🛡 while protected (called Final Card on their final card), their place in a pyramid (or
@@ -184,12 +202,14 @@ function playerItem(game, state, view, player) {
 let picking = null;
 let currentGame = null;
 
-// One of the user's hands, in a box that glows on its turn: its cards (those that can be played are buttons), the colors
-// to choose for a wild card, and under them Draw (always shown, enabled on its turn) and Keep the card on the left, and
-// Final Card! on the right (always shown during a hand).
+// One of the user's hands, in a box that glows on its turn or with penalty cards to draw: its cards (those that can be
+// played are buttons), the colors to choose for a wild card, and under them Draw (always shown, enabled when it can draw,
+// with the number of cards to draw) and Keep the card on the left, and Final Card! on the right (always shown during a
+// hand).
 function handPanel(game, state, view, hand) {
     const me = playerOf(game, hand.seat);
-    const myTurn = game.phase === "Playing" && game.turn === hand.seat;
+    const myTurn = game.phase === "Playing" && game.turn === hand.seat && !game.waitingForPenalty;
+    const glows = myTurn || (game.phase === "Playing" && me.penaltyCards > 0);
     const choosing = picking?.seat === hand.seat && hand.playable.includes(picking.card) ? picking.card : null;
     const drawn = myTurn && game.hasDrawn ? hand.playable[0] : null;
 
@@ -221,7 +241,7 @@ function handPanel(game, state, view, hand) {
 
     const title = view.mySeats.length > 1 ? playerName(state, hand.seat) : t("Your cards");
     const head = el("div", "my-hand-title", title, ...(myTurn ? [el("span", "rp-your-turn", `👉 ${t("Your turn")}`)] : []));
-    const panel = el("div", `my-hand rp-hand final-card-hand${myTurn ? " my-turn" : ""}`, head, el("div", "card-row rp-cards", ...slots));
+    const panel = el("div", `my-hand rp-hand final-card-hand${glows ? " my-turn" : ""}`, head, el("div", "card-row rp-cards", ...slots));
     const buttons = el("div", "actions final-card-actions");
     const button = (text, onClick, className = "") => {
         const b = el("button", className, text);
@@ -258,9 +278,9 @@ function handPanel(game, state, view, hand) {
     if (me.finished !== null) {
         panel.append(el("p", "hint", t("You finished in place {n}!", { n: me.finished })));
     }
-    const draw = button(myTurn && game.pendingDraw > 0 ? t("Draw {n} cards", { n: game.pendingDraw }) : t("Draw a card"),
-        () => send("DrawCard", hand.seat), "secondary");
-    draw.disabled = !myTurn || game.hasDrawn;
+    const draw = button(drawText(me.penaltyCards > 0 ? me.penaltyCards : myTurn ? game.pendingDraw : 1),
+        () => send("DrawCard", hand.seat), me.penaltyCards > 0 ? "" : "secondary");
+    draw.disabled = !canDraw(game, hand.seat);
     if (drawn) {
         button(t("Keep the card"), () => send("PassAfterDraw", hand.seat), "secondary");
     }
@@ -289,9 +309,8 @@ const page = startSessionPage("FinalCard", (game, state, view) => {
     if (game.phase !== "Playing") {
         picking = null;
     }
-    showScores(state, view, game.end === "Score" ? [t("Hand {n}", { n: game.handNumber }), t("To {n} points", { n: game.target })] : [],
-        game.end === "Score" ? game.players.map((p) => ({ seat: p.seat, score: p.score, acting: game.phase === "Playing" && p.seat === game.turn })) : []);
     $("status").textContent = statusText(game, state, view);
+    renderPlay(game);
     noticeSuccess(game, state, view);
     const message = game.events.map((e) => eventText(game, state, view, e)).filter(Boolean).join(" ");
     $("final-card-message").textContent = message;
