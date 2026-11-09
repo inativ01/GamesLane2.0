@@ -80,7 +80,7 @@ function checker(seat, x, y, label = "") {
 }
 
 // Wood grain for the board: noise stretched along the planks (across for the frame, along the points for the playing
-// field), drawn as darker streaks on the wood's colour.
+// field), drawn as darker streaks on the wood's color.
 function woodDefs() {
     const grain = (id, frequency, strength) => svg("filter", { id, x: 0, y: 0, width: "100%", height: "100%" },
         svg("feTurbulence", { type: "fractalNoise", baseFrequency: frequency, numOctaves: 3, seed: 7, result: "noise" }),
@@ -152,7 +152,7 @@ function cube(game, mayDouble) {
     return group;
 }
 
-// A coloured overlay on black's point p (1 to 24), on the bar (25) or on the tray (0).
+// A colored overlay on black's point p (1 to 24), on the bar (25) or on the tray (0).
 function highlight(p, className) {
     if (p === BAR) {
         return svg("rect", { x: BAR_X - BAR_W / 2 + 4, y: FRAME, width: BAR_W - 8, height: HEIGHT - 2 * FRAME, class: className });
@@ -449,7 +449,7 @@ function backgammonTexts(game, state, view) {
     return { status, message };
 }
 
-// The score row in the status bar: the match length, the game number and the Crawford game, then each player's colour,
+// The score row in the status bar: the match length, the game number and the Crawford game, then each player's color,
 // name, match score and pip count, with the seat to act outlined.
 function showScoreboard(game, state, view) {
     const acting = game.phase === "GameOver" || game.phase === "MatchOver" ? null : actingSeat(game);

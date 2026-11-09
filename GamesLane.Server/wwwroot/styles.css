@@ -1,4 +1,4 @@
-/* Colours taken from the GamesLane logo: gold, orange and dark red on black. */
+/* Colors taken from the GamesLane logo: gold, orange and dark red on black. */
 :root {
     --bg: #f5f1ea;
     --surface: #ffffff;
@@ -1164,7 +1164,7 @@ button.icon-button {
     line-height: 1;
 }
 
-/* The score row, on its own line under the status, in the status bar's colour: the match facts (round, game, draws) and
+/* The score row, on its own line under the status, in the status bar's color: the match facts (round, game, draws) and
    a chip per player with their score; the seat to act is outlined. */
 .score-row {
     display: flex;
@@ -1383,7 +1383,7 @@ button.icon-button {
     vertical-align: middle;
 }
 
-/* Four suit colours: red hearts, green clubs, yellow diamonds, blue spades. */
+/* Four suit colors: red hearts, green clubs, yellow diamonds, blue spades. */
 .card.hearts { color: #d62828; }
 .card.clubs { color: #23913a; }
 .card.diamonds { color: #e5a400; }
@@ -1438,7 +1438,7 @@ svg.card-suit {
     transform: translate(-50%, -50%);
 }
 
-/* The rank as a script road, as in the logo's L: a thick rim in the suit's colour (in place of the logo's gold), black
+/* The rank as a script road, as in the logo's L: a thick rim in the suit's color (in place of the logo's gold), black
    asphalt with a dashed yellow centre line, and curled ends. */
 .card-road {
     position: relative;
@@ -1479,7 +1479,7 @@ svg.card-suit {
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3), inset 0 0 0 1px rgba(0, 0, 0, 0.1);
 }
 
-/* A joker: a faint octagon in the four suit colours with a large GamesLane logo on it, and JOKER written downwards in
+/* A joker: a faint octagon in the four suit colors with a large GamesLane logo on it, and JOKER written downwards in
    the top left and (upside down) bottom right corners, so it shows when cards are stacked. */
 .card.joker {
     color: #1b1b1b;
@@ -1527,7 +1527,7 @@ svg.card-suit {
     transform: rotate(180deg);
 }
 
-/* Each letter of JOKER in one of the four suit colours, in turn. */
+/* Each letter of JOKER in one of the four suit colors, in turn. */
 .joker-word span:nth-child(4n + 1) { color: #d62828; }
 .joker-word span:nth-child(4n + 2) { color: #23913a; }
 .joker-word span:nth-child(4n + 3) { color: #e5a400; }
@@ -2485,6 +2485,34 @@ button.lobby-options::after {
     flex: 1;
 }
 
+/* The game's options as "Game options:" and a bulleted list, one per line, aligned to the start: on the session lobby's
+   options button, and under the game screen during a game (#game-options), in every game. */
+.options-title {
+    display: block;
+    font-weight: 700;
+}
+
+.options-lines {
+    margin: 0.2rem 0 0;
+    padding-inline-start: 1.2rem;
+    font-weight: 400;
+    text-align: start;
+}
+
+.game-options {
+    margin: 0.4rem 0;
+    padding: 0.5rem 0.75rem;
+    border-radius: var(--radius);
+    background: var(--surface-soft);
+    color: var(--ink);
+    font-size: 0.85rem;
+    text-align: start;
+}
+
+.game-options[hidden] {
+    display: none;
+}
+
 .option-list {
     margin: 0;
     padding: 0;
@@ -2557,7 +2585,7 @@ button.lobby-options::after {
     gap: 0.1rem;
 }
 
-/* A choice's picture, e.g. a card's, before the text. The tick box is hidden: the highlighted row and the coloured (or
+/* A choice's picture, e.g. a card's, before the text. The tick box is hidden: the highlighted row and the colored (or
    greyed) picture show whether the choice is on. It still works with the keyboard. */
 .option-picture {
     position: relative;
@@ -2599,6 +2627,12 @@ button.lobby-options::after {
 
 .option-prefs {
     justify-content: center;
+}
+
+/* The options window's note and error take no room until they have something to say, so Apply and Cancel sit right
+   under the options. */
+.dialog form:has(.option-list) > p:empty {
+    display: none;
 }
 
 /* Short choices without explanations (e.g. 0 to 3) sit side by side. */
@@ -3255,7 +3289,8 @@ main.yaniv:has(#game-screen:not([hidden])) {
 }
 
 main.rich-poor .my-hand,
-main.yaniv .my-hand {
+main.yaniv .my-hand,
+main.final-card .my-hand {
     margin: 0.3rem 0;
     padding: 0.5rem 0.75rem;
 }
@@ -3276,7 +3311,8 @@ main.rich-poor .my-hand .actions .rp-select {
 
 /* The user's turn: the hand's border glows and pulses, and its title says "Your turn". */
 main.rich-poor .my-hand.my-turn,
-main.yaniv .my-hand.my-turn {
+main.yaniv .my-hand.my-turn,
+main.final-card .my-hand.my-turn {
     box-shadow: 0 0 0 3px var(--gold), 0 0 18px rgba(230, 169, 60, 0.75);
     animation: rp-turn-pulse 1.2s ease-in-out infinite alternate;
 }
@@ -3289,13 +3325,15 @@ main.yaniv .my-hand.my-turn {
 
 @media (prefers-reduced-motion: reduce) {
     main.rich-poor .my-hand.my-turn,
-    main.yaniv .my-hand.my-turn {
+    main.yaniv .my-hand.my-turn,
+    main.final-card .my-hand.my-turn {
         animation: none;
     }
 }
 
 main.rich-poor .my-hand-title,
-main.yaniv .my-hand-title {
+main.yaniv .my-hand-title,
+main.final-card .my-hand-title {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
@@ -3713,76 +3751,71 @@ button.yz-option:not(:disabled):hover {
     opacity: 0.6;
 }
 
-/* Final Card: the table (draw pile, discard pile, colour to play and the players) on dark felt, and the user's hands
-   below. The cards are GamesLane playing cards (.card), each colour drawn as the suit of that colour. */
+/* Final Card: on top, the piles on the felt (closed and open on the left; the color to play and the direction on the
+   right); the user's hands in boxes that glow on their turn; then the players' table, all shared with Rich man, poor
+   man and Yaniv. The cards are GamesLane playing cards (.card), each color drawn as the suit of that color. */
 main.final-card {
     max-width: 980px;
 }
 
-.final-card-pile .card,
-.final-card-cards .card {
-    font-size: clamp(1rem, min(4.2vw, 3vh), 1.5rem);
+.final-card-piles {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.6rem 1rem;
+}
+
+.final-card-pile-cards {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem 1rem;
+    direction: ltr;
+}
+
+button.final-card-pile {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.2rem;
+    padding: 0.3rem;
+    border: 0;
+    border-radius: 0.5rem;
+    background: none;
+    color: #e9f2ea;
+    font-size: 0.85rem;
+}
+
+button.final-card-pile:not(:disabled):hover,
+button.final-card-pile:not(:disabled):focus-visible {
+    background: rgba(255, 255, 255, 0.12);
+}
+
+button.final-card-pile:not(:disabled) .card {
+    box-shadow: 0 0 0 3px var(--gold), 0 4px 10px rgba(0, 0, 0, 0.3);
+}
+
+button.final-card-pile:disabled {
+    opacity: 1;
+    cursor: default;
+}
+
+.final-card-pile .card {
+    font-size: clamp(1.4rem, min(6vw, 4vh), 2.4rem);
     user-select: none;
 }
 
-/* A wild card on the pile: a ring of the colour chosen. */
+/* A wild card on the pile: a ring of the color chosen. */
 .final-card-pile .card.chose-red { box-shadow: 0 0 0 0.22em #d62828; }
 .final-card-pile .card.chose-yellow { box-shadow: 0 0 0 0.22em #e5a400; }
 .final-card-pile .card.chose-green { box-shadow: 0 0 0 0.22em #23913a; }
 .final-card-pile .card.chose-blue { box-shadow: 0 0 0 0.22em #1d5bd6; }
 
-.final-card-table {
-    margin: 0.4rem 0;
-    padding: 0.6rem;
-    border-radius: var(--radius);
-    background: radial-gradient(circle at 50% 30%, #3a3f4a, #1c1f26);
-    color: #fff;
-}
-
-.final-card-pile {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: center;
-    gap: 0.8rem;
-    padding: 0.3rem 0 0.5rem;
-}
-
-.final-card-draw {
-    position: relative;
-    padding: 0;
-    border: 0;
-    background: none;
-}
-
-.final-card-draw:not(:disabled):hover,
-.final-card-draw:not(:disabled):focus-visible {
-    background: none;
-    transform: translateY(-2px);
-}
-
-.final-card-draw:disabled {
-    opacity: 1;
-    cursor: default;
-}
-
-.final-card-pile-count {
-    position: absolute;
-    right: -0.5rem;
-    bottom: -0.4rem;
-    padding: 0 0.4em;
-    border-radius: 999px;
-    background: #fff;
-    color: var(--ink);
-    font-size: 0.8rem;
-    font-weight: 700;
-}
-
 .final-card-pile-info {
     display: flex;
     flex-direction: column;
-    align-items: flex-start;
+    align-items: flex-end;
     gap: 0.3rem;
+    margin-inline-start: auto;
     font-weight: 700;
 }
 
@@ -3811,111 +3844,45 @@ main.final-card {
 }
 
 .final-card-message {
-    margin: 0 0 0.5rem;
-    color: #eef0f4;
+    margin: 0.4rem 0 0;
+    color: #e9f2ea;
     text-align: center;
 }
 
-.final-card-players {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr));
-    gap: 0.3rem;
-    margin: 0;
-    padding: 0;
-    list-style: none;
-}
+.rp-tag.protected { background: #d6efd9; }
 
-.final-card-players li {
-    display: flex;
-    align-items: center;
-    gap: 0.35rem;
-    min-width: 0;
-    padding: 0.25rem 0.45rem;
-    border-radius: 10px;
-    background: rgba(255, 255, 255, 0.92);
-    color: var(--ink);
-    font-size: 0.9rem;
-}
-
-.final-card-players li.turn {
-    box-shadow: inset 0 0 0 3px var(--gold);
-}
-
-.final-card-players li.done {
-    opacity: 0.7;
-}
-
-.final-card-players .seat-label {
-    flex: 0 1 auto;
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
+.final-card-score {
     white-space: nowrap;
 }
 
-.final-card-count {
-    margin-inline-start: auto;
-    color: var(--muted);
-    white-space: nowrap;
-}
-
-.final-card-tag {
-    padding: 0 0.45em;
-    border-radius: 999px;
-    background: var(--surface-soft);
-    font-size: 0.8rem;
-    white-space: nowrap;
-}
-
-.final-card-tag.called { background: #d62828; color: #fff; font-weight: 800; }
-.final-card-tag.finished { background: #d6efd9; color: #1f6b35; }
-
-.final-card-catch {
-    background: #d62828;
-}
-
-/* The hand: cards in rows, from the first colour to the last; the ones that cannot be played are faded on your turn. */
-.final-card-cards {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.35rem;
-    margin: 0.4rem 0;
-    padding-top: 0.4em;
-    direction: ltr;
-}
-
-.final-card-play {
-    padding: 0;
-    border: 0;
-    border-radius: 0.35em;
-    background: none;
-}
-
-.final-card-play:hover,
-.final-card-play:focus-visible {
-    background: none;
-}
-
-.final-card-play:hover .card,
-.final-card-play:focus-visible .card,
-.final-card-cards .card.chosen {
-    transform: translateY(-0.3em);
-}
-
-.final-card-cards .card.drawn,
-.final-card-cards .card.chosen {
+/* The hand: on the user's turn, the card drawn is outlined and the cards that cannot be played are greyed, but stay
+   solid so the overlapping cards do not show through them. */
+.final-card-hand .card.drawn {
     box-shadow: 0 0 0 3px var(--gold), 0 4px 10px rgba(0, 0, 0, 0.3);
 }
 
-.final-card-cards .card.unplayable {
-    opacity: 0.45;
+.final-card-hand .card.unplayable {
+    filter: grayscale(0.7) brightness(0.85);
 }
 
 .final-card-colors {
     flex-wrap: wrap;
 }
 
+/* Draw (and Keep the card) on the left, Final Card! on the right. */
+.final-card-actions {
+    justify-content: flex-start;
+    margin-top: 0.3rem;
+}
+
+.final-card-challenge {
+    background: var(--gold);
+    color: var(--ink);
+    font-weight: 800;
+}
+
 .final-card-call {
+    margin-inline-start: auto;
     background: #d62828;
     font-weight: 900;
 }

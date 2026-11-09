@@ -286,16 +286,18 @@ public interface IGameHub
     Task PassAfterDraw(string sessionId, int seat);
 
     /// <summary>
-    /// Final Card: <paramref name="seat"/>, which the caller must hold, calls Final Card: on its turn with two cards, or right after
-    /// going down to one card.
+    /// Final Card, with the challenge option: <paramref name="seat"/>, which the caller must hold and whose turn it is,
+    /// challenges the Wild Draw Four played on it. If its player held a card of the color that was to play, they draw
+    /// the cards instead; otherwise <paramref name="seat"/> draws them and 2 more, and misses its turn.
     /// </summary>
-    Task CallFinalCard(string sessionId, int seat);
+    Task Challenge(string sessionId, int seat);
 
     /// <summary>
-    /// Final Card: <paramref name="seat"/>, which the caller must hold, catches <paramref name="targetSeat"/>, who went down to one
-    /// card without calling Final Card, before the next player acts; <paramref name="targetSeat"/> draws 2 cards.
+    /// Final Card: <paramref name="seat"/>, which the caller must hold, calls Final Card, at any time during a hand: it protects
+    /// the seat on its final card (or on its turn before playing its second to last), and every other seat holding one card
+    /// unprotected draws 2 cards.
     /// </summary>
-    Task CatchFinalCard(string sessionId, int seat, int targetSeat);
+    Task CallFinalCard(string sessionId, int seat);
 
     /// <summary>
     /// Yaniv: <paramref name="seat"/>, which the caller must hold, discards <paramref name="cards"/> (short text such as

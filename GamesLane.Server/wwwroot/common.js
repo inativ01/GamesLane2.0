@@ -792,7 +792,7 @@ function celebrate(state, key) {
     setTimeout(() => layer.remove(), 5200);
 }
 
-// Each suit has its own colour (see .card.hearts … in styles.css).
+// Each suit has its own color (see .card.hearts … in styles.css).
 const SUIT_CLASSES = { "♥": "hearts", "♣": "clubs", "♦": "diamonds", "♠": "spades" };
 
 // The suits as shapes in a 100 × 100 box, so they look the same on every device (as text, some show them as emoji).
@@ -805,7 +805,7 @@ const SUIT_SHAPES = {
 };
 
 // The ranks in the middle of a card as script letters, like the L in the logo: the centre line of each letter in a
-// 60 × 80 box, with swashes and curled ends, drawn as a road (a rim in the suit's colour, black asphalt, a dashed
+// 60 × 80 box, with swashes and curled ends, drawn as a road (a rim in the suit's color, black asphalt, a dashed
 // yellow centre line).
 const ROAD_RANKS = {
     A: "M3 64C-1 74 10 80 16 70C24 54 26 26 34 10C38 2 44 4 44 14C44 32 44 58 50 70C54 78 62 74 58 66M10 44C20 36 36 50 52 40C56 38 56 34 52 34",
@@ -852,7 +852,7 @@ function svgElement(tag, attributes, ...children) {
     return element;
 }
 
-// A suit as a shape in the card's colour (the suitless "★" of The Gang's Jack card as text).
+// A suit as a shape in the card's color (the suitless "★" of The Gang's Jack card as text).
 function suitShape(suit, className) {
     const shapes = SUIT_SHAPES[suit];
     if (!shapes) {
@@ -912,7 +912,7 @@ function classicFace(rank, suit) {
     }));
 }
 
-// A faint octagon in the four suit colours, eight slices from the middle, as the silhouette of a joker.
+// A faint octagon in the four suit colors, eight slices from the middle, as the silhouette of a joker.
 function octagonSilhouette() {
     const corner = (i) => {
         const angle = ((22.5 + 45 * i) * Math.PI) / 180;
@@ -923,8 +923,8 @@ function octagonSilhouette() {
         ...Array.from({ length: 8 }, (_, i) => svgElement("path", { d: `M50 50L${corner(i)}L${corner(i + 1)}Z`, fill: colors[i % 4] })));
 }
 
-// A joker-like card: the colourful octagon with `centre` on it, both centred (e.g. the GamesLane logo), and `word`
-// written downwards in the top left and (upside down) bottom right corners, each letter in a suit colour in turn.
+// A joker-like card: the colorful octagon with `centre` on it, both centred (e.g. the GamesLane logo), and `word`
+// written downwards in the top left and (upside down) bottom right corners, each letter in a suit color in turn.
 function jokerCard(card, word, centre) {
     card.classList.add("joker");
     const letters = (className) => el("span", className, ...[...word].map((letter) => el("span", null, letter)));
@@ -951,7 +951,7 @@ function classicCard(card, text) {
 
 // A card such as "10♥", in `style` (by default the user's card style, see userSettings). GamesLane cards: rank and
 // suit in block letters in the top left and bottom right corners, and the suit's silhouette with the rank in the middle,
-// all in the suit's colour. "JOKER" is a joker. In the GamesLane style only, also "0♥" to "9♥", "S♥" (Skip),
+// all in the suit's color. "JOKER" is a joker. In the GamesLane style only, also "0♥" to "9♥", "S♥" (Skip),
 // "R♥" (Reverse) and "+2♥"; "WILD" is drawn like the joker, and "+4" (Wild Draw Four) like it with a road "+4" in the
 // middle and "+4" across the corners. Without text, a face-down card.
 function cardElement(text, style = userSettings().cards) {
@@ -1266,6 +1266,35 @@ function startChat(sessionId, view) {
     };
 }
 
+// A set option's value lists the choices turned off, separated by commas.
+const turnedOff = (value) => (value ?? "").split(",").filter(Boolean);
+// Whether an option applies, given the chosen values (e.g. card options only in Advanced mode).
+const applies = (option, values) => !option.shownWhen || values[option.shownWhen.key] === option.shownWhen.value;
+
+// A session's chosen options, one text per option that applies, e.g. ["Mode: Advanced", "Challenge cards: 5 of 6"].
+function optionLines(state) {
+    return state.optionList
+        .filter((option) => applies(option, state.options))
+        .map((option) => {
+            const label = translateServerText(option.label);
+            if (option.kind === "Set") {
+                const on = option.choices.length - turnedOff(state.options[option.key]).length;
+                return `${label}: ${on === option.choices.length ? t("all") : t("{on} of {total}", { on, total: option.choices.length })}`;
+            }
+            return `${label}: ${translateServerText(option.choices.find((c) => c.value === state.options[option.key])?.label) ?? ""}`;
+        });
+}
+
+// The chosen options as "Game options:" and a bulleted list, one option per line, aligned to the start (shown on the
+// session lobby's options button, and during a game in #game-options, see startSessionPage). Nothing for a game
+// without options.
+function optionsList(state) {
+    if (state.optionList.length === 0) {
+        return [];
+    }
+    return [el("strong", "options-title", t("Game options:")), el("ul", "options-lines", ...optionLines(state).map((line) => el("li", null, line)))];
+}
+
 /**
  * Runs a session page. The page URL is <page>?session=CODE. Anyone can watch; logged-in users can take seats.
  * While the session is in its lobby, the shared session lobby (#session-lobby) is shown; while a game is being
@@ -1497,26 +1526,6 @@ function startSessionPage(gameType, render, seatRole = (seat) => t("Seat {n}", {
         return item;
     }
 
-    // A set option's value lists the choices turned off, separated by commas.
-    const turnedOff = (value) => (value ?? "").split(",").filter(Boolean);
-    // Whether an option applies, given the chosen values (e.g. card options only in Advanced mode).
-    const applies = (option, values) => !option.shownWhen || values[option.shownWhen.key] === option.shownWhen.value;
-
-    // The chosen options in a few words, e.g. "Mode: Advanced · Challenge cards: 5 of 6".
-    function optionsSummary(state) {
-        return state.optionList
-            .filter((option) => applies(option, state.options))
-            .map((option) => {
-                const label = translateServerText(option.label);
-                if (option.kind === "Set") {
-                    const on = option.choices.length - turnedOff(state.options[option.key]).length;
-                    return `${label}: ${on === option.choices.length ? t("all") : t("{on} of {total}", { on, total: option.choices.length })}`;
-                }
-                return `${label}: ${translateServerText(option.choices.find((c) => c.value === state.options[option.key])?.label) ?? ""}`;
-            })
-            .join(" · ");
-    }
-
     // Anyone in the session chooses the options for the next game; in a public game, only its creator (others only see
     // them). Saved users can also save them as their preferences (used automatically when they create a game) and load
     // them back.
@@ -1698,16 +1707,21 @@ function startSessionPage(gameType, render, seatRole = (seat) => t("Seat {n}", {
             const next = nextSeat(state);
             $("seats").replaceChildren(...state.seats.flatMap((info, seat) => (info || seat === next ? [seatItem(state, seat)] : [])));
             $("lobby-options").hidden = state.optionList.length === 0;
-            $("options-summary").textContent = `${t("Game options:")} ${optionsSummary(state)}`;
+            $("options-summary").replaceChildren(...optionsList(state));
             $("start-game").hidden = !(view.isPlayer && taken >= state.minSeats && (!state.isPublic || isHost(state)));
             $("start-game").textContent = t(state.gameNumber > 0 ? "New game" : "Start");
             return;
         }
 
         $("play-again").hidden = $("to-lobby").hidden = !(view.isPlayer && state.phase === "Over");
+        const gameOptions = $("game-options");
+        if (gameOptions) {
+            gameOptions.replaceChildren(...optionsList(state));
+            gameOptions.hidden = gameOptions.childElementCount === 0;
+        }
         render(state.game, state, view);
         // Games mark their status with 👉 (the user has to act) or ⏳ (waiting for others). The marks only choose the
-        // bar's colour (gold or grey) and are not shown.
+        // bar's color (gold or grey) and are not shown.
         const status = $("status");
         const mustAct = status.textContent.includes("👉")
             || [...$("status-bar").querySelectorAll(".status-actions button")].some((b) => !b.hidden && !b.classList.contains("secondary"));

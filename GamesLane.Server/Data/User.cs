@@ -81,7 +81,7 @@ public class User
 /// </summary>
 public record UserSettings(bool Chat, bool Sound, string Cards = UserSettings.NewCards)
 {
-    /// <summary>The new cards: four suit colours, a large faint suit with the rank as a road in the middle.</summary>
+    /// <summary>The new cards: four suit colors, a large faint suit with the rank as a road in the middle.</summary>
     public const string NewCards = "New";
 
     /// <summary>The classic cards: red and black, with pips and court figures.</summary>

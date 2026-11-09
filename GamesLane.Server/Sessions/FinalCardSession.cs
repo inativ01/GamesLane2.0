@@ -5,13 +5,13 @@ namespace GamesLane.Server.Sessions;
 
 /// <summary>
 /// A player as everyone sees them: their seat, how many cards they hold, their points (in a game to a score target), the
-/// cards they were last dealt (in a pyramid), their finishing place (in a pyramid, null until they finish), whether they
-/// called Final Card, and whether they can be caught for not calling it.
+/// cards they were last dealt (in a pyramid), their finishing place (in a pyramid, null until they finish), and whether
+/// they are protected: they called Final Card and hold one card.
 /// </summary>
-public record FinalCardPlayerState(int Seat, int CardCount, int Score, int HandSize, int? Finished, bool CalledFinalCard, bool CanBeCaught);
+public record FinalCardPlayerState(int Seat, int CardCount, int Score, int HandSize, int? Finished, bool Protected);
 
 /// <summary>
-/// Something that happened in the last action: the seat it is about, what, and the card (short text), count, chosen colour
+/// Something that happened in the last action: the seat it is about, what, and the card (short text), count, chosen color
 /// or other seat involved (see <see cref="FinalCardEventKind"/>).
 /// </summary>
 public record FinalCardEventState(int Seat, FinalCardEventKind Kind, string? Card, int Count, FinalCardColor? Color, int? BySeat);
@@ -24,14 +24,15 @@ public record FinalCardResultState(int Seat, int Points);
 /// <summary>
 /// Public Final Card state. <see cref="Turn"/>, <see cref="Ranking"/> and <see cref="Winner"/> are seats; <see cref="Players"/>
 /// are in seat order. <see cref="Direction"/> is 1 in seat order, -1 after a Reverse. <see cref="HasDrawn"/> tells that
-/// the seat to play has drawn a card it may play or keep. <see cref="Actions"/> counts the actions, so a page can tell a
-/// new one.
+/// the seat to play has drawn a card it may play or keep, and <see cref="CanChallenge"/> that it can challenge the Wild
+/// Draw Four played on it. <see cref="Actions"/> counts the actions, so a page can tell a new one.
 /// </summary>
 public record FinalCardState(
     FinalCardEndMode End,
     int Target,
-    bool Stacking,
+    FinalCardStacking Stacking,
     bool DrawUntilPlayable,
+    FinalCardWildDrawFour WildDrawFour,
     int HandNumber,
     FinalCardPhase Phase,
     int Turn,
@@ -41,6 +42,7 @@ public record FinalCardState(
     int DrawPile,
     int PendingDraw,
     bool HasDrawn,
+    bool CanChallenge,
     IReadOnlyList<FinalCardPlayerState> Players,
     IReadOnlyList<FinalCardEventState> Events,
     int Actions,
@@ -49,7 +51,7 @@ public record FinalCardState(
     int? Winner);
 
 /// <summary>
-/// A seat's private Final Card information: its cards, sorted by colour and value, and those it can play now.
+/// A seat's private Final Card information: its cards, sorted by color and value, and those it can play now.
 /// </summary>
 public record FinalCardHand(int Seat, IReadOnlyList<string> Cards, IReadOnlyList<string> Playable);
 
@@ -95,14 +97,12 @@ public class FinalCardSession(string id, Action<FinalCardCard[]>? shuffle = null
         WithPlayer(userKey, seat, (game, player) => (game.TryPass(player, out var e), e), out error);
 
     /// <inheritdoc />
-    public bool TryCallFinalCard(string userKey, int seat, [NotNullWhen(false)] out string? error) =>
-        WithPlayer(userKey, seat, (game, player) => (game.TryCallFinalCard(player, out var e), e), out error);
+    public bool TryChallenge(string userKey, int seat, [NotNullWhen(false)] out string? error) =>
+        WithPlayer(userKey, seat, (game, player) => (game.TryChallenge(player, out var e), e), out error);
 
     /// <inheritdoc />
-    public bool TryCatchFinalCard(string userKey, int seat, int targetSeat, [NotNullWhen(false)] out string? error) =>
-        WithPlayer(userKey, seat, (game, player) => GameSeats.Contains(targetSeat)
-            ? (game.TryCatch(player, PlayerOf(targetSeat), out var e), e)
-            : (false, "There is no such player."), out error);
+    public bool TryCallFinalCard(string userKey, int seat, [NotNullWhen(false)] out string? error) =>
+        WithPlayer(userKey, seat, (game, player) => (game.TryCallFinalCard(player, out var e), e), out error);
 
     /// <inheritdoc />
     public bool TryNextRound(string userKey, int round, [NotNullWhen(false)] out string? error)
@@ -142,6 +142,7 @@ public class FinalCardSession(string id, Action<FinalCardCard[]>? shuffle = null
             game.Rules.Target,
             game.Rules.Stacking,
             game.Rules.DrawUntilPlayable,
+            game.Rules.WildDrawFour,
             game.HandNumber,
             game.Phase,
             seats[game.Turn],
@@ -151,14 +152,14 @@ public class FinalCardSession(string id, Action<FinalCardCard[]>? shuffle = null
             game.DrawPileCount,
             game.PendingDraw,
             game.DrawnCard is not null,
+            game.CanChallenge,
             [.. Enumerable.Range(0, game.Players).Select(p => new FinalCardPlayerState(
                 seats[p],
                 game.Hand(p).Count,
                 game.Scores[p],
                 game.HandSize(p),
                 game.Rules.End == FinalCardEndMode.Pyramid && ranking.Contains(p) ? ranking.IndexOf(p) + 1 : null,
-                game.CalledFinalCard(p),
-                game.FinalCardPending == p))],
+                game.CalledFinalCard(p) && game.Hand(p).Count == 1))],
             [.. game.Events.Select(e => new FinalCardEventState(
                 seats[e.Player], e.Kind, e.Card?.ToString(), e.Count, e.Color, e.By is { } by ? seats[by] : null))],
             game.Actions,

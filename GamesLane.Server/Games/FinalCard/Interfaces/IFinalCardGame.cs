@@ -26,7 +26,7 @@ public interface IFinalCardGame
     /// <summary>The top card of the discard pile.</summary>
     FinalCardCard TopCard { get; }
 
-    /// <summary>The colour to play: the top card's, or the one chosen for a wild card.</summary>
+    /// <summary>The color to play: the top card's, or the one chosen for a wild card.</summary>
     FinalCardColor Color { get; }
 
     /// <summary>The cards left in the draw pile.</summary>
@@ -50,11 +50,17 @@ public interface IFinalCardGame
     /// <summary>Pyramid: the number of cards a player was last dealt (7 at first).</summary>
     int HandSize(int player);
 
-    /// <summary>Whether a player has called Final Card for their last card.</summary>
+    /// <summary>Whether a player has called Final Card for their last card, which protects them while they hold it.</summary>
     bool CalledFinalCard(int player);
 
-    /// <summary>The player who has just gone down to one card without calling Final Card and can be caught, or null.</summary>
-    int? FinalCardPending { get; }
+    /// <summary>Whether a player holds one card without having called Final Card, so another player can catch them.</summary>
+    bool CanBeCaught(int player);
+
+    /// <summary>
+    /// Whether the player to play can challenge the Wild Draw Four just played on them (with the challenge rule; not one
+    /// played on a stack, nor its player's last card).
+    /// </summary>
+    bool CanChallenge { get; }
 
     /// <summary>Pyramid: the players who have finished, in order; at the end, everyone.</summary>
     IReadOnlyList<int> Ranking { get; }
@@ -90,16 +96,19 @@ public interface IFinalCardGame
     bool TryPass(int player, out string? error);
 
     /// <summary>
-    /// <paramref name="player"/> calls Final Card: on their turn with two cards, before playing one; or right after going down to
-    /// one card, before anyone catches them.
+    /// <paramref name="player"/>, whose turn it is, challenges the Wild Draw Four played on them (see
+    /// <see cref="CanChallenge"/>). If its player held a card of the color that was to play, they draw the cards to draw
+    /// and <paramref name="player"/> plays on; otherwise <paramref name="player"/> draws them and 2 more, and misses their
+    /// turn.
     /// </summary>
-    bool TryCallFinalCard(int player, out string? error);
+    bool TryChallenge(int player, out string? error);
 
     /// <summary>
-    /// <paramref name="player"/> catches <paramref name="target"/>, who went down to one card without calling Final Card, before
-    /// the next player acts: <paramref name="target"/> draws 2 cards.
+    /// <paramref name="player"/> calls Final Card, at any time during a hand. It protects them if they hold one card, or two on
+    /// their turn with one they can play, and are not protected yet; and every other player who can be caught (see
+    /// <see cref="CanBeCaught"/>) draws 2 cards. Refused when it does neither.
     /// </summary>
-    bool TryCatch(int player, int target, out string? error);
+    bool TryCallFinalCard(int player, out string? error);
 
     /// <summary>Deals the hand after hand <paramref name="hand"/>. If it has already been dealt, nothing changes.</summary>
     bool TryNextHand(int hand, out string? error);
