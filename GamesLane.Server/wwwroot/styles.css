@@ -1485,9 +1485,18 @@ svg.card-suit {
     color: #1b1b1b;
 }
 
-/* A rank of a plus sign and a digit (+2 and +4), wider than the others. */
+/* A rank of a plus sign and a digit (+2 and +4), or TAKI, wider than the others. */
 .card-road.wide {
     width: 2.1em;
+}
+
+/* TAKI written downwards in the corners, above the suit. */
+.card.taki .card-rank {
+    font-size: 0.58em;
+    line-height: 0.95;
+    letter-spacing: 0;
+    writing-mode: vertical-rl;
+    text-orientation: upright;
 }
 
 .card-silhouette.octagon {
