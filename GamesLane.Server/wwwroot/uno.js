@@ -112,8 +112,7 @@ const send = (method, ...args) => call(method, uno.sessionId, ...args).catch(() 
 // direction of play and any cards stacked for the next player.
 function renderPile(game, view) {
     const canDraw = game.phase === "Playing" && view.isMe(game.turn) && !game.hasDrawn;
-    const draw = el("button", "uno-draw", el("span", "uno-card back", el("span", "uno-oval", el("span", "uno-symbol", "UNO"))),
-        el("span", "uno-pile-count", String(game.drawPile)));
+    const draw = el("button", "uno-draw", el("span", "uno-card back"), el("span", "uno-pile-count", String(game.drawPile)));
     draw.type = "button";
     draw.disabled = !canDraw;
     draw.title = t("Draw pile: {n} cards", { n: game.drawPile });

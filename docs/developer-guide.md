@@ -92,7 +92,7 @@ GamesLane.Server/              ASP.NET Core backend
     yatzee.html/.js            Yatzee page
     uno.html/.js               Uno page (the cards are drawn with CSS)
     yaniv.html/.js             Yaniv page (the piles on top, the players' table shared with Rich man, poor man's styles)
-    images/                    Logo, the GamesLane name for the header and the splash screens (web-sized copies of the originals in docs/), game pictures (SVG)
+    images/                    Logo, the GamesLane name for the header, the splash screens and the card back (web-sized copies of the originals in docs/), game pictures (SVG)
     images/the-gang/           A picture (SVG) for each challenge and specialist card, named by the card's key, e.g. quick-access.svg
     images/flags/              Flags for the language picker
 GamesLane.Server.Tests/        Unit tests

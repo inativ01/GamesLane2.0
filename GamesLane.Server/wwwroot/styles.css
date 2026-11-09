@@ -1467,14 +1467,10 @@ svg.card-suit {
     font-size: 1.4em;
 }
 
-/* The back: dark red with a gold diamond pattern and a white border. */
+/* The back: the GamesLane card back picture (also on Uno's draw pile). */
 .card.empty {
-    background:
-        radial-gradient(circle at 50% 50%, rgba(230, 169, 60, 0.35), transparent 60%),
-        repeating-linear-gradient(45deg, transparent 0 0.3em, rgba(230, 169, 60, 0.35) 0.3em 0.36em),
-        repeating-linear-gradient(-45deg, transparent 0 0.3em, rgba(230, 169, 60, 0.35) 0.3em 0.36em),
-        linear-gradient(160deg, #b23a22, #6e1d10);
-    box-shadow: inset 0 0 0 0.16em #fff, inset 0 0 0 0.22em rgba(230, 169, 60, 0.8), 0 2px 5px rgba(0, 0, 0, 0.3);
+    background: url("images/card-back.png") center / cover no-repeat;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
 }
 
 .card.big {
@@ -3764,12 +3760,8 @@ main.uno {
 .uno-card.chose-blue { box-shadow: 0 0 0 0.22em #1f6fd1; }
 
 .uno-card.back {
-    --uno-color: #1d1a17;
-}
-
-.uno-card.back .uno-symbol {
-    color: #d7262e;
-    font-size: 0.55em;
+    border: 0;
+    background: url("images/card-back.png") center / cover no-repeat;
 }
 
 .uno-oval {
