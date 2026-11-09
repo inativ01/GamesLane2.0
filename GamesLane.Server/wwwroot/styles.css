@@ -1463,6 +1463,26 @@ svg.card-suit {
     width: 2.1em;
 }
 
+/* TA above KI, narrow enough to leave the corners' TAKI clear. */
+.card-road.taki {
+    width: 1.6em;
+    height: 1.9em;
+}
+
+.card-road.crown {
+    width: 2.1em;
+    height: 1.7em;
+}
+
+/* TAKI written downwards in the corners, above the suit. */
+.card.taki .card-rank {
+    font-size: 0.58em;
+    line-height: 0.95;
+    letter-spacing: 0;
+    writing-mode: vertical-rl;
+    text-orientation: upright;
+}
+
 .card-silhouette.octagon {
     width: 2.6em;
     height: 2.6em;
@@ -1506,9 +1526,9 @@ svg.card-suit {
 .joker-word span:nth-child(4n + 3) { color: #e5a400; }
 .joker-word span:nth-child(4n + 4) { color: #1d5bd6; }
 
-/* Wild Draw Four: "+4" across the corners, as large as the +2's rank; red and green in the top left, blue and yellow
-   in the bottom right. */
-.card.plus-four .joker-word {
+/* Wild Draw Four and the +3 cards: "+4" or "+3" across the corners, as large as the +2's rank; red and green in the
+   top left, blue and yellow in the bottom right. */
+.card.plus-draw .joker-word {
     top: 0.2em;
     font-size: 0.6em;
     line-height: 1;
@@ -1516,12 +1536,66 @@ svg.card-suit {
     writing-mode: horizontal-tb;
 }
 
-.card.plus-four .joker-word.bottom {
+.card.plus-draw .joker-word.bottom {
+    top: auto;
     bottom: 0.2em;
 }
 
-.card.plus-four .joker-word.bottom span:nth-child(1) { color: #1d5bd6; }
-.card.plus-four .joker-word.bottom span:nth-child(2) { color: #e5a400; }
+.card.plus-draw .joker-word.bottom span:nth-child(1) { color: #1d5bd6; }
+.card.plus-draw .joker-word.bottom span:nth-child(2) { color: #e5a400; }
+
+/* A crossed-out +3: a red slash edged in white across the middle, and a slash edged in white through each corner's
+   +3, yellow in the top left and green in the bottom right. */
+.card-road .cross-out-edge,
+.card-road .cross-out {
+    fill: none;
+    stroke-linecap: round;
+}
+
+.card-road .cross-out-edge { stroke: #fff; stroke-width: 15; }
+.card-road .cross-out { stroke: #d62828; stroke-width: 9; }
+
+.card.crossed .joker-word::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: -0.1em;
+    right: -0.1em;
+    height: 0.14em;
+    border-radius: 0.07em;
+    background: #e5a400;
+    box-shadow: 0 0 0 0.04em #fff;
+    transform: translateY(-50%) rotate(-35deg);
+}
+
+.card.crossed .joker-word.bottom::after {
+    background: #23913a;
+}
+
+/* TAKI without a suit: each letter's rim in the color of the same letter in the corners. */
+.card.taki-joker .road-rim.part-1 { stroke: #d62828; }
+.card.taki-joker .road-rim.part-2 { stroke: #23913a; }
+.card.taki-joker .road-rim.part-3 { stroke: #e5a400; }
+.card.taki-joker .road-rim.part-4 { stroke: #1d5bd6; }
+
+/* The crown: rimmed in gold, with a gold ♛ in the corners. */
+.card.crown .road-rim { stroke: var(--gold); }
+
+.card.crown .joker-word {
+    top: 0.2em;
+    font-family: "Segoe UI Symbol", "Apple Symbols", "DejaVu Sans", sans-serif;
+    font-size: 0.6em;
+    line-height: 1;
+    writing-mode: horizontal-tb;
+    font-variant-emoji: text;
+}
+
+.card.crown .joker-word.bottom {
+    top: auto;
+    bottom: 0.2em;
+}
+
+.card.crown .joker-word span { color: var(--gold); }
 
 /* The classic cards (the profile's card style): red hearts and diamonds, black clubs and spades, rank and suit in the
    top left and (upside down) bottom right corners, and pips or a framed figure in the middle. */
