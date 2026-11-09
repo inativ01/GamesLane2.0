@@ -421,7 +421,7 @@ function openProfileDialog() {
                 <label class="setting"><input type="checkbox" name="chat"> <span>${t("Chat in games")}</span></label>
                 <label class="setting"><input type="checkbox" name="sound"> <span>${t("Sounds (chat, games and reading aloud)")}</span></label>
                 <label class="setting">${t("Card style")} <select name="cards">
-                    <option value="New">${t("New cards")}</option>
+                    <option value="New">GamesLane</option>
                     <option value="Classic">${t("Classic cards")}</option>
                 </select></label>
             </div>

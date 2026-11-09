@@ -141,7 +141,6 @@ TRANSLATIONS.fr = {
     "Chat in games": "Discussion dans les parties",
     "Sounds (chat, games and reading aloud)": "Sons (discussion, jeux et lecture à voix haute)",
     "Card style": "Style des cartes",
-    "New cards": "Nouvelles cartes",
     "Classic cards": "Cartes classiques",
     "Sound is off in your profile.": "Le son est désactivé dans ton profil.",
     "Sound": "Son",

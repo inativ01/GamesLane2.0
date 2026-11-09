@@ -141,7 +141,6 @@ TRANSLATIONS.he = {
     "Chat in games": "צ'אט במשחקים",
     "Sounds (chat, games and reading aloud)": "צלילים (צ'אט, משחקים והקראה)",
     "Card style": "עיצוב הקלפים",
-    "New cards": "קלפים חדשים",
     "Classic cards": "קלפים קלאסיים",
     "Sound is off in your profile.": "הצליל כבוי בפרופיל שלכם.",
     "Sound": "צליל",

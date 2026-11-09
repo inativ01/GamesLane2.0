@@ -141,7 +141,6 @@ TRANSLATIONS.es = {
     "Chat in games": "Chat en las partidas",
     "Sounds (chat, games and reading aloud)": "Sonidos (chat, juegos y lectura en voz alta)",
     "Card style": "Estilo de las cartas",
-    "New cards": "Cartas nuevas",
     "Classic cards": "Cartas clásicas",
     "Sound is off in your profile.": "El sonido está desactivado en tu perfil.",
     "Sound": "Sonido",
