@@ -176,7 +176,7 @@ public static class AccountEndpoints
             return await users.SetGameOrderAsync(id, body) is { } error ? Error(error) : Results.NoContent();
         });
 
-        // Saved users' chat and sound settings: { chat, sound }. Guests keep theirs in the browser.
+        // Saved users' chat, sound and card style settings: { chat, sound, cards }. Guests keep theirs in the browser.
         app.MapPut("/api/settings", async (UserSettings settings, HttpContext context, IUserService users) =>
         {
             if (AuthSetup.GetSavedUserId(context.User) is not { } id)

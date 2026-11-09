@@ -63,16 +63,33 @@ public class User
     public bool SoundOn { get; set; } = true;
 
     /// <summary>
+    /// How playing cards are drawn for the user: <see cref="UserSettings.NewCards"/> or <see cref="UserSettings.ClassicCards"/>.
+    /// </summary>
+    public string CardStyle { get; set; } = UserSettings.NewCards;
+
+    /// <summary>
     /// The external accounts (e.g. Google) the user signs in with.
     /// </summary>
     public List<ExternalLogin> ExternalLogins { get; set; } = [];
 }
 
 /// <summary>
-/// A user's settings from their profile: <see cref="Chat"/> shows the chat in game sessions, and <see cref="Sound"/>
-/// lets the site play sounds (the chat's chime, game sounds and reading aloud). Both are on for new users.
+/// A user's settings from their profile: <see cref="Chat"/> shows the chat in game sessions, <see cref="Sound"/> lets
+/// the site play sounds (the chat's chime, game sounds and reading aloud), and <see cref="Cards"/> is how playing cards
+/// are drawn (<see cref="NewCards"/> or <see cref="ClassicCards"/>). New users have the chat and sounds on, and the new
+/// cards; settings saved without a card style get the new cards.
 /// </summary>
-public record UserSettings(bool Chat, bool Sound);
+public record UserSettings(bool Chat, bool Sound, string Cards = UserSettings.NewCards)
+{
+    /// <summary>The new cards: four suit colours, a large faint suit with the rank as a road in the middle.</summary>
+    public const string NewCards = "New";
+
+    /// <summary>The classic cards: red and black, with pips and court figures.</summary>
+    public const string ClassicCards = "Classic";
+
+    /// <summary>The card styles a user can choose.</summary>
+    public static IReadOnlyList<string> CardStyles { get; } = [NewCards, ClassicCards];
+}
 
 /// <summary>
 /// Links an external account (a provider such as Google, and the account's ID there) to a user.

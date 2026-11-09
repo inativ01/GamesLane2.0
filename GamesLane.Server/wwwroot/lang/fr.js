@@ -140,6 +140,9 @@ TRANSLATIONS.fr = {
     "Chat: {n} new messages": "Discussion : {n} nouveaux messages",
     "Chat in games": "Discussion dans les parties",
     "Sounds (chat, games and reading aloud)": "Sons (discussion, jeux et lecture à voix haute)",
+    "Card style": "Style des cartes",
+    "New cards": "Nouvelles cartes",
+    "Classic cards": "Cartes classiques",
     "Sound is off in your profile.": "Le son est désactivé dans ton profil.",
     "Sound": "Son",
     "No messages yet. Say hello!": "Pas encore de messages. Dis bonjour !",
@@ -869,4 +872,5 @@ TRANSLATIONS.fr = {
     "Upload a PNG, JPEG or WebP picture.": "Importe une image PNG, JPEG ou WebP.",
     "Unknown game.": "Jeu inconnu.",
     "Each game can be listed only once.": "Chaque jeu ne peut apparaître qu'une fois.",
+    "Choose a card style.": "Choisis un style de cartes.",
 };

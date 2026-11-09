@@ -140,6 +140,9 @@ TRANSLATIONS.he = {
     "Chat: {n} new messages": "צ'אט: {n} הודעות חדשות",
     "Chat in games": "צ'אט במשחקים",
     "Sounds (chat, games and reading aloud)": "צלילים (צ'אט, משחקים והקראה)",
+    "Card style": "עיצוב הקלפים",
+    "New cards": "קלפים חדשים",
+    "Classic cards": "קלפים קלאסיים",
     "Sound is off in your profile.": "הצליל כבוי בפרופיל שלכם.",
     "Sound": "צליל",
     "No messages yet. Say hello!": "עדיין אין הודעות. תגידו שלום!",
@@ -869,4 +872,5 @@ TRANSLATIONS.he = {
     "Upload a PNG, JPEG or WebP picture.": "העלו תמונה מסוג PNG, JPEG או WebP.",
     "Unknown game.": "משחק לא מוכר.",
     "Each game can be listed only once.": "כל משחק יכול להופיע פעם אחת בלבד.",
+    "Choose a card style.": "בחרו עיצוב קלפים.",
 };

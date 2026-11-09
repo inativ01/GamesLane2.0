@@ -1,5 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Text.RegularExpressions;
+using GamesLane.Server.Data;
 using GamesLane.Server.Sessions;
 
 namespace GamesLane.Server.Users;
@@ -108,6 +109,11 @@ public static partial class UserRules
         [0x52, 0x49, 0x46, 0x46, _, _, _, _, 0x57, 0x45, 0x42, 0x50, ..] => "image/webp",
         _ => null,
     };
+
+    /// <summary>
+    /// Whether <paramref name="style"/> is one of the card styles (see <see cref="UserSettings.CardStyles"/>).
+    /// </summary>
+    public static bool IsCardStyle([NotNullWhen(true)] string? style) => style is not null && UserSettings.CardStyles.Contains(style);
 
     /// <summary>
     /// Checks the order of games chosen on the main screen: game names (e.g. <c>TheGang</c>), each an existing game,

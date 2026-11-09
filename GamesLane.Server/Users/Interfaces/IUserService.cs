@@ -80,12 +80,13 @@ public interface IUserService
     Task<string?> SetGameOrderAsync(Guid userId, IReadOnlyList<string>? games);
 
     /// <summary>
-    /// The user's chat and sound settings, or null if the user does not exist.
+    /// The user's chat, sound and card style settings, or null if the user does not exist.
     /// </summary>
     Task<UserSettings?> GetSettingsAsync(Guid userId);
 
     /// <summary>
-    /// Saves the user's chat and sound settings. Returns an error message, or null on success.
+    /// Saves the user's chat, sound and card style settings (an unknown card style is refused). Returns an error
+    /// message, or null on success.
     /// </summary>
     Task<string?> SetSettingsAsync(Guid userId, UserSettings settings);
 
