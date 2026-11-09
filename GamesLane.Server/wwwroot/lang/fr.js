@@ -178,8 +178,6 @@ TRANSLATIONS.fr = {
     "2 players": "2 joueurs",
     "Backgammon": "Backgammon",
     "Race your checkers home. Matches with the doubling cube.": "Ramène tes pions à la maison avant l'adversaire. Matchs avec le videau.",
-    "Rock-paper-scissors": "Chifoumi",
-    "Pick in secret, keep score round after round.": "Choisis en secret et marque des points manche après manche.",
     "Tic-tac-toe": "Morpion",
     "The classic. Be first to get three in a row.": "Le grand classique. Le premier à aligner trois symboles gagne.",
     "Join a game": "Rejoindre une partie",
@@ -593,9 +591,8 @@ TRANSLATIONS.fr = {
     "This round is over.": "Cette manche est terminée.",
     "The next round cannot start yet.": "La manche suivante ne peut pas encore commencer.",
 
-    // Tic-tac-toe and Rock-paper-scissors
+    // Tic-tac-toe
     "Tic-tac-toe - GamesLane": "Morpion - GamesLane",
-    "Rock-paper-scissors - GamesLane": "Chifoumi - GamesLane",
     "Next round": "Manche suivante",
     "Round {n}": "Manche {n}",
     "Draws: {n}": "Égalités : {n}",
@@ -603,19 +600,6 @@ TRANSLATIONS.fr = {
     "You win round {n}!": "Tu remportes la manche {n} !",
     "{name} wins round {n}": "{name} remporte la manche {n}",
     "Cell {n}": "Case {n}",
-    "Make your pick": "Fais ton choix",
-    "Waiting for the other player": "En attente de l'autre joueur",
-    "Waiting for the picks": "En attente des choix",
-    "✊ Rock": "✊ Pierre",
-    "✋ Paper": "✋ Feuille",
-    "✌️ Scissors": "✌️ Ciseaux",
-    "Rock": "Pierre",
-    "Paper": "Feuille",
-    "Scissors": "Ciseaux",
-    "You picked {choice}": "Tu as choisi {choice}",
-    "Picked": "Choix fait",
-    "Choosing": "Réfléchit…",
-    "Picking for seat {n}": "Choix pour la place {n}",
 
     // The Gang
     "The Gang - GamesLane": "The Gang - GamesLane",

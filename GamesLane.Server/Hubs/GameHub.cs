@@ -1,6 +1,5 @@
 using System.Security.Claims;
 using GamesLane.Server.Auth;
-using GamesLane.Server.Games.RockPaperScissors;
 using GamesLane.Server.Games.FinalCard;
 using GamesLane.Server.Games.Wazoo;
 using GamesLane.Server.Sessions;
@@ -233,10 +232,6 @@ public class GameHub(
     /// <inheritdoc />
     public Task MakeMove(string sessionId, int seat, int cell) =>
         Act(sessionId, (ITicTacToeSession s, out string? error) => s.TryMove(UserKey, seat, cell, out error));
-
-    /// <inheritdoc />
-    public Task Pick(string sessionId, int seat, Choice choice) =>
-        Act(sessionId, (IRockPaperScissorsSession s, out string? error) => s.TryPick(UserKey, seat, choice, out error));
 
     /// <inheritdoc />
     public Task NextRound(string sessionId, int round) =>

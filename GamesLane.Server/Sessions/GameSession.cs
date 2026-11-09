@@ -9,7 +9,6 @@ namespace GamesLane.Server.Sessions;
 public enum GameType
 {
     TicTacToe,
-    RockPaperScissors,
     TheGang,
     Backgammon,
     RichManPoorMan,

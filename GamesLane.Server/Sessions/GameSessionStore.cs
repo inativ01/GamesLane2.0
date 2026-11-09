@@ -161,7 +161,6 @@ public class GameSessionStore(
     public static GameSession New(GameType type, string id) => type switch
     {
         GameType.TicTacToe => new TicTacToeSession(id),
-        GameType.RockPaperScissors => new RockPaperScissorsSession(id),
         GameType.TheGang => new TheGangSession(id),
         GameType.Backgammon => new BackgammonSession(id),
         GameType.RichManPoorMan => new RichManPoorManSession(id),
@@ -177,7 +176,6 @@ public class GameSessionStore(
     public static string PageFor(GameType type) => type switch
     {
         GameType.TicTacToe => "/tictactoe.html",
-        GameType.RockPaperScissors => "/rock-paper-scissors.html",
         GameType.TheGang => "/the-gang.html",
         GameType.Backgammon => "/backgammon.html",
         GameType.RichManPoorMan => "/rich-man-poor-man.html",

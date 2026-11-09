@@ -178,8 +178,6 @@ TRANSLATIONS.es = {
     "2 players": "2 jugadores",
     "Backgammon": "Backgammon",
     "Race your checkers home. Matches with the doubling cube.": "Lleva tus fichas a casa antes que tu rival. Series con cubo doblador.",
-    "Rock-paper-scissors": "Chin chan pu",
-    "Pick in secret, keep score round after round.": "Elige en secreto y suma puntos ronda tras ronda.",
     "Tic-tac-toe": "Gato",
     "The classic. Be first to get three in a row.": "El clásico. Gana quien haga tres en línea primero.",
     "Join a game": "Unirme a una partida",
@@ -593,9 +591,8 @@ TRANSLATIONS.es = {
     "This round is over.": "Esta ronda terminó.",
     "The next round cannot start yet.": "La siguiente ronda aún no puede empezar.",
 
-    // Tic-tac-toe and Rock-paper-scissors
+    // Tic-tac-toe
     "Tic-tac-toe - GamesLane": "Gato - GamesLane",
-    "Rock-paper-scissors - GamesLane": "Chin chan pu - GamesLane",
     "Next round": "Siguiente ronda",
     "Round {n}": "Ronda {n}",
     "Draws: {n}": "Empates: {n}",
@@ -603,19 +600,6 @@ TRANSLATIONS.es = {
     "You win round {n}!": "¡Ganaste la ronda {n}!",
     "{name} wins round {n}": "{name} gana la ronda {n}",
     "Cell {n}": "Casilla {n}",
-    "Make your pick": "Elige",
-    "Waiting for the other player": "Esperando al otro jugador",
-    "Waiting for the picks": "Esperando las elecciones",
-    "✊ Rock": "✊ Piedra",
-    "✋ Paper": "✋ Papel",
-    "✌️ Scissors": "✌️ Tijera",
-    "Rock": "Piedra",
-    "Paper": "Papel",
-    "Scissors": "Tijera",
-    "You picked {choice}": "Elegiste {choice}",
-    "Picked": "Ya eligió",
-    "Choosing": "Eligiendo…",
-    "Picking for seat {n}": "Eligiendo por el lugar {n}",
 
     // The Gang
     "The Gang - GamesLane": "The Gang - GamesLane",

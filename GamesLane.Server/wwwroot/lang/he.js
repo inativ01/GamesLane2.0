@@ -178,8 +178,6 @@ TRANSLATIONS.he = {
     "2 players": "2 שחקנים",
     "Backgammon": "שש־בש",
     "Race your checkers home. Matches with the doubling cube.": "הביאו את האבנים הביתה. משחקונים עם קוביית הכפלה.",
-    "Rock-paper-scissors": "אבן, נייר ומספריים",
-    "Pick in secret, keep score round after round.": "בוחרים בסוד, וסופרים נקודות סיבוב אחרי סיבוב.",
     "Tic-tac-toe": "איקס־עיגול",
     "The classic. Be first to get three in a row.": "הקלאסיקה. מי שמשלים ראשון שלושה בשורה מנצח.",
     "Join a game": "הצטרפות למשחק",
@@ -593,9 +591,8 @@ TRANSLATIONS.he = {
     "This round is over.": "הסיבוב הזה הסתיים.",
     "The next round cannot start yet.": "הסיבוב הבא עוד לא יכול להתחיל.",
 
-    // Tic-tac-toe and Rock-paper-scissors
+    // Tic-tac-toe
     "Tic-tac-toe - GamesLane": "איקס־עיגול - GamesLane",
-    "Rock-paper-scissors - GamesLane": "אבן, נייר ומספריים - GamesLane",
     "Next round": "הסיבוב הבא",
     "Round {n}": "סיבוב {n}",
     "Draws: {n}": "תיקו: {n}",
@@ -603,19 +600,6 @@ TRANSLATIONS.he = {
     "You win round {n}!": "ניצחת בסיבוב {n}!",
     "{name} wins round {n}": "{name} זוכה בסיבוב {n}",
     "Cell {n}": "משבצת {n}",
-    "Make your pick": "בחרו",
-    "Waiting for the other player": "ממתינים לשחקן השני",
-    "Waiting for the picks": "ממתינים לבחירות",
-    "✊ Rock": "✊ אבן",
-    "✋ Paper": "✋ נייר",
-    "✌️ Scissors": "✌️ מספריים",
-    "Rock": "אבן",
-    "Paper": "נייר",
-    "Scissors": "מספריים",
-    "You picked {choice}": "בחרת {choice}",
-    "Picked": "הבחירה בוצעה",
-    "Choosing": "בבחירה…",
-    "Picking for seat {n}": "בוחרים עבור מקום {n}",
 
     // The Gang
     "The Gang - GamesLane": "הכנופיה - GamesLane",

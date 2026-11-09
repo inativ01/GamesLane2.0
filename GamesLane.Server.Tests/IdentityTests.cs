@@ -250,7 +250,7 @@ public class IdentityTests
     }
 
     [Theory]
-    [InlineData("Backgammon TheGang TicTacToe RockPaperScissors", true)]
+    [InlineData("Backgammon TheGang TicTacToe Wazoo", true)]
     [InlineData("TheGang", true)]
     [InlineData("", true)]
     [InlineData("TheGang Chess", false)]

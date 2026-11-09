@@ -1,4 +1,3 @@
-using GamesLane.Server.Games.RockPaperScissors;
 using GamesLane.Server.Games.FinalCard;
 using GamesLane.Server.Games.Wazoo;
 using GamesLane.Server.Sessions;
@@ -102,12 +101,7 @@ public interface IGameHub
     Task MakeMove(string sessionId, int seat, int cell);
 
     /// <summary>
-    /// Rock-paper-scissors: picks for <paramref name="seat"/>, which the caller must hold.
-    /// </summary>
-    Task Pick(string sessionId, int seat, Choice choice);
-
-    /// <summary>
-    /// Rock-paper-scissors and tic-tac-toe: starts the round after <paramref name="round"/>; backgammon: the game of the
+    /// Tic-tac-toe: starts the round after <paramref name="round"/>; backgammon: the game of the
     /// match after game <paramref name="round"/>; rich man, poor man: the game after game <paramref name="round"/>; Final Card:
     /// the hand after hand <paramref name="round"/>. If it has already started, nothing changes.
     /// </summary>

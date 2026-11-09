@@ -178,8 +178,6 @@ TRANSLATIONS.pt = {
     "2 players": "2 jogadores",
     "Backgammon": "Gamão",
     "Race your checkers home. Matches with the doubling cube.": "Leve suas peças para casa antes do rival. Partidas com o dado de dobra.",
-    "Rock-paper-scissors": "Jokenpô",
-    "Pick in secret, keep score round after round.": "Escolha em segredo e some pontos rodada após rodada.",
     "Tic-tac-toe": "Jogo da Velha",
     "The classic. Be first to get three in a row.": "O clássico. Vence quem fizer três em linha primeiro.",
     "Join a game": "Entrar numa partida",
@@ -594,9 +592,8 @@ TRANSLATIONS.pt = {
     "This round is over.": "Esta rodada terminou.",
     "The next round cannot start yet.": "A próxima rodada ainda não pode começar.",
 
-    // Tic-tac-toe and Rock-paper-scissors
+    // Tic-tac-toe
     "Tic-tac-toe - GamesLane": "Jogo da Velha - GamesLane",
-    "Rock-paper-scissors - GamesLane": "Jokenpô - GamesLane",
     "Next round": "Próxima rodada",
     "Round {n}": "Rodada {n}",
     "Draws: {n}": "Empates: {n}",
@@ -604,19 +601,6 @@ TRANSLATIONS.pt = {
     "You win round {n}!": "Você venceu a rodada {n}!",
     "{name} wins round {n}": "{name} venceu a rodada {n}",
     "Cell {n}": "Casa {n}",
-    "Make your pick": "Faça sua escolha",
-    "Waiting for the other player": "Esperando o outro jogador",
-    "Waiting for the picks": "Esperando as escolhas",
-    "✊ Rock": "✊ Pedra",
-    "✋ Paper": "✋ Papel",
-    "✌️ Scissors": "✌️ Tesoura",
-    "Rock": "Pedra",
-    "Paper": "Papel",
-    "Scissors": "Tesoura",
-    "You picked {choice}": "Você escolheu {choice}",
-    "Picked": "Já escolheu",
-    "Choosing": "Escolhendo…",
-    "Picking for seat {n}": "Escolhendo pelo lugar {n}",
 
     // The Gang
     "The Gang - GamesLane": "The Gang - GamesLane",
