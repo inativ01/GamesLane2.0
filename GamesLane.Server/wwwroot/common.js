@@ -10,8 +10,8 @@ translatePage();
 $("account").before(languagePicker() ?? "");
 
 const GAME_PAGES = {
-    TicTacToe: "/tictactoe.html", RockPaperScissors: "/rock-paper-scissors.html", TheGang: "/the-gang.html", Backgammon: "/backgammon.html",
-    RichManPoorMan: "/rich-man-poor-man.html", Yatzee: "/yatzee.html", FinalCard: "/final-card.html", Yaniv: "/yaniv.html",
+    TicTacToe: "/tictactoe.html", TheGang: "/the-gang.html", Backgammon: "/backgammon.html",
+    RichManPoorMan: "/rich-man-poor-man.html", Wazoo: "/wazoo.html", FinalCard: "/final-card.html", Yaniv: "/yaniv.html",
 };
 
 // The login token is kept per browser tab, so each tab can have its own user.

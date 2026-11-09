@@ -178,8 +178,6 @@ TRANSLATIONS.he = {
     "2 players": "2 שחקנים",
     "Backgammon": "שש־בש",
     "Race your checkers home. Matches with the doubling cube.": "הביאו את האבנים הביתה. משחקונים עם קוביית הכפלה.",
-    "Rock-paper-scissors": "אבן, נייר ומספריים",
-    "Pick in secret, keep score round after round.": "בוחרים בסוד, וסופרים נקודות סיבוב אחרי סיבוב.",
     "Tic-tac-toe": "איקס־עיגול",
     "The classic. Be first to get three in a row.": "הקלאסיקה. מי שמשלים ראשון שלושה בשורה מנצח.",
     "Join a game": "הצטרפות למשחק",
@@ -366,9 +364,9 @@ TRANSLATIONS.he = {
     "Unknown card.": "קלף לא מוכר.",
     "Log in to ask to join.": "התחברו כדי לבקש להצטרף.",
 
-    // Yatzee
-    "Yatzee": "יאצי",
-    "Yatzee - GamesLane": "יאצי - GamesLane",
+    // Wazoo
+    "Wazoo": "וואזו",
+    "Wazoo - GamesLane": "וואזו - GamesLane",
     "Roll five dice, three times a turn, and fill your scorecard.": "מטילים חמש קוביות, עד שלוש פעמים בתור, וממלאים את כרטיס הניקוד.",
     "1–8 players": "1–8 שחקנים",
     "Ones": "אחדים",
@@ -387,8 +385,8 @@ TRANSLATIONS.he = {
     "Upper total": "סכום החלק העליון",
     "Bonus": "בונוס",
     "35 for 63 or more": "35 על 63 ומעלה",
-    "Yatzee bonus": "בונוס יאצי",
-    "100 for each extra Yatzee": "100 על כל יאצי נוסף",
+    "Wazoo bonus": "בונוס וואזו",
+    "100 for each extra Wazoo": "100 על כל וואזו נוסף",
     "Total": "סך הכול",
     "Final scores": "תוצאות סופיות",
     "Round {n} of {total}": "סיבוב {n} מתוך {total}",
@@ -403,19 +401,19 @@ TRANSLATIONS.he = {
     "Score 0 in {box}?": "לרשום 0 במשבצת {box}?",
     "You scored {points} in {box}.": "רשמת {points} במשבצת {box}.",
     "{name} scored {points} in {box}.": "ל־{name} נרשמו {points} במשבצת {box}.",
-    "Yatzee bonus: +100!": "בונוס יאצי: 100 נקודות!",
+    "Wazoo bonus: +100!": "בונוס וואזו: 100 נקודות!",
     "Game over: {n} points.": "המשחק הסתיים: {n} נקודות.",
     "You win with {n} points!": "ניצחת עם {n} נקודות!",
     "{name} wins with {n} points!": "{name} זוכה עם {n} נקודות!",
     "A tie at {n} points: {names}.": "תיקו ב־{n} נקודות: {names}.",
 
-    // Yatzee: messages from the server
+    // Wazoo: messages from the server
     "You have no rolls left. Choose a box to score.": "לא נשארו הטלות. בחרו משבצת לניקוד.",
     "There is no such die.": "אין קובייה כזו.",
     "There is no such box.": "אין משבצת כזו.",
     "That box is already filled.": "המשבצת הזו כבר מלאה.",
-    "This Yatzee must be scored in the upper box of its number.": "את היאצי הזה צריך לרשום במשבצת העליונה של המספר שלו.",
-    "This Yatzee must be scored in an open lower box.": "את היאצי הזה צריך לרשום במשבצת פנויה בחלק התחתון.",
+    "This Wazoo must be scored in the upper box of its number.": "את הוואזו הזה צריך לרשום במשבצת העליונה של המספר שלו.",
+    "This Wazoo must be scored in an open lower box.": "את הוואזו הזה צריך לרשום במשבצת פנויה בחלק התחתון.",
 
     // Final Card
     "Final Card": "קלף אחרון",
@@ -593,9 +591,8 @@ TRANSLATIONS.he = {
     "This round is over.": "הסיבוב הזה הסתיים.",
     "The next round cannot start yet.": "הסיבוב הבא עוד לא יכול להתחיל.",
 
-    // Tic-tac-toe and Rock-paper-scissors
+    // Tic-tac-toe
     "Tic-tac-toe - GamesLane": "איקס־עיגול - GamesLane",
-    "Rock-paper-scissors - GamesLane": "אבן, נייר ומספריים - GamesLane",
     "Next round": "הסיבוב הבא",
     "Round {n}": "סיבוב {n}",
     "Draws: {n}": "תיקו: {n}",
@@ -603,19 +600,6 @@ TRANSLATIONS.he = {
     "You win round {n}!": "ניצחת בסיבוב {n}!",
     "{name} wins round {n}": "{name} זוכה בסיבוב {n}",
     "Cell {n}": "משבצת {n}",
-    "Make your pick": "בחרו",
-    "Waiting for the other player": "ממתינים לשחקן השני",
-    "Waiting for the picks": "ממתינים לבחירות",
-    "✊ Rock": "✊ אבן",
-    "✋ Paper": "✋ נייר",
-    "✌️ Scissors": "✌️ מספריים",
-    "Rock": "אבן",
-    "Paper": "נייר",
-    "Scissors": "מספריים",
-    "You picked {choice}": "בחרת {choice}",
-    "Picked": "הבחירה בוצעה",
-    "Choosing": "בבחירה…",
-    "Picking for seat {n}": "בוחרים עבור מקום {n}",
 
     // The Gang
     "The Gang - GamesLane": "הכנופיה - GamesLane",

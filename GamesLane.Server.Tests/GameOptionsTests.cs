@@ -24,7 +24,7 @@ public class GameOptionsTests
         Assert.Equal("No", defaults[TheGangOptions.ShowHandRanking]);
         Assert.DoesNotContain("showCardTexts", defaults.Keys);
         Assert.Empty(GameOptions.For(GameType.TicTacToe));
-        Assert.Empty(GameOptions.Defaults(GameType.RockPaperScissors));
+        Assert.Empty(GameOptions.Defaults(GameType.Wazoo));
     }
 
     [Theory]

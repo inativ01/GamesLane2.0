@@ -1,6 +1,5 @@
-using GamesLane.Server.Games.RockPaperScissors;
 using GamesLane.Server.Games.FinalCard;
-using GamesLane.Server.Games.Yatzee;
+using GamesLane.Server.Games.Wazoo;
 using GamesLane.Server.Sessions;
 
 namespace GamesLane.Server.Hubs;
@@ -102,12 +101,7 @@ public interface IGameHub
     Task MakeMove(string sessionId, int seat, int cell);
 
     /// <summary>
-    /// Rock-paper-scissors: picks for <paramref name="seat"/>, which the caller must hold.
-    /// </summary>
-    Task Pick(string sessionId, int seat, Choice choice);
-
-    /// <summary>
-    /// Rock-paper-scissors and tic-tac-toe: starts the round after <paramref name="round"/>; backgammon: the game of the
+    /// Tic-tac-toe: starts the round after <paramref name="round"/>; backgammon: the game of the
     /// match after game <paramref name="round"/>; rich man, poor man: the game after game <paramref name="round"/>; Final Card:
     /// the hand after hand <paramref name="round"/>. If it has already started, nothing changes.
     /// </summary>
@@ -251,22 +245,22 @@ public interface IGameHub
     Task ConfirmRedraw(string sessionId, int seat);
 
     /// <summary>
-    /// Yatzee: <paramref name="seat"/>, which the caller must hold, rolls the dice that are not held (all five on the
+    /// Wazoo: <paramref name="seat"/>, which the caller must hold, rolls the dice that are not held (all five on the
     /// turn's first roll), up to three times per turn.
     /// </summary>
     Task RollDice(string sessionId, int seat);
 
     /// <summary>
-    /// Yatzee: <paramref name="seat"/>, which the caller must hold, holds (or releases) die <paramref name="die"/>
+    /// Wazoo: <paramref name="seat"/>, which the caller must hold, holds (or releases) die <paramref name="die"/>
     /// (0 to 4) between rolls.
     /// </summary>
     Task HoldDie(string sessionId, int seat, int die, bool held);
 
     /// <summary>
-    /// Yatzee: <paramref name="seat"/>, which the caller must hold, scores the dice in <paramref name="category"/>,
+    /// Wazoo: <paramref name="seat"/>, which the caller must hold, scores the dice in <paramref name="category"/>,
     /// which ends its turn.
     /// </summary>
-    Task Score(string sessionId, int seat, YatzeeCategory category);
+    Task Score(string sessionId, int seat, WazooCategory category);
 
     /// <summary>
     /// Final Card: <paramref name="seat"/>, which the caller must hold, plays <paramref name="card"/> (short text such as "R7",

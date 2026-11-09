@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Rock-paper-scissors - GamesLane</title>
+    <title>Wazoo - GamesLane</title>
     <link rel="icon" href="images/logo-32.png">
     <link rel="apple-touch-icon" href="images/logo-180.png">
     <meta name="theme-color" content="#19285d">
@@ -23,22 +23,21 @@
         <div id="account" class="account"></div>
     </header>
     <div class="session-bar">
-        <img class="session-art" src="images/games/rock-paper-scissors.svg" alt="">
-        <h2 class="session-name" data-i18n>Rock-paper-scissors</h2>
+        <img class="session-art" src="images/games/wazoo.svg" alt="">
+        <h2 class="session-name" data-i18n>Wazoo</h2>
         <span id="session-info" class="session-info"></span>
         <p class="code" title="Game code" data-i18n-attr="title"><span aria-hidden="true">🔑</span> <strong id="session-code"></strong></p>
     </div>
     <div id="status-bar" class="status-bar" hidden>
         <p id="status" class="status"></p>
         <span class="status-actions">
-            <button id="next-round" type="button" class="small" hidden data-i18n>Next round</button>
             <button id="play-again" type="button" class="small" hidden data-i18n>Play again</button>
             <button id="to-lobby" type="button" class="secondary small" hidden data-i18n>Back to the lobby</button>
         </span>
         <ul id="scores" class="score-row"></ul>
     </div>
 </div>
-<main>
+<main class="wazoo">
     <section id="session">
         <div id="invite" class="invite" hidden>
             <h3 data-i18n>Invite friends</h3>
@@ -64,12 +63,13 @@
         </div>
 
         <div id="game-screen" hidden>
-            <div id="hands" class="hands"></div>
-            <p id="pick-for" class="hint" hidden></p>
-            <div id="picks" class="actions center" hidden>
-                <button type="button" class="pick" data-choice="Rock" data-i18n>✊ Rock</button>
-                <button type="button" class="pick" data-choice="Paper" data-i18n>✋ Paper</button>
-                <button type="button" class="pick" data-choice="Scissors" data-i18n>✌️ Scissors</button>
+            <div class="yz-dice-row">
+                <div id="yz-dice" class="yz-dice"></div>
+                <button id="yz-roll" type="button" class="yz-roll" hidden><span aria-hidden="true">🎲</span></button>
+            </div>
+            <p id="yz-message" class="yz-message" hidden></p>
+            <div class="yz-card-wrap">
+                <table id="yz-card" class="yz-card"></table>
             </div>
 
             <!-- The game's options, one per line (filled by common.js). -->
@@ -80,6 +80,6 @@
     <p id="error" class="error" role="alert"></p>
 </main>
 <script src="common.js"></script>
-<script src="rock-paper-scissors.js"></script>
+<script src="wazoo.js"></script>
 </body>
 </html>

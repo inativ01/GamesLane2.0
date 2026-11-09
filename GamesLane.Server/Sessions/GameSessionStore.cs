@@ -161,11 +161,10 @@ public class GameSessionStore(
     public static GameSession New(GameType type, string id) => type switch
     {
         GameType.TicTacToe => new TicTacToeSession(id),
-        GameType.RockPaperScissors => new RockPaperScissorsSession(id),
         GameType.TheGang => new TheGangSession(id),
         GameType.Backgammon => new BackgammonSession(id),
         GameType.RichManPoorMan => new RichManPoorManSession(id),
-        GameType.Yatzee => new YatzeeSession(id),
+        GameType.Wazoo => new WazooSession(id),
         GameType.FinalCard => new FinalCardSession(id),
         GameType.Yaniv => new YanivSession(id),
         _ => throw new ArgumentOutOfRangeException(nameof(type), type, "Unknown game type."),
@@ -177,11 +176,10 @@ public class GameSessionStore(
     public static string PageFor(GameType type) => type switch
     {
         GameType.TicTacToe => "/tictactoe.html",
-        GameType.RockPaperScissors => "/rock-paper-scissors.html",
         GameType.TheGang => "/the-gang.html",
         GameType.Backgammon => "/backgammon.html",
         GameType.RichManPoorMan => "/rich-man-poor-man.html",
-        GameType.Yatzee => "/yatzee.html",
+        GameType.Wazoo => "/wazoo.html",
         GameType.FinalCard => "/final-card.html",
         GameType.Yaniv => "/yaniv.html",
         _ => throw new ArgumentOutOfRangeException(nameof(type), type, "Unknown game type."),

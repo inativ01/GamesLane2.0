@@ -644,7 +644,7 @@ main.home {
     cursor: grabbing;
 }
 
-/* Each game is one big button: picture, name and description, and an arrow. */
+/* Each game is one big button: picture, name and number of players, description, and an arrow. */
 .game-tile {
     display: flex;
     align-items: center;
@@ -672,27 +672,34 @@ main.home {
     border-radius: 18px;
 }
 
+/* The name with the number of players at the end of its line, and the description below. */
 .game-text {
-    display: flex;
+    display: grid;
     flex: 1;
-    flex-direction: column;
-    gap: 0.15rem;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 0.15rem 0.5rem;
     min-width: 0;
 }
 
 .game-title {
+    grid-row: 1;
+    grid-column: 1;
     font-size: 1.15rem;
     font-weight: 800;
 }
 
 .game-desc {
+    grid-row: 2;
+    grid-column: 1 / -1;
     color: var(--muted);
     font-size: 0.9rem;
 }
 
 .game-players {
-    align-self: flex-start;
-    margin-top: 0.2rem;
+    grid-row: 1;
+    grid-column: 2;
+    justify-self: end;
     padding: 0.1rem 0.55rem;
     border-radius: 999px;
     background: #fbe7d6;
@@ -1318,40 +1325,6 @@ button.icon-button {
 
 .cell[data-mark="O"] {
     color: var(--ink);
-}
-
-.hands {
-    display: flex;
-    justify-content: center;
-    gap: 0.75rem;
-    margin: 0.75rem 0;
-}
-
-.hand {
-    flex: 1;
-    max-width: 200px;
-    padding: 0.9rem;
-    border-radius: var(--radius);
-    background: var(--surface);
-    box-shadow: var(--shadow);
-}
-
-.hand.winner {
-    outline: 3px solid var(--gold);
-}
-
-.hand-symbol {
-    font-size: clamp(3rem, 15vw, 5rem);
-    line-height: 1.2;
-}
-
-.hand-label {
-    color: var(--muted);
-}
-
-.pick {
-    font-size: 1.2rem;
-    padding: 0.8rem 1.2rem;
 }
 
 /* The Gang. The player's own hand is on top; everything observers see is on a green felt table below. */
@@ -3566,8 +3539,8 @@ main.final-card .my-hand-title {
     white-space: nowrap;
 }
 
-/* Yatzee: the five dice in a row, and the scorecard with a column per player. */
-main.yatzee {
+/* Wazoo: the five dice in a row, and the scorecard with a column per player. */
+main.wazoo {
     max-width: 980px;
 }
 

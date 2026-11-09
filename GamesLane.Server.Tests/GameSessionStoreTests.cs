@@ -42,13 +42,13 @@ public class GameSessionStoreTests
         var store = new GameSessionStore(new MemoryRepository());
 
         Assert.IsType<TicTacToeSession>(await store.CreateAsync(GameType.TicTacToe));
-        Assert.IsType<RockPaperScissorsSession>(await store.CreateAsync(GameType.RockPaperScissors));
+        Assert.Equal("/tictactoe.html", GameSessionStore.PageFor(GameType.TicTacToe));
         Assert.IsType<BackgammonSession>(await store.CreateAsync(GameType.Backgammon));
         Assert.Equal("/backgammon.html", GameSessionStore.PageFor(GameType.Backgammon));
         Assert.IsType<RichManPoorManSession>(await store.CreateAsync(GameType.RichManPoorMan));
         Assert.Equal("/rich-man-poor-man.html", GameSessionStore.PageFor(GameType.RichManPoorMan));
-        Assert.IsType<YatzeeSession>(await store.CreateAsync(GameType.Yatzee));
-        Assert.Equal("/yatzee.html", GameSessionStore.PageFor(GameType.Yatzee));
+        Assert.IsType<WazooSession>(await store.CreateAsync(GameType.Wazoo));
+        Assert.Equal("/wazoo.html", GameSessionStore.PageFor(GameType.Wazoo));
         Assert.IsType<FinalCardSession>(await store.CreateAsync(GameType.FinalCard));
         Assert.Equal("/final-card.html", GameSessionStore.PageFor(GameType.FinalCard));
         Assert.IsType<YanivSession>(await store.CreateAsync(GameType.Yaniv));
@@ -59,7 +59,7 @@ public class GameSessionStoreTests
     public async Task Finds_games_regardless_of_case_and_returns_null_for_unknown_ones()
     {
         var store = new GameSessionStore(new MemoryRepository());
-        var session = await store.CreateAsync(GameType.RockPaperScissors);
+        var session = await store.CreateAsync(GameType.TicTacToe);
 
         Assert.Same(session, await store.GetAsync(session.Id.ToLowerInvariant()));
         Assert.Null(await store.GetAsync("NOPE00"));

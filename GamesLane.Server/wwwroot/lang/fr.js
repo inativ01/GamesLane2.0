@@ -178,8 +178,6 @@ TRANSLATIONS.fr = {
     "2 players": "2 joueurs",
     "Backgammon": "Backgammon",
     "Race your checkers home. Matches with the doubling cube.": "Ramène tes pions à la maison avant l'adversaire. Matchs avec le videau.",
-    "Rock-paper-scissors": "Chifoumi",
-    "Pick in secret, keep score round after round.": "Choisis en secret et marque des points manche après manche.",
     "Tic-tac-toe": "Morpion",
     "The classic. Be first to get three in a row.": "Le grand classique. Le premier à aligner trois symboles gagne.",
     "Join a game": "Rejoindre une partie",
@@ -366,9 +364,9 @@ TRANSLATIONS.fr = {
     "Unknown card.": "Carte inconnue.",
     "Log in to ask to join.": "Connecte-toi pour demander à rejoindre.",
 
-    // Yatzee
-    "Yatzee": "Yatzee",
-    "Yatzee - GamesLane": "Yatzee - GamesLane",
+    // Wazoo
+    "Wazoo": "Wazoo",
+    "Wazoo - GamesLane": "Wazoo - GamesLane",
     "Roll five dice, three times a turn, and fill your scorecard.": "Lance cinq dés, jusqu'à trois fois par tour, et remplis ta feuille de score.",
     "1–8 players": "1–8 joueurs",
     "Ones": "As",
@@ -387,8 +385,8 @@ TRANSLATIONS.fr = {
     "Upper total": "Total du haut",
     "Bonus": "Bonus",
     "35 for 63 or more": "35 pour 63 ou plus",
-    "Yatzee bonus": "Bonus Yatzee",
-    "100 for each extra Yatzee": "100 par Yatzee supplémentaire",
+    "Wazoo bonus": "Bonus Wazoo",
+    "100 for each extra Wazoo": "100 par Wazoo supplémentaire",
     "Total": "Total",
     "Final scores": "Scores finaux",
     "Round {n} of {total}": "Tour {n} sur {total}",
@@ -403,19 +401,19 @@ TRANSLATIONS.fr = {
     "Score 0 in {box}?": "Marquer 0 en {box} ?",
     "You scored {points} in {box}.": "Tu marques {points} en {box}.",
     "{name} scored {points} in {box}.": "{name} marque {points} en {box}.",
-    "Yatzee bonus: +100!": "Bonus Yatzee : +100 !",
+    "Wazoo bonus: +100!": "Bonus Wazoo : +100 !",
     "Game over: {n} points.": "Partie terminée : {n} points.",
     "You win with {n} points!": "Tu gagnes avec {n} points !",
     "{name} wins with {n} points!": "{name} gagne avec {n} points !",
     "A tie at {n} points: {names}.": "Égalité à {n} points : {names}.",
 
-    // Yatzee: messages from the server
+    // Wazoo: messages from the server
     "You have no rolls left. Choose a box to score.": "Tu n'as plus de lancers. Choisis une case à remplir.",
     "There is no such die.": "Ce dé n'existe pas.",
     "There is no such box.": "Cette case n'existe pas.",
     "That box is already filled.": "Cette case est déjà remplie.",
-    "This Yatzee must be scored in the upper box of its number.": "Ce Yatzee doit être marqué dans la case du haut de son numéro.",
-    "This Yatzee must be scored in an open lower box.": "Ce Yatzee doit être marqué dans une case libre du bas.",
+    "This Wazoo must be scored in the upper box of its number.": "Ce Wazoo doit être marqué dans la case du haut de son numéro.",
+    "This Wazoo must be scored in an open lower box.": "Ce Wazoo doit être marqué dans une case libre du bas.",
 
     // Final Card
     "Final Card": "Dernière carte",
@@ -593,9 +591,8 @@ TRANSLATIONS.fr = {
     "This round is over.": "Cette manche est terminée.",
     "The next round cannot start yet.": "La manche suivante ne peut pas encore commencer.",
 
-    // Tic-tac-toe and Rock-paper-scissors
+    // Tic-tac-toe
     "Tic-tac-toe - GamesLane": "Morpion - GamesLane",
-    "Rock-paper-scissors - GamesLane": "Chifoumi - GamesLane",
     "Next round": "Manche suivante",
     "Round {n}": "Manche {n}",
     "Draws: {n}": "Égalités : {n}",
@@ -603,19 +600,6 @@ TRANSLATIONS.fr = {
     "You win round {n}!": "Tu remportes la manche {n} !",
     "{name} wins round {n}": "{name} remporte la manche {n}",
     "Cell {n}": "Case {n}",
-    "Make your pick": "Fais ton choix",
-    "Waiting for the other player": "En attente de l'autre joueur",
-    "Waiting for the picks": "En attente des choix",
-    "✊ Rock": "✊ Pierre",
-    "✋ Paper": "✋ Feuille",
-    "✌️ Scissors": "✌️ Ciseaux",
-    "Rock": "Pierre",
-    "Paper": "Feuille",
-    "Scissors": "Ciseaux",
-    "You picked {choice}": "Tu as choisi {choice}",
-    "Picked": "Choix fait",
-    "Choosing": "Réfléchit…",
-    "Picking for seat {n}": "Choix pour la place {n}",
 
     // The Gang
     "The Gang - GamesLane": "The Gang - GamesLane",
