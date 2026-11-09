@@ -4,7 +4,7 @@ namespace GamesLane.Server.Sessions;
 
 /// <summary>
 /// A match that continues round after round, keeping score (rock-paper-scissors, tic-tac-toe, and backgammon, whose
-/// rounds are the games of a match), game after game (rich man, poor man), or hand after hand (Uno).
+/// rounds are the games of a match), game after game (rich man, poor man), or hand after hand (Final Card).
 /// </summary>
 public interface IRoundBasedSession : IGameSession
 {

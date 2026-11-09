@@ -27,6 +27,21 @@ namespace GamesLane.Server.Data.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "Sessions",
+                columns: table => new
+                {
+                    Id = table.Column<string>(type: "character varying(6)", maxLength: 6, nullable: false),
+                    GameType = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
+                    Version = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),
+                    Data = table.Column<string>(type: "text", nullable: false),
+                    UpdatedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Sessions", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "Users",
                 columns: table => new
                 {
@@ -37,7 +52,11 @@ namespace GamesLane.Server.Data.Migrations
                     DisplayName = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: false),
                     Icon = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
                     CreatedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    LastActiveAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false)
+                    LastActiveAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    GameOrder = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: true),
+                    ChatOn = table.Column<bool>(type: "boolean", nullable: false),
+                    SoundOn = table.Column<bool>(type: "boolean", nullable: false),
+                    CardStyle = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false)
                 },
                 constraints: table =>
                 {
@@ -57,6 +76,26 @@ namespace GamesLane.Server.Data.Migrations
                     table.PrimaryKey("PK_ExternalLogins", x => new { x.Provider, x.ProviderKey });
                     table.ForeignKey(
                         name: "FK_ExternalLogins_Users_UserId",
+                        column: x => x.UserId,
+                        principalTable: "Users",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "UserGameOptions",
+                columns: table => new
+                {
+                    UserId = table.Column<Guid>(type: "uuid", nullable: false),
+                    GameType = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
+                    Options = table.Column<string>(type: "character varying(4000)", maxLength: 4000, nullable: false),
+                    UpdatedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_UserGameOptions", x => new { x.UserId, x.GameType });
+                    table.ForeignKey(
+                        name: "FK_UserGameOptions_Users_UserId",
                         column: x => x.UserId,
                         principalTable: "Users",
                         principalColumn: "Id",
@@ -90,6 +129,11 @@ namespace GamesLane.Server.Data.Migrations
                 column: "UserId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_Sessions_UpdatedAt",
+                table: "Sessions",
+                column: "UpdatedAt");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_UserIcons_UserId",
                 table: "UserIcons",
                 column: "UserId");
@@ -114,6 +158,12 @@ namespace GamesLane.Server.Data.Migrations
 
             migrationBuilder.DropTable(
                 name: "ExternalLogins");
+
+            migrationBuilder.DropTable(
+                name: "Sessions");
+
+            migrationBuilder.DropTable(
+                name: "UserGameOptions");
 
             migrationBuilder.DropTable(
                 name: "UserIcons");

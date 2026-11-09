@@ -1,9 +1,9 @@
-namespace GamesLane.Server.Games.Uno;
+namespace GamesLane.Server.Games.FinalCard;
 
 /// <summary>
 /// A card's colour. Wild cards have the colour <see cref="Wild"/> until played; the player then chooses the colour to play.
 /// </summary>
-public enum UnoColor
+public enum FinalCardColor
 {
     Red,
     Yellow,
@@ -15,7 +15,7 @@ public enum UnoColor
 /// <summary>
 /// What a card shows: a number (0 to 9), an action (Skip, Reverse, Draw Two) or a wild card (Wild, Wild Draw Four).
 /// </summary>
-public enum UnoValue
+public enum FinalCardValue
 {
     Zero,
     One,
@@ -35,25 +35,25 @@ public enum UnoValue
 }
 
 /// <summary>
-/// An Uno card. Its short text is its colour's letter (R, Y, G, B) and its value (0 to 9, S for Skip, R for Reverse, +2
+/// A card of Final Card. Its short text is its colour's letter (R, Y, G, B) and its value (0 to 9, S for Skip, R for Reverse, +2
 /// for Draw Two), e.g. "R7", "GS", "B+2"; or "W" for Wild and "W+4" for Wild Draw Four.
 /// </summary>
-public sealed record UnoCard(UnoColor Color, UnoValue Value)
+public sealed record FinalCardCard(FinalCardColor Color, FinalCardValue Value)
 {
     private const string ColorLetters = "RYGB";
 
     /// <summary>
     /// Whether this is a Wild or Wild Draw Four card.
     /// </summary>
-    public bool IsWild => Color == UnoColor.Wild;
+    public bool IsWild => Color == FinalCardColor.Wild;
 
     /// <summary>
     /// What the card counts for the winner of a hand: a number its value, an action 20, a wild card 50.
     /// </summary>
     public int Points => Value switch
     {
-        <= UnoValue.Nine => (int)Value,
-        UnoValue.Skip or UnoValue.Reverse or UnoValue.DrawTwo => 20,
+        <= FinalCardValue.Nine => (int)Value,
+        FinalCardValue.Skip or FinalCardValue.Reverse or FinalCardValue.DrawTwo => 20,
         _ => 50,
     };
 
@@ -62,8 +62,8 @@ public sealed record UnoCard(UnoColor Color, UnoValue Value)
     /// </summary>
     public int DrawCount => Value switch
     {
-        UnoValue.DrawTwo => 2,
-        UnoValue.WildDrawFour => 4,
+        FinalCardValue.DrawTwo => 2,
+        FinalCardValue.WildDrawFour => 4,
         _ => 0,
     };
 
@@ -71,39 +71,39 @@ public sealed record UnoCard(UnoColor Color, UnoValue Value)
     /// The 108 cards of a deck: in each colour one 0, two of each number 1 to 9 and two of each action; then four Wild and
     /// four Wild Draw Four.
     /// </summary>
-    public static IReadOnlyList<UnoCard> Deck() =>
+    public static IReadOnlyList<FinalCardCard> Deck() =>
     [
-        .. new[] { UnoColor.Red, UnoColor.Yellow, UnoColor.Green, UnoColor.Blue }.SelectMany(color =>
-            Enumerable.Range((int)UnoValue.Zero, (int)UnoValue.DrawTwo + 1)
-                .SelectMany(value => Enumerable.Repeat(new UnoCard(color, (UnoValue)value), value == 0 ? 1 : 2))),
-        .. Enumerable.Repeat(new UnoCard(UnoColor.Wild, UnoValue.Wild), 4),
-        .. Enumerable.Repeat(new UnoCard(UnoColor.Wild, UnoValue.WildDrawFour), 4),
+        .. new[] { FinalCardColor.Red, FinalCardColor.Yellow, FinalCardColor.Green, FinalCardColor.Blue }.SelectMany(color =>
+            Enumerable.Range((int)FinalCardValue.Zero, (int)FinalCardValue.DrawTwo + 1)
+                .SelectMany(value => Enumerable.Repeat(new FinalCardCard(color, (FinalCardValue)value), value == 0 ? 1 : 2))),
+        .. Enumerable.Repeat(new FinalCardCard(FinalCardColor.Wild, FinalCardValue.Wild), 4),
+        .. Enumerable.Repeat(new FinalCardCard(FinalCardColor.Wild, FinalCardValue.WildDrawFour), 4),
     ];
 
     /// <summary>
-    /// Reads a card's short text (see <see cref="UnoCard"/>). Returns false for anything else.
+    /// Reads a card's short text (see <see cref="FinalCardCard"/>). Returns false for anything else.
     /// </summary>
-    public static bool TryParse(string? text, out UnoCard card)
+    public static bool TryParse(string? text, out FinalCardCard card)
     {
-        card = new UnoCard(UnoColor.Wild, UnoValue.Wild);
+        card = new FinalCardCard(FinalCardColor.Wild, FinalCardValue.Wild);
         switch (text)
         {
             case "W":
                 return true;
             case "W+4":
-                card = new UnoCard(UnoColor.Wild, UnoValue.WildDrawFour);
+                card = new FinalCardCard(FinalCardColor.Wild, FinalCardValue.WildDrawFour);
                 return true;
             case null or { Length: < 2 }:
                 return false;
         }
 
         var color = ColorLetters.IndexOf(text[0]);
-        UnoValue? value = text[1..] switch
+        FinalCardValue? value = text[1..] switch
         {
-            "S" => UnoValue.Skip,
-            "R" => UnoValue.Reverse,
-            "+2" => UnoValue.DrawTwo,
-            [var digit and >= '0' and <= '9'] => (UnoValue)(digit - '0'),
+            "S" => FinalCardValue.Skip,
+            "R" => FinalCardValue.Reverse,
+            "+2" => FinalCardValue.DrawTwo,
+            [var digit and >= '0' and <= '9'] => (FinalCardValue)(digit - '0'),
             _ => null,
         };
         if (color < 0 || value is null)
@@ -111,7 +111,7 @@ public sealed record UnoCard(UnoColor Color, UnoValue Value)
             return false;
         }
 
-        card = new UnoCard((UnoColor)color, value.Value);
+        card = new FinalCardCard((FinalCardColor)color, value.Value);
         return true;
     }
 
@@ -119,12 +119,12 @@ public sealed record UnoCard(UnoColor Color, UnoValue Value)
     /// The card's short text, e.g. "R7" or "W+4".
     /// </summary>
     public override string ToString() => IsWild
-        ? Value == UnoValue.WildDrawFour ? "W+4" : "W"
+        ? Value == FinalCardValue.WildDrawFour ? "W+4" : "W"
         : $"{ColorLetters[(int)Color]}{Value switch
         {
-            UnoValue.Skip => "S",
-            UnoValue.Reverse => "R",
-            UnoValue.DrawTwo => "+2",
+            FinalCardValue.Skip => "S",
+            FinalCardValue.Reverse => "R",
+            FinalCardValue.DrawTwo => "+2",
             _ => ((int)Value).ToString(),
         }}";
 }

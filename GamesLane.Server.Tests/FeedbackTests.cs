@@ -12,14 +12,14 @@ public class FeedbackTests
     [Fact]
     public void A_comment_becomes_an_issue_with_its_kind_page_language_and_name()
     {
-        var request = new FeedbackRequest(FeedbackType.Idea, "  Add chess!\r\nIt would be fun, @someone  ", true, "/uno.html", "fr");
+        var request = new FeedbackRequest(FeedbackType.Idea, "  Add chess!\r\nIt would be fun, @someone  ", true, "/final-card.html", "fr");
 
         Assert.True(FeedbackRules.TryCreateIssue(request, "Ada", out var issue, out _));
 
         Assert.Equal("[Idea] Add chess!", issue.Title);
         Assert.Equal(["feedback", "enhancement"], issue.Labels);
         Assert.StartsWith("Add chess!\nIt would be fun, @\u200Bsomeone\n\n---\n", issue.Body);
-        Assert.Contains("Type: Idea  \nPage: /uno.html  \nLanguage: fr  \nFrom: Ada", issue.Body);
+        Assert.Contains("Type: Idea  \nPage: /final-card.html  \nLanguage: fr  \nFrom: Ada", issue.Body);
     }
 
     [Fact]

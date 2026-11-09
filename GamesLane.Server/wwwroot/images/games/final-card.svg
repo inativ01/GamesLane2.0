@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" role="img" aria-label="Final Card">
+  <defs>
+    <linearGradient id="table" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#3a3f4a"/>
+      <stop offset="1" stop-color="#1c1f26"/>
+    </linearGradient>
+    <!-- The suits of the GamesLane cards, in a 100 × 100 box. -->
+    <path id="heart" d="M50 92C22 70 4 52 4 31C4 15 16 5 30 5C40 5 47 11 50 19C53 11 60 5 70 5C84 5 96 15 96 31C96 52 78 70 50 92Z"/>
+    <path id="diamond" d="M50 3L88 50L50 97L12 50Z"/>
+    <g id="club">
+      <circle cx="50" cy="29" r="21"/><circle cx="27" cy="60" r="21"/><circle cx="73" cy="60" r="21"/>
+      <circle cx="50" cy="52" r="14"/><path d="M46 52H54L62 96H38Z"/>
+    </g>
+    <path id="spade" d="M50 3C34 28 6 42 6 64C6 78 17 86 29 86C37 86 44 82 47 75L40 97H60L53 75C56 82 63 86 71 86C83 86 94 78 94 64C94 42 66 28 50 3Z"/>
+  </defs>
+  <rect width="120" height="120" rx="26" fill="url(#table)"/>
+  <!-- A fan of four GamesLane cards, one per colour: blue spades, green clubs and yellow diamonds behind a red 7 of hearts. -->
+  <g stroke="#d8d2c6" stroke-width="1">
+    <g transform="rotate(-30 60 104)">
+      <rect x="40" y="26" width="40" height="60" rx="5" fill="#fff"/>
+      <use href="#spade" fill="#1d5bd6" stroke="none" transform="translate(43 30) scale(0.11)"/>
+    </g>
+    <g transform="rotate(-10 60 104)">
+      <rect x="40" y="26" width="40" height="60" rx="5" fill="#fff"/>
+      <use href="#club" fill="#23913a" stroke="none" transform="translate(43 30) scale(0.11)"/>
+    </g>
+    <g transform="rotate(10 60 104)">
+      <rect x="40" y="26" width="40" height="60" rx="5" fill="#fff"/>
+      <use href="#diamond" fill="#e5a400" stroke="none" transform="translate(43 30) scale(0.11)"/>
+    </g>
+    <g transform="rotate(30 60 104)">
+      <rect x="40" y="26" width="40" height="60" rx="5" fill="#fff"/>
+      <use href="#heart" fill="#d62828" stroke="none" opacity="0.2" transform="translate(44 40) scale(0.32)"/>
+      <g fill="#d62828" stroke="none" font-family="Arial Black, Segoe UI Black, Arial, sans-serif" font-weight="900" text-anchor="middle">
+        <text x="47" y="39" font-size="11">7</text>
+        <use href="#heart" transform="translate(43 41) scale(0.08)"/>
+        <text x="60" y="66" font-size="26">7</text>
+      </g>
+    </g>
+  </g>
+</svg>

@@ -417,9 +417,9 @@ TRANSLATIONS.he = {
     "This Yatzee must be scored in the upper box of its number.": "את היאצי הזה צריך לרשום במשבצת העליונה של המספר שלו.",
     "This Yatzee must be scored in an open lower box.": "את היאצי הזה צריך לרשום במשבצת פנויה בחלק התחתון.",
 
-    // Uno
-    "Uno": "אונו",
-    "Uno - GamesLane": "אונו - GamesLane",
+    // Final Card
+    "Final Card": "קלף אחרון",
+    "Final Card - GamesLane": "קלף אחרון - GamesLane",
     "Match the colour or the number, and be the first to play all your cards.": "התאימו צבע או מספר, והיו הראשונים להניח את כל הקלפים.",
     "2–10 players": "2–10 שחקנים",
     "Next hand": "היד הבאה",
@@ -452,11 +452,11 @@ TRANSLATIONS.he = {
     "{name} misses a turn.": "התור של {name} מדולג.",
     "You kept the card.": "שמרת את הקלף.",
     "{name} kept the card.": "הקלף נשאר אצל {name}.",
-    "You called UNO!": "קראת אונו!",
-    "{name} called UNO!": "קריאת אונו מ־{name}!",
-    "{by} caught you without UNO: you drew {n} cards.": "נתפסת בלי קריאת אונו (על ידי {by}): שלפת {n} קלפים.",
-    "You caught {name} without UNO: {name} drew {n} cards.": "תפסת את {name} בלי קריאת אונו: ל־{name} נוספו {n} קלפים.",
-    "{by} caught {name} without UNO: {name} drew {n} cards.": "תפיסה של {by}: {name} בלי קריאת אונו, ונוספו {n} קלפים.",
+    "You called Final Card!": "קראת קלף אחרון!",
+    "{name} called Final Card!": "קריאת קלף אחרון מ־{name}!",
+    "{by} caught you without Final Card: you drew {n} cards.": "נתפסת בלי קריאת קלף אחרון (על ידי {by}): שלפת {n} קלפים.",
+    "You caught {name} without Final Card: {name} drew {n} cards.": "תפסת את {name} בלי קריאת קלף אחרון: ל־{name} נוספו {n} קלפים.",
+    "{by} caught {name} without Final Card: {name} drew {n} cards.": "תפיסה של {by}: {name} בלי קריאת קלף אחרון, ונוספו {n} קלפים.",
     "You played all your cards and got {n} new ones.": "הנחת את כל הקלפים שלך וקיבלת {n} חדשים.",
     "{name} played all their cards and got {n} new ones.": "הקלפים של {name} נגמרו, ונוספו {n} קלפים חדשים.",
     "You finished in place {n}!": "סיימת במקום {n}!",
@@ -468,7 +468,8 @@ TRANSLATIONS.he = {
     "Cards to draw: {n}": "קלפים לשליפה: {n}",
     "Cards last dealt: {n}": "קלפים שחולקו בפעם האחרונה: {n}",
     "Catch!": "תפסתי!",
-    "{name} did not call UNO: make them draw 2 cards": "בלי קריאת אונו מ־{name}: 2 קלפים נוספים",
+    "Final Card!": "קלף אחרון!",
+    "{name} did not call Final Card: make them draw 2 cards": "בלי קריאת קלף אחרון מ־{name}: 2 קלפים נוספים",
     "Play {card}": "להניח {card}",
     "Choose the colour to play:": "בחרו את הצבע:",
     "Draw {n} cards": "שליפת {n} קלפים",
@@ -478,7 +479,7 @@ TRANSLATIONS.he = {
     "Hand {n}": "יד {n}",
     "To {n} points": "עד {n} נקודות",
 
-    // Uno options (from the server)
+    // Final Card options (from the server)
     "Game end": "סיום המשחק",
     "One game": "משחק אחד",
     "The first player to play all their cards wins.": "מי שמניח ראשון את כל הקלפים זוכה.",
@@ -499,15 +500,15 @@ TRANSLATIONS.he = {
     "Draw until you can play": "שליפה עד שאפשר להניח",
     "Keep drawing until you get a card you can play.": "שולפים עד שמגיע קלף שאפשר להניח.",
 
-    // Uno: messages from the server
+    // Final Card: messages from the server
     "You do not have that card.": "הקלף הזה לא אצלך.",
     "You can play only the card you drew, or keep it.": "אפשר להניח רק את הקלף ששלפת, או לשמור אותו.",
     "Choose a colour for the wild card.": "בחרו צבע לג'וקר.",
     "You have already drawn. Play the card you drew, or keep it.": "כבר שלפת. הניחו את הקלף ששלפתם, או שמרו אותו.",
     "Draw a card first.": "קודם שלפו קלף.",
     "This hand is over.": "היד הזו הסתיימה.",
-    "You have already called UNO.": "כבר קראת אונו.",
-    "Call UNO when you are about to have one card left.": "קוראים אונו כשעומד להישאר קלף אחד.",
+    "You have already called Final Card.": "כבר קראת קלף אחרון.",
+    "Call Final Card when you are about to have one card left.": "קוראים קלף אחרון כשעומד להישאר קלף אחד.",
     "There is no such player.": "אין שחקן כזה.",
     "You cannot catch yourself.": "אי אפשר לתפוס את עצמך.",
     "That player cannot be caught now.": "אי אפשר לתפוס את השחקן הזה עכשיו.",
