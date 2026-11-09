@@ -1537,6 +1537,23 @@ svg.card-suit {
 .joker-word span:nth-child(4n + 3) { color: #e5a400; }
 .joker-word span:nth-child(4n + 4) { color: #1d5bd6; }
 
+/* Wild Draw Four: "+4" across the corners, as large as the +2's rank; red and green in the top left, blue and yellow
+   in the bottom right. */
+.card.plus-four .joker-word {
+    top: 0.2em;
+    font-size: 0.6em;
+    line-height: 1;
+    letter-spacing: -0.06em;
+    writing-mode: horizontal-tb;
+}
+
+.card.plus-four .joker-word.bottom {
+    bottom: 0.2em;
+}
+
+.card.plus-four .joker-word.bottom span:nth-child(1) { color: #1d5bd6; }
+.card.plus-four .joker-word.bottom span:nth-child(2) { color: #e5a400; }
+
 /* The classic cards (the profile's card style): red hearts and diamonds, black clubs and spades, rank and suit in the
    top left and (upside down) bottom right corners, and pips or a framed figure in the middle. */
 .card.classic.red {

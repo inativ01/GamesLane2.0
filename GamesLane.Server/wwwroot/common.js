@@ -953,7 +953,7 @@ function classicCard(card, text) {
 // suit in block letters in the top left and bottom right corners, and the suit's silhouette with the rank in the middle,
 // all in the suit's colour. "JOKER" is a joker. In the GamesLane style only, also "0♥" to "9♥", "S♥" (Skip),
 // "R♥" (Reverse) and "+2♥"; "WILD" is drawn like the joker, and "+4" (Wild Draw Four) like it with a road "+4" in the
-// middle. Without text, a face-down card.
+// middle and "+4" across the corners. Without text, a face-down card.
 function cardElement(text, style = userSettings().cards) {
     const card = el("span", "card");
     if (!text) {
@@ -969,6 +969,7 @@ function cardElement(text, style = userSettings().cards) {
         return jokerCard(card, text, el("span", "joker-logo"));
     }
     if (text === "+4") {
+        card.classList.add("plus-four");
         return jokerCard(card, text, roadRank(text));
     }
     const rank = text.slice(0, -1);
