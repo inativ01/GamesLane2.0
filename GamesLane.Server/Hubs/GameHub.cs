@@ -361,6 +361,10 @@ public class GameHub(
         Act(sessionId, (IFinalCardSession s, out string? error) => s.TryDraw(UserKey, seat, out error));
 
     /// <inheritdoc />
+    public Task CloseTaki(string sessionId, int seat) =>
+        Act(sessionId, (IFinalCardSession s, out string? error) => s.TryCloseTaki(UserKey, seat, out error));
+
+    /// <inheritdoc />
     public Task PassAfterDraw(string sessionId, int seat) =>
         Act(sessionId, (IFinalCardSession s, out string? error) => s.TryPass(UserKey, seat, out error));
 

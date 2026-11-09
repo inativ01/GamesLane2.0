@@ -264,16 +264,25 @@ public interface IGameHub
 
     /// <summary>
     /// Final Card: <paramref name="seat"/>, which the caller must hold, plays <paramref name="card"/> (short text such as "R7",
-    /// "GS", "B+2", "W" or "W+4"), choosing <paramref name="color"/> for a wild card.
+    /// "GS", "B+2", "W", "W+4", or in Israeli Style "R+", "RT", "WT", "WC", "W+3" or "W+3X"), choosing
+    /// <paramref name="color"/> for a Change Color, a Change Color +4, or a SuperTAKI after a Crown. In Israeli Style, any
+    /// seat can play a +3 Breaker on a +3 nobody has answered yet, in or out of turn.
     /// </summary>
     Task PlayCard(string sessionId, int seat, string? card, FinalCardColor? color);
 
     /// <summary>
     /// Final Card: <paramref name="seat"/>, which the caller must hold, draws its penalty cards (at any time during a hand), or
     /// else on its turn the cards stacked for it, or a card (or, with the option, cards until it can play). If it can play
-    /// the card drawn, it plays or keeps it; otherwise its turn ends.
+    /// the card drawn, it plays or keeps it; otherwise its turn ends. In Israeli Style the card drawn is never played on
+    /// that turn, and drawing on a +3 gives the seat 3 cards and every other seat but the one of the +3 3 penalty cards.
     /// </summary>
     Task DrawCard(string sessionId, int seat);
+
+    /// <summary>
+    /// Final Card, Israeli Style: <paramref name="seat"/>, which the caller must hold and whose turn it is, closes its TAKI:
+    /// the action of the TAKI's last card is carried out.
+    /// </summary>
+    Task CloseTaki(string sessionId, int seat);
 
     /// <summary>
     /// Final Card: <paramref name="seat"/>, which the caller must hold, keeps the card it drew, which ends its turn.
@@ -282,7 +291,7 @@ public interface IGameHub
 
     /// <summary>
     /// Final Card, with the challenge option: <paramref name="seat"/>, which the caller must hold and whose turn it is,
-    /// challenges the Wild Draw Four played on it. If its player held a card of the color that was to play, they have the
+    /// challenges the Change Color +4 played on it. If its player held a card of the color that was to play, they have the
     /// cards as penalty cards instead; otherwise <paramref name="seat"/> has them and 2 more, and misses its turn.
     /// </summary>
     Task Challenge(string sessionId, int seat);
@@ -290,7 +299,7 @@ public interface IGameHub
     /// <summary>
     /// Final Card: <paramref name="seat"/>, which the caller must hold, calls Final Card, at any time during a hand: it protects
     /// the seat on its final card (or on its turn before playing its second to last), and every other seat holding one card
-    /// unprotected has 2 penalty cards to draw.
+    /// unprotected has 2 penalty cards to draw (4 in Israeli Style).
     /// </summary>
     Task CallFinalCard(string sessionId, int seat);
 

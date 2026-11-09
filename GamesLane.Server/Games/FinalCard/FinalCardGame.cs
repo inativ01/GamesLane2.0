@@ -1,9 +1,9 @@
 namespace GamesLane.Server.Games.FinalCard;
 
 /// <summary>
-/// Final Card rules for one game. <c>shuffle</c> shuffles the deck before each deal, which gives player 0 the first cards, player
-/// 1 the next ones, and so on, then turns up the next card (for tests); it also shuffles the discard pile into a new draw
-/// pile when the draw pile runs out. Hand 1 is started by player 0, each later hand by the next player.
+/// Final Card rules for one game, in US or Israeli Style. <c>shuffle</c> shuffles the deck before each deal, which gives player 0
+/// the first cards, player 1 the next ones, and so on, then turns up the next card (for tests); it also shuffles the discard
+/// pile into a new draw pile when the draw pile runs out. Hand 1 is started by player 0, each later hand by the next player.
 /// </summary>
 public class FinalCardGame : IFinalCardGame
 {
@@ -26,6 +26,14 @@ public class FinalCardGame : IFinalCardGame
     private int? _challengeable;
     private bool _heldTheColor;
 
+    // The card to follow: the top card of the discard pile, but the card under a +3 or +3 Breaker.
+    private FinalCardCard _leading = null!;
+
+    // Israeli Style: the color of the TAKI the player to play is running (or null), and the player of the +3 nobody has
+    // answered yet (or null).
+    private FinalCardColor? _takiColor;
+    private int? _threeBy;
+
     /// <summary>
     /// Deals the first hand for <paramref name="players"/> players (2 to 10).
     /// </summary>
@@ -37,7 +45,7 @@ public class FinalCardGame : IFinalCardGame
         _shuffle = shuffle ?? Random.Shared.Shuffle;
         _hands = [.. Enumerable.Range(0, players).Select(_ => new List<FinalCardCard>())];
         _scores = new int[players];
-        _handSizes = [.. Enumerable.Repeat(FinalCardRules.HandSize, players)];
+        _handSizes = [.. Enumerable.Repeat(Rules.CardsDealt, players)];
         _calledFinalCard = new bool[players];
         _penaltyCards = new int[players];
         Deal();
@@ -82,6 +90,15 @@ public class FinalCardGame : IFinalCardGame
     public FinalCardCard? DrawnCard { get; private set; }
 
     /// <inheritdoc />
+    public FinalCardColor? TakiColor => _takiColor;
+
+    /// <inheritdoc />
+    public int? ThreeBy => _threeBy;
+
+    /// <inheritdoc />
+    public bool AnyCard => Rules.IsIsraeli && _leading.Value == FinalCardValue.Crown;
+
+    /// <inheritdoc />
     public IReadOnlyList<int> Scores => _scores;
 
     /// <inheritdoc />
@@ -122,14 +139,20 @@ public class FinalCardGame : IFinalCardGame
 
     /// <inheritdoc />
     public bool CanBeCaught(int player) =>
-        Phase == FinalCardPhase.Playing && _hands[player].Count == 1 && !_calledFinalCard[player] && _penaltyCards[player] == 0;
+        Phase == FinalCardPhase.Playing && _hands[player].Count == 1 && !_calledFinalCard[player] && _penaltyCards[player] == 0
+        && !(player == Turn && _takiColor is not null);
 
     /// <inheritdoc />
     public IReadOnlyList<FinalCardCard> Playable(int player)
     {
-        if (Phase != FinalCardPhase.Playing || player != Turn || IsWaitingForPenalty || _penaltyCards[player] > 0)
+        if (Phase != FinalCardPhase.Playing || _penaltyCards[player] > 0)
         {
             return [];
+        }
+
+        if (player != Turn || IsWaitingForPenalty)
+        {
+            return _threeBy is { } by && by != player ? [.. _hands[player].Where(c => c.Value == FinalCardValue.BreakThree).Distinct()] : [];
         }
 
         if (DrawnCard is { } drawn)
@@ -143,16 +166,18 @@ public class FinalCardGame : IFinalCardGame
     /// <inheritdoc />
     public bool TryPlay(int player, FinalCardCard card, FinalCardColor? color, out string? error)
     {
-        if (!TryCheckTurn(player, out error))
+        var breaks = _threeBy is { } by && by != player && card.Value == FinalCardValue.BreakThree;
+        if (!(breaks ? TryCheckBreaker(player, out error) : TryCheckTurn(player, out error)))
         {
             return false;
         }
 
         var hand = _hands[player];
         var index = hand.IndexOf(card);
+        var choosesColor = ChoosesColor(card);
         error = index < 0 ? "You do not have that card."
             : DrawnCard is { } drawn && card != drawn ? "You can play only the card you drew, or keep it."
-            : card.IsWild && color is null or FinalCardColor.Wild ? "Choose a color for the wild card."
+            : choosesColor && color is null or FinalCardColor.Wild ? "Choose the color to play."
             : null;
         if (error is not null || !CanPlay(player, card, out error))
         {
@@ -161,64 +186,71 @@ public class FinalCardGame : IFinalCardGame
 
         var answersStack = PendingDraw > 0;
         var heldTheColor = hand.Any(c => c.Color == Color);
+        var inTaki = _takiColor is { } run && (card.Color == run || card.Value == FinalCardValue.Taki);
         BeginAction();
         hand.RemoveAt(index);
         _discard.Add(card);
-        Color = card.IsWild ? color!.Value : card.Color;
+        if (card.Value is not (FinalCardValue.DrawThree or FinalCardValue.BreakThree))
+        {
+            _leading = card;
+        }
+
+        Color = choosesColor ? color!.Value : card.IsWild ? Color : card.Color;
         DrawnCard = null;
-        _events.Add(new FinalCardEvent(player, FinalCardEventKind.Played, card, Color: card.IsWild ? Color : null));
+        _events.Add(new FinalCardEvent(player, FinalCardEventKind.Played, card, Color: choosesColor ? Color : null));
         if (hand.Count != 1)
         {
             _calledFinalCard[player] = false;
         }
 
-        var twoPlaying = ActiveCount == 2;
-        var next = Step(player, 1);
-        switch (card.Value)
+        if (breaks)
         {
-            case FinalCardValue.Skip:
-                _events.Add(new FinalCardEvent(next, FinalCardEventKind.Skipped));
-                Turn = Step(player, 2);
-                break;
-            case FinalCardValue.Reverse when twoPlaying:
-                // With two players, a Reverse works like a Skip.
-                Direction = -Direction;
-                _events.Add(new FinalCardEvent(next, FinalCardEventKind.Skipped));
-                Turn = player;
-                break;
-            case FinalCardValue.Reverse:
-                Direction = -Direction;
-                Turn = Step(player, 1);
-                break;
-            case FinalCardValue.DrawTwo or FinalCardValue.WildDrawFour when Rules.CanBeStacked(card) || answersStack
-                || (card.Value == FinalCardValue.WildDrawFour && Rules.WildDrawFour == FinalCardWildDrawFour.Challenge && hand.Count > 0):
-                // The next player draws them all, unless they answer with a draw card or challenge a Wild Draw Four (not
-                // one played on a stack, nor a player's last card).
-                PendingDraw += card.DrawCount;
-                if (card.Value == FinalCardValue.WildDrawFour && Rules.WildDrawFour == FinalCardWildDrawFour.Challenge
-                    && !answersStack && hand.Count > 0)
-                {
-                    _challengeable = player;
-                    _heldTheColor = heldTheColor;
-                }
-
-                Turn = next;
-                break;
-            case FinalCardValue.DrawTwo or FinalCardValue.WildDrawFour:
-                DrawAndMissTurn(next, card.DrawCount);
-                Turn = Step(player, 2);
-                break;
-            default:
-                Turn = next;
-                break;
+            // The +3 Breaker answers the +3: its player draws the 3 cards instead, and the player to play plays on.
+            _events.Add(new FinalCardEvent(_threeBy!.Value, FinalCardEventKind.Penalty, Count: Owe(_threeBy.Value, 3)));
+            _threeBy = null;
+        }
+        else if (inTaki || (Rules.IsIsraeli && card.IsTaki))
+        {
+            // A TAKI (or SuperTAKI, in the color to play) starts a run of its color; the run goes on until the player
+            // closes it, or has no card left to play in it.
+            _takiColor = Color;
+            if (hand.Count == 0 || Playable(player).Count == 0)
+            {
+                CloseTaki(player);
+            }
+        }
+        else
+        {
+            _takiColor = null;
+            Apply(player, card, answersStack, heldTheColor);
         }
 
         PassTurn();
-        if (hand.Count == 0)
+        if (hand.Count == 0 && !(Rules.IsIsraeli && TopCard.Value == FinalCardValue.Plus && Turn == player))
         {
             EmptiedHand(player);
         }
 
+        return true;
+    }
+
+    /// <inheritdoc />
+    public bool TryCloseTaki(int player, out string? error)
+    {
+        if (!TryCheckTurn(player, out error))
+        {
+            return false;
+        }
+
+        if (_takiColor is null)
+        {
+            error = "There is no TAKI to close.";
+            return false;
+        }
+
+        BeginAction();
+        CloseTaki(player);
+        PassTurn();
         return true;
     }
 
@@ -242,13 +274,29 @@ public class FinalCardGame : IFinalCardGame
             return false;
         }
 
-        if (DrawnCard is not null)
+        error = DrawnCard is not null ? "You have already drawn. Play the card you drew, or keep it."
+            : _takiColor is not null ? "Close the TAKI first."
+            : null;
+        if (error is not null)
         {
-            error = "You have already drawn. Play the card you drew, or keep it.";
             return false;
         }
 
         BeginAction();
+        if (_threeBy is { } by)
+        {
+            // Nobody breaks the +3: every other player draws 3 (the others as penalty cards), and the player to play plays on.
+            _threeBy = null;
+            _events.Add(new FinalCardEvent(player, FinalCardEventKind.Drew, Count: Give(player, 3)));
+            foreach (var other in Enumerable.Range(0, Players).Where(p => p != by && p != player && !_ranking.Contains(p)))
+            {
+                _events.Add(new FinalCardEvent(other, FinalCardEventKind.Penalty, Count: Owe(other, 3)));
+            }
+
+            PassTurn();
+            return true;
+        }
+
         if (PendingDraw > 0)
         {
             _events.Add(new FinalCardEvent(player, FinalCardEventKind.Drew, Count: Give(player, PendingDraw)));
@@ -275,7 +323,7 @@ public class FinalCardGame : IFinalCardGame
 
         _calledFinalCard[player] = false;
         _events.Add(new FinalCardEvent(player, FinalCardEventKind.Drew, Count: count));
-        if (last is not null && CanPlay(player, last, out _))
+        if (!Rules.IsIsraeli && last is not null && CanPlay(player, last, out _))
         {
             DrawnCard = last;
         }
@@ -320,7 +368,7 @@ public class FinalCardGame : IFinalCardGame
 
         if (_challengeable is not { } offender)
         {
-            error = "There is no Wild Draw Four to challenge.";
+            error = "There is no Change Color +4 to challenge.";
             return false;
         }
 
@@ -367,7 +415,7 @@ public class FinalCardGame : IFinalCardGame
 
         foreach (var target in caught)
         {
-            _events.Add(new FinalCardEvent(target, FinalCardEventKind.Caught, Count: Owe(target, 2), By: player));
+            _events.Add(new FinalCardEvent(target, FinalCardEventKind.Caught, Count: Owe(target, Rules.CaughtPenalty), By: player));
         }
 
         return true;
@@ -391,14 +439,14 @@ public class FinalCardGame : IFinalCardGame
     }
 
     /// <summary>
-    /// Shuffles a full deck, deals each player their cards and turns up the first card (a wild card goes back under the
-    /// draw pile and the next one is turned up). A Skip turned up skips the hand's starter, a Reverse makes the player
-    /// before them start in the other direction, and a Draw Two makes the starter draw 2 (as penalty cards) and miss their
-    /// turn.
+    /// Shuffles a full deck of the style, deals each player their cards and turns up the first card (a card without a
+    /// color goes back under the draw pile and the next one is turned up). A Stop turned up skips the hand's starter, a
+    /// Change Direction makes the player before them start in the other direction, and a +2 makes the starter draw 2 (as
+    /// penalty cards) and miss their turn.
     /// </summary>
     private void Deal()
     {
-        var deck = FinalCardCard.Deck().ToArray();
+        var deck = Rules.Deck().ToArray();
         _shuffle(deck);
         _drawPile.Clear();
         _drawPile.AddRange(deck);
@@ -406,6 +454,8 @@ public class FinalCardGame : IFinalCardGame
         BeginAction();
         DrawnCard = null;
         PendingDraw = 0;
+        _takiColor = null;
+        _threeBy = null;
         Direction = 1;
         Phase = FinalCardPhase.Playing;
         for (var p = 0; p < Players; p++)
@@ -424,6 +474,7 @@ public class FinalCardGame : IFinalCardGame
         }
 
         _discard.Add(first);
+        _leading = first;
         Color = first.Color;
         var starter = (HandNumber - 1) % Players;
         _events.Add(new FinalCardEvent(starter, FinalCardEventKind.TurnedUp, first));
@@ -461,19 +512,115 @@ public class FinalCardGame : IFinalCardGame
 
     /// <summary>
     /// Whether <paramref name="player"/> may play <paramref name="card"/> on the pile. With cards to draw from a stack,
-    /// only a draw card the stacking rule allows on the top card; with the rule, a Wild Draw Four only without a card of
-    /// the color to play; any other wild card; otherwise a card of the color to play or of the top card's number or symbol.
+    /// only a draw card the stacking rule allows on the top card (in Israeli Style, a +2 or a Crown); with the rule, a
+    /// Change Color +4 only without a card of the color to play; any other card without a color; otherwise a card of the
+    /// color to play or of the leading card's number or symbol. In Israeli Style, a +3 nobody has answered yet can only be
+    /// answered with a +3 Breaker (by any other player) or a Crown (by the player to play); during a TAKI, only a card of
+    /// its color, a SuperTAKI, a Change Color, a Crown or a +3; and after a Crown, any card.
     /// </summary>
     private bool CanPlay(int player, FinalCardCard card, out string? error)
     {
-        error = PendingDraw > 0
-            ? Rules.CanStack(card, TopCard) ? null : "Answer with a draw card you can stack, or draw the cards."
+        error = Rules.IsIsraeli && _threeBy is { } by
+            ? (card.Value == FinalCardValue.BreakThree && player != by) || (card.Value == FinalCardValue.Crown && player == Turn) ? null
+                : "Answer the +3 with a +3 Breaker or a Crown, or draw 3 cards."
+            : Rules.IsIsraeli && PendingDraw > 0
+                ? card.Value is FinalCardValue.DrawTwo or FinalCardValue.Crown ? null : "Answer with a +2 or a Crown, or draw the cards."
+            : PendingDraw > 0
+                ? Rules.CanStack(card, TopCard) ? null : "Answer with a draw card you can stack, or draw the cards."
+            : _takiColor is { } run
+                ? card.Color == run || (card.IsWild && card.Value != FinalCardValue.BreakThree) ? null
+                    : "Play a card of the TAKI's color, or close the TAKI."
             : card.Value == FinalCardValue.WildDrawFour && Rules.WildDrawFour == FinalCardWildDrawFour.NoColor
                 && _hands[player].Any(c => c.Color == Color)
-                ? "You can play a Wild Draw Four only when you have no card of the color to play."
-            : card.IsWild || card.Color == Color || (!TopCard.IsWild && card.Value == TopCard.Value) ? null
+                ? "You can play a Change Color +4 only when you have no card of the color to play."
+            : AnyCard || card.IsWild || card.Color == Color || (!_leading.IsWild && card.Value == _leading.Value) ? null
             : "That card does not match the color or the symbol on the pile.";
         return error is null;
+    }
+
+    /// <summary>
+    /// Whether <paramref name="card"/> needs a color chosen: a Change Color, a Change Color +4, or a SuperTAKI after a Crown
+    /// (otherwise a SuperTAKI takes the color to play).
+    /// </summary>
+    private bool ChoosesColor(FinalCardCard card) =>
+        card.Value is FinalCardValue.Wild or FinalCardValue.WildDrawFour || (card.IsTaki && card.IsWild && AnyCard && _takiColor is null);
+
+    /// <summary>
+    /// The action of <paramref name="card"/>, just played by <paramref name="player"/> (or that closed their TAKI), and who
+    /// plays next. A Stop skips the next player; a Change Direction reverses the direction of play (with two players, in US
+    /// Style it works like a Stop, in Israeli Style it changes nothing else); a +2 or Change Color +4 makes the next player
+    /// draw (or answer it), or with the challenge rule challenge it. In Israeli Style: after a Plus or a Crown the player
+    /// plays again (a Crown also cancels the cards to draw); a +3 waits for an answer from the next player (or a +3
+    /// Breaker from anyone); a +3 Breaker played on another card makes its player draw 3.
+    /// </summary>
+    private void Apply(int player, FinalCardCard card, bool answersStack, bool heldTheColor)
+    {
+        var next = Step(player, 1);
+        switch (card.Value)
+        {
+            case FinalCardValue.Skip:
+                _events.Add(new FinalCardEvent(next, FinalCardEventKind.Skipped));
+                Turn = Step(player, 2);
+                break;
+            case FinalCardValue.Reverse when ActiveCount == 2 && !Rules.IsIsraeli:
+                // With two players, a Change Direction works like a Stop.
+                Direction = -Direction;
+                _events.Add(new FinalCardEvent(next, FinalCardEventKind.Skipped));
+                Turn = player;
+                break;
+            case FinalCardValue.Reverse:
+                Direction = -Direction;
+                Turn = Step(player, 1);
+                break;
+            case FinalCardValue.DrawTwo or FinalCardValue.WildDrawFour when Rules.CanBeStacked(card) || answersStack
+                || (card.Value == FinalCardValue.WildDrawFour && Rules.WildDrawFour == FinalCardWildDrawFour.Challenge && _hands[player].Count > 0):
+                // The next player draws them all, unless they answer with a draw card or challenge a Change Color +4 (not
+                // one played on a stack, nor a player's last card).
+                PendingDraw += card.DrawCount;
+                if (card.Value == FinalCardValue.WildDrawFour && Rules.WildDrawFour == FinalCardWildDrawFour.Challenge
+                    && !answersStack && _hands[player].Count > 0)
+                {
+                    _challengeable = player;
+                    _heldTheColor = heldTheColor;
+                }
+
+                Turn = next;
+                break;
+            case FinalCardValue.DrawTwo or FinalCardValue.WildDrawFour:
+                DrawAndMissTurn(next, card.DrawCount);
+                Turn = Step(player, 2);
+                break;
+            case FinalCardValue.Plus:
+                Turn = player;
+                break;
+            case FinalCardValue.Crown:
+                PendingDraw = 0;
+                _threeBy = null;
+                Turn = player;
+                break;
+            case FinalCardValue.DrawThree:
+                _threeBy = player;
+                Turn = next;
+                break;
+            case FinalCardValue.BreakThree:
+                _events.Add(new FinalCardEvent(player, FinalCardEventKind.Penalty, Count: Owe(player, 3)));
+                Turn = next;
+                break;
+            default:
+                Turn = next;
+                break;
+        }
+    }
+
+    /// <summary>
+    /// <paramref name="player"/>'s TAKI is closed: the action of its last card is carried out (a TAKI or SuperTAKI played on
+    /// its own has none).
+    /// </summary>
+    private void CloseTaki(int player)
+    {
+        _events.Add(new FinalCardEvent(player, FinalCardEventKind.ClosedTaki));
+        _takiColor = null;
+        Apply(player, TopCard, answersStack: false, heldTheColor: false);
     }
 
     /// <summary>
@@ -621,6 +768,19 @@ public class FinalCardGame : IFinalCardGame
     {
         ArgumentOutOfRangeException.ThrowIfNegative(player);
         ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(player, Players);
+    }
+
+    /// <summary>
+    /// Checks that <paramref name="player"/> can answer a +3 with a +3 Breaker, in or out of turn.
+    /// </summary>
+    private bool TryCheckBreaker(int player, out string? error)
+    {
+        CheckPlayer(player);
+        error = Phase == FinalCardPhase.GameOver ? "The game is over."
+            : Phase == FinalCardPhase.HandOver ? "This hand is over."
+            : _penaltyCards[player] > 0 ? "Draw your penalty cards first."
+            : null;
+        return error is null;
     }
 
     /// <summary>

@@ -1318,13 +1318,16 @@ function startChat(sessionId, view) {
 
 // A set option's value lists the choices turned off, separated by commas.
 const turnedOff = (value) => (value ?? "").split(",").filter(Boolean);
-// Whether an option applies, given the chosen values (e.g. card options only in Advanced mode).
-const applies = (option, values) => !option.shownWhen || values[option.shownWhen.key] === option.shownWhen.value;
+// Whether an option applies, given the chosen values and all the options (e.g. card options only in Advanced mode): the
+// option it depends on has the value and applies too.
+const applies = (option, values, options) => !option.shownWhen
+    || (values[option.shownWhen.key] === option.shownWhen.value
+        && applies(options.find((o) => o.key === option.shownWhen.key) ?? {}, values, options));
 
 // A session's chosen options, one text per option that applies, e.g. ["Mode: Advanced", "Challenge cards: 5 of 6"].
 function optionLines(state) {
     return state.optionList
-        .filter((option) => applies(option, state.options))
+        .filter((option) => applies(option, state.options, state.optionList))
         .map((option) => {
             const label = translateServerText(option.label);
             if (option.kind === "Set") {
@@ -1648,7 +1651,7 @@ function startSessionPage(gameType, render, seatRole = (seat) => t("Seat {n}", {
         const showApplicable = () => {
             const values = chosen();
             state.optionList.forEach((option) => {
-                form.querySelector(`fieldset[data-key="${option.key}"]`).hidden = !applies(option, values);
+                form.querySelector(`fieldset[data-key="${option.key}"]`).hidden = !applies(option, values, state.optionList);
             });
         };
         const fill = (values) => {

@@ -30,7 +30,8 @@ public enum GameOptionKind
 }
 
 /// <summary>
-/// An option that only matters when option <see cref="Key"/> has the value <see cref="Value"/>; pages show it only then.
+/// An option that only matters when option <see cref="Key"/> has the value <see cref="Value"/> and is itself shown; pages
+/// show it only then.
 /// </summary>
 public record GameOptionCondition(string Key, string Value);
 

@@ -3922,7 +3922,7 @@ button.final-card-pile:disabled {
     margin-top: 0.3rem;
 }
 
-.final-card-challenge {
+.final-card-challenge, .final-card-close-taki {
     background: var(--gold);
     color: var(--ink);
     font-weight: 800;

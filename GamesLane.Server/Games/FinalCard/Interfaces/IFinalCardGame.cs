@@ -20,13 +20,13 @@ public interface IFinalCardGame
     /// <summary>The player to play (after a hand, its winner).</summary>
     int Turn { get; }
 
-    /// <summary>1 while play goes up the player numbers, -1 after a Reverse.</summary>
+    /// <summary>1 while play goes up the player numbers, -1 after a Change Direction.</summary>
     int Direction { get; }
 
     /// <summary>The top card of the discard pile.</summary>
     FinalCardCard TopCard { get; }
 
-    /// <summary>The color to play: the top card's, or the one chosen for a wild card.</summary>
+    /// <summary>The color to play: the top card's, or the one chosen for a Change Color.</summary>
     FinalCardColor Color { get; }
 
     /// <summary>The cards left in the draw pile.</summary>
@@ -38,6 +38,15 @@ public interface IFinalCardGame
     /// <summary>The card the player to play has just drawn and may play, or null if they have not drawn.</summary>
     FinalCardCard? DrawnCard { get; }
 
+    /// <summary>Israeli Style: the color of the TAKI the player to play is running, or null.</summary>
+    FinalCardColor? TakiColor { get; }
+
+    /// <summary>Israeli Style: the player of the +3 nobody has answered yet, or null.</summary>
+    int? ThreeBy { get; }
+
+    /// <summary>Israeli Style: whether a Crown leads, so any card can be played.</summary>
+    bool AnyCard { get; }
+
     /// <summary>A player's cards.</summary>
     IReadOnlyList<FinalCardCard> Hand(int player);
 
@@ -47,7 +56,7 @@ public interface IFinalCardGame
     /// <summary>Each player's points, in a game to a score target.</summary>
     IReadOnlyList<int> Scores { get; }
 
-    /// <summary>Pyramid: the number of cards a player was last dealt (7 at first).</summary>
+    /// <summary>Pyramid: the number of cards a player was last dealt (7 at first, 8 in Israeli Style).</summary>
     int HandSize(int player);
 
     /// <summary>Whether a player has called Final Card for their last card, which protects them while they hold it.</summary>
@@ -60,8 +69,8 @@ public interface IFinalCardGame
     bool CanBeCaught(int player);
 
     /// <summary>
-    /// The penalty cards a player has to draw (from a Draw Two or Wild Draw Four that cannot be stacked, a challenge, or
-    /// being caught without calling Final Card). They draw them with <see cref="TryDraw"/>, before anything else.
+    /// The penalty cards a player has to draw (from a +2 or Change Color +4 that cannot be stacked, a challenge, a +3 or +3
+    /// Breaker, or being caught without calling Final Card). They draw them with <see cref="TryDraw"/>, before anything else.
     /// </summary>
     int PenaltyCards(int player);
 
@@ -69,7 +78,7 @@ public interface IFinalCardGame
     bool IsWaitingForPenalty { get; }
 
     /// <summary>
-    /// Whether the player to play can challenge the Wild Draw Four just played on them (with the challenge rule; not one
+    /// Whether the player to play can challenge the Change Color +4 just played on them (with the challenge rule; not one
     /// played on a stack, nor its player's last card).
     /// </summary>
     bool CanChallenge { get; }
@@ -94,7 +103,8 @@ public interface IFinalCardGame
 
     /// <summary>
     /// <paramref name="player"/>, whose turn it is, plays <paramref name="card"/>, choosing <paramref name="color"/> for a
-    /// wild card.
+    /// Change Color, a Change Color +4, or a SuperTAKI after a Crown. In Israeli Style, any other player can also play a +3
+    /// Breaker on a +3 nobody has answered yet: the player of the +3 then has 3 penalty cards to draw.
     /// </summary>
     bool TryPlay(int player, FinalCardCard card, FinalCardColor? color, out string? error);
 
@@ -102,15 +112,23 @@ public interface IFinalCardGame
     /// <paramref name="player"/> draws. With penalty cards to draw (see <see cref="PenaltyCards"/>), they draw them all, at any
     /// time during a hand; the turn does not change. Otherwise, on their turn: the cards to draw from a stack, or else one
     /// card (or, with the option, cards until one can be played). If the card drawn can be played they may play it,
-    /// otherwise the turn passes.
+    /// otherwise the turn passes. In Israeli Style, a card drawn cannot be played until the next turn, there is no drawing
+    /// during a TAKI, and drawing on a +3 nobody has answered gives the player 3 cards and every other player but the one
+    /// of the +3 3 penalty cards; the player then plays on.
     /// </summary>
     bool TryDraw(int player, out string? error);
+
+    /// <summary>
+    /// <paramref name="player"/>, whose turn it is, closes their TAKI: the action of its last card is carried out, and
+    /// unless it gives them another turn (a Plus, or a Stop with two players), the turn passes.
+    /// </summary>
+    bool TryCloseTaki(int player, out string? error);
 
     /// <summary><paramref name="player"/> keeps the card they drew, which ends their turn.</summary>
     bool TryPass(int player, out string? error);
 
     /// <summary>
-    /// <paramref name="player"/>, whose turn it is, challenges the Wild Draw Four played on them (see
+    /// <paramref name="player"/>, whose turn it is, challenges the Change Color +4 played on them (see
     /// <see cref="CanChallenge"/>). If its player held a card of the color that was to play, they have the cards to draw as
     /// penalty cards and <paramref name="player"/> plays on; otherwise <paramref name="player"/> has them and 2 more as
     /// penalty cards, and misses their turn.
@@ -120,7 +138,7 @@ public interface IFinalCardGame
     /// <summary>
     /// <paramref name="player"/> calls Final Card, at any time during a hand. It protects them if they hold one card, or two on
     /// their turn with one they can play, and are not protected yet; and every other player who can be caught (see
-    /// <see cref="CanBeCaught"/>) has 2 penalty cards to draw. Refused when it does neither.
+    /// <see cref="CanBeCaught"/>) has 2 penalty cards to draw (4 in Israeli Style). Refused when it does neither.
     /// </summary>
     bool TryCallFinalCard(int player, out string? error);
 
