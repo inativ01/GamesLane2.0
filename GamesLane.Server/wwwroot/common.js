@@ -821,13 +821,27 @@ const ROAD_RANKS = {
     J: "M12 14C6 8 14 2 22 6C32 10 46 12 58 6M42 10C44 32 44 56 32 70C22 80 4 74 8 62C10 56 18 56 18 62",
     Q: "M30 6C10 8 6 44 14 60C24 78 50 72 52 44C54 18 42 4 30 6ZM24 56C36 58 40 72 54 76C58 77 60 72 56 70",
     K: "M18 6C16 26 16 52 14 72C12 80 4 76 6 70M54 6C58 2 52 0 48 6C38 18 28 34 18 44C30 46 34 60 42 72C46 78 56 78 58 70",
+    // More ranks: 0 and 1, S (Skip, a circle crossed out) and R (Reverse, two curved arrows).
+    0: "M30 6C10 6 8 40 10 56C12 72 22 76 30 76C42 76 50 66 51 48C52 26 46 6 30 6C38 4 46 8 48 14",
+    1: "M12 22C22 18 30 12 38 4C36 28 36 52 34 72C32 80 22 78 24 72",
+    S: "M30 12C14 12 6 26 6 40C6 56 18 68 30 68C46 68 54 54 54 40C54 24 44 12 30 12ZM13 58L47 22",
+    R: "M10 36C10 18 24 10 42 12M34 3L43 12L34 21M50 44C50 62 36 70 18 68M26 59L17 68L26 77",
 };
+
+// Ranks drawn as a plus sign and a digit side by side, in a box 100 wide: Draw Two, and Wild Draw Four's middle.
+const WIDE_ROAD_RANKS = { "+2": 2, "+4": 4 };
+const PLUS_ROAD = "M4 40H30M17 27V53";
+
+// How a rank shows in a card's corners: Skip and Reverse as symbols.
+const RANK_LABELS = { S: "⊘", R: "⇄" };
 
 // The rank drawn as a script road.
 function roadRank(rank) {
-    const d = ROAD_RANKS[rank];
-    return svgElement("svg", { class: "card-road", viewBox: "-6 -6 72 92", "aria-hidden": "true" },
-        ...["road-kerb", "road-rim", "road", "road-line"].map((layer) => svgElement("path", { class: layer, d })));
+    const digit = WIDE_ROAD_RANKS[rank];
+    const parts = digit ? [[PLUS_ROAD, 0], [ROAD_RANKS[digit], 40]] : [[ROAD_RANKS[rank], 0]];
+    return svgElement("svg", { class: digit ? "card-road wide" : "card-road", viewBox: digit ? "-6 -6 112 92" : "-6 -6 72 92", "aria-hidden": "true" },
+        ...["road-kerb", "road-rim", "road", "road-line"].flatMap((layer) =>
+            parts.map(([d, dx]) => svgElement("path", { class: layer, d, ...(dx ? { transform: `translate(${dx} 0)` } : {}) }))));
 }
 
 // An SVG element with its attributes and children.
@@ -854,7 +868,7 @@ function cardFace(rank, suit) {
     if (SUIT_SHAPES[suit]) {
         face.append(suitShape(suit, "card-silhouette"));
     }
-    face.append(ROAD_RANKS[rank] ? roadRank(rank) : el("span", "card-road-text", rank));
+    face.append(ROAD_RANKS[rank] || WIDE_ROAD_RANKS[rank] ? roadRank(rank) : el("span", "card-road-text", rank));
     return face;
 }
 
@@ -935,10 +949,12 @@ function classicCard(card, text) {
     return card;
 }
 
-// A card such as "10♥", in the user's card style (see userSettings). New cards: rank and suit in block letters in the
-// top left and bottom right corners, and the suit's silhouette with the rank in the middle, all in the suit's colour.
-// "JOKER" is a joker. Without text, a face-down card.
-function cardElement(text) {
+// A card such as "10♥", in `style` (by default the user's card style, see userSettings). GamesLane cards: rank and
+// suit in block letters in the top left and bottom right corners, and the suit's silhouette with the rank in the middle,
+// all in the suit's colour. "JOKER" is a joker. In the GamesLane style only, also "0♥" to "9♥", "S♥" (Skip),
+// "R♥" (Reverse) and "+2♥"; "WILD" is drawn like the joker, and "+4" (Wild Draw Four) like it with a road "+4" in the
+// middle. Without text, a face-down card.
+function cardElement(text, style = userSettings().cards) {
     const card = el("span", "card");
     if (!text) {
         card.classList.add("empty");
@@ -946,18 +962,21 @@ function cardElement(text) {
     }
     card.setAttribute("role", "img");
     card.setAttribute("aria-label", text === "JOKER" ? t("Joker") : text);
-    if (userSettings().cards === "Classic") {
+    if (style === "Classic") {
         return classicCard(card, text);
     }
-    if (text === "JOKER") {
-        return jokerCard(card, "JOKER", el("span", "joker-logo"));
+    if (text === "JOKER" || text === "WILD") {
+        return jokerCard(card, text, el("span", "joker-logo"));
+    }
+    if (text === "+4") {
+        return jokerCard(card, text, roadRank(text));
     }
     const rank = text.slice(0, -1);
     const suit = text.slice(-1);
     if (SUIT_CLASSES[suit]) {
         card.classList.add(SUIT_CLASSES[suit]);
     }
-    const corner = (className) => el("span", className, el("span", "card-rank", rank), suitShape(suit, "card-suit"));
+    const corner = (className) => el("span", className, el("span", "card-rank", RANK_LABELS[rank] ?? rank), suitShape(suit, "card-suit"));
     card.append(cardFace(rank, suit), corner("card-corner"), corner("card-corner bottom"));
     return card;
 }

@@ -1489,6 +1489,11 @@ svg.card-suit {
     color: #1b1b1b;
 }
 
+/* A rank of a plus sign and a digit (+2 and +4), wider than the others. */
+.card-road.wide {
+    width: 2.1em;
+}
+
 .card-silhouette.octagon {
     width: 2.6em;
     height: 2.6em;
