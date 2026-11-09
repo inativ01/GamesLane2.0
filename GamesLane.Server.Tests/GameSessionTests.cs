@@ -5,7 +5,7 @@ using GamesLane.Server.Games.TheGang;
 using GamesLane.Server.Games.TicTacToe;
 using GamesLane.Server.Games.FinalCard;
 using GamesLane.Server.Games.Yaniv;
-using GamesLane.Server.Games.Yatzee;
+using GamesLane.Server.Games.Wazoo;
 using GamesLane.Server.Hubs;
 using GamesLane.Server.Sessions;
 
@@ -246,7 +246,7 @@ public class GameSessionTests
     [Fact]
     public void A_public_game_starts_by_itself_when_a_player_fills_the_last_seat()
     {
-        var session = Public(new YatzeeSession("ABC123"));
+        var session = Public(new WazooSession("ABC123"));
         for (var i = 0; i < 7; i++)
         {
             session.TryTakeNextSeat($"user:p{i}", new PlayerProfile($"P{i}", "🙂"), $"conn-{i}", out _);
@@ -776,7 +776,7 @@ public class GameSessionTests
     {
         var empty = new TicTacToeSession("ABC123");
         var privateLobby = Seated(new TicTacToeSession("ABC124"));
-        var publicLobby = Public(new YatzeeSession("ABC125"));
+        var publicLobby = Public(new WazooSession("ABC125"));
         publicLobby.TryTakeNextSeat(Alice, AliceProfile, "conn-a", out _);
         var started = Started(new TicTacToeSession("ABC126"));
 
@@ -898,11 +898,11 @@ public class GameSessionTests
         AssertSameAfterReload(rich, () => new RichManPoorManSession("ABC123"),
             s => s.TryThrow(Players[5], 5, ["AS"], out var e) ? null : e);
 
-        var yatzee = Started(new YatzeeSession("ABC123", Dice(6, 6, 2, 6, 3)));
-        yatzee.TryRoll(Alice, 0, out _);
-        yatzee.TryHold(Alice, 0, 0, true, out _);
-        AssertSameAfterReload(yatzee, () => new YatzeeSession("ABC123"),
-            s => s.TryScore(Alice, 0, YatzeeCategory.Sixes, out var e) ? null : e);
+        var wazoo = Started(new WazooSession("ABC123", Dice(6, 6, 2, 6, 3)));
+        wazoo.TryRoll(Alice, 0, out _);
+        wazoo.TryHold(Alice, 0, 0, true, out _);
+        AssertSameAfterReload(wazoo, () => new WazooSession("ABC123"),
+            s => s.TryScore(Alice, 0, WazooCategory.Sixes, out var e) ? null : e);
 
         var finalCard = Started(new FinalCardSession("ABC123", UnshuffledFinalCard));
         finalCard.TryPlay(Alice, 0, "R1", null, out _);
@@ -1505,12 +1505,12 @@ public class GameSessionTests
         return () => queue.Dequeue();
     }
 
-    // Yatzee
+    // Wazoo
 
     [Fact]
-    public void Yatzee_seats_take_turns_in_seat_order()
+    public void Wazoo_seats_take_turns_in_seat_order()
     {
-        var session = Started(new YatzeeSession("ABC123", Dice(6, 6, 2, 6, 3, 6, 1)));
+        var session = Started(new WazooSession("ABC123", Dice(6, 6, 2, 6, 3, 6, 1)));
         Assert.False(session.TryRoll(Bob, 1, out var error));
         Assert.Equal("It is not your turn.", error);
         Assert.False(session.TryRoll(Bob, 0, out error));
@@ -1520,17 +1520,17 @@ public class GameSessionTests
         Assert.True(session.TryHold(Alice, 0, 0, true, out error), error);
         Assert.True(session.TryHold(Alice, 0, 1, true, out error), error);
         Assert.True(session.TryHold(Alice, 0, 3, true, out error), error);
-        var state = Yatzee(session);
+        var state = Wazoo(session);
         Assert.Equal([6, 6, 2, 6, 3], state.Dice);
         Assert.Equal([true, true, false, true, false], state.Held);
         Assert.Equal(2, state.RollsLeft);
-        Assert.Equal(18, state.PossibleScores[(int)YatzeeCategory.Sixes]);
+        Assert.Equal(18, state.PossibleScores[(int)WazooCategory.Sixes]);
         Assert.True(session.TryRoll(Alice, 0, out error), error);
-        Assert.True(session.TryScore(Alice, 0, YatzeeCategory.Sixes, out error), error);
+        Assert.True(session.TryScore(Alice, 0, WazooCategory.Sixes, out error), error);
 
-        state = Yatzee(session);
+        state = Wazoo(session);
         Assert.Equal((1, 1, 3), (state.Turn, state.Round, state.RollsLeft));
-        Assert.Equal(new YatzeeTurnState(0, YatzeeCategory.Sixes, 24, false, state.LastTurn!.Dice), state.LastTurn);
+        Assert.Equal(new WazooTurnState(0, WazooCategory.Sixes, 24, false, state.LastTurn!.Dice), state.LastTurn);
         Assert.Equal([6, 6, 6, 6, 1], state.LastTurn.Dice);
         Assert.Equal([0, 1], state.Players.Select(p => p.Seat));
         Assert.Equal([24, 0], state.Players.Select(p => p.Total));
@@ -1538,14 +1538,14 @@ public class GameSessionTests
     }
 
     [Fact]
-    public void Yatzee_can_be_played_alone_and_played_again_once_over()
+    public void Wazoo_can_be_played_alone_and_played_again_once_over()
     {
         var face = 0;
-        var session = new YatzeeSession("ABC123", () => face++ % 6 + 1);
+        var session = new WazooSession("ABC123", () => face++ % 6 + 1);
         session.TryTakeSeat(Alice, AliceProfile, "conn-a", 0, out _);
         Assert.True(session.TryNewGame(Alice, 0, out var error), error);
 
-        foreach (var category in Enum.GetValues<YatzeeCategory>())
+        foreach (var category in Enum.GetValues<WazooCategory>())
         {
             Assert.True(session.TryRoll(Alice, 0, out error), error);
             Assert.True(session.TryScore(Alice, 0, category, out error), error);
@@ -1553,15 +1553,15 @@ public class GameSessionTests
 
         var state = session.GetPublicState();
         Assert.Equal(SessionPhase.Over, state.Phase);
-        Assert.Equal([0], Yatzee(session).Winners);
-        Assert.True(Yatzee(session).IsOver);
+        Assert.Equal([0], Wazoo(session).Winners);
+        Assert.True(Wazoo(session).IsOver);
         Assert.True(session.TryNewGame(Alice, state.GameNumber, out error), error);
         Assert.Equal(SessionPhase.Playing, session.GetPublicState().Phase);
-        Assert.All(Yatzee(session).Players[0].Scores, Assert.Null);
+        Assert.All(Wazoo(session).Players[0].Scores, Assert.Null);
     }
 
-    private static YatzeeState Yatzee(YatzeeSession session) =>
-        Assert.IsType<YatzeeState>(session.GetPublicState().Game);
+    private static WazooState Wazoo(WazooSession session) =>
+        Assert.IsType<WazooState>(session.GetPublicState().Game);
 
     // Final Card
 

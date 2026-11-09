@@ -1,6 +1,6 @@
 "use strict";
 
-// Yatzee: 1 to 8 players take turns in seat order for 13 rounds. On their turn, a player rolls the five dice up to three
+// Wazoo: 1 to 8 players take turns in seat order for 13 rounds. On their turn, a player rolls the five dice up to three
 // times, tapping dice to keep them between rolls, then taps an open box of their scorecard to score the dice there.
 // Everyone sees the dice and every scorecard; the open boxes of the player to play show what the dice would score.
 
@@ -17,7 +17,7 @@ const BOXES = [
     { key: "FullHouse", label: "Full house", note: "25" },
     { key: "SmallStraight", label: "Small straight", note: "30" },
     { key: "LargeStraight", label: "Large straight", note: "40" },
-    { key: "Yatzee", label: "Yatzee", note: "50" },
+    { key: "Wazoo", label: "Wazoo", note: "50" },
     { key: "Chance", label: "Chance", note: "Total of all dice" },
 ];
 const UPPER = 6;
@@ -55,7 +55,7 @@ function noticeRoll(game) {
         rollingUntil = Date.now() + ROLL_MS;
         clearInterval(rollTimer);
         rollTimer = setInterval(() => {
-            yatzee.refresh();
+            wazoo.refresh();
             if (Date.now() >= rollingUntil) clearInterval(rollTimer);
         }, 90);
     }
@@ -65,7 +65,7 @@ function noticeRoll(game) {
 // The status line and the message about the last turn. The status starts with 👉 when the viewer must act (the status bar
 // then turns gold), ⏳ while they wait, and 🏆 or 🤝 for the result. Each message has a form for the viewer ("You
 // scored…") and one for a named player ("Dana scored…"); a user holding several seats sees the named forms.
-function yatzeeTexts(game, state, view) {
+function wazooTexts(game, state, view) {
     const name = (seat) => state.seats[seat]?.name ?? t("Seat {n}", { n: seat + 1 });
     const several = view.mySeats.length > 1;
     const about = (seat, you, other, values = {}) =>
@@ -91,7 +91,7 @@ function yatzeeTexts(game, state, view) {
         message = about(last.seat, "You scored {points} in {box}.", "{name} scored {points} in {box}.",
             { points: last.points, box: boxName(last.category) });
         if (last.bonus) {
-            message += ` ${t("Yatzee bonus: +100!")}`;
+            message += ` ${t("Wazoo bonus: +100!")}`;
         }
     }
     return { status, message };
@@ -114,7 +114,7 @@ function renderDice(game, canAct, rolling) {
         if (held) {
             die.append(el("span", "yz-die-label", t("Kept")));
         }
-        die.addEventListener("click", () => call("HoldDie", yatzee.sessionId, game.turn, i, !held).catch(() => {}));
+        die.addEventListener("click", () => call("HoldDie", wazoo.sessionId, game.turn, i, !held).catch(() => {}));
         return die;
     }));
 }
@@ -122,7 +122,7 @@ function renderDice(game, canAct, rolling) {
 // Scoring 0 in a box asks first, since it is easy to tap by mistake.
 function scoreBox(game, box, points) {
     if (points === 0 && !confirm(t("Score 0 in {box}?", { box: t(box.label) }))) return;
-    call("Score", yatzee.sessionId, game.turn, box.key).catch(() => {});
+    call("Score", wazoo.sessionId, game.turn, box.key).catch(() => {});
 }
 
 // The scorecard: a column per player (the player to play is highlighted), a row per box, and the totals. The open boxes
@@ -168,13 +168,13 @@ function renderCard(game, state, view, canAct, rolling) {
             sumRow(t("Upper total"), null, (player) => player.upperTotal, "yz-sum"),
             sumRow(t("Bonus"), t("35 for 63 or more"), (player) => plus(player.upperBonus), "yz-sum"),
             ...BOXES.slice(UPPER).map((box, i) => boxRow(box, UPPER + i)),
-            sumRow(t("Yatzee bonus"), t("100 for each extra Yatzee"), (player) => plus(player.yatzeeBonus), "yz-sum"),
+            sumRow(t("Wazoo bonus"), t("100 for each extra Wazoo"), (player) => plus(player.wazooBonus), "yz-sum"),
             sumRow(t("Total"), null, (player) => player.total, "yz-sum yz-total")));
 }
 
 let current = null;
 
-const yatzee = startSessionPage("Yatzee", (game, state, view) => {
+const wazoo = startSessionPage("Wazoo", (game, state, view) => {
     noticeRoll(game);
     const rolling = Date.now() < rollingUntil;
     const canAct = !game.isOver && view.isMe(game.turn);
@@ -182,7 +182,7 @@ const yatzee = startSessionPage("Yatzee", (game, state, view) => {
 
     showScores(state, view, [game.isOver ? t("Final scores") : t("Round {n} of {total}", { n: game.round, total: ROUNDS })],
         game.players.map((player) => ({ seat: player.seat, score: player.total, acting: !game.isOver && player.seat === game.turn })));
-    const { status, message } = yatzeeTexts(game, state, view);
+    const { status, message } = wazooTexts(game, state, view);
     $("status").textContent = status;
     // Confetti for the winner, and for a player alone at the end of their game.
     if (game.isOver && game.winners.some((seat) => view.isMe(seat))) {
@@ -199,5 +199,5 @@ const yatzee = startSessionPage("Yatzee", (game, state, view) => {
 });
 
 $("yz-roll").addEventListener("click", () => {
-    if (current?.canAct) call("RollDice", yatzee.sessionId, current.game.turn).catch(() => {});
+    if (current?.canAct) call("RollDice", wazoo.sessionId, current.game.turn).catch(() => {});
 });

@@ -366,9 +366,9 @@ TRANSLATIONS.he = {
     "Unknown card.": "קלף לא מוכר.",
     "Log in to ask to join.": "התחברו כדי לבקש להצטרף.",
 
-    // Yatzee
-    "Yatzee": "יאצי",
-    "Yatzee - GamesLane": "יאצי - GamesLane",
+    // Wazoo
+    "Wazoo": "וואזו",
+    "Wazoo - GamesLane": "וואזו - GamesLane",
     "Roll five dice, three times a turn, and fill your scorecard.": "מטילים חמש קוביות, עד שלוש פעמים בתור, וממלאים את כרטיס הניקוד.",
     "1–8 players": "1–8 שחקנים",
     "Ones": "אחדים",
@@ -387,8 +387,8 @@ TRANSLATIONS.he = {
     "Upper total": "סכום החלק העליון",
     "Bonus": "בונוס",
     "35 for 63 or more": "35 על 63 ומעלה",
-    "Yatzee bonus": "בונוס יאצי",
-    "100 for each extra Yatzee": "100 על כל יאצי נוסף",
+    "Wazoo bonus": "בונוס וואזו",
+    "100 for each extra Wazoo": "100 על כל וואזו נוסף",
     "Total": "סך הכול",
     "Final scores": "תוצאות סופיות",
     "Round {n} of {total}": "סיבוב {n} מתוך {total}",
@@ -403,19 +403,19 @@ TRANSLATIONS.he = {
     "Score 0 in {box}?": "לרשום 0 במשבצת {box}?",
     "You scored {points} in {box}.": "רשמת {points} במשבצת {box}.",
     "{name} scored {points} in {box}.": "ל־{name} נרשמו {points} במשבצת {box}.",
-    "Yatzee bonus: +100!": "בונוס יאצי: 100 נקודות!",
+    "Wazoo bonus: +100!": "בונוס וואזו: 100 נקודות!",
     "Game over: {n} points.": "המשחק הסתיים: {n} נקודות.",
     "You win with {n} points!": "ניצחת עם {n} נקודות!",
     "{name} wins with {n} points!": "{name} זוכה עם {n} נקודות!",
     "A tie at {n} points: {names}.": "תיקו ב־{n} נקודות: {names}.",
 
-    // Yatzee: messages from the server
+    // Wazoo: messages from the server
     "You have no rolls left. Choose a box to score.": "לא נשארו הטלות. בחרו משבצת לניקוד.",
     "There is no such die.": "אין קובייה כזו.",
     "There is no such box.": "אין משבצת כזו.",
     "That box is already filled.": "המשבצת הזו כבר מלאה.",
-    "This Yatzee must be scored in the upper box of its number.": "את היאצי הזה צריך לרשום במשבצת העליונה של המספר שלו.",
-    "This Yatzee must be scored in an open lower box.": "את היאצי הזה צריך לרשום במשבצת פנויה בחלק התחתון.",
+    "This Wazoo must be scored in the upper box of its number.": "את הוואזו הזה צריך לרשום במשבצת העליונה של המספר שלו.",
+    "This Wazoo must be scored in an open lower box.": "את הוואזו הזה צריך לרשום במשבצת פנויה בחלק התחתון.",
 
     // Final Card
     "Final Card": "קלף אחרון",

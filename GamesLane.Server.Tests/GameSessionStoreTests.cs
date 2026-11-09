@@ -47,8 +47,8 @@ public class GameSessionStoreTests
         Assert.Equal("/backgammon.html", GameSessionStore.PageFor(GameType.Backgammon));
         Assert.IsType<RichManPoorManSession>(await store.CreateAsync(GameType.RichManPoorMan));
         Assert.Equal("/rich-man-poor-man.html", GameSessionStore.PageFor(GameType.RichManPoorMan));
-        Assert.IsType<YatzeeSession>(await store.CreateAsync(GameType.Yatzee));
-        Assert.Equal("/yatzee.html", GameSessionStore.PageFor(GameType.Yatzee));
+        Assert.IsType<WazooSession>(await store.CreateAsync(GameType.Wazoo));
+        Assert.Equal("/wazoo.html", GameSessionStore.PageFor(GameType.Wazoo));
         Assert.IsType<FinalCardSession>(await store.CreateAsync(GameType.FinalCard));
         Assert.Equal("/final-card.html", GameSessionStore.PageFor(GameType.FinalCard));
         Assert.IsType<YanivSession>(await store.CreateAsync(GameType.Yaniv));

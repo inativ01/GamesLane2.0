@@ -1,11 +1,11 @@
-namespace GamesLane.Server.Games.Yatzee;
+namespace GamesLane.Server.Games.Wazoo;
 
 /// <summary>
-/// A Yatzee game for players 0 to <see cref="Players"/> - 1, who take turns in that order for 13 rounds. A turn: roll the
+/// A Wazoo game for players 0 to <see cref="Players"/> - 1, who take turns in that order for 13 rounds. A turn: roll the
 /// five dice up to three times, keeping (holding) any dice between rolls, then score the dice in one open box of the
-/// scorecard (see <see cref="YatzeeScoring"/>). The game ends when every scorecard is full; the highest total wins.
+/// scorecard (see <see cref="WazooScoring"/>). The game ends when every scorecard is full; the highest total wins.
 /// </summary>
-public interface IYatzeeGame
+public interface IWazooGame
 {
     /// <summary>
     /// The number of players.
@@ -15,7 +15,7 @@ public interface IYatzeeGame
     /// <summary>
     /// Each player's scorecard.
     /// </summary>
-    IReadOnlyList<YatzeeScorecard> Scorecards { get; }
+    IReadOnlyList<WazooScorecard> Scorecards { get; }
 
     /// <summary>
     /// The current round, from 1 to 13 (13 once the game is over).
@@ -48,7 +48,7 @@ public interface IYatzeeGame
     int Rolls { get; }
 
     /// <summary>
-    /// For each box (in <see cref="YatzeeCategory"/> order), what the dice would score there for the player whose turn
+    /// For each box (in <see cref="WazooCategory"/> order), what the dice would score there for the player whose turn
     /// it is, or null if they cannot score there (the box is filled, or the joker rule does not allow it). All null
     /// before the turn's first roll and once the game is over.
     /// </summary>
@@ -57,7 +57,7 @@ public interface IYatzeeGame
     /// <summary>
     /// The last turn scored, or null at the start of the game.
     /// </summary>
-    YatzeeTurn? LastTurn { get; }
+    WazooTurn? LastTurn { get; }
 
     /// <summary>
     /// Whether every scorecard is full.
@@ -82,5 +82,5 @@ public interface IYatzeeGame
     /// <summary>
     /// <paramref name="player"/>, whose turn it is, scores the dice in <paramref name="category"/>, which ends the turn.
     /// </summary>
-    bool TryScore(int player, YatzeeCategory category, out string? error);
+    bool TryScore(int player, WazooCategory category, out string? error);
 }

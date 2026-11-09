@@ -1,14 +1,14 @@
-namespace GamesLane.Server.Games.Yatzee;
+namespace GamesLane.Server.Games.Wazoo;
 
 /// <summary>
-/// A scored turn: the player, the box, the points scored there, whether it earned a Yatzee bonus, and the dice.
+/// A scored turn: the player, the box, the points scored there, whether it earned a Wazoo bonus, and the dice.
 /// </summary>
-public record YatzeeTurn(int Player, YatzeeCategory Category, int Points, bool Bonus, IReadOnlyList<int> Dice);
+public record WazooTurn(int Player, WazooCategory Category, int Points, bool Bonus, IReadOnlyList<int> Dice);
 
 /// <summary>
-/// Yatzee rules for one game. <c>rollDie</c> rolls one die (1 to 6).
+/// Wazoo rules for one game. <c>rollDie</c> rolls one die (1 to 6).
 /// </summary>
-public class YatzeeGame : IYatzeeGame
+public class WazooGame : IWazooGame
 {
     /// <summary>The number of dice.</summary>
     public const int DiceCount = 5;
@@ -17,18 +17,18 @@ public class YatzeeGame : IYatzeeGame
     public const int RollsPerTurn = 3;
 
     private Func<int> _rollDie;
-    private readonly YatzeeScorecard[] _scorecards;
+    private readonly WazooScorecard[] _scorecards;
     private readonly int[] _dice = new int[DiceCount];
     private readonly bool[] _held = new bool[DiceCount];
 
     /// <summary>
     /// Starts a game for <paramref name="players"/> players; player 0 rolls first.
     /// </summary>
-    public YatzeeGame(int players, Func<int>? rollDie = null)
+    public WazooGame(int players, Func<int>? rollDie = null)
     {
         ArgumentOutOfRangeException.ThrowIfLessThan(players, 1);
         _rollDie = rollDie ?? (() => Random.Shared.Next(1, 7));
-        _scorecards = [.. Enumerable.Range(0, players).Select(_ => new YatzeeScorecard())];
+        _scorecards = [.. Enumerable.Range(0, players).Select(_ => new WazooScorecard())];
     }
 
     /// <summary>
@@ -40,7 +40,7 @@ public class YatzeeGame : IYatzeeGame
     public int Players => _scorecards.Length;
 
     /// <inheritdoc />
-    public IReadOnlyList<YatzeeScorecard> Scorecards => _scorecards;
+    public IReadOnlyList<WazooScorecard> Scorecards => _scorecards;
 
     /// <inheritdoc />
     public int Round { get; private set; } = 1;
@@ -62,11 +62,11 @@ public class YatzeeGame : IYatzeeGame
 
     /// <inheritdoc />
     public IReadOnlyList<int?> PossibleScores => RollsUsed == 0 || IsOver
-        ? new int?[YatzeeScoring.Categories]
-        : YatzeeScoring.Options(_scorecards[Turn], _dice);
+        ? new int?[WazooScoring.Categories]
+        : WazooScoring.Options(_scorecards[Turn], _dice);
 
     /// <inheritdoc />
-    public YatzeeTurn? LastTurn { get; private set; }
+    public WazooTurn? LastTurn { get; private set; }
 
     /// <inheritdoc />
     public bool IsOver { get; private set; }
@@ -135,7 +135,7 @@ public class YatzeeGame : IYatzeeGame
     }
 
     /// <inheritdoc />
-    public bool TryScore(int player, YatzeeCategory category, out string? error)
+    public bool TryScore(int player, WazooCategory category, out string? error)
     {
         if (!TryCheckTurn(player, out error))
         {
@@ -143,16 +143,16 @@ public class YatzeeGame : IYatzeeGame
         }
 
         var card = _scorecards[player];
-        error = RollsUsed == 0 ? "Roll the dice first." : YatzeeScoring.ScoreError(card, _dice, category);
+        error = RollsUsed == 0 ? "Roll the dice first." : WazooScoring.ScoreError(card, _dice, category);
         if (error is not null)
         {
             return false;
         }
 
-        var points = YatzeeScoring.Options(card, _dice)[(int)category]!.Value;
-        var bonus = YatzeeScoring.IsJoker(card, _dice) && card[YatzeeCategory.Yatzee] == YatzeeScoring.YatzeePoints;
+        var points = WazooScoring.Options(card, _dice)[(int)category]!.Value;
+        var bonus = WazooScoring.IsJoker(card, _dice) && card[WazooCategory.Wazoo] == WazooScoring.WazooPoints;
         card.Fill(category, points, bonus);
-        LastTurn = new YatzeeTurn(player, category, points, bonus, [.. _dice]);
+        LastTurn = new WazooTurn(player, category, points, bonus, [.. _dice]);
         NextTurn();
         return true;
     }

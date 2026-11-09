@@ -2,7 +2,7 @@ using System.Security.Claims;
 using GamesLane.Server.Auth;
 using GamesLane.Server.Games.RockPaperScissors;
 using GamesLane.Server.Games.FinalCard;
-using GamesLane.Server.Games.Yatzee;
+using GamesLane.Server.Games.Wazoo;
 using GamesLane.Server.Sessions;
 using GamesLane.Server.Users;
 using Microsoft.AspNetCore.SignalR;
@@ -347,15 +347,15 @@ public class GameHub(
 
     /// <inheritdoc />
     public Task RollDice(string sessionId, int seat) =>
-        Act(sessionId, (IYatzeeSession s, out string? error) => s.TryRoll(UserKey, seat, out error));
+        Act(sessionId, (IWazooSession s, out string? error) => s.TryRoll(UserKey, seat, out error));
 
     /// <inheritdoc />
     public Task HoldDie(string sessionId, int seat, int die, bool held) =>
-        Act(sessionId, (IYatzeeSession s, out string? error) => s.TryHold(UserKey, seat, die, held, out error));
+        Act(sessionId, (IWazooSession s, out string? error) => s.TryHold(UserKey, seat, die, held, out error));
 
     /// <inheritdoc />
-    public Task Score(string sessionId, int seat, YatzeeCategory category) =>
-        Act(sessionId, (IYatzeeSession s, out string? error) => s.TryScore(UserKey, seat, category, out error));
+    public Task Score(string sessionId, int seat, WazooCategory category) =>
+        Act(sessionId, (IWazooSession s, out string? error) => s.TryScore(UserKey, seat, category, out error));
 
     /// <inheritdoc />
     public Task PlayCard(string sessionId, int seat, string? card, FinalCardColor? color) =>

@@ -366,9 +366,9 @@ TRANSLATIONS.es = {
     "Unknown card.": "Carta desconocida.",
     "Log in to ask to join.": "Inicia sesión para pedir unirte.",
 
-    // Yatzee
-    "Yatzee": "Yatzee",
-    "Yatzee - GamesLane": "Yatzee - GamesLane",
+    // Wazoo
+    "Wazoo": "Wazoo",
+    "Wazoo - GamesLane": "Wazoo - GamesLane",
     "Roll five dice, three times a turn, and fill your scorecard.": "Tira cinco dados hasta tres veces por turno y llena tu hoja de puntos.",
     "1–8 players": "1–8 jugadores",
     "Ones": "Unos",
@@ -387,8 +387,8 @@ TRANSLATIONS.es = {
     "Upper total": "Total superior",
     "Bonus": "Bono",
     "35 for 63 or more": "35 por 63 o más",
-    "Yatzee bonus": "Bono Yatzee",
-    "100 for each extra Yatzee": "100 por cada Yatzee extra",
+    "Wazoo bonus": "Bono Wazoo",
+    "100 for each extra Wazoo": "100 por cada Wazoo extra",
     "Total": "Total",
     "Final scores": "Puntuación final",
     "Round {n} of {total}": "Ronda {n} de {total}",
@@ -403,19 +403,19 @@ TRANSLATIONS.es = {
     "Score 0 in {box}?": "¿Anotar 0 en {box}?",
     "You scored {points} in {box}.": "Anotaste {points} en {box}.",
     "{name} scored {points} in {box}.": "{name} anotó {points} en {box}.",
-    "Yatzee bonus: +100!": "¡Bono Yatzee: +100!",
+    "Wazoo bonus: +100!": "¡Bono Wazoo: +100!",
     "Game over: {n} points.": "Fin del juego: {n} puntos.",
     "You win with {n} points!": "¡Ganaste con {n} puntos!",
     "{name} wins with {n} points!": "¡{name} gana con {n} puntos!",
     "A tie at {n} points: {names}.": "Empate a {n} puntos: {names}.",
 
-    // Yatzee: messages from the server
+    // Wazoo: messages from the server
     "You have no rolls left. Choose a box to score.": "Ya no te quedan tiradas. Elige una casilla para anotar.",
     "There is no such die.": "No existe ese dado.",
     "There is no such box.": "No existe esa casilla.",
     "That box is already filled.": "Esa casilla ya está llena.",
-    "This Yatzee must be scored in the upper box of its number.": "Este Yatzee debe anotarse en la casilla superior de su número.",
-    "This Yatzee must be scored in an open lower box.": "Este Yatzee debe anotarse en una casilla inferior libre.",
+    "This Wazoo must be scored in the upper box of its number.": "Este Wazoo debe anotarse en la casilla superior de su número.",
+    "This Wazoo must be scored in an open lower box.": "Este Wazoo debe anotarse en una casilla inferior libre.",
 
     // Final Card
     "Final Card": "Última carta",

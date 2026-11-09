@@ -1,6 +1,6 @@
 using GamesLane.Server.Games.RockPaperScissors;
 using GamesLane.Server.Games.FinalCard;
-using GamesLane.Server.Games.Yatzee;
+using GamesLane.Server.Games.Wazoo;
 using GamesLane.Server.Sessions;
 
 namespace GamesLane.Server.Hubs;
@@ -251,22 +251,22 @@ public interface IGameHub
     Task ConfirmRedraw(string sessionId, int seat);
 
     /// <summary>
-    /// Yatzee: <paramref name="seat"/>, which the caller must hold, rolls the dice that are not held (all five on the
+    /// Wazoo: <paramref name="seat"/>, which the caller must hold, rolls the dice that are not held (all five on the
     /// turn's first roll), up to three times per turn.
     /// </summary>
     Task RollDice(string sessionId, int seat);
 
     /// <summary>
-    /// Yatzee: <paramref name="seat"/>, which the caller must hold, holds (or releases) die <paramref name="die"/>
+    /// Wazoo: <paramref name="seat"/>, which the caller must hold, holds (or releases) die <paramref name="die"/>
     /// (0 to 4) between rolls.
     /// </summary>
     Task HoldDie(string sessionId, int seat, int die, bool held);
 
     /// <summary>
-    /// Yatzee: <paramref name="seat"/>, which the caller must hold, scores the dice in <paramref name="category"/>,
+    /// Wazoo: <paramref name="seat"/>, which the caller must hold, scores the dice in <paramref name="category"/>,
     /// which ends its turn.
     /// </summary>
-    Task Score(string sessionId, int seat, YatzeeCategory category);
+    Task Score(string sessionId, int seat, WazooCategory category);
 
     /// <summary>
     /// Final Card: <paramref name="seat"/>, which the caller must hold, plays <paramref name="card"/> (short text such as "R7",

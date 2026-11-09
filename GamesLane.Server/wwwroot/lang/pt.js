@@ -367,9 +367,9 @@ TRANSLATIONS.pt = {
     "Unknown card.": "Carta desconhecida.",
     "Log in to ask to join.": "Entre na sua conta para pedir para entrar.",
 
-    // Yatzee
-    "Yatzee": "Yatzee",
-    "Yatzee - GamesLane": "Yatzee - GamesLane",
+    // Wazoo
+    "Wazoo": "Wazoo",
+    "Wazoo - GamesLane": "Wazoo - GamesLane",
     "Roll five dice, three times a turn, and fill your scorecard.": "Role cinco dados, até três vezes por vez, e preencha sua cartela.",
     "1–8 players": "1–8 jogadores",
     "Ones": "Uns",
@@ -388,8 +388,8 @@ TRANSLATIONS.pt = {
     "Upper total": "Total da parte de cima",
     "Bonus": "Bônus",
     "35 for 63 or more": "35 por 63 ou mais",
-    "Yatzee bonus": "Bônus Yatzee",
-    "100 for each extra Yatzee": "100 por Yatzee extra",
+    "Wazoo bonus": "Bônus Wazoo",
+    "100 for each extra Wazoo": "100 por Wazoo extra",
     "Total": "Total",
     "Final scores": "Placar final",
     "Round {n} of {total}": "Rodada {n} de {total}",
@@ -404,19 +404,19 @@ TRANSLATIONS.pt = {
     "Score 0 in {box}?": "Marcar 0 em {box}?",
     "You scored {points} in {box}.": "Você marcou {points} em {box}.",
     "{name} scored {points} in {box}.": "{name} marcou {points} em {box}.",
-    "Yatzee bonus: +100!": "Bônus Yatzee: +100!",
+    "Wazoo bonus: +100!": "Bônus Wazoo: +100!",
     "Game over: {n} points.": "Fim de jogo: {n} pontos.",
     "You win with {n} points!": "Você venceu com {n} pontos!",
     "{name} wins with {n} points!": "{name} venceu com {n} pontos!",
     "A tie at {n} points: {names}.": "Empate com {n} pontos: {names}.",
 
-    // Yatzee: messages from the server
+    // Wazoo: messages from the server
     "You have no rolls left. Choose a box to score.": "Você não tem mais rolagens. Escolha uma categoria para marcar.",
     "There is no such die.": "Esse dado não existe.",
     "There is no such box.": "Essa categoria não existe.",
     "That box is already filled.": "Essa categoria já foi preenchida.",
-    "This Yatzee must be scored in the upper box of its number.": "Este Yatzee precisa ser marcado na categoria de cima do seu número.",
-    "This Yatzee must be scored in an open lower box.": "Este Yatzee precisa ser marcado numa categoria livre da parte de baixo.",
+    "This Wazoo must be scored in the upper box of its number.": "Este Wazoo precisa ser marcado na categoria de cima do seu número.",
+    "This Wazoo must be scored in an open lower box.": "Este Wazoo precisa ser marcado numa categoria livre da parte de baixo.",
 
     // Final Card
     "Final Card": "Última carta",

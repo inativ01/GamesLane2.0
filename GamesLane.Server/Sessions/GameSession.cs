@@ -13,7 +13,7 @@ public enum GameType
     TheGang,
     Backgammon,
     RichManPoorMan,
-    Yatzee,
+    Wazoo,
     FinalCard,
     Yaniv,
 }
