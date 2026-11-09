@@ -1485,9 +1485,20 @@ svg.card-suit {
     color: #1b1b1b;
 }
 
-/* A rank of a plus sign and a digit (+2 and +4), or TAKI, wider than the others. */
+/* A rank of a plus sign and a digit (+2 and +4), wider than the others. */
 .card-road.wide {
     width: 2.1em;
+}
+
+/* TA above KI, narrow enough to leave the corners' TAKI clear. */
+.card-road.taki {
+    width: 1.6em;
+    height: 1.9em;
+}
+
+.card-road.crown {
+    width: 2.1em;
+    height: 1.7em;
 }
 
 /* TAKI written downwards in the corners, above the suit. */
@@ -1558,6 +1569,30 @@ svg.card-suit {
 
 .card.plus-four .joker-word.bottom span:nth-child(1) { color: #1d5bd6; }
 .card.plus-four .joker-word.bottom span:nth-child(2) { color: #e5a400; }
+
+/* TAKI without a suit: each letter's rim in the color of the same letter in the corners. */
+.card.taki-joker .road-rim.part-1 { stroke: #d62828; }
+.card.taki-joker .road-rim.part-2 { stroke: #23913a; }
+.card.taki-joker .road-rim.part-3 { stroke: #e5a400; }
+.card.taki-joker .road-rim.part-4 { stroke: #1d5bd6; }
+
+/* The crown: rimmed in gold, with a gold ♛ in the corners. */
+.card.crown .road-rim { stroke: var(--gold); }
+
+.card.crown .joker-word {
+    top: 0.2em;
+    font-family: "Segoe UI Symbol", "Apple Symbols", "DejaVu Sans", sans-serif;
+    font-size: 0.6em;
+    line-height: 1;
+    writing-mode: horizontal-tb;
+    font-variant-emoji: text;
+}
+
+.card.crown .joker-word.bottom {
+    bottom: 0.2em;
+}
+
+.card.crown .joker-word span { color: var(--gold); }
 
 /* The classic cards (the profile's card style): red hearts and diamonds, black clubs and spades, rank and suit in the
    top left and (upside down) bottom right corners, and pips or a framed figure in the middle. */

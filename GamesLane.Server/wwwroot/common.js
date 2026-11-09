@@ -834,20 +834,41 @@ const ROAD_RANKS = {
 const WIDE_ROAD_RANKS = { "+2": 2, "+4": 4 };
 const PLUS_ROAD = "M4 40H30M17 27V53";
 
-// TAKI in block letters of straight lines, TA above KI, in a 100 × 120 box.
-const TAKI_ROAD = "M0 0H42M21 0V52M58 52L79 0L100 52M65 34H93M4 68V120M40 68L4 96M14 88L40 120M66 68H92M79 68V120M66 120H92";
+// Middles drawn as roads in their own box, one road per part (classes part-1, part-2 …, so each can have its own rim
+// color): TAKI in block letters of straight lines, TA above KI, in a 100 × 120 box (one part per letter); and a crown
+// with three points topped with balls and a jewel in the middle, in a 100 × 80 box.
+const BOXED_ROADS = {
+    TAKI: {
+        className: "card-road taki",
+        viewBox: "-8 -8 116 136",
+        parts: ["M0 0H42M21 0V52", "M58 52L79 0L100 52M65 34H93", "M4 68V120M40 68L4 96M14 88L40 120", "M66 68H92M79 68V120M66 120H92"],
+    },
+    CROWN: {
+        className: "card-road crown",
+        viewBox: "-12 -14 124 100",
+        parts: [
+            "M14 66L6 24C16 34 24 40 30 40C36 32 44 20 50 8C56 20 64 32 70 40C76 40 84 34 94 24L86 66C66 71 34 71 14 66Z",
+            "M0 14a4 4 0 1 0 8 0a4 4 0 1 0 -8 0M46 -2a4 4 0 1 0 8 0a4 4 0 1 0 -8 0M92 14a4 4 0 1 0 8 0a4 4 0 1 0 -8 0",
+            "M47 50a3 3 0 1 0 6 0a3 3 0 1 0 -6 0",
+        ],
+    },
+};
 
 // How a rank shows in a card's corners: Skip and Reverse as symbols.
 const RANK_LABELS = { S: "⊘", R: "⇄" };
 
-// The rank drawn as a script road (TAKI in block letters).
+// The rank drawn as a script road (TAKI and the crown as in BOXED_ROADS).
 function roadRank(rank) {
+    const boxed = BOXED_ROADS[rank];
     const digit = WIDE_ROAD_RANKS[rank];
-    const parts = rank === "TAKI" ? [[TAKI_ROAD, 0]] : digit ? [[PLUS_ROAD, 0], [ROAD_RANKS[digit], 40]] : [[ROAD_RANKS[rank], 0]];
-    const viewBox = rank === "TAKI" ? "-8 -8 116 136" : digit ? "-6 -6 112 92" : "-6 -6 72 92";
-    return svgElement("svg", { class: digit || rank === "TAKI" ? "card-road wide" : "card-road", viewBox, "aria-hidden": "true" },
+    const parts = boxed ? boxed.parts.map((d) => [d, 0]) : digit ? [[PLUS_ROAD, 0], [ROAD_RANKS[digit], 40]] : [[ROAD_RANKS[rank], 0]];
+    const className = boxed?.className ?? (digit ? "card-road wide" : "card-road");
+    const viewBox = boxed?.viewBox ?? (digit ? "-6 -6 112 92" : "-6 -6 72 92");
+    return svgElement("svg", { class: className, viewBox, "aria-hidden": "true" },
         ...["road-kerb", "road-rim", "road", "road-line"].flatMap((layer) =>
-            parts.map(([d, dx]) => svgElement("path", { class: layer, d, ...(dx ? { transform: `translate(${dx} 0)` } : {}) }))));
+            parts.map(([d, dx], i) => svgElement("path", {
+                class: boxed ? `${layer} part-${i + 1}` : layer, d, ...(dx ? { transform: `translate(${dx} 0)` } : {}),
+            }))));
 }
 
 // An SVG element with its attributes and children.
@@ -874,7 +895,7 @@ function cardFace(rank, suit) {
     if (SUIT_SHAPES[suit]) {
         face.append(suitShape(suit, "card-silhouette"));
     }
-    face.append(ROAD_RANKS[rank] || WIDE_ROAD_RANKS[rank] || rank === "TAKI" ? roadRank(rank) : el("span", "card-road-text", rank));
+    face.append(ROAD_RANKS[rank] || WIDE_ROAD_RANKS[rank] || BOXED_ROADS[rank] ? roadRank(rank) : el("span", "card-road-text", rank));
     return face;
 }
 
@@ -960,7 +981,9 @@ function classicCard(card, text) {
 // all in the suit's color. "JOKER" is a joker. In the GamesLane style only, also "0♥" to "9♥", "S♥" (Skip),
 // "R♥" (Reverse), "+2♥", "+♥" (a big plus sign) and "TAKI♥" (TA above KI in the middle, TAKI written downwards in the
 // corners); "WILD" is drawn like the joker, and "+4" (Wild Draw Four) like it with a road "+4" in the middle and "+4"
-// across the corners. Without text, a face-down card.
+// across the corners; "TAKI" (no suit) like the joker with TA above KI in the middle, each letter's rim in a suit
+// color in turn; "CROWN" like the joker with a crown rimmed in gold in the middle and a gold ♛ in the corners.
+// Without text, a face-down card.
 function cardElement(text, style = userSettings().cards) {
     const card = el("span", "card");
     if (!text) {
@@ -978,6 +1001,14 @@ function cardElement(text, style = userSettings().cards) {
     if (text === "+4") {
         card.classList.add("plus-four");
         return jokerCard(card, text, roadRank(text));
+    }
+    if (text === "TAKI") {
+        card.classList.add("taki-joker");
+        return jokerCard(card, text, roadRank(text));
+    }
+    if (text === "CROWN") {
+        card.classList.add("crown");
+        return jokerCard(card, "♛", roadRank(text));
     }
     const rank = text.slice(0, -1);
     const suit = text.slice(-1);
