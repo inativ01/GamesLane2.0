@@ -985,7 +985,7 @@ function classicCard(card, text) {
 // all in the suit's color. "JOKER" is a joker. In the GamesLane style only, also "0♥" to "9♥", "S♥" (Skip),
 // "R♥" (Reverse), "+2♥", "+♥" (a big plus sign) and "TAKI♥" (TA above KI in the middle, TAKI written downwards in the
 // corners); "WILD" is drawn like the joker, and "+4" (Wild Draw Four) like it with a road "+4" in the middle and "+4"
-// across the corners; "+3" like +4, and "+3X" like +3 crossed out (a red slash across the middle, a yellow and a red
+// across the corners; "+3" like +4, and "+3X" like +3 crossed out (a red slash across the middle, a yellow and a green
 // slash through the corners); "TAKI" (no suit) like the joker with TA above KI in the middle, each letter's rim in a suit color in turn;
 // "CROWN" like the joker with a crown rimmed in gold in the middle and a gold ♛ in the corners. Without text, a
 // face-down card.

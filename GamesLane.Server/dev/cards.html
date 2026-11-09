@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Cards - GamesLane developer page</title>
+    <link rel="icon" href="/images/logo-32.png">
+    <link rel="stylesheet" href="/styles.css">
+    <!-- SignalR sets a global "t" while it loads, so it comes before i18n.js, which defines t(). -->
+    <script src="https://cdn.jsdelivr.net/npm/@microsoft/signalr@10.0.11/dist/browser/signalr.min.js"></script>
+    <script src="/i18n.js"></script>
+    <style>
+        body { padding: 1rem; background: #f4f1ea; font-family: system-ui, sans-serif; }
+        h2 { margin: 1.2rem 0 0.4rem; font-size: 1rem; }
+        .row { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin-bottom: 0.5rem; }
+        .dark { padding: 0.8rem; border-radius: 12px; background: radial-gradient(circle at 50% 30%, #3a3f4a, #1c1f26); }
+    </style>
+</head>
+<body>
+<!-- common.js puts the language picker next to the account bar. -->
+<div hidden><div id="account"></div></div>
+<h1>GamesLane cards</h1>
+<p>Every card drawn by <code>cardElement</code> in the GamesLane style. Developer page, served only in Development.</p>
+<h2>Cards without a suit, large</h2><div class="row" id="special-large"></div>
+<h2>Cards without a suit, hand size</h2><div class="row" id="special-hand"></div>
+<h2>Cards without a suit, small, on a dark table</h2><div class="row dark" id="special-small"></div>
+<h2>Plus and TAKI in each suit, large</h2><div class="row" id="suited-large"></div>
+<h2>Every card in each suit, hand size</h2><div id="suits"></div>
+<h2>Every card in each suit, small, on a dark table</h2><div class="dark" id="suits-small"></div>
+<script src="/common.js"></script>
+<script>
+    "use strict";
+    const SUITS = ["♥", "♦", "♣", "♠"];
+    const RANKS = ["A", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "S", "R", "+2", "+", "TAKI"];
+    const SPECIAL = ["JOKER", "WILD", "+4", "+3", "+3X", "TAKI", "CROWN"];
+
+    // A row of cards at a font size, in the element with this id or in a new row added to it.
+    function cardRow(parent, texts, size) {
+        const row = parent.classList.contains("row") ? parent : parent.appendChild(el("div", "row"));
+        texts.forEach((text) => {
+            const card = cardElement(text, "New");
+            card.style.fontSize = size;
+            row.append(card);
+        });
+    }
+
+    cardRow($("special-large"), SPECIAL, "4rem");
+    cardRow($("special-hand"), SPECIAL, "2.2rem");
+    cardRow($("special-small"), SPECIAL, "1.2rem");
+    cardRow($("suited-large"), SUITS.flatMap((suit) => ["+" + suit, "TAKI" + suit]), "4rem");
+    SUITS.forEach((suit) => {
+        cardRow($("suits"), RANKS.map((rank) => rank + suit), "2.2rem");
+        cardRow($("suits-small"), RANKS.map((rank) => rank + suit), "1.2rem");
+    });
+</script>
+</body>
+</html>

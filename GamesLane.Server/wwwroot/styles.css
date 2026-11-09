@@ -1564,6 +1564,7 @@ svg.card-suit {
 }
 
 .card.plus-draw .joker-word.bottom {
+    top: auto;
     bottom: 0.2em;
 }
 
@@ -1571,7 +1572,7 @@ svg.card-suit {
 .card.plus-draw .joker-word.bottom span:nth-child(2) { color: #e5a400; }
 
 /* A crossed-out +3: a red slash edged in white across the middle, and a slash edged in white through each corner's
-   +3, yellow in the top left and red in the bottom right. */
+   +3, yellow in the top left and green in the bottom right. */
 .card-road .cross-out-edge,
 .card-road .cross-out {
     fill: none;
@@ -1595,7 +1596,7 @@ svg.card-suit {
 }
 
 .card.crossed .joker-word.bottom::after {
-    background: #d62828;
+    background: #23913a;
 }
 
 /* TAKI without a suit: each letter's rim in the color of the same letter in the corners. */
@@ -1617,6 +1618,7 @@ svg.card-suit {
 }
 
 .card.crown .joker-word.bottom {
+    top: auto;
     bottom: 0.2em;
 }
 
