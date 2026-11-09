@@ -14,8 +14,12 @@ public class FinalCardGame : IFinalCardGame
     private readonly int[] _scores;
     private readonly int[] _handSizes;
     private readonly bool[] _calledFinalCard;
+    private readonly int[] _penaltyCards;
     private readonly List<int> _ranking = [];
     private readonly List<FinalCardEvent> _events = [];
+
+    // Whether the turn passed while a player still had penalty cards to draw: the player to play then waits for them.
+    private bool _turnHeld;
 
     // The player of the Wild Draw Four that the player to play can challenge (or null), and whether they held a card of
     // the color that was to play.
@@ -35,6 +39,7 @@ public class FinalCardGame : IFinalCardGame
         _scores = new int[players];
         _handSizes = [.. Enumerable.Repeat(FinalCardRules.HandSize, players)];
         _calledFinalCard = new bool[players];
+        _penaltyCards = new int[players];
         Deal();
     }
 
@@ -107,15 +112,22 @@ public class FinalCardGame : IFinalCardGame
     public bool CalledFinalCard(int player) => _calledFinalCard[player];
 
     /// <inheritdoc />
+    public int PenaltyCards(int player) => _penaltyCards[player];
+
+    /// <inheritdoc />
+    public bool IsWaitingForPenalty => Phase == FinalCardPhase.Playing && _turnHeld && _penaltyCards.Any(n => n > 0);
+
+    /// <inheritdoc />
     public bool CanChallenge => Phase == FinalCardPhase.Playing && _challengeable is not null;
 
     /// <inheritdoc />
-    public bool CanBeCaught(int player) => Phase == FinalCardPhase.Playing && _hands[player].Count == 1 && !_calledFinalCard[player];
+    public bool CanBeCaught(int player) =>
+        Phase == FinalCardPhase.Playing && _hands[player].Count == 1 && !_calledFinalCard[player] && _penaltyCards[player] == 0;
 
     /// <inheritdoc />
     public IReadOnlyList<FinalCardCard> Playable(int player)
     {
-        if (Phase != FinalCardPhase.Playing || player != Turn)
+        if (Phase != FinalCardPhase.Playing || player != Turn || IsWaitingForPenalty || _penaltyCards[player] > 0)
         {
             return [];
         }
@@ -201,6 +213,7 @@ public class FinalCardGame : IFinalCardGame
                 break;
         }
 
+        PassTurn();
         if (hand.Count == 0)
         {
             EmptiedHand(player);
@@ -212,6 +225,18 @@ public class FinalCardGame : IFinalCardGame
     /// <inheritdoc />
     public bool TryDraw(int player, out string? error)
     {
+        CheckPlayer(player);
+        if (Phase == FinalCardPhase.Playing && _penaltyCards[player] > 0)
+        {
+            Actions++;
+            _events.Clear();
+            _events.Add(new FinalCardEvent(player, FinalCardEventKind.Drew, Count: Give(player, _penaltyCards[player])));
+            _penaltyCards[player] = 0;
+            _turnHeld &= _penaltyCards.Any(n => n > 0);
+            error = null;
+            return true;
+        }
+
         if (!TryCheckTurn(player, out error))
         {
             return false;
@@ -229,6 +254,7 @@ public class FinalCardGame : IFinalCardGame
             _events.Add(new FinalCardEvent(player, FinalCardEventKind.Drew, Count: Give(player, PendingDraw)));
             PendingDraw = 0;
             Turn = Step(player, 1);
+            PassTurn();
             return true;
         }
 
@@ -256,6 +282,7 @@ public class FinalCardGame : IFinalCardGame
         else
         {
             Turn = Step(player, 1);
+            PassTurn();
         }
 
         return true;
@@ -279,6 +306,7 @@ public class FinalCardGame : IFinalCardGame
         DrawnCard = null;
         _events.Add(new FinalCardEvent(player, FinalCardEventKind.Passed));
         Turn = Step(player, 1);
+        PassTurn();
         return true;
     }
 
@@ -302,13 +330,14 @@ public class FinalCardGame : IFinalCardGame
         PendingDraw = 0;
         if (won)
         {
-            _events.Add(new FinalCardEvent(player, FinalCardEventKind.ChallengeWon, Count: Give(offender, count), By: offender));
+            _events.Add(new FinalCardEvent(player, FinalCardEventKind.ChallengeWon, Count: Owe(offender, count), By: offender));
         }
         else
         {
-            _events.Add(new FinalCardEvent(player, FinalCardEventKind.ChallengeLost, Count: Give(player, count + 2), By: offender));
+            _events.Add(new FinalCardEvent(player, FinalCardEventKind.ChallengeLost, Count: Owe(player, count + 2), By: offender));
             _events.Add(new FinalCardEvent(player, FinalCardEventKind.Skipped));
             Turn = Step(player, 1);
+            PassTurn();
         }
 
         return true;
@@ -318,7 +347,7 @@ public class FinalCardGame : IFinalCardGame
     public bool TryCallFinalCard(int player, out string? error)
     {
         CheckPlayer(player);
-        var protects = Phase == FinalCardPhase.Playing && !_calledFinalCard[player]
+        var protects = Phase == FinalCardPhase.Playing && !_calledFinalCard[player] && _penaltyCards[player] == 0
             && (_hands[player].Count == 1 || (Turn == player && _hands[player].Count == 2 && Playable(player).Count > 0));
         var caught = Enumerable.Range(0, Players).Where(p => p != player && CanBeCaught(p)).ToList();
         error = Phase != FinalCardPhase.Playing ? "This hand is over."
@@ -338,7 +367,7 @@ public class FinalCardGame : IFinalCardGame
 
         foreach (var target in caught)
         {
-            _events.Add(new FinalCardEvent(target, FinalCardEventKind.Caught, Count: Give(target, 2), By: player));
+            _events.Add(new FinalCardEvent(target, FinalCardEventKind.Caught, Count: Owe(target, 2), By: player));
         }
 
         return true;
@@ -364,7 +393,8 @@ public class FinalCardGame : IFinalCardGame
     /// <summary>
     /// Shuffles a full deck, deals each player their cards and turns up the first card (a wild card goes back under the
     /// draw pile and the next one is turned up). A Skip turned up skips the hand's starter, a Reverse makes the player
-    /// before them start in the other direction, and a Draw Two makes the starter draw 2 and miss their turn.
+    /// before them start in the other direction, and a Draw Two makes the starter draw 2 (as penalty cards) and miss their
+    /// turn.
     /// </summary>
     private void Deal()
     {
@@ -382,6 +412,7 @@ public class FinalCardGame : IFinalCardGame
         {
             _hands[p].Clear();
             _calledFinalCard[p] = false;
+            _penaltyCards[p] = 0;
             Give(p, _handSizes[p]);
         }
 
@@ -414,6 +445,8 @@ public class FinalCardGame : IFinalCardGame
                 Turn = starter;
                 break;
         }
+
+        PassTurn();
     }
 
     /// <summary>
@@ -446,7 +479,8 @@ public class FinalCardGame : IFinalCardGame
     /// <summary>
     /// <paramref name="player"/> has played their last card. In a pyramid, they are dealt one card fewer than last time,
     /// or after their single card, they finish (with one player left, the game is over). Otherwise they win the hand: the
-    /// next player first draws any cards stacked for them, then the winner scores the cards left in the other hands.
+    /// next player first draws any cards stacked for them and every player their penalty cards, then the winner scores the
+    /// cards left in the other hands.
     /// </summary>
     private void EmptiedHand(int player)
     {
@@ -481,6 +515,15 @@ public class FinalCardGame : IFinalCardGame
             PendingDraw = 0;
         }
 
+        for (var p = 0; p < Players; p++)
+        {
+            if (_penaltyCards[p] > 0)
+            {
+                _events.Add(new FinalCardEvent(p, FinalCardEventKind.Drew, Count: Give(p, _penaltyCards[p])));
+                _penaltyCards[p] = 0;
+            }
+        }
+
         var points = _hands.Sum(hand => hand.Sum(c => c.Points));
         LastResult = new FinalCardHandResult(player, points);
         _events.Add(new FinalCardEvent(player, FinalCardEventKind.Finished, Count: points));
@@ -495,9 +538,23 @@ public class FinalCardGame : IFinalCardGame
 
     private void DrawAndMissTurn(int player, int count)
     {
-        _events.Add(new FinalCardEvent(player, FinalCardEventKind.Drew, Count: Give(player, count)));
+        _events.Add(new FinalCardEvent(player, FinalCardEventKind.Penalty, Count: Owe(player, count)));
         _events.Add(new FinalCardEvent(player, FinalCardEventKind.Skipped));
     }
+
+    /// <summary>
+    /// <paramref name="player"/> has <paramref name="count"/> more penalty cards to draw. Returns <paramref name="count"/>.
+    /// </summary>
+    private int Owe(int player, int count)
+    {
+        _penaltyCards[player] += count;
+        return count;
+    }
+
+    /// <summary>
+    /// The turn has passed: while a player still has penalty cards to draw, the player to play waits for them.
+    /// </summary>
+    private void PassTurn() => _turnHeld = _penaltyCards.Any(n => n > 0);
 
     /// <summary>
     /// <paramref name="player"/> draws up to <paramref name="count"/> cards (fewer if there are no more). Returns how many.
@@ -574,7 +631,9 @@ public class FinalCardGame : IFinalCardGame
         CheckPlayer(player);
         error = Phase == FinalCardPhase.GameOver ? "The game is over."
             : Phase == FinalCardPhase.HandOver ? "This hand is over."
+            : _penaltyCards[player] > 0 ? "Draw your penalty cards first."
             : player != Turn ? "It is not your turn."
+            : IsWaitingForPenalty ? "Wait until the penalty cards are drawn."
             : null;
         return error is null;
     }

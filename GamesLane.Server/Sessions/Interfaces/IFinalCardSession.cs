@@ -17,7 +17,8 @@ public interface IFinalCardSession : IRoundBasedSession
     bool TryPlay(string userKey, int seat, string? card, FinalCardColor? color, [NotNullWhen(false)] out string? error);
 
     /// <summary>
-    /// <paramref name="seat"/> draws: the cards stacked for it, or else one card (or, with the option, until it can play).
+    /// <paramref name="seat"/> draws: its penalty cards (at any time during a hand), or else on its turn the cards stacked
+    /// for it, or one card (or, with the option, until it can play).
     /// </summary>
     bool TryDraw(string userKey, int seat, [NotNullWhen(false)] out string? error);
 
@@ -33,7 +34,7 @@ public interface IFinalCardSession : IRoundBasedSession
 
     /// <summary>
     /// <paramref name="seat"/> calls Final Card: it protects the seat on its final card (or before playing its second to
-    /// last), and every other seat holding one card unprotected draws 2 cards.
+    /// last), and every other seat holding one card unprotected has 2 penalty cards to draw.
     /// </summary>
     bool TryCallFinalCard(string userKey, int seat, [NotNullWhen(false)] out string? error);
 }

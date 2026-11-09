@@ -83,6 +83,9 @@ public enum FinalCardEventKind
     /// <summary>The player drew <see cref="FinalCardEvent.Count"/> cards.</summary>
     Drew,
 
+    /// <summary>The player has <see cref="FinalCardEvent.Count"/> penalty cards to draw (from a Draw Two or Wild Draw Four).</summary>
+    Penalty,
+
     /// <summary>The player misses their turn.</summary>
     Skipped,
 
@@ -92,13 +95,22 @@ public enum FinalCardEventKind
     /// <summary>The player called Final Card.</summary>
     CalledFinalCard,
 
-    /// <summary>The player was caught by <see cref="FinalCardEvent.By"/> without calling Final Card and drew <see cref="FinalCardEvent.Count"/> cards.</summary>
+    /// <summary>
+    /// The player was caught by <see cref="FinalCardEvent.By"/> without calling Final Card and has <see cref="FinalCardEvent.Count"/>
+    /// penalty cards to draw.
+    /// </summary>
     Caught,
 
-    /// <summary>The player challenged the Wild Draw Four of <see cref="FinalCardEvent.By"/>, who held a card of the color: they draw the cards.</summary>
+    /// <summary>
+    /// The player challenged the Wild Draw Four of <see cref="FinalCardEvent.By"/>, who held a card of the color: they have
+    /// <see cref="FinalCardEvent.Count"/> penalty cards to draw.
+    /// </summary>
     ChallengeWon,
 
-    /// <summary>The player challenged the Wild Draw Four of <see cref="FinalCardEvent.By"/>, who held no card of the color: the challenger draws 2 more.</summary>
+    /// <summary>
+    /// The player challenged the Wild Draw Four of <see cref="FinalCardEvent.By"/>, who held no card of the color: the
+    /// challenger has <see cref="FinalCardEvent.Count"/> penalty cards (2 more) to draw.
+    /// </summary>
     ChallengeLost,
 
     /// <summary>Pyramid: the player played all their cards and was dealt <see cref="FinalCardEvent.Count"/> new ones.</summary>
@@ -131,7 +143,7 @@ public record FinalCardRules(
     int Target = 500,
     FinalCardStacking Stacking = FinalCardStacking.None,
     bool DrawUntilPlayable = false,
-    FinalCardWildDrawFour WildDrawFour = FinalCardWildDrawFour.NoColor)
+    FinalCardWildDrawFour WildDrawFour = FinalCardWildDrawFour.Challenge)
 {
     /// <summary>Whether <paramref name="card"/> can answer <paramref name="top"/>, a draw card, under the stacking rule.</summary>
     public bool CanStack(FinalCardCard card, FinalCardCard top) => (card.Value, top.Value) switch
@@ -223,7 +235,7 @@ public static class FinalCardOptions
                 new GameOptionChoice(nameof(FinalCardWildDrawFour.Challenge), "Can be challenged",
                     "A Wild Draw Four can always be played, but the next player can challenge it: if its player had a card of the color to play, they draw the cards instead; if not, the challenger draws 2 more."),
             ],
-            nameof(FinalCardWildDrawFour.NoColor)),
+            nameof(FinalCardWildDrawFour.Challenge)),
         new GameOption(
             Draw,
             "Drawing",
@@ -242,5 +254,5 @@ public static class FinalCardOptions
         int.TryParse(options.GetValueOrDefault(Target), out var target) ? target : 500,
         Enum.TryParse<FinalCardStacking>(options.GetValueOrDefault(Stacking), out var stacking) ? stacking : FinalCardStacking.None,
         options.GetValueOrDefault(Draw) == "UntilPlayable",
-        Enum.TryParse<FinalCardWildDrawFour>(options.GetValueOrDefault(WildDrawFour), out var wild) ? wild : FinalCardWildDrawFour.NoColor);
+        Enum.TryParse<FinalCardWildDrawFour>(options.GetValueOrDefault(WildDrawFour), out var wild) ? wild : FinalCardWildDrawFour.Challenge);
 }
