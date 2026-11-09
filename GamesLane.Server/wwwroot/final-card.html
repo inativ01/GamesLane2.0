@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Uno - GamesLane</title>
+    <title>Final Card - GamesLane</title>
     <link rel="icon" href="images/logo-32.png">
     <link rel="apple-touch-icon" href="images/logo-180.png">
     <meta name="theme-color" content="#19285d">
@@ -23,8 +23,8 @@
         <div id="account" class="account"></div>
     </header>
     <div class="session-bar">
-        <img class="session-art" src="images/games/uno.svg" alt="">
-        <h2 class="session-name" data-i18n>Uno</h2>
+        <img class="session-art" src="images/games/final-card.svg" alt="">
+        <h2 class="session-name" data-i18n>Final Card</h2>
         <span id="session-info" class="session-info"></span>
         <p class="code" title="Game code" data-i18n-attr="title"><span aria-hidden="true">🔑</span> <strong id="session-code"></strong></p>
     </div>
@@ -38,7 +38,7 @@
         <ul id="scores" class="score-row"></ul>
     </div>
 </div>
-<main class="uno">
+<main class="final-card">
     <section id="session">
         <div id="invite" class="invite" hidden>
             <h3 data-i18n>Invite friends</h3>
@@ -65,20 +65,20 @@
 
         <div id="game-screen" hidden>
             <!-- Everything observers see: the piles, what just happened, and the players. -->
-            <section class="uno-table" aria-label="Table" data-i18n-attr="aria-label">
-                <div id="uno-pile" class="uno-pile"></div>
-                <p id="uno-message" class="uno-message" hidden></p>
-                <ul id="uno-players" class="uno-players"></ul>
+            <section class="final-card-table" aria-label="Table" data-i18n-attr="aria-label">
+                <div id="final-card-pile" class="final-card-pile"></div>
+                <p id="final-card-message" class="final-card-message" hidden></p>
+                <ul id="final-card-players" class="final-card-players"></ul>
             </section>
 
             <!-- This user's own cards and buttons, one panel per seat they hold. -->
-            <div id="uno-hands"></div>
+            <div id="final-card-hands"></div>
         </div>
     </section>
 
     <p id="error" class="error" role="alert"></p>
 </main>
 <script src="common.js"></script>
-<script src="uno.js"></script>
+<script src="final-card.js"></script>
 </body>
 </html>

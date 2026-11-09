@@ -3,7 +3,7 @@ using GamesLane.Server.Games.RichManPoorMan;
 using GamesLane.Server.Games.RockPaperScissors;
 using GamesLane.Server.Games.TheGang;
 using GamesLane.Server.Games.TicTacToe;
-using GamesLane.Server.Games.Uno;
+using GamesLane.Server.Games.FinalCard;
 using GamesLane.Server.Games.Yaniv;
 using GamesLane.Server.Games.Yatzee;
 using GamesLane.Server.Hubs;
@@ -904,9 +904,9 @@ public class GameSessionTests
         AssertSameAfterReload(yatzee, () => new YatzeeSession("ABC123"),
             s => s.TryScore(Alice, 0, YatzeeCategory.Sixes, out var e) ? null : e);
 
-        var uno = Started(new UnoSession("ABC123", UnshuffledUno));
-        uno.TryPlay(Alice, 0, "R1", null, out _);
-        AssertSameAfterReload(uno, () => new UnoSession("ABC123", UnshuffledUno),
+        var finalCard = Started(new FinalCardSession("ABC123", UnshuffledFinalCard));
+        finalCard.TryPlay(Alice, 0, "R1", null, out _);
+        AssertSameAfterReload(finalCard, () => new FinalCardSession("ABC123", UnshuffledFinalCard),
             s => s.TryPlay(Bob, 1, "R4", null, out var e) ? null : e);
 
         var yaniv = Started(new YanivSession("ABC123", UnshuffledYaniv));
@@ -1563,56 +1563,56 @@ public class GameSessionTests
     private static YatzeeState Yatzee(YatzeeSession session) =>
         Assert.IsType<YatzeeState>(session.GetPublicState().Game);
 
-    // Uno
+    // Final Card
 
     // Leaves the deck in order: seat 0 gets R0 R1 R1 R2 R2 R3 R3, seat 1 gets R4 R4 R5 R5 R6 R6 R7, and R7 is turned up.
-    private static void UnshuffledUno(UnoCard[] deck)
+    private static void UnshuffledFinalCard(FinalCardCard[] deck)
     {
     }
 
     [Fact]
-    public void Uno_seats_play_their_own_cards_which_only_they_see()
+    public void Final_card_seats_play_their_own_cards_which_only_they_see()
     {
-        var session = Started(new UnoSession("ABC123", UnshuffledUno));
+        var session = Started(new FinalCardSession("ABC123", UnshuffledFinalCard));
         Assert.False(session.TryPlay(Bob, 0, "R1", null, out var error));
         Assert.Equal("Only players in this game can make moves.", error);
 
-        var hand = Assert.IsType<UnoPrivateState>(session.GetPrivateState(Alice)).Hands.Single();
+        var hand = Assert.IsType<FinalCardPrivateState>(session.GetPrivateState(Alice)).Hands.Single();
         Assert.Equal(0, hand.Seat);
         Assert.Equal(["R0", "R1", "R1", "R2", "R2", "R3", "R3"], hand.Cards);
         Assert.Equal(["R0", "R1", "R2", "R3"], hand.Playable);
-        Assert.Empty(Assert.IsType<UnoPrivateState>(session.GetPrivateState(Bob)).Hands.Single().Playable);
+        Assert.Empty(Assert.IsType<FinalCardPrivateState>(session.GetPrivateState(Bob)).Hands.Single().Playable);
         Assert.False(session.TryPlay(Alice, 0, "XX", null, out error));
         Assert.Equal("Unknown card.", error);
 
         Assert.True(session.TryPlay(Alice, 0, "R1", null, out error), error);
-        var state = Uno(session);
-        Assert.Equal(("R1", 1, UnoColor.Red), (state.TopCard, state.Turn, state.Color));
+        var state = FinalCard(session);
+        Assert.Equal(("R1", 1, FinalCardColor.Red), (state.TopCard, state.Turn, state.Color));
         Assert.Equal([6, 7], state.Players.Select(p => p.CardCount));
-        Assert.Equal(new UnoEventState(0, UnoEventKind.Played, "R1", 0, null, null), state.Events.Single());
-        Assert.False(session.TryCatchUno(Bob, 1, 5, out error));
+        Assert.Equal(new FinalCardEventState(0, FinalCardEventKind.Played, "R1", 0, null, null), state.Events.Single());
+        Assert.False(session.TryCatchFinalCard(Bob, 1, 5, out error));
         Assert.Equal("There is no such player.", error);
         Assert.False(session.TryNextRound(Alice, 1, out error));
         Assert.Equal("This hand is not finished yet.", error);
     }
 
     [Fact]
-    public void Uno_starts_with_the_chosen_options()
+    public void Final_card_starts_with_the_chosen_options()
     {
-        var session = Seated(new UnoSession("ABC123", UnshuffledUno));
+        var session = Seated(new FinalCardSession("ABC123", UnshuffledFinalCard));
         Assert.True(session.TrySetOptions(Alice, new Dictionary<string, string>
         {
-            [UnoOptions.End] = "Pyramid", [UnoOptions.Stacking] = "Yes", [UnoOptions.Draw] = "UntilPlayable",
+            [FinalCardOptions.End] = "Pyramid", [FinalCardOptions.Stacking] = "Yes", [FinalCardOptions.Draw] = "UntilPlayable",
         }, out var error), error);
         Assert.True(session.TryNewGame(Alice, 0, out error), error);
 
-        var state = Uno(session);
-        Assert.Equal((UnoEndMode.Pyramid, true, true), (state.End, state.Stacking, state.DrawUntilPlayable));
+        var state = FinalCard(session);
+        Assert.Equal((FinalCardEndMode.Pyramid, true, true), (state.End, state.Stacking, state.DrawUntilPlayable));
         Assert.All(state.Players, p => Assert.Equal(7, p.HandSize));
     }
 
-    private static UnoState Uno(UnoSession session) =>
-        Assert.IsType<UnoState>(session.GetPublicState().Game);
+    private static FinalCardState FinalCard(FinalCardSession session) =>
+        Assert.IsType<FinalCardState>(session.GetPublicState().Game);
 
     // Yaniv
 

@@ -1,5 +1,5 @@
 using GamesLane.Server.Games.RockPaperScissors;
-using GamesLane.Server.Games.Uno;
+using GamesLane.Server.Games.FinalCard;
 using GamesLane.Server.Games.Yatzee;
 using GamesLane.Server.Sessions;
 
@@ -108,7 +108,7 @@ public interface IGameHub
 
     /// <summary>
     /// Rock-paper-scissors and tic-tac-toe: starts the round after <paramref name="round"/>; backgammon: the game of the
-    /// match after game <paramref name="round"/>; rich man, poor man: the game after game <paramref name="round"/>; Uno:
+    /// match after game <paramref name="round"/>; rich man, poor man: the game after game <paramref name="round"/>; Final Card:
     /// the hand after hand <paramref name="round"/>. If it has already started, nothing changes.
     /// </summary>
     Task NextRound(string sessionId, int round);
@@ -269,33 +269,33 @@ public interface IGameHub
     Task Score(string sessionId, int seat, YatzeeCategory category);
 
     /// <summary>
-    /// Uno: <paramref name="seat"/>, which the caller must hold, plays <paramref name="card"/> (short text such as "R7",
+    /// Final Card: <paramref name="seat"/>, which the caller must hold, plays <paramref name="card"/> (short text such as "R7",
     /// "GS", "B+2", "W" or "W+4"), choosing <paramref name="color"/> for a wild card.
     /// </summary>
-    Task PlayCard(string sessionId, int seat, string? card, UnoColor? color);
+    Task PlayCard(string sessionId, int seat, string? card, FinalCardColor? color);
 
     /// <summary>
-    /// Uno: <paramref name="seat"/>, which the caller must hold, draws the cards stacked for it, or else a card (or, with
+    /// Final Card: <paramref name="seat"/>, which the caller must hold, draws the cards stacked for it, or else a card (or, with
     /// the option, cards until it can play). If it can play the card drawn, it plays or keeps it; otherwise its turn ends.
     /// </summary>
     Task DrawCard(string sessionId, int seat);
 
     /// <summary>
-    /// Uno: <paramref name="seat"/>, which the caller must hold, keeps the card it drew, which ends its turn.
+    /// Final Card: <paramref name="seat"/>, which the caller must hold, keeps the card it drew, which ends its turn.
     /// </summary>
     Task PassAfterDraw(string sessionId, int seat);
 
     /// <summary>
-    /// Uno: <paramref name="seat"/>, which the caller must hold, calls UNO: on its turn with two cards, or right after
+    /// Final Card: <paramref name="seat"/>, which the caller must hold, calls Final Card: on its turn with two cards, or right after
     /// going down to one card.
     /// </summary>
-    Task CallUno(string sessionId, int seat);
+    Task CallFinalCard(string sessionId, int seat);
 
     /// <summary>
-    /// Uno: <paramref name="seat"/>, which the caller must hold, catches <paramref name="targetSeat"/>, who went down to one
-    /// card without calling UNO, before the next player acts; <paramref name="targetSeat"/> draws 2 cards.
+    /// Final Card: <paramref name="seat"/>, which the caller must hold, catches <paramref name="targetSeat"/>, who went down to one
+    /// card without calling Final Card, before the next player acts; <paramref name="targetSeat"/> draws 2 cards.
     /// </summary>
-    Task CatchUno(string sessionId, int seat, int targetSeat);
+    Task CatchFinalCard(string sessionId, int seat, int targetSeat);
 
     /// <summary>
     /// Yaniv: <paramref name="seat"/>, which the caller must hold, discards <paramref name="cards"/> (short text such as

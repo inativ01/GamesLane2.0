@@ -1,45 +1,45 @@
-namespace GamesLane.Server.Games.Uno;
+namespace GamesLane.Server.Games.FinalCard;
 
 /// <summary>
-/// Uno rules for one game. <c>shuffle</c> shuffles the deck before each deal, which gives player 0 the first cards, player
+/// Final Card rules for one game. <c>shuffle</c> shuffles the deck before each deal, which gives player 0 the first cards, player
 /// 1 the next ones, and so on, then turns up the next card (for tests); it also shuffles the discard pile into a new draw
 /// pile when the draw pile runs out. Hand 1 is started by player 0, each later hand by the next player.
 /// </summary>
-public class UnoGame : IUnoGame
+public class FinalCardGame : IFinalCardGame
 {
-    private Action<UnoCard[]> _shuffle;
-    private readonly List<UnoCard>[] _hands;
-    private readonly List<UnoCard> _drawPile = [];
-    private readonly List<UnoCard> _discard = [];
+    private Action<FinalCardCard[]> _shuffle;
+    private readonly List<FinalCardCard>[] _hands;
+    private readonly List<FinalCardCard> _drawPile = [];
+    private readonly List<FinalCardCard> _discard = [];
     private readonly int[] _scores;
     private readonly int[] _handSizes;
-    private readonly bool[] _saidUno;
+    private readonly bool[] _calledFinalCard;
     private readonly List<int> _ranking = [];
-    private readonly List<UnoEvent> _events = [];
+    private readonly List<FinalCardEvent> _events = [];
 
     /// <summary>
     /// Deals the first hand for <paramref name="players"/> players (2 to 10).
     /// </summary>
-    public UnoGame(int players, UnoRules? rules = null, Action<UnoCard[]>? shuffle = null)
+    public FinalCardGame(int players, FinalCardRules? rules = null, Action<FinalCardCard[]>? shuffle = null)
     {
-        ArgumentOutOfRangeException.ThrowIfLessThan(players, UnoRules.MinPlayers);
-        ArgumentOutOfRangeException.ThrowIfGreaterThan(players, UnoRules.MaxPlayers);
-        Rules = rules ?? new UnoRules();
+        ArgumentOutOfRangeException.ThrowIfLessThan(players, FinalCardRules.MinPlayers);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(players, FinalCardRules.MaxPlayers);
+        Rules = rules ?? new FinalCardRules();
         _shuffle = shuffle ?? Random.Shared.Shuffle;
-        _hands = [.. Enumerable.Range(0, players).Select(_ => new List<UnoCard>())];
+        _hands = [.. Enumerable.Range(0, players).Select(_ => new List<FinalCardCard>())];
         _scores = new int[players];
-        _handSizes = [.. Enumerable.Repeat(UnoRules.HandSize, players)];
-        _saidUno = new bool[players];
+        _handSizes = [.. Enumerable.Repeat(FinalCardRules.HandSize, players)];
+        _calledFinalCard = new bool[players];
         Deal();
     }
 
     /// <summary>
     /// Gives a game loaded from a save its shuffle again (see the constructor).
     /// </summary>
-    internal void Reattach(Action<UnoCard[]>? shuffle) => _shuffle = shuffle ?? Random.Shared.Shuffle;
+    internal void Reattach(Action<FinalCardCard[]>? shuffle) => _shuffle = shuffle ?? Random.Shared.Shuffle;
 
     /// <inheritdoc />
-    public UnoRules Rules { get; }
+    public FinalCardRules Rules { get; }
 
     /// <inheritdoc />
     public int Players => _hands.Length;
@@ -48,7 +48,7 @@ public class UnoGame : IUnoGame
     public int HandNumber { get; private set; } = 1;
 
     /// <inheritdoc />
-    public UnoPhase Phase { get; private set; }
+    public FinalCardPhase Phase { get; private set; }
 
     /// <inheritdoc />
     public int Turn { get; private set; }
@@ -57,10 +57,10 @@ public class UnoGame : IUnoGame
     public int Direction { get; private set; } = 1;
 
     /// <inheritdoc />
-    public UnoCard TopCard => _discard[^1];
+    public FinalCardCard TopCard => _discard[^1];
 
     /// <inheritdoc />
-    public UnoColor Color { get; private set; }
+    public FinalCardColor Color { get; private set; }
 
     /// <inheritdoc />
     public int DrawPileCount => _drawPile.Count;
@@ -69,45 +69,45 @@ public class UnoGame : IUnoGame
     public int PendingDraw { get; private set; }
 
     /// <inheritdoc />
-    public UnoCard? DrawnCard { get; private set; }
+    public FinalCardCard? DrawnCard { get; private set; }
 
     /// <inheritdoc />
     public IReadOnlyList<int> Scores => _scores;
 
     /// <inheritdoc />
-    public int? UnoPending { get; private set; }
+    public int? FinalCardPending { get; private set; }
 
     /// <inheritdoc />
     public IReadOnlyList<int> Ranking => _ranking;
 
     /// <inheritdoc />
-    public IReadOnlyList<UnoEvent> Events => _events;
+    public IReadOnlyList<FinalCardEvent> Events => _events;
 
     /// <inheritdoc />
     public int Actions { get; private set; }
 
     /// <inheritdoc />
-    public UnoHandResult? LastResult { get; private set; }
+    public FinalCardHandResult? LastResult { get; private set; }
 
     /// <inheritdoc />
-    public bool IsOver => Phase == UnoPhase.GameOver;
+    public bool IsOver => Phase == FinalCardPhase.GameOver;
 
     /// <inheritdoc />
-    public int? Winner => !IsOver ? null : Rules.End == UnoEndMode.Pyramid ? _ranking[0] : LastResult?.Winner;
+    public int? Winner => !IsOver ? null : Rules.End == FinalCardEndMode.Pyramid ? _ranking[0] : LastResult?.Winner;
 
     /// <inheritdoc />
-    public IReadOnlyList<UnoCard> Hand(int player) => _hands[player];
+    public IReadOnlyList<FinalCardCard> Hand(int player) => _hands[player];
 
     /// <inheritdoc />
     public int HandSize(int player) => _handSizes[player];
 
     /// <inheritdoc />
-    public bool SaidUno(int player) => _saidUno[player];
+    public bool CalledFinalCard(int player) => _calledFinalCard[player];
 
     /// <inheritdoc />
-    public IReadOnlyList<UnoCard> Playable(int player)
+    public IReadOnlyList<FinalCardCard> Playable(int player)
     {
-        if (Phase != UnoPhase.Playing || player != Turn)
+        if (Phase != FinalCardPhase.Playing || player != Turn)
         {
             return [];
         }
@@ -121,7 +121,7 @@ public class UnoGame : IUnoGame
     }
 
     /// <inheritdoc />
-    public bool TryPlay(int player, UnoCard card, UnoColor? color, out string? error)
+    public bool TryPlay(int player, FinalCardCard card, FinalCardColor? color, out string? error)
     {
         if (!TryCheckTurn(player, out error))
         {
@@ -132,7 +132,7 @@ public class UnoGame : IUnoGame
         var index = hand.IndexOf(card);
         error = index < 0 ? "You do not have that card."
             : DrawnCard is { } drawn && card != drawn ? "You can play only the card you drew, or keep it."
-            : card.IsWild && color is null or UnoColor.Wild ? "Choose a colour for the wild card."
+            : card.IsWild && color is null or FinalCardColor.Wild ? "Choose a colour for the wild card."
             : null;
         if (error is not null || !CanPlay(player, card, out error))
         {
@@ -144,39 +144,39 @@ public class UnoGame : IUnoGame
         _discard.Add(card);
         Color = card.IsWild ? color!.Value : card.Color;
         DrawnCard = null;
-        _events.Add(new UnoEvent(player, UnoEventKind.Played, card, Color: card.IsWild ? Color : null));
-        if (hand.Count == 1 && !_saidUno[player])
+        _events.Add(new FinalCardEvent(player, FinalCardEventKind.Played, card, Color: card.IsWild ? Color : null));
+        if (hand.Count == 1 && !_calledFinalCard[player])
         {
-            UnoPending = player;
+            FinalCardPending = player;
         }
         else if (hand.Count != 1)
         {
-            _saidUno[player] = false;
+            _calledFinalCard[player] = false;
         }
 
         var twoPlaying = ActiveCount == 2;
         var next = Step(player, 1);
         switch (card.Value)
         {
-            case UnoValue.Skip:
-                _events.Add(new UnoEvent(next, UnoEventKind.Skipped));
+            case FinalCardValue.Skip:
+                _events.Add(new FinalCardEvent(next, FinalCardEventKind.Skipped));
                 Turn = Step(player, 2);
                 break;
-            case UnoValue.Reverse when twoPlaying:
+            case FinalCardValue.Reverse when twoPlaying:
                 // With two players, a Reverse works like a Skip.
                 Direction = -Direction;
-                _events.Add(new UnoEvent(next, UnoEventKind.Skipped));
+                _events.Add(new FinalCardEvent(next, FinalCardEventKind.Skipped));
                 Turn = player;
                 break;
-            case UnoValue.Reverse:
+            case FinalCardValue.Reverse:
                 Direction = -Direction;
                 Turn = Step(player, 1);
                 break;
-            case UnoValue.DrawTwo or UnoValue.WildDrawFour when Rules.Stacking:
+            case FinalCardValue.DrawTwo or FinalCardValue.WildDrawFour when Rules.Stacking:
                 PendingDraw += card.DrawCount;
                 Turn = next;
                 break;
-            case UnoValue.DrawTwo or UnoValue.WildDrawFour:
+            case FinalCardValue.DrawTwo or FinalCardValue.WildDrawFour:
                 DrawAndMissTurn(next, card.DrawCount);
                 Turn = Step(player, 2);
                 break;
@@ -210,14 +210,14 @@ public class UnoGame : IUnoGame
         BeginAction();
         if (PendingDraw > 0)
         {
-            _events.Add(new UnoEvent(player, UnoEventKind.Drew, Count: Give(player, PendingDraw)));
+            _events.Add(new FinalCardEvent(player, FinalCardEventKind.Drew, Count: Give(player, PendingDraw)));
             PendingDraw = 0;
             Turn = Step(player, 1);
             return true;
         }
 
         var count = 0;
-        UnoCard? last;
+        FinalCardCard? last;
         do
         {
             last = DrawOne();
@@ -231,8 +231,8 @@ public class UnoGame : IUnoGame
         }
         while (Rules.DrawUntilPlayable && !CanPlay(player, last, out _));
 
-        _saidUno[player] = false;
-        _events.Add(new UnoEvent(player, UnoEventKind.Drew, Count: count));
+        _calledFinalCard[player] = false;
+        _events.Add(new FinalCardEvent(player, FinalCardEventKind.Drew, Count: count));
         if (last is not null && CanPlay(player, last, out _))
         {
             DrawnCard = last;
@@ -261,30 +261,30 @@ public class UnoGame : IUnoGame
 
         BeginAction();
         DrawnCard = null;
-        _events.Add(new UnoEvent(player, UnoEventKind.Passed));
+        _events.Add(new FinalCardEvent(player, FinalCardEventKind.Passed));
         Turn = Step(player, 1);
         return true;
     }
 
     /// <inheritdoc />
-    public bool TryCallUno(int player, out string? error)
+    public bool TryCallFinalCard(int player, out string? error)
     {
         CheckPlayer(player);
-        var calls = UnoPending == player
-            || (Turn == player && !_saidUno[player] && _hands[player].Count == 2 && Playable(player).Count > 0);
-        error = Phase != UnoPhase.Playing ? "This hand is over."
+        var calls = FinalCardPending == player
+            || (Turn == player && !_calledFinalCard[player] && _hands[player].Count == 2 && Playable(player).Count > 0);
+        error = Phase != FinalCardPhase.Playing ? "This hand is over."
             : calls ? null
-            : _saidUno[player] ? "You have already called UNO."
-            : "Call UNO when you are about to have one card left.";
+            : _calledFinalCard[player] ? "You have already called Final Card."
+            : "Call Final Card when you are about to have one card left.";
         if (error is not null)
         {
             return false;
         }
 
-        UnoPending = null;
-        _saidUno[player] = true;
+        FinalCardPending = null;
+        _calledFinalCard[player] = true;
         Actions++;
-        _events.Add(new UnoEvent(player, UnoEventKind.CalledUno));
+        _events.Add(new FinalCardEvent(player, FinalCardEventKind.CalledFinalCard));
         return true;
     }
 
@@ -294,16 +294,16 @@ public class UnoGame : IUnoGame
         CheckPlayer(player);
         error = target < 0 || target >= Players ? "There is no such player."
             : target == player ? "You cannot catch yourself."
-            : UnoPending != target ? "That player cannot be caught now."
+            : FinalCardPending != target ? "That player cannot be caught now."
             : null;
         if (error is not null)
         {
             return false;
         }
 
-        UnoPending = null;
+        FinalCardPending = null;
         Actions++;
-        _events.Add(new UnoEvent(target, UnoEventKind.Caught, Count: Give(target, 2), By: player));
+        _events.Add(new FinalCardEvent(target, FinalCardEventKind.Caught, Count: Give(target, 2), By: player));
         return true;
     }
 
@@ -312,7 +312,7 @@ public class UnoGame : IUnoGame
     {
         error = hand < HandNumber ? null
             : hand > HandNumber ? "There is no such hand."
-            : Phase != UnoPhase.HandOver ? "This hand is not finished yet."
+            : Phase != FinalCardPhase.HandOver ? "This hand is not finished yet."
             : null;
         if (error is not null || hand < HandNumber)
         {
@@ -331,7 +331,7 @@ public class UnoGame : IUnoGame
     /// </summary>
     private void Deal()
     {
-        var deck = UnoCard.Deck().ToArray();
+        var deck = FinalCardCard.Deck().ToArray();
         _shuffle(deck);
         _drawPile.Clear();
         _drawPile.AddRange(deck);
@@ -340,11 +340,11 @@ public class UnoGame : IUnoGame
         DrawnCard = null;
         PendingDraw = 0;
         Direction = 1;
-        Phase = UnoPhase.Playing;
+        Phase = FinalCardPhase.Playing;
         for (var p = 0; p < Players; p++)
         {
             _hands[p].Clear();
-            _saidUno[p] = false;
+            _calledFinalCard[p] = false;
             Give(p, _handSizes[p]);
         }
 
@@ -358,18 +358,18 @@ public class UnoGame : IUnoGame
         _discard.Add(first);
         Color = first.Color;
         var starter = (HandNumber - 1) % Players;
-        _events.Add(new UnoEvent(starter, UnoEventKind.TurnedUp, first));
+        _events.Add(new FinalCardEvent(starter, FinalCardEventKind.TurnedUp, first));
         switch (first.Value)
         {
-            case UnoValue.Skip:
-                _events.Add(new UnoEvent(starter, UnoEventKind.Skipped));
+            case FinalCardValue.Skip:
+                _events.Add(new FinalCardEvent(starter, FinalCardEventKind.Skipped));
                 Turn = Step(starter, 1);
                 break;
-            case UnoValue.Reverse:
+            case FinalCardValue.Reverse:
                 Direction = -1;
                 Turn = Step(starter, 1);
                 break;
-            case UnoValue.DrawTwo:
+            case FinalCardValue.DrawTwo:
                 DrawAndMissTurn(starter, 2);
                 Turn = Step(starter, 1);
                 break;
@@ -380,12 +380,12 @@ public class UnoGame : IUnoGame
     }
 
     /// <summary>
-    /// Starts a new action: clears the last action's events, and ends the chance to catch a player who did not call UNO.
+    /// Starts a new action: clears the last action's events, and ends the chance to catch a player who did not call Final Card.
     /// </summary>
     private void BeginAction()
     {
         _events.Clear();
-        UnoPending = null;
+        FinalCardPending = null;
         Actions++;
     }
 
@@ -394,11 +394,11 @@ public class UnoGame : IUnoGame
     /// only the same draw card; a Wild Draw Four only without a card of the colour to play; any other wild card; otherwise
     /// a card of the colour to play or of the top card's number or symbol.
     /// </summary>
-    private bool CanPlay(int player, UnoCard card, out string? error)
+    private bool CanPlay(int player, FinalCardCard card, out string? error)
     {
         error = PendingDraw > 0
             ? card.Value == TopCard.Value ? null : "Answer with the same draw card, or draw the cards."
-            : card.Value == UnoValue.WildDrawFour && _hands[player].Any(c => c.Color == Color)
+            : card.Value == FinalCardValue.WildDrawFour && _hands[player].Any(c => c.Color == Color)
                 ? "You can play a Wild Draw Four only when you have no card of the colour to play."
             : card.IsWild || card.Color == Color || (!TopCard.IsWild && card.Value == TopCard.Value) ? null
             : "That card does not match the colour or the symbol on the pile.";
@@ -412,21 +412,21 @@ public class UnoGame : IUnoGame
     /// </summary>
     private void EmptiedHand(int player)
     {
-        if (Rules.End == UnoEndMode.Pyramid)
+        if (Rules.End == FinalCardEndMode.Pyramid)
         {
             if (_handSizes[player] > 1)
             {
                 _handSizes[player]--;
-                _events.Add(new UnoEvent(player, UnoEventKind.NewCards, Count: Give(player, _handSizes[player])));
+                _events.Add(new FinalCardEvent(player, FinalCardEventKind.NewCards, Count: Give(player, _handSizes[player])));
                 return;
             }
 
             _ranking.Add(player);
-            _events.Add(new UnoEvent(player, UnoEventKind.Finished, Count: _ranking.Count));
+            _events.Add(new FinalCardEvent(player, FinalCardEventKind.Finished, Count: _ranking.Count));
             if (ActiveCount == 1)
             {
                 _ranking.Add(Enumerable.Range(0, Players).Single(p => !_ranking.Contains(p)));
-                Phase = UnoPhase.GameOver;
+                Phase = FinalCardPhase.GameOver;
                 Turn = _ranking[0];
             }
             else if (Turn == player)
@@ -439,26 +439,26 @@ public class UnoGame : IUnoGame
 
         if (PendingDraw > 0)
         {
-            _events.Add(new UnoEvent(Turn, UnoEventKind.Drew, Count: Give(Turn, PendingDraw)));
+            _events.Add(new FinalCardEvent(Turn, FinalCardEventKind.Drew, Count: Give(Turn, PendingDraw)));
             PendingDraw = 0;
         }
 
         var points = _hands.Sum(hand => hand.Sum(c => c.Points));
-        LastResult = new UnoHandResult(player, points);
-        _events.Add(new UnoEvent(player, UnoEventKind.Finished, Count: points));
-        if (Rules.End == UnoEndMode.Score)
+        LastResult = new FinalCardHandResult(player, points);
+        _events.Add(new FinalCardEvent(player, FinalCardEventKind.Finished, Count: points));
+        if (Rules.End == FinalCardEndMode.Score)
         {
             _scores[player] += points;
         }
 
         Turn = player;
-        Phase = Rules.End == UnoEndMode.OneGame || _scores[player] >= Rules.Target ? UnoPhase.GameOver : UnoPhase.HandOver;
+        Phase = Rules.End == FinalCardEndMode.OneGame || _scores[player] >= Rules.Target ? FinalCardPhase.GameOver : FinalCardPhase.HandOver;
     }
 
     private void DrawAndMissTurn(int player, int count)
     {
-        _events.Add(new UnoEvent(player, UnoEventKind.Drew, Count: Give(player, count)));
-        _events.Add(new UnoEvent(player, UnoEventKind.Skipped));
+        _events.Add(new FinalCardEvent(player, FinalCardEventKind.Drew, Count: Give(player, count)));
+        _events.Add(new FinalCardEvent(player, FinalCardEventKind.Skipped));
     }
 
     /// <summary>
@@ -473,7 +473,7 @@ public class UnoGame : IUnoGame
             given++;
         }
 
-        _saidUno[player] = false;
+        _calledFinalCard[player] = false;
         return given;
     }
 
@@ -481,7 +481,7 @@ public class UnoGame : IUnoGame
     /// The top card of the draw pile, or null if there is none. When the draw pile is empty, the discard pile but its top
     /// card is shuffled into a new draw pile.
     /// </summary>
-    private UnoCard? DrawOne()
+    private FinalCardCard? DrawOne()
     {
         if (_drawPile.Count == 0 && _discard.Count > 1)
         {
@@ -534,8 +534,8 @@ public class UnoGame : IUnoGame
     private bool TryCheckTurn(int player, out string? error)
     {
         CheckPlayer(player);
-        error = Phase == UnoPhase.GameOver ? "The game is over."
-            : Phase == UnoPhase.HandOver ? "This hand is over."
+        error = Phase == FinalCardPhase.GameOver ? "The game is over."
+            : Phase == FinalCardPhase.HandOver ? "This hand is over."
             : player != Turn ? "It is not your turn."
             : null;
         return error is null;

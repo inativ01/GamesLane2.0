@@ -417,9 +417,9 @@ TRANSLATIONS.es = {
     "This Yatzee must be scored in the upper box of its number.": "Este Yatzee debe anotarse en la casilla superior de su número.",
     "This Yatzee must be scored in an open lower box.": "Este Yatzee debe anotarse en una casilla inferior libre.",
 
-    // Uno
-    "Uno": "Uno",
-    "Uno - GamesLane": "Uno - GamesLane",
+    // Final Card
+    "Final Card": "Última carta",
+    "Final Card - GamesLane": "Última carta - GamesLane",
     "Match the colour or the number, and be the first to play all your cards.": "Combina el color o el número y sé el primero en soltar todas tus cartas.",
     "2–10 players": "2–10 jugadores",
     "Next hand": "Siguiente mano",
@@ -452,11 +452,11 @@ TRANSLATIONS.es = {
     "{name} misses a turn.": "{name} pierde su turno.",
     "You kept the card.": "Te quedaste con la carta.",
     "{name} kept the card.": "{name} se quedó con la carta.",
-    "You called UNO!": "¡Dijiste UNO!",
-    "{name} called UNO!": "¡{name} dijo UNO!",
-    "{by} caught you without UNO: you drew {n} cards.": "{by} te cachó sin decir UNO: tomaste {n} cartas.",
-    "You caught {name} without UNO: {name} drew {n} cards.": "Cachaste a {name} sin decir UNO: {name} tomó {n} cartas.",
-    "{by} caught {name} without UNO: {name} drew {n} cards.": "{by} cachó a {name} sin decir UNO: {name} tomó {n} cartas.",
+    "You called Final Card!": "¡Dijiste Última carta!",
+    "{name} called Final Card!": "¡{name} dijo Última carta!",
+    "{by} caught you without Final Card: you drew {n} cards.": "{by} te cachó sin decir Última carta: tomaste {n} cartas.",
+    "You caught {name} without Final Card: {name} drew {n} cards.": "Cachaste a {name} sin decir Última carta: {name} tomó {n} cartas.",
+    "{by} caught {name} without Final Card: {name} drew {n} cards.": "{by} cachó a {name} sin decir Última carta: {name} tomó {n} cartas.",
     "You played all your cards and got {n} new ones.": "Soltaste todas tus cartas y recibiste {n} nuevas.",
     "{name} played all their cards and got {n} new ones.": "{name} soltó todas sus cartas y recibió {n} nuevas.",
     "You finished in place {n}!": "¡Terminaste en el puesto {n}!",
@@ -468,7 +468,8 @@ TRANSLATIONS.es = {
     "Cards to draw: {n}": "Cartas por tomar: {n}",
     "Cards last dealt: {n}": "Cartas repartidas la última vez: {n}",
     "Catch!": "¡Te caché!",
-    "{name} did not call UNO: make them draw 2 cards": "{name} no dijo UNO: haz que tome 2 cartas",
+    "Final Card!": "¡Última carta!",
+    "{name} did not call Final Card: make them draw 2 cards": "{name} no dijo Última carta: haz que tome 2 cartas",
     "Play {card}": "Jugar {card}",
     "Choose the colour to play:": "Elige el color:",
     "Draw {n} cards": "Tomar {n} cartas",
@@ -478,7 +479,7 @@ TRANSLATIONS.es = {
     "Hand {n}": "Mano {n}",
     "To {n} points": "A {n} puntos",
 
-    // Uno options (from the server)
+    // Final Card options (from the server)
     "Game end": "Fin del juego",
     "One game": "Una partida",
     "The first player to play all their cards wins.": "Gana el primero en soltar todas sus cartas.",
@@ -499,15 +500,15 @@ TRANSLATIONS.es = {
     "Draw until you can play": "Tomar hasta poder jugar",
     "Keep drawing until you get a card you can play.": "Sigue tomando hasta que te salga una carta que puedas jugar.",
 
-    // Uno: messages from the server
+    // Final Card: messages from the server
     "You do not have that card.": "No tienes esa carta.",
     "You can play only the card you drew, or keep it.": "Solo puedes jugar la carta que tomaste, o quedártela.",
     "Choose a colour for the wild card.": "Elige un color para el comodín.",
     "You have already drawn. Play the card you drew, or keep it.": "Ya tomaste. Juega la carta que tomaste, o quédatela.",
     "Draw a card first.": "Primero toma una carta.",
     "This hand is over.": "Esta mano ya terminó.",
-    "You have already called UNO.": "Ya dijiste UNO.",
-    "Call UNO when you are about to have one card left.": "Di UNO cuando estés por quedarte con una carta.",
+    "You have already called Final Card.": "Ya dijiste Última carta.",
+    "Call Final Card when you are about to have one card left.": "Di Última carta cuando estés por quedarte con una carta.",
     "There is no such player.": "No existe ese jugador.",
     "You cannot catch yourself.": "No puedes cacharte a ti mismo.",
     "That player cannot be caught now.": "Ahora no se puede cachar a ese jugador.",
