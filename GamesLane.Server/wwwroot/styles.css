@@ -1365,13 +1365,13 @@ button.icon-button {
     gap: 0.35rem;
 }
 
-/* Playing cards. Everything is sized in em, so a card scales with its font size. */
+/* Playing cards. Everything is sized in em, so a card scales with its font size. 2:3, the shape of the card back. */
 .card {
     position: relative;
     display: inline-block;
     flex: none;
-    width: 2.7em;
-    height: 3.8em;
+    width: 2.6em;
+    height: 3.9em;
     overflow: hidden;
     border-radius: 0.3em;
     background: linear-gradient(160deg, #fff 60%, #f3eee6);
@@ -1467,14 +1467,10 @@ svg.card-suit {
     font-size: 1.4em;
 }
 
-/* The back: dark red with a gold diamond pattern and a white border. */
+/* The back: the GamesLane card back picture. */
 .card.empty {
-    background:
-        radial-gradient(circle at 50% 50%, rgba(230, 169, 60, 0.35), transparent 60%),
-        repeating-linear-gradient(45deg, transparent 0 0.3em, rgba(230, 169, 60, 0.35) 0.3em 0.36em),
-        repeating-linear-gradient(-45deg, transparent 0 0.3em, rgba(230, 169, 60, 0.35) 0.3em 0.36em),
-        linear-gradient(160deg, #b23a22, #6e1d10);
-    box-shadow: inset 0 0 0 0.16em #fff, inset 0 0 0 0.22em rgba(230, 169, 60, 0.8), 0 2px 5px rgba(0, 0, 0, 0.3);
+    background: url("images/card-back.png") center / cover no-repeat;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
 }
 
 .card.big {
