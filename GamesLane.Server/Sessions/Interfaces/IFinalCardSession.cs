@@ -27,6 +27,11 @@ public interface IFinalCardSession : IRoundBasedSession
     bool TryPass(string userKey, int seat, [NotNullWhen(false)] out string? error);
 
     /// <summary>
+    /// <paramref name="seat"/> challenges the Wild Draw Four played on it (with the challenge option).
+    /// </summary>
+    bool TryChallenge(string userKey, int seat, [NotNullWhen(false)] out string? error);
+
+    /// <summary>
     /// <paramref name="seat"/> calls Final Card: it protects the seat on its final card (or before playing its second to
     /// last), and every other seat holding one card unprotected draws 2 cards.
     /// </summary>

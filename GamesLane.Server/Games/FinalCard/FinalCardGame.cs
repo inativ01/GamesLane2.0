@@ -17,6 +17,11 @@ public class FinalCardGame : IFinalCardGame
     private readonly List<int> _ranking = [];
     private readonly List<FinalCardEvent> _events = [];
 
+    // The player of the Wild Draw Four that the player to play can challenge (or null), and whether they held a card of
+    // the colour that was to play.
+    private int? _challengeable;
+    private bool _heldTheColor;
+
     /// <summary>
     /// Deals the first hand for <paramref name="players"/> players (2 to 10).
     /// </summary>
@@ -102,6 +107,9 @@ public class FinalCardGame : IFinalCardGame
     public bool CalledFinalCard(int player) => _calledFinalCard[player];
 
     /// <inheritdoc />
+    public bool CanChallenge => Phase == FinalCardPhase.Playing && _challengeable is not null;
+
+    /// <inheritdoc />
     public bool CanBeCaught(int player) => Phase == FinalCardPhase.Playing && _hands[player].Count == 1 && !_calledFinalCard[player];
 
     /// <inheritdoc />
@@ -139,6 +147,8 @@ public class FinalCardGame : IFinalCardGame
             return false;
         }
 
+        var answersStack = PendingDraw > 0;
+        var heldTheColor = hand.Any(c => c.Color == Color);
         BeginAction();
         hand.RemoveAt(index);
         _discard.Add(card);
@@ -168,8 +178,18 @@ public class FinalCardGame : IFinalCardGame
                 Direction = -Direction;
                 Turn = Step(player, 1);
                 break;
-            case FinalCardValue.DrawTwo or FinalCardValue.WildDrawFour when Rules.Stacking:
+            case FinalCardValue.DrawTwo or FinalCardValue.WildDrawFour when Rules.CanBeStacked(card) || answersStack
+                || (card.Value == FinalCardValue.WildDrawFour && Rules.WildDrawFour == FinalCardWildDrawFour.Challenge && hand.Count > 0):
+                // The next player draws them all, unless they answer with a draw card or challenge a Wild Draw Four (not
+                // one played on a stack, nor a player's last card).
                 PendingDraw += card.DrawCount;
+                if (card.Value == FinalCardValue.WildDrawFour && Rules.WildDrawFour == FinalCardWildDrawFour.Challenge
+                    && !answersStack && hand.Count > 0)
+                {
+                    _challengeable = player;
+                    _heldTheColor = heldTheColor;
+                }
+
                 Turn = next;
                 break;
             case FinalCardValue.DrawTwo or FinalCardValue.WildDrawFour:
@@ -259,6 +279,38 @@ public class FinalCardGame : IFinalCardGame
         DrawnCard = null;
         _events.Add(new FinalCardEvent(player, FinalCardEventKind.Passed));
         Turn = Step(player, 1);
+        return true;
+    }
+
+    /// <inheritdoc />
+    public bool TryChallenge(int player, out string? error)
+    {
+        if (!TryCheckTurn(player, out error))
+        {
+            return false;
+        }
+
+        if (_challengeable is not { } offender)
+        {
+            error = "There is no Wild Draw Four to challenge.";
+            return false;
+        }
+
+        var count = PendingDraw;
+        var won = _heldTheColor;
+        BeginAction();
+        PendingDraw = 0;
+        if (won)
+        {
+            _events.Add(new FinalCardEvent(player, FinalCardEventKind.ChallengeWon, Count: Give(offender, count), By: offender));
+        }
+        else
+        {
+            _events.Add(new FinalCardEvent(player, FinalCardEventKind.ChallengeLost, Count: Give(player, count + 2), By: offender));
+            _events.Add(new FinalCardEvent(player, FinalCardEventKind.Skipped));
+            Turn = Step(player, 1);
+        }
+
         return true;
     }
 
@@ -365,24 +417,26 @@ public class FinalCardGame : IFinalCardGame
     }
 
     /// <summary>
-    /// Starts a new action: clears the last action's events.
+    /// Starts a new action: clears the last action's events, and ends the chance to challenge a Wild Draw Four.
     /// </summary>
     private void BeginAction()
     {
         _events.Clear();
+        _challengeable = null;
         Actions++;
     }
 
     /// <summary>
     /// Whether <paramref name="player"/> may play <paramref name="card"/> on the pile. With cards to draw from a stack,
-    /// only the same draw card; a Wild Draw Four only without a card of the colour to play; any other wild card; otherwise
-    /// a card of the colour to play or of the top card's number or symbol.
+    /// only a draw card the stacking rule allows on the top card; with the rule, a Wild Draw Four only without a card of
+    /// the colour to play; any other wild card; otherwise a card of the colour to play or of the top card's number or symbol.
     /// </summary>
     private bool CanPlay(int player, FinalCardCard card, out string? error)
     {
         error = PendingDraw > 0
-            ? card.Value == TopCard.Value ? null : "Answer with the same draw card, or draw the cards."
-            : card.Value == FinalCardValue.WildDrawFour && _hands[player].Any(c => c.Color == Color)
+            ? Rules.CanStack(card, TopCard) ? null : "Answer with a draw card you can stack, or draw the cards."
+            : card.Value == FinalCardValue.WildDrawFour && Rules.WildDrawFour == FinalCardWildDrawFour.NoColor
+                && _hands[player].Any(c => c.Color == Color)
                 ? "You can play a Wild Draw Four only when you have no card of the colour to play."
             : card.IsWild || card.Color == Color || (!TopCard.IsWild && card.Value == TopCard.Value) ? null
             : "That card does not match the colour or the symbol on the pile.";

@@ -24,14 +24,15 @@ public record FinalCardResultState(int Seat, int Points);
 /// <summary>
 /// Public Final Card state. <see cref="Turn"/>, <see cref="Ranking"/> and <see cref="Winner"/> are seats; <see cref="Players"/>
 /// are in seat order. <see cref="Direction"/> is 1 in seat order, -1 after a Reverse. <see cref="HasDrawn"/> tells that
-/// the seat to play has drawn a card it may play or keep. <see cref="Actions"/> counts the actions, so a page can tell a
-/// new one.
+/// the seat to play has drawn a card it may play or keep, and <see cref="CanChallenge"/> that it can challenge the Wild
+/// Draw Four played on it. <see cref="Actions"/> counts the actions, so a page can tell a new one.
 /// </summary>
 public record FinalCardState(
     FinalCardEndMode End,
     int Target,
-    bool Stacking,
+    FinalCardStacking Stacking,
     bool DrawUntilPlayable,
+    FinalCardWildDrawFour WildDrawFour,
     int HandNumber,
     FinalCardPhase Phase,
     int Turn,
@@ -41,6 +42,7 @@ public record FinalCardState(
     int DrawPile,
     int PendingDraw,
     bool HasDrawn,
+    bool CanChallenge,
     IReadOnlyList<FinalCardPlayerState> Players,
     IReadOnlyList<FinalCardEventState> Events,
     int Actions,
@@ -95,6 +97,10 @@ public class FinalCardSession(string id, Action<FinalCardCard[]>? shuffle = null
         WithPlayer(userKey, seat, (game, player) => (game.TryPass(player, out var e), e), out error);
 
     /// <inheritdoc />
+    public bool TryChallenge(string userKey, int seat, [NotNullWhen(false)] out string? error) =>
+        WithPlayer(userKey, seat, (game, player) => (game.TryChallenge(player, out var e), e), out error);
+
+    /// <inheritdoc />
     public bool TryCallFinalCard(string userKey, int seat, [NotNullWhen(false)] out string? error) =>
         WithPlayer(userKey, seat, (game, player) => (game.TryCallFinalCard(player, out var e), e), out error);
 
@@ -136,6 +142,7 @@ public class FinalCardSession(string id, Action<FinalCardCard[]>? shuffle = null
             game.Rules.Target,
             game.Rules.Stacking,
             game.Rules.DrawUntilPlayable,
+            game.Rules.WildDrawFour,
             game.HandNumber,
             game.Phase,
             seats[game.Turn],
@@ -145,6 +152,7 @@ public class FinalCardSession(string id, Action<FinalCardCard[]>? shuffle = null
             game.DrawPileCount,
             game.PendingDraw,
             game.DrawnCard is not null,
+            game.CanChallenge,
             [.. Enumerable.Range(0, game.Players).Select(p => new FinalCardPlayerState(
                 seats[p],
                 game.Hand(p).Count,

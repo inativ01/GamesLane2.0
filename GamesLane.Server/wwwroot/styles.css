@@ -3817,6 +3817,17 @@ button.final-card-pile:disabled {
 
 .rp-tag.protected { background: #d6efd9; }
 
+/* Under the players' table: the game's options, in small text. */
+.rp-options {
+    margin: 0.4rem 0 0;
+    color: #e9f2ea;
+    font-size: 0.8rem;
+}
+
+.rp-options[hidden] {
+    display: none;
+}
+
 .final-card-score {
     white-space: nowrap;
 }
@@ -3839,6 +3850,12 @@ button.final-card-pile:disabled {
 .final-card-actions {
     justify-content: flex-start;
     margin-top: 0.3rem;
+}
+
+.final-card-challenge {
+    background: var(--gold);
+    color: var(--ink);
+    font-weight: 800;
 }
 
 .final-card-call {

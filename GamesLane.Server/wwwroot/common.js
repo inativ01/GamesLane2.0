@@ -1266,6 +1266,27 @@ function startChat(sessionId, view) {
     };
 }
 
+// A set option's value lists the choices turned off, separated by commas.
+const turnedOff = (value) => (value ?? "").split(",").filter(Boolean);
+// Whether an option applies, given the chosen values (e.g. card options only in Advanced mode).
+const applies = (option, values) => !option.shownWhen || values[option.shownWhen.key] === option.shownWhen.value;
+
+// A session's chosen options in a few words, e.g. "Mode: Advanced · Challenge cards: 5 of 6" (shown in the session
+// lobby, and by game pages during a game).
+function optionsSummary(state) {
+    return state.optionList
+        .filter((option) => applies(option, state.options))
+        .map((option) => {
+            const label = translateServerText(option.label);
+            if (option.kind === "Set") {
+                const on = option.choices.length - turnedOff(state.options[option.key]).length;
+                return `${label}: ${on === option.choices.length ? t("all") : t("{on} of {total}", { on, total: option.choices.length })}`;
+            }
+            return `${label}: ${translateServerText(option.choices.find((c) => c.value === state.options[option.key])?.label) ?? ""}`;
+        })
+        .join(" · ");
+}
+
 /**
  * Runs a session page. The page URL is <page>?session=CODE. Anyone can watch; logged-in users can take seats.
  * While the session is in its lobby, the shared session lobby (#session-lobby) is shown; while a game is being
@@ -1495,26 +1516,6 @@ function startSessionPage(gameType, render, seatRole = (seat) => t("Seat {n}", {
         const item = document.createElement("li");
         item.append(tile);
         return item;
-    }
-
-    // A set option's value lists the choices turned off, separated by commas.
-    const turnedOff = (value) => (value ?? "").split(",").filter(Boolean);
-    // Whether an option applies, given the chosen values (e.g. card options only in Advanced mode).
-    const applies = (option, values) => !option.shownWhen || values[option.shownWhen.key] === option.shownWhen.value;
-
-    // The chosen options in a few words, e.g. "Mode: Advanced · Challenge cards: 5 of 6".
-    function optionsSummary(state) {
-        return state.optionList
-            .filter((option) => applies(option, state.options))
-            .map((option) => {
-                const label = translateServerText(option.label);
-                if (option.kind === "Set") {
-                    const on = option.choices.length - turnedOff(state.options[option.key]).length;
-                    return `${label}: ${on === option.choices.length ? t("all") : t("{on} of {total}", { on, total: option.choices.length })}`;
-                }
-                return `${label}: ${translateServerText(option.choices.find((c) => c.value === state.options[option.key])?.label) ?? ""}`;
-            })
-            .join(" · ");
     }
 
     // Anyone in the session chooses the options for the next game; in a public game, only its creator (others only see

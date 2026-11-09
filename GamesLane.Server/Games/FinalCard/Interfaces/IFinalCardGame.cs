@@ -56,6 +56,12 @@ public interface IFinalCardGame
     /// <summary>Whether a player holds one card without having called Final Card, so another player can catch them.</summary>
     bool CanBeCaught(int player);
 
+    /// <summary>
+    /// Whether the player to play can challenge the Wild Draw Four just played on them (with the challenge rule; not one
+    /// played on a stack, nor its player's last card).
+    /// </summary>
+    bool CanChallenge { get; }
+
     /// <summary>Pyramid: the players who have finished, in order; at the end, everyone.</summary>
     IReadOnlyList<int> Ranking { get; }
 
@@ -88,6 +94,14 @@ public interface IFinalCardGame
 
     /// <summary><paramref name="player"/> keeps the card they drew, which ends their turn.</summary>
     bool TryPass(int player, out string? error);
+
+    /// <summary>
+    /// <paramref name="player"/>, whose turn it is, challenges the Wild Draw Four played on them (see
+    /// <see cref="CanChallenge"/>). If its player held a card of the colour that was to play, they draw the cards to draw
+    /// and <paramref name="player"/> plays on; otherwise <paramref name="player"/> draws them and 2 more, and misses their
+    /// turn.
+    /// </summary>
+    bool TryChallenge(int player, out string? error);
 
     /// <summary>
     /// <paramref name="player"/> calls Final Card, at any time during a hand. It protects them if they hold one card, or two on

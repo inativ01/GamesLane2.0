@@ -1602,12 +1602,14 @@ public class GameSessionTests
         var session = Seated(new FinalCardSession("ABC123", UnshuffledFinalCard));
         Assert.True(session.TrySetOptions(Alice, new Dictionary<string, string>
         {
-            [FinalCardOptions.End] = "Pyramid", [FinalCardOptions.Stacking] = "Yes", [FinalCardOptions.Draw] = "UntilPlayable",
+            [FinalCardOptions.End] = "Pyramid", [FinalCardOptions.Stacking] = "FourOnTwo", [FinalCardOptions.Draw] = "UntilPlayable",
+            [FinalCardOptions.WildDrawFour] = "Challenge",
         }, out var error), error);
         Assert.True(session.TryNewGame(Alice, 0, out error), error);
 
         var state = FinalCard(session);
-        Assert.Equal((FinalCardEndMode.Pyramid, true, true), (state.End, state.Stacking, state.DrawUntilPlayable));
+        Assert.Equal((FinalCardEndMode.Pyramid, FinalCardStacking.FourOnTwo, true, FinalCardWildDrawFour.Challenge),
+            (state.End, state.Stacking, state.DrawUntilPlayable, state.WildDrawFour));
         Assert.All(state.Players, p => Assert.Equal(7, p.HandSize));
     }
 

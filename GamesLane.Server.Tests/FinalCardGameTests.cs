@@ -247,7 +247,7 @@ public class FinalCardGameTests
     [Fact]
     public void With_stacking_the_cards_stacked_for_the_next_player_count_for_the_winner()
     {
-        var game = Deal(new FinalCardRules(FinalCardEndMode.Score, Stacking: true), "R9", "", "RS RS YS YS GS GS G+2", "R1 R2 R3 B+2 W W+4 G0");
+        var game = Deal(new FinalCardRules(FinalCardEndMode.Score, Stacking: FinalCardStacking.TwoOnTwo), "R9", "", "RS RS YS YS GS GS G+2", "R1 R2 R3 B+2 W W+4 G0");
         foreach (var card in new[] { "RS", "RS", "YS", "YS", "GS", "GS", "G+2" })
         {
             Assert.True(game.TryPlay(0, Card(card), null, out var error), error);
@@ -286,7 +286,8 @@ public class FinalCardGameTests
     [Fact]
     public void A_game_to_a_score_target_is_played_hand_after_hand_until_a_player_reaches_it()
     {
-        var game = new FinalCardGame(4, new FinalCardRules(FinalCardEndMode.Score, 200, Stacking: true, DrawUntilPlayable: true), new Random(5).Shuffle);
+        var game = new FinalCardGame(4, new FinalCardRules(FinalCardEndMode.Score, 200, FinalCardStacking.FourOnTwo, DrawUntilPlayable: true,
+            WildDrawFour: FinalCardWildDrawFour.Challenge), new Random(5).Shuffle);
 
         PlayOut(game);
 
@@ -367,17 +368,109 @@ public class FinalCardGameTests
     [Fact]
     public void With_stacking_draw_cards_add_up_for_the_next_player()
     {
-        var game = Deal(new FinalCardRules(Stacking: true), "R9", "", "R+2 G1 G2 G3 G4 G6 G7", "B+2 R1 B2 B3 B4 B6 B7");
+        var game = Deal(new FinalCardRules(Stacking: FinalCardStacking.SameCard), "R9", "", "R+2 G1 G2 G3 G4 G6 G7", "B+2 R1 B2 B3 B4 B6 B7");
 
         Assert.True(game.TryPlay(0, Card("R+2"), null, out var error), error);
         Assert.Equal((2, 1, 7), (game.PendingDraw, game.Turn, game.Hand(1).Count));
-        AssertRefused(game.TryPlay(1, Card("R1"), null, out error), error, "Answer with the same draw card, or draw the cards.");
+        AssertRefused(game.TryPlay(1, Card("R1"), null, out error), error, "Answer with a draw card you can stack, or draw the cards.");
         Assert.True(game.TryPlay(1, Card("B+2"), null, out error), error);
         Assert.Equal((4, 0), (game.PendingDraw, game.Turn));
 
         Assert.True(game.TryDraw(0, out error), error);
         Assert.Equal((0, 1, 10), (game.PendingDraw, game.Turn, game.Hand(0).Count));
     }
+
+    [Theory]
+    [InlineData(FinalCardStacking.None, false, false, false)]
+    [InlineData(FinalCardStacking.TwoOnTwo, true, false, false)]
+    [InlineData(FinalCardStacking.SameCard, true, true, false)]
+    [InlineData(FinalCardStacking.FourOnTwo, true, true, true)]
+    public void Each_stacking_choice_lets_its_draw_cards_answer(FinalCardStacking stacking, bool twoOnTwo, bool fourOnFour, bool fourOnTwo)
+    {
+        var rules = new FinalCardRules(Stacking: stacking);
+
+        Assert.Equal((twoOnTwo, fourOnFour, fourOnTwo, false),
+            (rules.CanStack(Card("B+2"), Card("R+2")), rules.CanStack(Card("W+4"), Card("W+4")),
+                rules.CanStack(Card("W+4"), Card("R+2")), rules.CanStack(Card("B+2"), Card("W+4"))));
+    }
+
+    [Fact]
+    public void A_wild_draw_four_can_answer_a_draw_two_even_with_a_card_of_the_colour()
+    {
+        var game = Deal(new FinalCardRules(Stacking: FinalCardStacking.FourOnTwo), "R9", "", "R+2 G1 G2 G3 G4 G6 G7", "W+4 R1 B2 B3 B4 B6 B7");
+        Assert.True(game.TryPlay(0, Card("R+2"), null, out var error), error);
+
+        Assert.True(game.TryPlay(1, Card("W+4"), FinalCardColor.Blue, out error), error);
+
+        Assert.Equal((6, 0), (game.PendingDraw, game.Turn));
+    }
+
+    [Fact]
+    public void A_wild_draw_four_that_is_always_allowed_can_be_played_with_a_card_of_the_colour()
+    {
+        var game = Deal(new FinalCardRules(WildDrawFour: FinalCardWildDrawFour.Always), "R5", "", "W+4 R1 B2 B3 B4 B6 B7", Reds);
+
+        Assert.True(game.TryPlay(0, Card("W+4"), FinalCardColor.Blue, out var error), error);
+
+        Assert.Equal((11, 0), (game.Hand(1).Count, game.Turn));
+    }
+
+    [Fact]
+    public void A_right_challenge_makes_the_player_of_the_wild_draw_four_draw_the_cards_and_the_challenger_plays_on()
+    {
+        var game = Deal(Challenging, "R5", "", "W+4 R1 B2 B3 B4 B6 B7", Reds);
+        AssertRefused(game.TryChallenge(0, out var error), error, "There is no Wild Draw Four to challenge.");
+        Assert.True(game.TryPlay(0, Card("W+4"), FinalCardColor.Yellow, out error), error);
+        Assert.Equal((4, 1, true), (game.PendingDraw, game.Turn, game.CanChallenge));
+
+        Assert.True(game.TryChallenge(1, out error), error);
+
+        Assert.Equal(new FinalCardEvent(1, FinalCardEventKind.ChallengeWon, Count: 4, By: 0), game.Events.Single());
+        Assert.Equal((10, 7, 1, 0), (game.Hand(0).Count, game.Hand(1).Count, game.Turn, game.PendingDraw));
+        Assert.False(game.CanChallenge);
+    }
+
+    [Fact]
+    public void A_wrong_challenge_makes_the_challenger_draw_6_and_miss_their_turn()
+    {
+        var game = Deal(Challenging, "R5", "", "W+4 B1 B2 B3 B4 B6 B7", Reds);
+        Assert.True(game.TryPlay(0, Card("W+4"), FinalCardColor.Yellow, out var error), error);
+
+        Assert.True(game.TryChallenge(1, out error), error);
+
+        Assert.Equal([new FinalCardEvent(1, FinalCardEventKind.ChallengeLost, Count: 6, By: 0), new FinalCardEvent(1, FinalCardEventKind.Skipped)],
+            game.Events);
+        Assert.Equal((6, 13, 0, 0), (game.Hand(0).Count, game.Hand(1).Count, game.Turn, game.PendingDraw));
+    }
+
+    [Fact]
+    public void Drawing_instead_of_challenging_takes_the_4_cards_and_misses_the_turn()
+    {
+        var game = Deal(Challenging, "R5", "", "W+4 R1 B2 B3 B4 B6 B7", Reds);
+        Assert.True(game.TryPlay(0, Card("W+4"), FinalCardColor.Yellow, out var error), error);
+
+        Assert.True(game.TryDraw(1, out error), error);
+
+        Assert.Equal((11, 0), (game.Hand(1).Count, game.Turn));
+        Assert.False(game.CanChallenge);
+    }
+
+    [Fact]
+    public void A_wild_draw_four_on_a_stack_or_as_the_last_card_cannot_be_challenged()
+    {
+        var stacked = Deal(Challenging with { Stacking = FinalCardStacking.FourOnTwo }, "R9", "", "R+2 G1 G2 G3 G4 G6 G7", "W+4 R1 B2 B3 B4 B6 B7");
+        Assert.True(stacked.TryPlay(0, Card("R+2"), null, out var error), error);
+        Assert.True(stacked.TryPlay(1, Card("W+4"), FinalCardColor.Blue, out error), error);
+        Assert.False(stacked.CanChallenge);
+
+        var last = DownToTwo(Challenging with { End = FinalCardEndMode.Pyramid }, final: "GS W+4");
+        Assert.True(last.TryPlay(0, Card("GS"), null, out error), error);
+        Assert.True(last.TryPlay(0, Card("W+4"), FinalCardColor.Blue, out error), error);
+        Assert.False(last.CanChallenge);
+        Assert.Equal((11, 0), (last.Hand(1).Count, last.PendingDraw));
+    }
+
+    private static readonly FinalCardRules Challenging = new(WildDrawFour: FinalCardWildDrawFour.Challenge);
 
     // A game whose deck gives each player their 7 cards (short text, separated by spaces), turns up turnedUp, and then has
     // drawPile on top of the draw pile.

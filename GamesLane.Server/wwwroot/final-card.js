@@ -74,7 +74,8 @@ function statusText(game, state, view) {
     if (!view.isMe(game.turn)) {
         return `⏳ ${t("Waiting for {name}", { name: playerName(state, game.turn) })}`;
     }
-    const action = game.pendingDraw > 0 ? t("Stack a draw card, or draw {n} cards", { n: game.pendingDraw })
+    const action = game.canChallenge ? t("Challenge the Wild Draw Four, or draw {n} cards", { n: game.pendingDraw })
+        : game.pendingDraw > 0 ? t("Stack a draw card, or draw {n} cards", { n: game.pendingDraw })
         : game.hasDrawn ? t("Play the card you drew, or keep it")
             : t("Play a card, or draw");
     return `👉 ${view.mySeats.length > 1 ? `${playerName(state, game.turn)}: ` : ""}${action}`;
@@ -106,6 +107,12 @@ function eventText(game, state, view, e) {
                 : view.isMe(e.bySeat) && view.mySeats.length === 1 ? t("You caught {name} without Final Card: {name} drew {n} cards.", values)
                     : t("{by} caught {name} without Final Card: {name} drew {n} cards.", values);
         }
+        case "ChallengeWon":
+            return say("You challenged the Wild Draw Four and were right: {by} draws {n} cards.",
+                "{name} challenged the Wild Draw Four and was right: {by} draws {n} cards.", { by: playerName(state, e.bySeat), n: e.count });
+        case "ChallengeLost":
+            return say("You challenged the Wild Draw Four and were wrong: you draw {n} cards.",
+                "{name} challenged the Wild Draw Four and was wrong: {name} draws {n} cards.", { n: e.count });
         case "NewCards":
             return say("You played all your cards and got {n} new ones.", "{name} played all their cards and got {n} new ones.", { n: e.count });
         case "Finished":
@@ -257,6 +264,10 @@ function handPanel(game, state, view, hand) {
     if (drawn) {
         button(t("Keep the card"), () => send("PassAfterDraw", hand.seat), "secondary");
     }
+    if (myTurn && game.canChallenge) {
+        const challenge = button(t("Challenge!"), () => send("Challenge", hand.seat), "final-card-challenge");
+        challenge.title = t("Did they have a card of the colour? If so, they draw the cards; if not, you draw 2 more.");
+    }
     const call = button(t("Final Card!"), () => send("CallFinalCard", hand.seat), "final-card-call");
     call.disabled = game.phase !== "Playing";
     panel.append(buttons);
@@ -294,6 +305,8 @@ const page = startSessionPage("FinalCard", (game, state, view) => {
     $("final-card-toggle-table").textContent = t(shown ? "Hide table" : "Show table");
     $("final-card-players").hidden = !shown;
     $("final-card-players").replaceChildren(...game.players.map((p) => playerItem(game, state, view, p)));
+    $("final-card-options").hidden = !shown;
+    $("final-card-options").textContent = `${t("Game options:")} ${optionsSummary(state)}`;
     $("next-round").hidden = !(view.isPlayer && game.phase === "HandOver");
 });
 
