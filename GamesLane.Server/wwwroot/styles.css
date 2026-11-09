@@ -1327,7 +1327,8 @@ button.icon-button {
     color: var(--ink);
 }
 
-/* The Gang. The player's own hand is on top; everything observers see is on a green felt table below. */
+/* The Gang. Players see the top of the table (the shared cards and the heist's cards), their own hand, then the rest
+   of the table; everything is on green felt. */
 
 .card-row,
 .chip-row {
@@ -2277,15 +2278,29 @@ button.ready-thumb.is-ready:not(:disabled):hover {
     font-weight: 600;
 }
 
-/* The table (everything observers see) */
+/* The table (everything observers see). Players get its top (the shared cards and the heist's cards) above their hand. */
 
-.table-view {
+.table-view,
+.table-top {
     margin: 0.75rem 0;
     border-radius: var(--radius);
     background: radial-gradient(ellipse at 50% 30%, #2f6b45, #1c4a2d 75%);
     color: #f3efe6;
     box-shadow: var(--shadow);
     overflow: hidden;
+}
+
+.table-top {
+    margin-top: 0.5rem;
+    padding: 0.75rem;
+}
+
+.table-top #community {
+    margin: 0;
+}
+
+.table-top .heist-cards {
+    margin: 0.75rem 0 0;
 }
 
 .table-head {
@@ -3049,7 +3064,8 @@ a.button.is-busy {
     }
 }
 
-/* The Gang on wide screens. Players: their hand on the left, the table on the right. */
+/* The Gang on wide screens. Players: the top of the table and their hand on the left, the rest of the table on the
+   right. */
 @media (min-width: 1000px) {
     main.gang {
         max-width: min(1500px, 94vw);
@@ -3059,14 +3075,16 @@ a.button.is-busy {
         display: grid;
         grid-template-columns: minmax(340px, 440px) 1fr;
         grid-template-areas:
+            "top table"
             "hand table"
             "decisions table"
             "controls table";
-        grid-template-rows: auto auto 1fr;
+        grid-template-rows: auto auto auto 1fr;
         column-gap: 1.25rem;
         align-items: start;
     }
 
+    main.gang .table-top { grid-area: top; }
     main.gang #my-hands { grid-area: hand; }
     main.gang #my-decisions { grid-area: decisions; }
     main.gang .gang-controls { grid-area: controls; }
@@ -3080,27 +3098,11 @@ a.button.is-busy {
         font-size: 1.35rem;
     }
 
-    /* The heist's cards in a column on the right of the table. */
-    body:not(.observer) main.gang .table-body:has(#heist-cards:not([hidden])) {
-        display: grid;
-        grid-template-columns: minmax(0, 1fr) minmax(10rem, 13rem);
-        grid-template-areas: "community cards" "middle cards" "chips cards" "revealed cards";
-        grid-template-rows: auto auto auto 1fr;
-        column-gap: 1rem;
-        align-items: start;
-    }
-
-    body:not(.observer) main.gang #community { grid-area: community; }
-    body:not(.observer) main.gang #middle { grid-area: middle; }
-    body:not(.observer) main.gang .chip-table { grid-area: chips; }
-    body:not(.observer) main.gang .revealed { grid-area: revealed; }
-    body:not(.observer) main.gang .heist-cards { grid-area: cards; flex-direction: column; margin: 0; }
-    body:not(.observer) main.gang .heist-card { flex: none; min-height: 0; }
-
-    /* A player who hid the table gets their hand in the middle instead. */
+    /* A player who hid the table gets the top of the table and their hand in the middle instead. */
     main.gang #game-screen:has(#table-body[hidden]) {
         grid-template-columns: minmax(340px, 560px);
-        grid-template-areas: "hand" "decisions" "controls" "table";
+        grid-template-areas: "top" "hand" "decisions" "controls" "table";
+        grid-template-rows: auto auto auto auto 1fr;
         justify-content: center;
     }
 }
