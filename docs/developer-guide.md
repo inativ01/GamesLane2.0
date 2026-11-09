@@ -283,7 +283,7 @@ To browse the database, use the Neon console's SQL Editor, pgAdmin, DBeaver, or 
 
 ## Game options
 
-Each option has a key, a label and a list of choices with a default; `Games/GameOptions.cs` lists them per game. A **choice** option's value is one of its choices. A **set** option's value lists the choices turned off, separated by commas, so choices added later (e.g. new cards) are on by default. An option can apply only when another option has a certain value (`shownWhen`). Chosen values are checked against the game's options: unknown options or values are refused, and options left out get their default. Saved preferences that no longer match (e.g. after an option was removed) fall back to the defaults.
+Each option has a key, a label and a list of choices with a default; `Games/GameOptions.cs` lists them per game. A **choice** option's value is one of its choices. A **set** option's value lists the choices turned off, separated by commas, so choices added later (e.g. new cards) are on by default. An option can apply only when another option has a certain value (`shownWhen`). Chosen values are checked against the game's options: unknown options or values are refused, and options left out get their default. Saved preferences that no longer match (e.g. after an option was removed) fall back to the defaults. On the pages, `optionsList(state)` in `common.js` shows the chosen options as "Game options:" and a bulleted list (`optionLines(state)`, one text per option that applies), aligned to the start: in the session lobby's options button, and during a game in `#game-options`, which `startSessionPage` fills on every game page (each page has the element at the bottom of `#game-screen`; it stays hidden for a game without options).
 
 ## HTTP endpoints
 

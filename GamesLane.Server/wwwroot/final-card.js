@@ -305,8 +305,6 @@ const page = startSessionPage("FinalCard", (game, state, view) => {
     $("final-card-toggle-table").textContent = t(shown ? "Hide table" : "Show table");
     $("final-card-players").hidden = !shown;
     $("final-card-players").replaceChildren(...game.players.map((p) => playerItem(game, state, view, p)));
-    $("final-card-options").hidden = !shown;
-    $("final-card-option-list").replaceChildren(...optionLines(state).map((line) => el("li", null, line)));
     $("next-round").hidden = !(view.isPlayer && game.phase === "HandOver");
 });
 

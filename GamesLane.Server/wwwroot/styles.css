@@ -2485,6 +2485,34 @@ button.lobby-options::after {
     flex: 1;
 }
 
+/* The game's options as "Game options:" and a bulleted list, one per line, aligned to the start: on the session lobby's
+   options button, and under the game screen during a game (#game-options), in every game. */
+.options-title {
+    display: block;
+    font-weight: 700;
+}
+
+.options-lines {
+    margin: 0.2rem 0 0;
+    padding-inline-start: 1.2rem;
+    font-weight: 400;
+    text-align: start;
+}
+
+.game-options {
+    margin: 0.4rem 0;
+    padding: 0.5rem 0.75rem;
+    border-radius: var(--radius);
+    background: var(--surface-soft);
+    color: var(--ink);
+    font-size: 0.85rem;
+    text-align: start;
+}
+
+.game-options[hidden] {
+    display: none;
+}
+
 .option-list {
     margin: 0;
     padding: 0;
@@ -3822,27 +3850,6 @@ button.final-card-pile:disabled {
 }
 
 .rp-tag.protected { background: #d6efd9; }
-
-/* Under the players' table: the game's options, one per line, in small text. */
-.rp-options {
-    margin: 0.4rem 0 0;
-    color: #e9f2ea;
-    font-size: 0.8rem;
-}
-
-.rp-options[hidden] {
-    display: none;
-}
-
-.rp-options-title {
-    margin: 0;
-    font-weight: 700;
-}
-
-.rp-options ul {
-    margin: 0.1rem 0 0;
-    padding-inline-start: 1.2rem;
-}
 
 .final-card-score {
     white-space: nowrap;

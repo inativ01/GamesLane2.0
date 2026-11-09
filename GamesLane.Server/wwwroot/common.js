@@ -1271,8 +1271,7 @@ const turnedOff = (value) => (value ?? "").split(",").filter(Boolean);
 // Whether an option applies, given the chosen values (e.g. card options only in Advanced mode).
 const applies = (option, values) => !option.shownWhen || values[option.shownWhen.key] === option.shownWhen.value;
 
-// A session's chosen options, one text per option that applies, e.g. ["Mode: Advanced", "Challenge cards: 5 of 6"]
-// (shown by game pages during a game, one per line).
+// A session's chosen options, one text per option that applies, e.g. ["Mode: Advanced", "Challenge cards: 5 of 6"].
 function optionLines(state) {
     return state.optionList
         .filter((option) => applies(option, state.options))
@@ -1286,8 +1285,15 @@ function optionLines(state) {
         });
 }
 
-// The chosen options in a few words, e.g. "Mode: Advanced · Challenge cards: 5 of 6" (shown in the session lobby).
-const optionsSummary = (state) => optionLines(state).join(" · ");
+// The chosen options as "Game options:" and a bulleted list, one option per line, aligned to the start (shown on the
+// session lobby's options button, and during a game in #game-options, see startSessionPage). Nothing for a game
+// without options.
+function optionsList(state) {
+    if (state.optionList.length === 0) {
+        return [];
+    }
+    return [el("strong", "options-title", t("Game options:")), el("ul", "options-lines", ...optionLines(state).map((line) => el("li", null, line)))];
+}
 
 /**
  * Runs a session page. The page URL is <page>?session=CODE. Anyone can watch; logged-in users can take seats.
@@ -1701,13 +1707,18 @@ function startSessionPage(gameType, render, seatRole = (seat) => t("Seat {n}", {
             const next = nextSeat(state);
             $("seats").replaceChildren(...state.seats.flatMap((info, seat) => (info || seat === next ? [seatItem(state, seat)] : [])));
             $("lobby-options").hidden = state.optionList.length === 0;
-            $("options-summary").textContent = `${t("Game options:")} ${optionsSummary(state)}`;
+            $("options-summary").replaceChildren(...optionsList(state));
             $("start-game").hidden = !(view.isPlayer && taken >= state.minSeats && (!state.isPublic || isHost(state)));
             $("start-game").textContent = t(state.gameNumber > 0 ? "New game" : "Start");
             return;
         }
 
         $("play-again").hidden = $("to-lobby").hidden = !(view.isPlayer && state.phase === "Over");
+        const gameOptions = $("game-options");
+        if (gameOptions) {
+            gameOptions.replaceChildren(...optionsList(state));
+            gameOptions.hidden = gameOptions.childElementCount === 0;
+        }
         render(state.game, state, view);
         // Games mark their status with 👉 (the user has to act) or ⏳ (waiting for others). The marks only choose the
         // bar's color (gold or grey) and are not shown.
