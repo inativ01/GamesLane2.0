@@ -236,11 +236,16 @@ public class UserService(
 
     /// <inheritdoc />
     public Task<UserSettings?> GetSettingsAsync(Guid userId) =>
-        db.Users.Where(u => u.Id == userId).Select(u => new UserSettings(u.ChatOn, u.SoundOn)).FirstOrDefaultAsync();
+        db.Users.Where(u => u.Id == userId).Select(u => new UserSettings(u.ChatOn, u.SoundOn, u.CardStyle)).FirstOrDefaultAsync();
 
     /// <inheritdoc />
     public async Task<string?> SetSettingsAsync(Guid userId, UserSettings settings)
     {
+        if (!UserRules.IsCardStyle(settings.Cards))
+        {
+            return "Choose a card style.";
+        }
+
         if (await db.Users.FindAsync(userId) is not { } user)
         {
             return "Your account no longer exists. Log in again.";
@@ -248,6 +253,7 @@ public class UserService(
 
         user.ChatOn = settings.Chat;
         user.SoundOn = settings.Sound;
+        user.CardStyle = settings.Cards;
         await db.SaveChangesAsync();
         return null;
     }

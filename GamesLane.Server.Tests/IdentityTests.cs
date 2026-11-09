@@ -111,6 +111,27 @@ public class IdentityTests
         Assert.False(UserRules.IsBuiltInIcon(null));
     }
 
+    [Theory]
+    [InlineData("New", true)]
+    [InlineData("Classic", true)]
+    [InlineData("classic", false)]
+    [InlineData("", false)]
+    [InlineData(null, false)]
+    public void Only_the_new_and_classic_card_styles_can_be_chosen(string? style, bool valid)
+    {
+        Assert.Equal(valid, UserRules.IsCardStyle(style));
+    }
+
+    [Fact]
+    public void Settings_saved_without_a_card_style_get_the_new_cards()
+    {
+        var settings = System.Text.Json.JsonSerializer.Deserialize<UserSettings>("""{"chat":true,"sound":false}""",
+            new System.Text.Json.JsonSerializerOptions(System.Text.Json.JsonSerializerDefaults.Web))!;
+
+        Assert.Equal(new UserSettings(true, false, UserSettings.NewCards), settings);
+        Assert.Equal(UserSettings.NewCards, new User { DisplayName = "Ada", Icon = UserRules.DefaultIcon }.CardStyle);
+    }
+
     [Fact]
     public void New_guests_get_a_3_digit_guest_name_and_a_built_in_icon()
     {

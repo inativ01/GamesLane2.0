@@ -140,6 +140,8 @@ TRANSLATIONS.es = {
     "Chat: {n} new messages": "Chat: {n} mensajes nuevos",
     "Chat in games": "Chat en las partidas",
     "Sounds (chat, games and reading aloud)": "Sonidos (chat, juegos y lectura en voz alta)",
+    "Card style": "Estilo de las cartas",
+    "Classic cards": "Cartas clásicas",
     "Sound is off in your profile.": "El sonido está desactivado en tu perfil.",
     "Sound": "Sonido",
     "No messages yet. Say hello!": "Todavía no hay mensajes. ¡Saluda!",
@@ -869,4 +871,5 @@ TRANSLATIONS.es = {
     "Upload a PNG, JPEG or WebP picture.": "Sube una imagen PNG, JPEG o WebP.",
     "Unknown game.": "Juego desconocido.",
     "Each game can be listed only once.": "Cada juego puede aparecer solo una vez.",
+    "Choose a card style.": "Elige un estilo de cartas.",
 };

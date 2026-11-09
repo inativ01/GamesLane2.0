@@ -340,6 +340,10 @@ label.setting {
     cursor: pointer;
 }
 
+label.setting select {
+    width: auto;
+}
+
 /* Logging in, for guests, below the profile form. */
 .profile-account {
     padding-top: 0.6rem;
@@ -1379,11 +1383,184 @@ button.icon-button {
     vertical-align: middle;
 }
 
-.card.red {
+/* Four suit colours: red hearts, green clubs, yellow diamonds, blue spades. */
+.card.hearts { color: #d62828; }
+.card.clubs { color: #23913a; }
+.card.diamonds { color: #e5a400; }
+.card.spades { color: #1d5bd6; }
+
+/* Rank and suit in block letters, in the top left and (upside down) bottom right corners. */
+.card-corner {
+    position: absolute;
+    top: 0.2em;
+    left: 0.2em;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.06em;
+    font-family: "Arial Black", "Segoe UI Black", "Helvetica Neue", Arial, sans-serif;
+    font-size: 0.6em;
+    font-weight: 900;
+    letter-spacing: -0.06em;
+}
+
+.card-corner.bottom {
+    top: auto;
+    left: auto;
+    right: 0.2em;
+    bottom: 0.2em;
+    transform: rotate(180deg);
+}
+
+svg.card-suit {
+    width: 0.8em;
+    height: 0.8em;
+    fill: currentColor;
+}
+
+/* The middle: a very large silhouette of the suit at 20% opacity, with the rank drawn as a road on it. */
+.card-face {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.card-silhouette {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 2.5em;
+    height: 2.5em;
+    fill: currentColor;
+    opacity: 0.2;
+    transform: translate(-50%, -50%);
+}
+
+/* The rank as a script road, as in the logo's L: a thick rim in the suit's colour (in place of the logo's gold), black
+   asphalt with a dashed yellow centre line, and curled ends. */
+.card-road {
+    position: relative;
+    width: 1.8em;
+    height: 2.3em;
+    overflow: visible;
+    filter: drop-shadow(0 0.03em 0.04em rgba(0, 0, 0, 0.4));
+}
+
+.card-road .road-kerb,
+.card-road .road-rim,
+.card-road .road,
+.card-road .road-line {
+    fill: none;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.card-road .road-kerb { stroke: #3a2a10; stroke-width: 14; }
+.card-road .road-rim { stroke: currentColor; stroke-width: 12; }
+.card-road .road { stroke: #1b1b1b; stroke-width: 7.5; }
+.card-road .road-line { stroke: #f5c518; stroke-width: 1.2; stroke-dasharray: 3 2.6; stroke-linecap: butt; }
+
+.card-road-text {
+    position: relative;
+    font-size: 1.4em;
+}
+
+/* The back: dark red with a gold diamond pattern and a white border. */
+.card.empty {
+    background:
+        radial-gradient(circle at 50% 50%, rgba(230, 169, 60, 0.35), transparent 60%),
+        repeating-linear-gradient(45deg, transparent 0 0.3em, rgba(230, 169, 60, 0.35) 0.3em 0.36em),
+        repeating-linear-gradient(-45deg, transparent 0 0.3em, rgba(230, 169, 60, 0.35) 0.3em 0.36em),
+        linear-gradient(160deg, #b23a22, #6e1d10);
+    box-shadow: inset 0 0 0 0.16em #fff, inset 0 0 0 0.22em rgba(230, 169, 60, 0.8), 0 2px 5px rgba(0, 0, 0, 0.3);
+}
+
+.card.big {
+    font-size: clamp(1.25rem, 6vw, 1.6rem);
+    border-radius: 0.28em;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3), inset 0 0 0 1px rgba(0, 0, 0, 0.1);
+}
+
+/* A joker: a faint octagon in the four suit colours with a large GamesLane logo on it, and JOKER written downwards in
+   the top left and (upside down) bottom right corners, so it shows when cards are stacked. */
+.card.joker {
+    color: #1b1b1b;
+}
+
+/* A rank of a plus sign and a digit (+2 and +4), wider than the others. */
+.card-road.wide {
+    width: 2.1em;
+}
+
+.card-silhouette.octagon {
+    width: 2.6em;
+    height: 2.6em;
+    opacity: 0.28;
+}
+
+.joker-logo {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 2.15em;
+    height: 2.15em;
+    background: url("images/logo-256.png") center / contain no-repeat;
+    transform: translate(-50%, -50%);
+}
+
+.joker-word {
+    position: absolute;
+    top: 0.22em;
+    left: 0.2em;
+    font-family: "Arial Black", "Segoe UI Black", "Helvetica Neue", Arial, sans-serif;
+    font-size: 0.34em;
+    font-weight: 900;
+    line-height: 0.95;
+    letter-spacing: 0;
+    writing-mode: vertical-rl;
+    text-orientation: upright;
+}
+
+.joker-word.bottom {
+    top: auto;
+    left: auto;
+    right: 0.2em;
+    bottom: 0.22em;
+    transform: rotate(180deg);
+}
+
+/* Each letter of JOKER in one of the four suit colours, in turn. */
+.joker-word span:nth-child(4n + 1) { color: #d62828; }
+.joker-word span:nth-child(4n + 2) { color: #23913a; }
+.joker-word span:nth-child(4n + 3) { color: #e5a400; }
+.joker-word span:nth-child(4n + 4) { color: #1d5bd6; }
+
+/* Wild Draw Four: "+4" across the corners, as large as the +2's rank; red and green in the top left, blue and yellow
+   in the bottom right. */
+.card.plus-four .joker-word {
+    top: 0.2em;
+    font-size: 0.6em;
+    line-height: 1;
+    letter-spacing: -0.06em;
+    writing-mode: horizontal-tb;
+}
+
+.card.plus-four .joker-word.bottom {
+    bottom: 0.2em;
+}
+
+.card.plus-four .joker-word.bottom span:nth-child(1) { color: #1d5bd6; }
+.card.plus-four .joker-word.bottom span:nth-child(2) { color: #e5a400; }
+
+/* The classic cards (the profile's card style): red hearts and diamonds, black clubs and spades, rank and suit in the
+   top left and (upside down) bottom right corners, and pips or a framed figure in the middle. */
+.card.classic.red {
     color: #c0281b;
 }
 
-.card-corner {
+.classic-corner {
     position: absolute;
     top: 0.22em;
     left: 0.22em;
@@ -1394,7 +1571,7 @@ button.icon-button {
     letter-spacing: -0.04em;
 }
 
-.card-corner.bottom {
+.classic-corner.bottom {
     top: auto;
     left: auto;
     right: 0.22em;
@@ -1402,12 +1579,12 @@ button.icon-button {
     transform: rotate(180deg);
 }
 
-.card-suit {
+.classic-suit {
     font-size: 0.9em;
 }
 
-/* The middle of the card, between the corners. Pips are placed by the script in % of this area. */
-.card-face {
+/* The middle of a classic card, between the corners. Pips are placed by the script in % of this area. */
+.classic-face {
     position: absolute;
     inset: 0.35em 0.45em;
 }
@@ -1422,7 +1599,7 @@ button.icon-button {
     transform: translate(-50%, -50%) rotate(180deg);
 }
 
-.card-face.ace {
+.classic-face.ace {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1433,8 +1610,8 @@ button.icon-button {
     filter: drop-shadow(0 0 0.04em currentColor);
 }
 
-/* Jack, queen and king: a framed picture on a plain cream background. */
-.card-face.court {
+/* Classic jack, queen and king: a framed picture on a plain cream background. */
+.classic-face.court {
     inset: 0.4em 0.68em;
 }
 
@@ -1469,24 +1646,8 @@ button.icon-button {
     transform: rotate(180deg);
 }
 
-/* The back: dark red with a gold diamond pattern and a white border. */
-.card.empty {
-    background:
-        radial-gradient(circle at 50% 50%, rgba(230, 169, 60, 0.35), transparent 60%),
-        repeating-linear-gradient(45deg, transparent 0 0.3em, rgba(230, 169, 60, 0.35) 0.3em 0.36em),
-        repeating-linear-gradient(-45deg, transparent 0 0.3em, rgba(230, 169, 60, 0.35) 0.3em 0.36em),
-        linear-gradient(160deg, #b23a22, #6e1d10);
-    box-shadow: inset 0 0 0 0.16em #fff, inset 0 0 0 0.22em rgba(230, 169, 60, 0.8), 0 2px 5px rgba(0, 0, 0, 0.3);
-}
-
-.card.big {
-    font-size: clamp(1.25rem, 6vw, 1.6rem);
-    border-radius: 0.28em;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3), inset 0 0 0 1px rgba(0, 0, 0, 0.1);
-}
-
-/* A joker: a big 🃏 with the word under it. */
-.card.joker {
+/* A classic joker: a big 🃏 with the word under it. */
+.card.classic.joker {
     display: inline-flex;
     flex-direction: column;
     align-items: center;
@@ -1496,12 +1657,12 @@ button.icon-button {
     color: #5b2a86;
 }
 
-.joker-face {
+.classic-joker-face {
     font-size: 1.5em;
     font-weight: 400;
 }
 
-.joker-word {
+.classic-joker-word {
     font-size: 0.38em;
     letter-spacing: 0.08em;
 }

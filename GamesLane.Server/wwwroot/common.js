@@ -60,15 +60,16 @@ let busyTimer = null;
 // The current user, set once accountReady resolves:
 // { signedIn, kind, name, icon, uploadedIcon, gameOrder, settings, providers, icons }. kind is "Guest", "Registered" or a
 // provider such as "Google"; gameOrder is a saved user's order of the games on the main screen, or null; settings is a
-// saved user's { chat, sound } (see userSettings), or null. Everyone is logged in, as a guest at least; signedIn is
+// saved user's { chat, sound, cards } (see userSettings), or null. Everyone is logged in, as a guest at least; signedIn is
 // false only if the server could not be reached.
 let account = null;
 let isNewExternalUser = false;
 
-// The user's settings from their profile: chat (the chat in game sessions) and sound (every sound on the site: the
-// chat's chime, game sounds and reading aloud). A saved user's are saved with their account; a guest's in this
-// browser. Both are on until the user turns them off. Pages listen for the SETTINGS_EVENT event, sent when they are
-// known (once the user is) and whenever they change.
+// The user's settings from their profile: chat (the chat in game sessions), sound (every sound on the site: the
+// chat's chime, game sounds and reading aloud) and cards (how playing cards are drawn: "New" or "Classic", see
+// cardElement). A saved user's are saved with their account; a guest's in this browser. Chat and sound are on, and the
+// cards new, until the user changes them. Pages listen for the SETTINGS_EVENT event, sent when they are known (once
+// the user is) and whenever they change.
 const SETTINGS_KEY = "settings";
 const SETTINGS_EVENT = "settingschange";
 
@@ -82,7 +83,7 @@ function userSettings() {
     } catch {
         // Unreadable settings count as the defaults.
     }
-    return { chat: saved?.chat !== false, sound: saved?.sound !== false };
+    return { chat: saved?.chat !== false, sound: saved?.sound !== false, cards: saved?.cards === "Classic" ? "Classic" : "New" };
 }
 
 // Saves the settings (for a saved user, with their account). Returns false if they could not be saved.
@@ -419,6 +420,10 @@ function openProfileDialog() {
             <div class="profile-settings">
                 <label class="setting"><input type="checkbox" name="chat"> <span>${t("Chat in games")}</span></label>
                 <label class="setting"><input type="checkbox" name="sound"> <span>${t("Sounds (chat, games and reading aloud)")}</span></label>
+                <label class="setting">${t("Card style")} <select name="cards">
+                    <option value="New">GamesLane</option>
+                    <option value="Classic">${t("Classic cards")}</option>
+                </select></label>
             </div>
             <p class="error" role="alert"></p>
             <div class="actions"><button type="submit">${t("Save")}</button><button type="button" class="secondary" data-close>${t("Cancel")}</button></div>
@@ -453,6 +458,7 @@ function openProfileDialog() {
     form.elements.name.value = account.name;
     form.elements.chat.checked = userSettings().chat;
     form.elements.sound.checked = userSettings().sound;
+    form.elements.cards.value = userSettings().cards;
     form.querySelector("[data-welcome]").hidden = !isNewExternalUser;
     const picker = iconPicker(form.querySelector(".icon-picker"), icons, account.icon);
 
@@ -464,7 +470,7 @@ function openProfileDialog() {
     });
     form.addEventListener("submit", (event) => {
         event.preventDefault();
-        const settings = { chat: form.elements.chat.checked, sound: form.elements.sound.checked };
+        const settings = { chat: form.elements.chat.checked, sound: form.elements.sound.checked, cards: form.elements.cards.value };
         withBusyButton(form.querySelector('[type="submit"]'), t("Saving…"), async () => {
             if (!(await saveSettings(settings))) {
                 error.textContent = t("Something went wrong.");
@@ -786,8 +792,88 @@ function celebrate(state, key) {
     setTimeout(() => layer.remove(), 5200);
 }
 
-// Where the suit symbols go on number cards, as [x%, y%] on the card face, as on classic playing cards.
-// Symbols in the lower half are drawn upside down.
+// Each suit has its own colour (see .card.hearts … in styles.css).
+const SUIT_CLASSES = { "♥": "hearts", "♣": "clubs", "♦": "diamonds", "♠": "spades" };
+
+// The suits as shapes in a 100 × 100 box, so they look the same on every device (as text, some show them as emoji).
+const SUIT_SHAPES = {
+    "♥": [["path", { d: "M50 92C22 70 4 52 4 31C4 15 16 5 30 5C40 5 47 11 50 19C53 11 60 5 70 5C84 5 96 15 96 31C96 52 78 70 50 92Z" }]],
+    "♦": [["path", { d: "M50 3L88 50L50 97L12 50Z" }]],
+    "♣": [["circle", { cx: 50, cy: 29, r: 21 }], ["circle", { cx: 27, cy: 60, r: 21 }], ["circle", { cx: 73, cy: 60, r: 21 }],
+        ["circle", { cx: 50, cy: 52, r: 14 }], ["path", { d: "M46 52H54L62 96H38Z" }]],
+    "♠": [["path", { d: "M50 3C34 28 6 42 6 64C6 78 17 86 29 86C37 86 44 82 47 75L40 97H60L53 75C56 82 63 86 71 86C83 86 94 78 94 64C94 42 66 28 50 3Z" }]],
+};
+
+// The ranks in the middle of a card as script letters, like the L in the logo: the centre line of each letter in a
+// 60 × 80 box, with swashes and curled ends, drawn as a road (a rim in the suit's colour, black asphalt, a dashed
+// yellow centre line).
+const ROAD_RANKS = {
+    A: "M3 64C-1 74 10 80 16 70C24 54 26 26 34 10C38 2 44 4 44 14C44 32 44 58 50 70C54 78 62 74 58 66M10 44C20 36 36 50 52 40C56 38 56 34 52 34",
+    2: "M14 24C6 22 8 6 24 4C40 2 52 14 42 30C34 42 16 52 10 70C22 62 34 76 50 68C58 64 56 56 50 58",
+    3: "M14 18C6 16 10 4 26 4C42 4 48 18 40 28C36 32 30 34 24 34C40 34 52 44 48 58C44 74 20 78 10 68C4 62 10 54 16 60",
+    4: "M52 76C44 76 42 68 42 60C42 42 44 22 46 6C34 18 20 34 6 50C18 46 38 50 54 44C60 42 60 36 54 36",
+    5: "M58 8C54 2 46 6 40 8C32 10 24 8 18 8C16 18 14 28 12 36C26 28 50 34 48 54C46 74 20 78 10 68C4 62 10 54 16 60",
+    6: "M50 12C54 6 46 0 36 2C18 6 10 26 10 44C10 64 22 76 34 74C48 72 50 54 40 46C30 38 16 44 14 54",
+    7: "M4 16C0 8 10 2 16 8C24 14 38 8 54 6C42 24 30 46 26 70C24 78 16 78 16 72C16 68 20 66 22 68",
+    8: "M34 40C14 34 10 8 28 4C44 0 50 24 30 40C12 52 12 76 30 74C50 72 52 48 34 40C46 36 58 38 58 46",
+    9: "M46 28C40 42 12 44 12 24C12 6 44 0 46 22C48 46 42 70 22 74C10 76 6 66 14 64",
+    10: "M2 20C6 14 12 10 16 4C14 28 14 54 12 70C10 78 2 76 4 70M42 6C24 8 24 72 40 74C58 76 58 4 42 6C50 4 58 6 60 12",
+    J: "M12 14C6 8 14 2 22 6C32 10 46 12 58 6M42 10C44 32 44 56 32 70C22 80 4 74 8 62C10 56 18 56 18 62",
+    Q: "M30 6C10 8 6 44 14 60C24 78 50 72 52 44C54 18 42 4 30 6ZM24 56C36 58 40 72 54 76C58 77 60 72 56 70",
+    K: "M18 6C16 26 16 52 14 72C12 80 4 76 6 70M54 6C58 2 52 0 48 6C38 18 28 34 18 44C30 46 34 60 42 72C46 78 56 78 58 70",
+    // More ranks: 0 and 1, S (Skip, a circle crossed out) and R (Reverse, two curved arrows).
+    0: "M30 6C10 6 8 40 10 56C12 72 22 76 30 76C42 76 50 66 51 48C52 26 46 6 30 6C38 4 46 8 48 14",
+    1: "M12 22C22 18 30 12 38 4C36 28 36 52 34 72C32 80 22 78 24 72",
+    S: "M30 12C14 12 6 26 6 40C6 56 18 68 30 68C46 68 54 54 54 40C54 24 44 12 30 12ZM13 58L47 22",
+    R: "M10 36C10 18 24 10 42 12M34 3L43 12L34 21M50 44C50 62 36 70 18 68M26 59L17 68L26 77",
+};
+
+// Ranks drawn as a plus sign and a digit side by side, in a box 100 wide: Draw Two, and Wild Draw Four's middle.
+const WIDE_ROAD_RANKS = { "+2": 2, "+4": 4 };
+const PLUS_ROAD = "M4 40H30M17 27V53";
+
+// How a rank shows in a card's corners: Skip and Reverse as symbols.
+const RANK_LABELS = { S: "⊘", R: "⇄" };
+
+// The rank drawn as a script road.
+function roadRank(rank) {
+    const digit = WIDE_ROAD_RANKS[rank];
+    const parts = digit ? [[PLUS_ROAD, 0], [ROAD_RANKS[digit], 40]] : [[ROAD_RANKS[rank], 0]];
+    return svgElement("svg", { class: digit ? "card-road wide" : "card-road", viewBox: digit ? "-6 -6 112 92" : "-6 -6 72 92", "aria-hidden": "true" },
+        ...["road-kerb", "road-rim", "road", "road-line"].flatMap((layer) =>
+            parts.map(([d, dx]) => svgElement("path", { class: layer, d, ...(dx ? { transform: `translate(${dx} 0)` } : {}) }))));
+}
+
+// An SVG element with its attributes and children.
+function svgElement(tag, attributes, ...children) {
+    const element = document.createElementNS("http://www.w3.org/2000/svg", tag);
+    Object.entries(attributes).forEach(([name, value]) => element.setAttribute(name, value));
+    element.append(...children);
+    return element;
+}
+
+// A suit as a shape in the card's colour (the suitless "★" of The Gang's Jack card as text).
+function suitShape(suit, className) {
+    const shapes = SUIT_SHAPES[suit];
+    if (!shapes) {
+        return el("span", className, suit);
+    }
+    return svgElement("svg", { class: className, viewBox: "0 0 100 100", "aria-hidden": "true" },
+        ...shapes.map(([tag, attributes]) => svgElement(tag, attributes)));
+}
+
+// The middle of a card: a very large, faint silhouette of the suit, and the rank on it, drawn as a road.
+function cardFace(rank, suit) {
+    const face = el("span", "card-face");
+    if (SUIT_SHAPES[suit]) {
+        face.append(suitShape(suit, "card-silhouette"));
+    }
+    face.append(ROAD_RANKS[rank] || WIDE_ROAD_RANKS[rank] ? roadRank(rank) : el("span", "card-road-text", rank));
+    return face;
+}
+
+// The classic cards (the profile's card style): where the suit symbols go on number cards, as [x%, y%] on the card
+// face, as on classic playing cards. Symbols in the lower half are drawn upside down.
 const PIP_LAYOUTS = (() => {
     const L = 28, C = 50, R = 72;
     const six = [[L, 16], [R, 16], [L, 50], [R, 50], [L, 84], [R, 84]];
@@ -805,20 +891,20 @@ const PIP_LAYOUTS = (() => {
     };
 })();
 
-// The figures on jacks, queens and kings (\uFE0E asks for the plain symbol rather than an emoji).
+// The figures on classic jacks, queens and kings (\uFE0E asks for the plain symbol rather than an emoji).
 const COURT_FIGURES = { J: "♞\uFE0E", Q: "♛\uFE0E", K: "♚\uFE0E" };
 
-// The middle of a card: suit symbols for 2 to 10, one big symbol for an ace, a framed figure for J, Q and K.
-function cardFace(rank, suit) {
+// The middle of a classic card: suit symbols for 2 to 10, one big symbol for an ace, a framed figure for J, Q and K.
+function classicFace(rank, suit) {
     if (COURT_FIGURES[rank]) {
-        return el("span", "card-face court",
+        return el("span", "classic-face court",
             el("span", "court-frame", el("span", "court-suit", suit), el("span", "court-figure", COURT_FIGURES[rank]),
                 el("span", "court-suit bottom", suit)));
     }
     if (rank === "A") {
-        return el("span", "card-face ace", el("span", "ace-pip", suit));
+        return el("span", "classic-face ace", el("span", "ace-pip", suit));
     }
-    return el("span", "card-face", ...PIP_LAYOUTS[rank].map(([x, y]) => {
+    return el("span", "classic-face", ...PIP_LAYOUTS[rank].map(([x, y]) => {
         const pip = el("span", y > 50 ? "pip flipped" : "pip", suit);
         pip.style.left = `${x}%`;
         pip.style.top = `${y}%`;
@@ -826,30 +912,73 @@ function cardFace(rank, suit) {
     }));
 }
 
-// A card such as "10♥", drawn like a playing card: rank and suit in two corners and a classic face in the middle.
-// Hearts and diamonds are red. "JOKER" is a joker. Without text, a face-down card.
-function cardElement(text) {
-    const card = el("span", "card");
-    if (!text) {
-        card.classList.add("empty");
-        return card;
-    }
+// A faint octagon in the four suit colours, eight slices from the middle, as the silhouette of a joker.
+function octagonSilhouette() {
+    const corner = (i) => {
+        const angle = ((22.5 + 45 * i) * Math.PI) / 180;
+        return `${(50 + 48 * Math.cos(angle)).toFixed(1)} ${(50 + 48 * Math.sin(angle)).toFixed(1)}`;
+    };
+    const colors = ["#d62828", "#23913a", "#e5a400", "#1d5bd6"];
+    return svgElement("svg", { class: "card-silhouette octagon", viewBox: "0 0 100 100", "aria-hidden": "true" },
+        ...Array.from({ length: 8 }, (_, i) => svgElement("path", { d: `M50 50L${corner(i)}L${corner(i + 1)}Z`, fill: colors[i % 4] })));
+}
+
+// A joker-like card: the colourful octagon with `centre` on it, both centred (e.g. the GamesLane logo), and `word`
+// written downwards in the top left and (upside down) bottom right corners, each letter in a suit colour in turn.
+function jokerCard(card, word, centre) {
+    card.classList.add("joker");
+    const letters = (className) => el("span", className, ...[...word].map((letter) => el("span", null, letter)));
+    card.append(el("span", "card-face", octagonSilhouette(), centre), letters("joker-word"), letters("joker-word bottom"));
+    return card;
+}
+
+// A classic card: rank and suit in two corners and a classic face in the middle, hearts and diamonds in red; a joker is
+// a big 🃏 with the word under it.
+function classicCard(card, text) {
+    card.classList.add("classic");
     if (text === "JOKER") {
         card.classList.add("joker");
-        card.setAttribute("role", "img");
-        card.setAttribute("aria-label", t("Joker"));
-        card.append(el("span", "joker-face", "🃏"), el("span", "joker-word", "JOKER"));
+        card.append(el("span", "classic-joker-face", "🃏"), el("span", "classic-joker-word", "JOKER"));
         return card;
     }
     const rank = text.slice(0, -1);
     const suit = text.slice(-1);
     card.classList.toggle("red", suit === "♥" || suit === "♦");
+    const corner = (className) => el("span", className, el("span", "card-rank", rank), el("span", "classic-suit", suit));
+    card.append(corner("classic-corner"), classicFace(rank, suit), corner("classic-corner bottom"));
+    return card;
+}
+
+// A card such as "10♥", in `style` (by default the user's card style, see userSettings). GamesLane cards: rank and
+// suit in block letters in the top left and bottom right corners, and the suit's silhouette with the rank in the middle,
+// all in the suit's colour. "JOKER" is a joker. In the GamesLane style only, also "0♥" to "9♥", "S♥" (Skip),
+// "R♥" (Reverse) and "+2♥"; "WILD" is drawn like the joker, and "+4" (Wild Draw Four) like it with a road "+4" in the
+// middle and "+4" across the corners. Without text, a face-down card.
+function cardElement(text, style = userSettings().cards) {
+    const card = el("span", "card");
+    if (!text) {
+        card.classList.add("empty");
+        return card;
+    }
     card.setAttribute("role", "img");
-    card.setAttribute("aria-label", text);
-    card.append(
-        el("span", "card-corner", el("span", "card-rank", rank), el("span", "card-suit", suit)),
-        cardFace(rank, suit),
-        el("span", "card-corner bottom", el("span", "card-rank", rank), el("span", "card-suit", suit)));
+    card.setAttribute("aria-label", text === "JOKER" ? t("Joker") : text);
+    if (style === "Classic") {
+        return classicCard(card, text);
+    }
+    if (text === "JOKER" || text === "WILD") {
+        return jokerCard(card, text, el("span", "joker-logo"));
+    }
+    if (text === "+4") {
+        card.classList.add("plus-four");
+        return jokerCard(card, text, roadRank(text));
+    }
+    const rank = text.slice(0, -1);
+    const suit = text.slice(-1);
+    if (SUIT_CLASSES[suit]) {
+        card.classList.add(SUIT_CLASSES[suit]);
+    }
+    const corner = (className) => el("span", className, el("span", "card-rank", RANK_LABELS[rank] ?? rank), suitShape(suit, "card-suit"));
+    card.append(cardFace(rank, suit), corner("card-corner"), corner("card-corner bottom"));
     return card;
 }
 
@@ -1166,6 +1295,9 @@ function startSessionPage(gameType, render, seatRole = (seat) => t("Seat {n}", {
         location.replace("/");
         return view;
     }
+
+    // Cards are drawn in the user's card style, known only once the user is.
+    addEventListener(SETTINGS_EVENT, () => view.refresh());
 
     const joinUrl = `${location.origin}/join/${sessionId}`;
     $("session-code").textContent = sessionId;
