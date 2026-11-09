@@ -3821,13 +3821,14 @@ button.final-card-pile:disabled {
     white-space: nowrap;
 }
 
-/* The hand: on the user's turn, the card drawn is outlined and the cards that cannot be played are faded. */
+/* The hand: on the user's turn, the card drawn is outlined and the cards that cannot be played are greyed, but stay
+   solid so the overlapping cards do not show through them. */
 .final-card-hand .card.drawn {
     box-shadow: 0 0 0 3px var(--gold), 0 4px 10px rgba(0, 0, 0, 0.3);
 }
 
 .final-card-hand .card.unplayable {
-    opacity: 0.45;
+    filter: grayscale(0.7) brightness(0.85);
 }
 
 .final-card-colors {
