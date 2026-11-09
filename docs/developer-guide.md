@@ -77,7 +77,7 @@ GamesLane.Server/              ASP.NET Core backend
   Games/Yatzee/                Yatzee rules: scoring each box (with the joker rule), scorecards and bonuses, turns
   Games/FinalCard/             Final Card rules: cards and deck, turns and action cards, drawing, Final Card calls, hands and scores, the pyramid, options
   Games/Yaniv/                 Yaniv rules: the deck with 2 jokers, card values, series and straights (YanivCards), turns, Yaniv and Assaf, scores, the bonus, players out, options
-  dev/cards.html               Developer page: every GamesLane playing card at several sizes; served at /dev/cards.html only in Development
+  dev/cards.html               Developer page: the card back and every GamesLane playing card at several sizes; served at /dev/cards.html only in Development
   wwwroot/                     Web pages
     index.html, home.js        Main screen: public games (create, or join a random one) and private games (create, or join by code); the list of games to choose from; going back to games waiting for the user
     common.js                  Shared: automatic guest, account bar and profile dialog (with login), hub connection, session lobby and page framework, playing cards (new and classic styles)
