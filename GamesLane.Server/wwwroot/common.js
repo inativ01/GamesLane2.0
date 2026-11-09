@@ -800,7 +800,7 @@ const SUIT_SHAPES = {
     "♥": [["path", { d: "M50 92C22 70 4 52 4 31C4 15 16 5 30 5C40 5 47 11 50 19C53 11 60 5 70 5C84 5 96 15 96 31C96 52 78 70 50 92Z" }]],
     "♦": [["path", { d: "M50 3L88 50L50 97L12 50Z" }]],
     "♣": [["circle", { cx: 50, cy: 29, r: 21 }], ["circle", { cx: 27, cy: 60, r: 21 }], ["circle", { cx: 73, cy: 60, r: 21 }],
-        ["path", { d: "M46 52H54L62 96H38Z" }]],
+        ["circle", { cx: 50, cy: 52, r: 14 }], ["path", { d: "M46 52H54L62 96H38Z" }]],
     "♠": [["path", { d: "M50 3C34 28 6 42 6 64C6 78 17 86 29 86C37 86 44 82 47 75L40 97H60L53 75C56 82 63 86 71 86C83 86 94 78 94 64C94 42 66 28 50 3Z" }]],
 };
 
@@ -898,6 +898,26 @@ function classicFace(rank, suit) {
     }));
 }
 
+// A faint octagon in the four suit colours, eight slices from the middle, as the silhouette of a joker.
+function octagonSilhouette() {
+    const corner = (i) => {
+        const angle = ((22.5 + 45 * i) * Math.PI) / 180;
+        return `${(50 + 48 * Math.cos(angle)).toFixed(1)} ${(50 + 48 * Math.sin(angle)).toFixed(1)}`;
+    };
+    const colors = ["#d62828", "#23913a", "#e5a400", "#1d5bd6"];
+    return svgElement("svg", { class: "card-silhouette octagon", viewBox: "0 0 100 100", "aria-hidden": "true" },
+        ...Array.from({ length: 8 }, (_, i) => svgElement("path", { d: `M50 50L${corner(i)}L${corner(i + 1)}Z`, fill: colors[i % 4] })));
+}
+
+// A joker-like card: the colourful octagon with `centre` on it, both centred (e.g. the GamesLane logo), and `word`
+// written downwards in the top left and (upside down) bottom right corners, each letter in a suit colour in turn.
+function jokerCard(card, word, centre) {
+    card.classList.add("joker");
+    const letters = (className) => el("span", className, ...[...word].map((letter) => el("span", null, letter)));
+    card.append(el("span", "card-face", octagonSilhouette(), centre), letters("joker-word"), letters("joker-word bottom"));
+    return card;
+}
+
 // A classic card: rank and suit in two corners and a classic face in the middle, hearts and diamonds in red; a joker is
 // a big 🃏 with the word under it.
 function classicCard(card, text) {
@@ -930,10 +950,7 @@ function cardElement(text) {
         return classicCard(card, text);
     }
     if (text === "JOKER") {
-        card.classList.add("joker");
-        const word = (className) => el("span", className, ...[..."JOKER"].map((letter) => el("span", null, letter)));
-        card.append(el("span", "joker-logo"), word("joker-word"), word("joker-word bottom"));
-        return card;
+        return jokerCard(card, "JOKER", el("span", "joker-logo"));
     }
     const rank = text.slice(0, -1);
     const suit = text.slice(-1);

@@ -1483,10 +1483,16 @@ svg.card-suit {
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3), inset 0 0 0 1px rgba(0, 0, 0, 0.1);
 }
 
-/* A joker: a large GamesLane logo in the middle, and JOKER written downwards in the top left and (upside down) bottom
-   right corners, so it shows when cards are stacked. */
+/* A joker: a faint octagon in the four suit colours with a large GamesLane logo on it, and JOKER written downwards in
+   the top left and (upside down) bottom right corners, so it shows when cards are stacked. */
 .card.joker {
     color: #1b1b1b;
+}
+
+.card-silhouette.octagon {
+    width: 2.6em;
+    height: 2.6em;
+    opacity: 0.28;
 }
 
 .joker-logo {
