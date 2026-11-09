@@ -287,7 +287,7 @@ public interface IGameHub
 
     /// <summary>
     /// Final Card, with the challenge option: <paramref name="seat"/>, which the caller must hold and whose turn it is,
-    /// challenges the Wild Draw Four played on it. If its player held a card of the colour that was to play, they draw
+    /// challenges the Wild Draw Four played on it. If its player held a card of the color that was to play, they draw
     /// the cards instead; otherwise <paramref name="seat"/> draws them and 2 more, and misses its turn.
     /// </summary>
     Task Challenge(string sessionId, int seat);

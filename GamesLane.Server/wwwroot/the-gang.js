@@ -539,7 +539,7 @@ function updateConfirm(game, view) {
 }
 
 // Every playing seat's chips from all stages, with ✓ for players who are ready. Skipped stages are struck out, and
-// with Blackout, earlier stages' chips show as chips of their colour with "?" because they were removed.
+// with Blackout, earlier stages' chips show as chips of their color with "?" because they were removed.
 function chipTable(game, state, view) {
     const blackout = game.cards.some((c) => c.key === "blackout");
     const skipped = (stage) => game.skippedStages.includes(stage);
@@ -566,7 +566,7 @@ function chipTable(game, state, view) {
             const chip = game.chips[stage][seat];
             const removed = blackout && stage < game.stage && !skipped(stage);
             const voided = isVoidChip(game, stage, seat);
-            // With Blackout, a removed chip is shown in its stage's colour with "?" instead of its number.
+            // With Blackout, a removed chip is shown in its stage's color with "?" instead of its number.
             const content = chip !== null ? chipElement(stage, chip)
                 : removed ? Object.assign(chipElement(stage, "?"), { title: t("{stage} chip removed (Blackout)", { stage: t(STAGES[stage]) }) })
                     : skipped(stage) ? "" : stage <= game.stage ? "–" : "";

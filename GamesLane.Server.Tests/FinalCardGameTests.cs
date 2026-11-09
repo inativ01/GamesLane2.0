@@ -57,29 +57,29 @@ public class FinalCardGameTests
     // Playing
 
     [Fact]
-    public void A_card_must_match_the_colour_or_the_number_of_the_pile()
+    public void A_card_must_match_the_color_or_the_number_of_the_pile()
     {
         var game = Deal(null, "B5", "", "R5 B7 G2 Y9 R1 B1 G1", Reds);
 
         AssertRefused(game.TryPlay(1, Card("R2"), null, out var error), error, "It is not your turn.");
         AssertRefused(game.TryPlay(0, Card("R0"), null, out error), error, "You do not have that card.");
-        AssertRefused(game.TryPlay(0, Card("G2"), null, out error), error, "That card does not match the colour or the symbol on the pile.");
+        AssertRefused(game.TryPlay(0, Card("G2"), null, out error), error, "That card does not match the color or the symbol on the pile.");
         Assert.True(game.TryPlay(0, Card("R5"), null, out error), error);
         Assert.Equal((FinalCardColor.Red, 1, 6), (game.Color, game.Turn, game.Hand(0).Count));
         Assert.True(game.TryPlay(1, Card("R2"), null, out error), error);
     }
 
     [Fact]
-    public void A_wild_card_sets_the_colour_and_a_wild_draw_four_needs_no_card_of_the_colour()
+    public void A_wild_card_sets_the_color_and_a_wild_draw_four_needs_no_card_of_the_color()
     {
         var game = Deal(null, "R5", "G5", "W W+4 R1 B1 G1 Y1 B2", Reds);
 
         AssertRefused(game.TryPlay(0, Card("W+4"), FinalCardColor.Blue, out var error), error,
-            "You can play a Wild Draw Four only when you have no card of the colour to play.");
-        AssertRefused(game.TryPlay(0, Card("W"), null, out error), error, "Choose a colour for the wild card.");
+            "You can play a Wild Draw Four only when you have no card of the color to play.");
+        AssertRefused(game.TryPlay(0, Card("W"), null, out error), error, "Choose a color for the wild card.");
         Assert.True(game.TryPlay(0, Card("W"), FinalCardColor.Green, out error), error);
         Assert.Equal((Card("W"), FinalCardColor.Green), (game.TopCard, game.Color));
-        AssertRefused(game.TryPlay(1, Card("R2"), null, out error), error, "That card does not match the colour or the symbol on the pile.");
+        AssertRefused(game.TryPlay(1, Card("R2"), null, out error), error, "That card does not match the color or the symbol on the pile.");
     }
 
     // Drawing
@@ -395,7 +395,7 @@ public class FinalCardGameTests
     }
 
     [Fact]
-    public void A_wild_draw_four_can_answer_a_draw_two_even_with_a_card_of_the_colour()
+    public void A_wild_draw_four_can_answer_a_draw_two_even_with_a_card_of_the_color()
     {
         var game = Deal(new FinalCardRules(Stacking: FinalCardStacking.FourOnTwo), "R9", "", "R+2 G1 G2 G3 G4 G6 G7", "W+4 R1 B2 B3 B4 B6 B7");
         Assert.True(game.TryPlay(0, Card("R+2"), null, out var error), error);
@@ -406,7 +406,7 @@ public class FinalCardGameTests
     }
 
     [Fact]
-    public void A_wild_draw_four_that_is_always_allowed_can_be_played_with_a_card_of_the_colour()
+    public void A_wild_draw_four_that_is_always_allowed_can_be_played_with_a_card_of_the_color()
     {
         var game = Deal(new FinalCardRules(WildDrawFour: FinalCardWildDrawFour.Always), "R5", "", "W+4 R1 B2 B3 B4 B6 B7", Reds);
 

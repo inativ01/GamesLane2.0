@@ -64,7 +64,7 @@
         </div>
 
         <div id="game-screen" hidden>
-            <!-- On top for everyone: the closed and open piles, the colour and direction of play, and what just happened. -->
+            <!-- On top for everyone: the closed and open piles, the color and direction of play, and what just happened. -->
             <section class="rp-top" aria-label="Piles" data-i18n-attr="aria-label">
                 <div id="final-card-piles" class="final-card-piles"></div>
                 <p id="final-card-message" class="final-card-message" hidden></p>
@@ -80,7 +80,10 @@
                     <button id="final-card-toggle-table" type="button" class="secondary small" hidden>Show table</button>
                 </div>
                 <ol id="final-card-players" class="rp-players"></ol>
-                <p id="final-card-options" class="rp-options"></p>
+                <div id="final-card-options" class="rp-options">
+                    <p class="rp-options-title" data-i18n>Game options:</p>
+                    <ul id="final-card-option-list"></ul>
+                </div>
             </section>
         </div>
     </section>

@@ -26,7 +26,7 @@ public interface IFinalCardGame
     /// <summary>The top card of the discard pile.</summary>
     FinalCardCard TopCard { get; }
 
-    /// <summary>The colour to play: the top card's, or the one chosen for a wild card.</summary>
+    /// <summary>The color to play: the top card's, or the one chosen for a wild card.</summary>
     FinalCardColor Color { get; }
 
     /// <summary>The cards left in the draw pile.</summary>
@@ -97,7 +97,7 @@ public interface IFinalCardGame
 
     /// <summary>
     /// <paramref name="player"/>, whose turn it is, challenges the Wild Draw Four played on them (see
-    /// <see cref="CanChallenge"/>). If its player held a card of the colour that was to play, they draw the cards to draw
+    /// <see cref="CanChallenge"/>). If its player held a card of the color that was to play, they draw the cards to draw
     /// and <paramref name="player"/> plays on; otherwise <paramref name="player"/> draws them and 2 more, and misses their
     /// turn.
     /// </summary>

@@ -11,7 +11,7 @@ namespace GamesLane.Server.Sessions;
 public record FinalCardPlayerState(int Seat, int CardCount, int Score, int HandSize, int? Finished, bool Protected);
 
 /// <summary>
-/// Something that happened in the last action: the seat it is about, what, and the card (short text), count, chosen colour
+/// Something that happened in the last action: the seat it is about, what, and the card (short text), count, chosen color
 /// or other seat involved (see <see cref="FinalCardEventKind"/>).
 /// </summary>
 public record FinalCardEventState(int Seat, FinalCardEventKind Kind, string? Card, int Count, FinalCardColor? Color, int? BySeat);
@@ -51,7 +51,7 @@ public record FinalCardState(
     int? Winner);
 
 /// <summary>
-/// A seat's private Final Card information: its cards, sorted by colour and value, and those it can play now.
+/// A seat's private Final Card information: its cards, sorted by color and value, and those it can play now.
 /// </summary>
 public record FinalCardHand(int Seat, IReadOnlyList<string> Cards, IReadOnlyList<string> Playable);
 

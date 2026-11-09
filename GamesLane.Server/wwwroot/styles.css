@@ -1,4 +1,4 @@
-/* Colours taken from the GamesLane logo: gold, orange and dark red on black. */
+/* Colors taken from the GamesLane logo: gold, orange and dark red on black. */
 :root {
     --bg: #f5f1ea;
     --surface: #ffffff;
@@ -1164,7 +1164,7 @@ button.icon-button {
     line-height: 1;
 }
 
-/* The score row, on its own line under the status, in the status bar's colour: the match facts (round, game, draws) and
+/* The score row, on its own line under the status, in the status bar's color: the match facts (round, game, draws) and
    a chip per player with their score; the seat to act is outlined. */
 .score-row {
     display: flex;
@@ -1383,7 +1383,7 @@ button.icon-button {
     vertical-align: middle;
 }
 
-/* Four suit colours: red hearts, green clubs, yellow diamonds, blue spades. */
+/* Four suit colors: red hearts, green clubs, yellow diamonds, blue spades. */
 .card.hearts { color: #d62828; }
 .card.clubs { color: #23913a; }
 .card.diamonds { color: #e5a400; }
@@ -1438,7 +1438,7 @@ svg.card-suit {
     transform: translate(-50%, -50%);
 }
 
-/* The rank as a script road, as in the logo's L: a thick rim in the suit's colour (in place of the logo's gold), black
+/* The rank as a script road, as in the logo's L: a thick rim in the suit's color (in place of the logo's gold), black
    asphalt with a dashed yellow centre line, and curled ends. */
 .card-road {
     position: relative;
@@ -1479,7 +1479,7 @@ svg.card-suit {
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3), inset 0 0 0 1px rgba(0, 0, 0, 0.1);
 }
 
-/* A joker: a faint octagon in the four suit colours with a large GamesLane logo on it, and JOKER written downwards in
+/* A joker: a faint octagon in the four suit colors with a large GamesLane logo on it, and JOKER written downwards in
    the top left and (upside down) bottom right corners, so it shows when cards are stacked. */
 .card.joker {
     color: #1b1b1b;
@@ -1527,7 +1527,7 @@ svg.card-suit {
     transform: rotate(180deg);
 }
 
-/* Each letter of JOKER in one of the four suit colours, in turn. */
+/* Each letter of JOKER in one of the four suit colors, in turn. */
 .joker-word span:nth-child(4n + 1) { color: #d62828; }
 .joker-word span:nth-child(4n + 2) { color: #23913a; }
 .joker-word span:nth-child(4n + 3) { color: #e5a400; }
@@ -2557,7 +2557,7 @@ button.lobby-options::after {
     gap: 0.1rem;
 }
 
-/* A choice's picture, e.g. a card's, before the text. The tick box is hidden: the highlighted row and the coloured (or
+/* A choice's picture, e.g. a card's, before the text. The tick box is hidden: the highlighted row and the colored (or
    greyed) picture show whether the choice is on. It still works with the keyboard. */
 .option-picture {
     position: relative;
@@ -2599,6 +2599,12 @@ button.lobby-options::after {
 
 .option-prefs {
     justify-content: center;
+}
+
+/* The options window's note and error take no room until they have something to say, so Apply and Cancel sit right
+   under the options. */
+.dialog form:has(.option-list) > p:empty {
+    display: none;
 }
 
 /* Short choices without explanations (e.g. 0 to 3) sit side by side. */
@@ -3717,9 +3723,9 @@ button.yz-option:not(:disabled):hover {
     opacity: 0.6;
 }
 
-/* Final Card: on top, the piles on the felt (closed and open on the left; the colour to play and the direction on the
+/* Final Card: on top, the piles on the felt (closed and open on the left; the color to play and the direction on the
    right); the user's hands in boxes that glow on their turn; then the players' table, all shared with Rich man, poor
-   man and Yaniv. The cards are GamesLane playing cards (.card), each colour drawn as the suit of that colour. */
+   man and Yaniv. The cards are GamesLane playing cards (.card), each color drawn as the suit of that color. */
 main.final-card {
     max-width: 980px;
 }
@@ -3770,7 +3776,7 @@ button.final-card-pile:disabled {
     user-select: none;
 }
 
-/* A wild card on the pile: a ring of the colour chosen. */
+/* A wild card on the pile: a ring of the color chosen. */
 .final-card-pile .card.chose-red { box-shadow: 0 0 0 0.22em #d62828; }
 .final-card-pile .card.chose-yellow { box-shadow: 0 0 0 0.22em #e5a400; }
 .final-card-pile .card.chose-green { box-shadow: 0 0 0 0.22em #23913a; }
@@ -3817,7 +3823,7 @@ button.final-card-pile:disabled {
 
 .rp-tag.protected { background: #d6efd9; }
 
-/* Under the players' table: the game's options, in small text. */
+/* Under the players' table: the game's options, one per line, in small text. */
 .rp-options {
     margin: 0.4rem 0 0;
     color: #e9f2ea;
@@ -3826,6 +3832,16 @@ button.final-card-pile:disabled {
 
 .rp-options[hidden] {
     display: none;
+}
+
+.rp-options-title {
+    margin: 0;
+    font-weight: 700;
+}
+
+.rp-options ul {
+    margin: 0.1rem 0 0;
+    padding-inline-start: 1.2rem;
 }
 
 .final-card-score {

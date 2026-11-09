@@ -1,6 +1,6 @@
 "use strict";
 
-// Final Card: players take turns playing a card that matches the pile's colour, number or symbol, or a wild card; a
+// Final Card: players take turns playing a card that matches the pile's color, number or symbol, or a wild card; a
 // player who cannot (or does not want to) play draws. Each player's own cards come in view.private. The table (the
 // piles, what just happened and the players) is on top, and the user's own hands below it.
 
@@ -8,7 +8,7 @@ const COLORS = ["Red", "Yellow", "Green", "Blue"];
 const COLOR_LETTERS = { R: "Red", Y: "Yellow", G: "Green", B: "Blue" };
 const VALUE_NAMES = { S: "Skip", R: "Reverse", "+2": "Draw Two" };
 
-// Each colour is drawn as the suit of that colour on the GamesLane cards.
+// Each color is drawn as the suit of that color on the GamesLane cards.
 const COLOR_SUITS = { R: "♥", Y: "♦", G: "♣", B: "♠" };
 
 const TABLE_SHOWN_KEY = "finalCard.tableShown";
@@ -21,7 +21,7 @@ const tableShown = () => {
     return saved === null ? !narrowScreen.matches : saved === "1";
 };
 
-// A card's colour ("Wild" for wild cards) and value ("0" to "9", "S", "R", "+2", "W" or "+4") from its short text.
+// A card's color ("Wild" for wild cards) and value ("0" to "9", "S", "R", "+2", "W" or "+4") from its short text.
 function parseCard(text) {
     if (text === "W" || text === "W+4") {
         return { color: "Wild", value: text === "W" ? "W" : "+4" };
@@ -38,7 +38,7 @@ function cardName(text) {
 }
 
 // A card, always a GamesLane card (the classic cards have no Skip, Reverse or wild cards): "R7" is drawn as 7♥, "W" as
-// WILD and "W+4" as +4. A wild card on the pile has a ring of the colour chosen.
+// WILD and "W+4" as +4. A wild card on the pile has a ring of the color chosen.
 function finalCard(text, chosenColor = null) {
     const { color, value } = parseCard(text);
     const card = cardElement(color === "Wild" ? (value === "W" ? "WILD" : "+4") : value + COLOR_SUITS[text[0]], "New");
@@ -125,7 +125,7 @@ function eventText(game, state, view, e) {
 const send = (method, ...args) => call(method, page.sessionId, ...args).catch(() => {});
 
 // The top of the table, for everyone: the closed pile (face down, with its count; tap it to draw on your turn) and the
-// open pile on the left; the colour to play, the direction of play and any cards stacked for the next player on the right.
+// open pile on the left; the color to play, the direction of play and any cards stacked for the next player on the right.
 function renderPiles(game, view) {
     const pile = (face, label, title) => {
         const button = el("button", "final-card-pile", face, el("span", "final-card-pile-label", label));
@@ -141,7 +141,7 @@ function renderPiles(game, view) {
     open.disabled = true;
 
     const color = el("span", `final-card-color ${game.color.toLowerCase()}`, t(game.color));
-    color.title = t("Colour to play");
+    color.title = t("Color to play");
     const direction = el("span", "final-card-direction", game.direction === 1 ? "↻" : "↺");
     direction.title = t(game.direction === 1 ? "Play goes in seat order" : "Play goes in reverse seat order");
     const info = el("div", "final-card-pile-info", color, direction);
@@ -180,11 +180,11 @@ function playerItem(game, state, view, player) {
     return item;
 }
 
-// The wild card waiting for its colour: the seat and the card.
+// The wild card waiting for its color: the seat and the card.
 let picking = null;
 let currentGame = null;
 
-// One of the user's hands, in a box that glows on its turn: its cards (those that can be played are buttons), the colours
+// One of the user's hands, in a box that glows on its turn: its cards (those that can be played are buttons), the colors
 // to choose for a wild card, and under them Draw (always shown, enabled on its turn) and Keep the card on the left, and
 // Final Card! on the right (always shown during a hand).
 function handPanel(game, state, view, hand) {
@@ -232,7 +232,7 @@ function handPanel(game, state, view, hand) {
     };
 
     if (choosing) {
-        panel.append(el("p", "hint", t("Choose the colour to play:")));
+        panel.append(el("p", "hint", t("Choose the color to play:")));
         const colors = el("div", "actions final-card-colors", ...COLORS.map((color) => {
             const b = el("button", `final-card-color-choice ${color.toLowerCase()}`, t(color));
             b.type = "button";
@@ -266,7 +266,7 @@ function handPanel(game, state, view, hand) {
     }
     if (myTurn && game.canChallenge) {
         const challenge = button(t("Challenge!"), () => send("Challenge", hand.seat), "final-card-challenge");
-        challenge.title = t("Did they have a card of the colour? If so, they draw the cards; if not, you draw 2 more.");
+        challenge.title = t("Did they have a card of the color? If so, they draw the cards; if not, you draw 2 more.");
     }
     const call = button(t("Final Card!"), () => send("CallFinalCard", hand.seat), "final-card-call");
     call.disabled = game.phase !== "Playing";
@@ -306,7 +306,7 @@ const page = startSessionPage("FinalCard", (game, state, view) => {
     $("final-card-players").hidden = !shown;
     $("final-card-players").replaceChildren(...game.players.map((p) => playerItem(game, state, view, p)));
     $("final-card-options").hidden = !shown;
-    $("final-card-options").textContent = `${t("Game options:")} ${optionsSummary(state)}`;
+    $("final-card-option-list").replaceChildren(...optionLines(state).map((line) => el("li", null, line)));
     $("next-round").hidden = !(view.isPlayer && game.phase === "HandOver");
 });
 

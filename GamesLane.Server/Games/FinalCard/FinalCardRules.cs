@@ -44,11 +44,11 @@ public enum FinalCardWildDrawFour
     /// <summary>At any time.</summary>
     Always,
 
-    /// <summary>Only when the player holds no card of the colour to play (the game checks it).</summary>
+    /// <summary>Only when the player holds no card of the color to play (the game checks it).</summary>
     NoColor,
 
     /// <summary>
-    /// At any time, but the next player can challenge it instead of drawing: if its player held a card of the colour that
+    /// At any time, but the next player can challenge it instead of drawing: if its player held a card of the color that
     /// was to play, they draw the cards instead; otherwise the challenger draws 2 more and misses their turn.
     /// </summary>
     Challenge,
@@ -95,10 +95,10 @@ public enum FinalCardEventKind
     /// <summary>The player was caught by <see cref="FinalCardEvent.By"/> without calling Final Card and drew <see cref="FinalCardEvent.Count"/> cards.</summary>
     Caught,
 
-    /// <summary>The player challenged the Wild Draw Four of <see cref="FinalCardEvent.By"/>, who held a card of the colour: they draw the cards.</summary>
+    /// <summary>The player challenged the Wild Draw Four of <see cref="FinalCardEvent.By"/>, who held a card of the color: they draw the cards.</summary>
     ChallengeWon,
 
-    /// <summary>The player challenged the Wild Draw Four of <see cref="FinalCardEvent.By"/>, who held no card of the colour: the challenger draws 2 more.</summary>
+    /// <summary>The player challenged the Wild Draw Four of <see cref="FinalCardEvent.By"/>, who held no card of the color: the challenger draws 2 more.</summary>
     ChallengeLost,
 
     /// <summary>Pyramid: the player played all their cards and was dealt <see cref="FinalCardEvent.Count"/> new ones.</summary>
@@ -112,7 +112,7 @@ public enum FinalCardEventKind
 }
 
 /// <summary>
-/// Something that happened: the player it is about, what, and the card, count, chosen colour or other player involved.
+/// Something that happened: the player it is about, what, and the card, count, chosen color or other player involved.
 /// </summary>
 public record FinalCardEvent(int Player, FinalCardEventKind Kind, FinalCardCard? Card = null, int Count = 0, FinalCardColor? Color = null, int? By = null);
 
@@ -218,10 +218,10 @@ public static class FinalCardOptions
             "Wild Draw Four",
             [
                 new GameOptionChoice(nameof(FinalCardWildDrawFour.Always), "Always allowed", "A Wild Draw Four can be played at any time."),
-                new GameOptionChoice(nameof(FinalCardWildDrawFour.NoColor), "Only without the colour",
-                    "A Wild Draw Four can be played only when you have no card of the colour to play."),
+                new GameOptionChoice(nameof(FinalCardWildDrawFour.NoColor), "Only without the color",
+                    "A Wild Draw Four can be played only when you have no card of the color to play."),
                 new GameOptionChoice(nameof(FinalCardWildDrawFour.Challenge), "Can be challenged",
-                    "A Wild Draw Four can always be played, but the next player can challenge it: if its player had a card of the colour to play, they draw the cards instead; if not, the challenger draws 2 more."),
+                    "A Wild Draw Four can always be played, but the next player can challenge it: if its player had a card of the color to play, they draw the cards instead; if not, the challenger draws 2 more."),
             ],
             nameof(FinalCardWildDrawFour.NoColor)),
         new GameOption(

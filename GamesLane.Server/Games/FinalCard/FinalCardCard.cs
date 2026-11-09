@@ -1,7 +1,7 @@
 namespace GamesLane.Server.Games.FinalCard;
 
 /// <summary>
-/// A card's colour. Wild cards have the colour <see cref="Wild"/> until played; the player then chooses the colour to play.
+/// A card's color. Wild cards have the color <see cref="Wild"/> until played; the player then chooses the color to play.
 /// </summary>
 public enum FinalCardColor
 {
@@ -35,7 +35,7 @@ public enum FinalCardValue
 }
 
 /// <summary>
-/// A card of Final Card. Its short text is its colour's letter (R, Y, G, B) and its value (0 to 9, S for Skip, R for Reverse, +2
+/// A card of Final Card. Its short text is its color's letter (R, Y, G, B) and its value (0 to 9, S for Skip, R for Reverse, +2
 /// for Draw Two), e.g. "R7", "GS", "B+2"; or "W" for Wild and "W+4" for Wild Draw Four.
 /// </summary>
 public sealed record FinalCardCard(FinalCardColor Color, FinalCardValue Value)
@@ -68,7 +68,7 @@ public sealed record FinalCardCard(FinalCardColor Color, FinalCardValue Value)
     };
 
     /// <summary>
-    /// The 108 cards of a deck: in each colour one 0, two of each number 1 to 9 and two of each action; then four Wild and
+    /// The 108 cards of a deck: in each color one 0, two of each number 1 to 9 and two of each action; then four Wild and
     /// four Wild Draw Four.
     /// </summary>
     public static IReadOnlyList<FinalCardCard> Deck() =>

@@ -14,7 +14,7 @@
     <path id="spade" d="M50 3C34 28 6 42 6 64C6 78 17 86 29 86C37 86 44 82 47 75L40 97H60L53 75C56 82 63 86 71 86C83 86 94 78 94 64C94 42 66 28 50 3Z"/>
   </defs>
   <rect width="120" height="120" rx="26" fill="url(#table)"/>
-  <!-- A fan of four GamesLane cards, one per colour: blue spades, green clubs and yellow diamonds behind a red 7 of hearts. -->
+  <!-- A fan of four GamesLane cards, one per color: blue spades, green clubs and yellow diamonds behind a red 7 of hearts. -->
   <g stroke="#d8d2c6" stroke-width="1">
     <g transform="rotate(-30 60 104)">
       <rect x="40" y="26" width="40" height="60" rx="5" fill="#fff"/>

@@ -18,7 +18,7 @@ public class FinalCardGame : IFinalCardGame
     private readonly List<FinalCardEvent> _events = [];
 
     // The player of the Wild Draw Four that the player to play can challenge (or null), and whether they held a card of
-    // the colour that was to play.
+    // the color that was to play.
     private int? _challengeable;
     private bool _heldTheColor;
 
@@ -140,7 +140,7 @@ public class FinalCardGame : IFinalCardGame
         var index = hand.IndexOf(card);
         error = index < 0 ? "You do not have that card."
             : DrawnCard is { } drawn && card != drawn ? "You can play only the card you drew, or keep it."
-            : card.IsWild && color is null or FinalCardColor.Wild ? "Choose a colour for the wild card."
+            : card.IsWild && color is null or FinalCardColor.Wild ? "Choose a color for the wild card."
             : null;
         if (error is not null || !CanPlay(player, card, out error))
         {
@@ -429,7 +429,7 @@ public class FinalCardGame : IFinalCardGame
     /// <summary>
     /// Whether <paramref name="player"/> may play <paramref name="card"/> on the pile. With cards to draw from a stack,
     /// only a draw card the stacking rule allows on the top card; with the rule, a Wild Draw Four only without a card of
-    /// the colour to play; any other wild card; otherwise a card of the colour to play or of the top card's number or symbol.
+    /// the color to play; any other wild card; otherwise a card of the color to play or of the top card's number or symbol.
     /// </summary>
     private bool CanPlay(int player, FinalCardCard card, out string? error)
     {
@@ -437,9 +437,9 @@ public class FinalCardGame : IFinalCardGame
             ? Rules.CanStack(card, TopCard) ? null : "Answer with a draw card you can stack, or draw the cards."
             : card.Value == FinalCardValue.WildDrawFour && Rules.WildDrawFour == FinalCardWildDrawFour.NoColor
                 && _hands[player].Any(c => c.Color == Color)
-                ? "You can play a Wild Draw Four only when you have no card of the colour to play."
+                ? "You can play a Wild Draw Four only when you have no card of the color to play."
             : card.IsWild || card.Color == Color || (!TopCard.IsWild && card.Value == TopCard.Value) ? null
-            : "That card does not match the colour or the symbol on the pile.";
+            : "That card does not match the color or the symbol on the pile.";
         return error is null;
     }
 
