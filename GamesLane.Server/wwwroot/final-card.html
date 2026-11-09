@@ -64,15 +64,23 @@
         </div>
 
         <div id="game-screen" hidden>
-            <!-- Everything observers see: the piles, what just happened, and the players. -->
-            <section class="final-card-table" aria-label="Table" data-i18n-attr="aria-label">
-                <div id="final-card-pile" class="final-card-pile"></div>
+            <!-- On top for everyone: the closed and open piles, the colour and direction of play, and what just happened. -->
+            <section class="rp-top" aria-label="Piles" data-i18n-attr="aria-label">
+                <div id="final-card-piles" class="final-card-piles"></div>
                 <p id="final-card-message" class="final-card-message" hidden></p>
-                <ul id="final-card-players" class="final-card-players"></ul>
             </section>
 
             <!-- This user's own cards and buttons, one panel per seat they hold. -->
             <div id="final-card-hands"></div>
+
+            <!-- The players in seat order. Players can hide it; observers always see it. -->
+            <section class="rp-table" aria-label="Table" data-i18n-attr="aria-label">
+                <div class="rp-table-head">
+                    <span id="final-card-hand-number" class="rp-game"></span>
+                    <button id="final-card-toggle-table" type="button" class="secondary small" hidden>Show table</button>
+                </div>
+                <ol id="final-card-players" class="rp-players"></ol>
+            </section>
         </div>
     </section>
 

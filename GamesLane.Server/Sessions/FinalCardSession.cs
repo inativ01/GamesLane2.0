@@ -5,10 +5,10 @@ namespace GamesLane.Server.Sessions;
 
 /// <summary>
 /// A player as everyone sees them: their seat, how many cards they hold, their points (in a game to a score target), the
-/// cards they were last dealt (in a pyramid), their finishing place (in a pyramid, null until they finish), whether they
-/// called Final Card, and whether they can be caught for not calling it.
+/// cards they were last dealt (in a pyramid), their finishing place (in a pyramid, null until they finish), and whether
+/// they are protected: they called Final Card and hold one card.
 /// </summary>
-public record FinalCardPlayerState(int Seat, int CardCount, int Score, int HandSize, int? Finished, bool CalledFinalCard, bool CanBeCaught);
+public record FinalCardPlayerState(int Seat, int CardCount, int Score, int HandSize, int? Finished, bool Protected);
 
 /// <summary>
 /// Something that happened in the last action: the seat it is about, what, and the card (short text), count, chosen colour
@@ -99,12 +99,6 @@ public class FinalCardSession(string id, Action<FinalCardCard[]>? shuffle = null
         WithPlayer(userKey, seat, (game, player) => (game.TryCallFinalCard(player, out var e), e), out error);
 
     /// <inheritdoc />
-    public bool TryCatchFinalCard(string userKey, int seat, int targetSeat, [NotNullWhen(false)] out string? error) =>
-        WithPlayer(userKey, seat, (game, player) => GameSeats.Contains(targetSeat)
-            ? (game.TryCatch(player, PlayerOf(targetSeat), out var e), e)
-            : (false, "There is no such player."), out error);
-
-    /// <inheritdoc />
     public bool TryNextRound(string userKey, int round, [NotNullWhen(false)] out string? error)
     {
         lock (Sync)
@@ -157,8 +151,7 @@ public class FinalCardSession(string id, Action<FinalCardCard[]>? shuffle = null
                 game.Scores[p],
                 game.HandSize(p),
                 game.Rules.End == FinalCardEndMode.Pyramid && ranking.Contains(p) ? ranking.IndexOf(p) + 1 : null,
-                game.CalledFinalCard(p),
-                game.FinalCardPending == p))],
+                game.CalledFinalCard(p) && game.Hand(p).Count == 1))],
             [.. game.Events.Select(e => new FinalCardEventState(
                 seats[e.Player], e.Kind, e.Card?.ToString(), e.Count, e.Color, e.By is { } by ? seats[by] : null))],
             game.Actions,

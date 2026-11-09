@@ -50,11 +50,11 @@ public interface IFinalCardGame
     /// <summary>Pyramid: the number of cards a player was last dealt (7 at first).</summary>
     int HandSize(int player);
 
-    /// <summary>Whether a player has called Final Card for their last card.</summary>
+    /// <summary>Whether a player has called Final Card for their last card, which protects them while they hold it.</summary>
     bool CalledFinalCard(int player);
 
-    /// <summary>The player who has just gone down to one card without calling Final Card and can be caught, or null.</summary>
-    int? FinalCardPending { get; }
+    /// <summary>Whether a player holds one card without having called Final Card, so another player can catch them.</summary>
+    bool CanBeCaught(int player);
 
     /// <summary>Pyramid: the players who have finished, in order; at the end, everyone.</summary>
     IReadOnlyList<int> Ranking { get; }
@@ -90,16 +90,11 @@ public interface IFinalCardGame
     bool TryPass(int player, out string? error);
 
     /// <summary>
-    /// <paramref name="player"/> calls Final Card: on their turn with two cards, before playing one; or right after going down to
-    /// one card, before anyone catches them.
+    /// <paramref name="player"/> calls Final Card, at any time during a hand. It protects them if they hold one card, or two on
+    /// their turn with one they can play, and are not protected yet; and every other player who can be caught (see
+    /// <see cref="CanBeCaught"/>) draws 2 cards. Refused when it does neither.
     /// </summary>
     bool TryCallFinalCard(int player, out string? error);
-
-    /// <summary>
-    /// <paramref name="player"/> catches <paramref name="target"/>, who went down to one card without calling Final Card, before
-    /// the next player acts: <paramref name="target"/> draws 2 cards.
-    /// </summary>
-    bool TryCatch(int player, int target, out string? error);
 
     /// <summary>Deals the hand after hand <paramref name="hand"/>. If it has already been dealt, nothing changes.</summary>
     bool TryNextHand(int hand, out string? error);

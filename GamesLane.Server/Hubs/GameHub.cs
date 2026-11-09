@@ -374,10 +374,6 @@ public class GameHub(
         Act(sessionId, (IFinalCardSession s, out string? error) => s.TryCallFinalCard(UserKey, seat, out error));
 
     /// <inheritdoc />
-    public Task CatchFinalCard(string sessionId, int seat, int targetSeat) =>
-        Act(sessionId, (IFinalCardSession s, out string? error) => s.TryCatchFinalCard(UserKey, seat, targetSeat, out error));
-
-    /// <inheritdoc />
     public Task Discard(string sessionId, int seat, string[]? cards, bool takeOpen) =>
         Act(sessionId, (IYanivSession s, out string? error) => s.TryDiscard(UserKey, seat, cards, takeOpen, out error));
 

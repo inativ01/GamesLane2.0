@@ -1590,8 +1590,8 @@ public class GameSessionTests
         Assert.Equal(("R1", 1, FinalCardColor.Red), (state.TopCard, state.Turn, state.Color));
         Assert.Equal([6, 7], state.Players.Select(p => p.CardCount));
         Assert.Equal(new FinalCardEventState(0, FinalCardEventKind.Played, "R1", 0, null, null), state.Events.Single());
-        Assert.False(session.TryCatchFinalCard(Bob, 1, 5, out error));
-        Assert.Equal("There is no such player.", error);
+        Assert.False(session.TryCallFinalCard(Bob, 1, out error));
+        Assert.Equal("Nobody to catch.", error);
         Assert.False(session.TryNextRound(Alice, 1, out error));
         Assert.Equal("This hand is not finished yet.", error);
     }

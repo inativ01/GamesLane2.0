@@ -75,9 +75,6 @@ public class FinalCardGame : IFinalCardGame
     public IReadOnlyList<int> Scores => _scores;
 
     /// <inheritdoc />
-    public int? FinalCardPending { get; private set; }
-
-    /// <inheritdoc />
     public IReadOnlyList<int> Ranking => _ranking;
 
     /// <inheritdoc />
@@ -103,6 +100,9 @@ public class FinalCardGame : IFinalCardGame
 
     /// <inheritdoc />
     public bool CalledFinalCard(int player) => _calledFinalCard[player];
+
+    /// <inheritdoc />
+    public bool CanBeCaught(int player) => Phase == FinalCardPhase.Playing && _hands[player].Count == 1 && !_calledFinalCard[player];
 
     /// <inheritdoc />
     public IReadOnlyList<FinalCardCard> Playable(int player)
@@ -145,11 +145,7 @@ public class FinalCardGame : IFinalCardGame
         Color = card.IsWild ? color!.Value : card.Color;
         DrawnCard = null;
         _events.Add(new FinalCardEvent(player, FinalCardEventKind.Played, card, Color: card.IsWild ? Color : null));
-        if (hand.Count == 1 && !_calledFinalCard[player])
-        {
-            FinalCardPending = player;
-        }
-        else if (hand.Count != 1)
+        if (hand.Count != 1)
         {
             _calledFinalCard[player] = false;
         }
@@ -270,40 +266,29 @@ public class FinalCardGame : IFinalCardGame
     public bool TryCallFinalCard(int player, out string? error)
     {
         CheckPlayer(player);
-        var calls = FinalCardPending == player
-            || (Turn == player && !_calledFinalCard[player] && _hands[player].Count == 2 && Playable(player).Count > 0);
+        var protects = Phase == FinalCardPhase.Playing && !_calledFinalCard[player]
+            && (_hands[player].Count == 1 || (Turn == player && _hands[player].Count == 2 && Playable(player).Count > 0));
+        var caught = Enumerable.Range(0, Players).Where(p => p != player && CanBeCaught(p)).ToList();
         error = Phase != FinalCardPhase.Playing ? "This hand is over."
-            : calls ? null
-            : _calledFinalCard[player] ? "You have already called Final Card."
-            : "Call Final Card when you are about to have one card left.";
-        if (error is not null)
-        {
-            return false;
-        }
-
-        FinalCardPending = null;
-        _calledFinalCard[player] = true;
-        Actions++;
-        _events.Add(new FinalCardEvent(player, FinalCardEventKind.CalledFinalCard));
-        return true;
-    }
-
-    /// <inheritdoc />
-    public bool TryCatch(int player, int target, out string? error)
-    {
-        CheckPlayer(player);
-        error = target < 0 || target >= Players ? "There is no such player."
-            : target == player ? "You cannot catch yourself."
-            : FinalCardPending != target ? "That player cannot be caught now."
+            : !protects && caught.Count == 0 ? "Nobody to catch."
             : null;
         if (error is not null)
         {
             return false;
         }
 
-        FinalCardPending = null;
         Actions++;
-        _events.Add(new FinalCardEvent(target, FinalCardEventKind.Caught, Count: Give(target, 2), By: player));
+        if (protects)
+        {
+            _calledFinalCard[player] = true;
+            _events.Add(new FinalCardEvent(player, FinalCardEventKind.CalledFinalCard));
+        }
+
+        foreach (var target in caught)
+        {
+            _events.Add(new FinalCardEvent(target, FinalCardEventKind.Caught, Count: Give(target, 2), By: player));
+        }
+
         return true;
     }
 
@@ -380,12 +365,11 @@ public class FinalCardGame : IFinalCardGame
     }
 
     /// <summary>
-    /// Starts a new action: clears the last action's events, and ends the chance to catch a player who did not call Final Card.
+    /// Starts a new action: clears the last action's events.
     /// </summary>
     private void BeginAction()
     {
         _events.Clear();
-        FinalCardPending = null;
         Actions++;
     }
 

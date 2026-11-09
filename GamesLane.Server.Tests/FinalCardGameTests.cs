@@ -128,52 +128,71 @@ public class FinalCardGameTests
     // Final Card
 
     [Fact]
-    public void A_player_who_goes_down_to_one_card_without_calling_final_card_can_be_caught_and_draws_2()
+    public void A_player_on_one_card_without_calling_final_card_can_be_caught_at_any_time_and_draws_2()
     {
-        var game = DownToTwo();
-        Assert.True(game.TryPlay(0, Card("GS"), null, out var error), error);
-        Assert.Equal(0, game.FinalCardPending);
-        AssertRefused(game.TryCatch(0, 0, out error), error, "You cannot catch yourself.");
+        var game = DownToOne();
+        Assert.True(game.CanBeCaught(0));
+        Assert.True(game.TryPlay(1, Card("G0"), null, out var error), error);
+        Assert.True(game.CanBeCaught(0));
 
-        Assert.True(game.TryCatch(1, 0, out error), error);
+        Assert.True(game.TryCallFinalCard(1, out error), error);
+
         Assert.Equal(3, game.Hand(0).Count);
         Assert.Equal(new FinalCardEvent(0, FinalCardEventKind.Caught, Count: 2, By: 1), game.Events[^1]);
-        AssertRefused(game.TryCatch(1, 0, out error), error, "That player cannot be caught now.");
+        Assert.False(game.CanBeCaught(0));
+        AssertRefused(game.TryCallFinalCard(1, out error), error, "Nobody to catch.");
     }
 
     [Fact]
-    public void Calling_final_card_before_or_right_after_playing_protects_the_player()
+    public void Calling_final_card_before_playing_the_second_to_last_card_or_on_the_final_card_protects_the_player()
     {
-        var before = DownToTwo();
+        var before = DownToTwo(final: "G5 B5");
         Assert.True(before.TryCallFinalCard(0, out var error), error);
-        AssertRefused(before.TryCallFinalCard(0, out error), error, "You have already called Final Card.");
-        Assert.True(before.TryPlay(0, Card("GS"), null, out error), error);
-        Assert.Null(before.FinalCardPending);
+        AssertRefused(before.TryCallFinalCard(0, out error), error, "Nobody to catch.");
+        Assert.True(before.TryPlay(0, Card("G5"), null, out error), error);
         Assert.True(before.CalledFinalCard(0));
+        Assert.False(before.CanBeCaught(0));
+        AssertRefused(before.TryCallFinalCard(1, out error), error, "Nobody to catch.");
 
-        var after = DownToTwo();
-        Assert.True(after.TryPlay(0, Card("GS"), null, out error), error);
+        var after = DownToOne();
+        Assert.True(after.TryPlay(1, Card("G0"), null, out error), error);
         Assert.True(after.TryCallFinalCard(0, out error), error);
-        AssertRefused(after.TryCatch(1, 0, out error), error, "That player cannot be caught now.");
-        AssertRefused(after.TryCallFinalCard(1, out error), error, "Call Final Card when you are about to have one card left.");
+        Assert.Equal(new FinalCardEvent(0, FinalCardEventKind.CalledFinalCard), after.Events[^1]);
+        Assert.False(after.CanBeCaught(0));
+        AssertRefused(after.TryCallFinalCard(1, out error), error, "Nobody to catch.");
     }
 
     [Fact]
-    public void The_chance_to_catch_a_player_ends_with_the_next_action()
+    public void One_call_protects_the_caller_and_catches_the_others()
     {
-        var game = DownToTwo();
-        Assert.True(game.TryPlay(0, Card("GS"), null, out var error), error);
+        var game = DownToOne("GS BS BS BR RR RR B1");
+        foreach (var card in new[] { "GS", "BS", "BS", "BR", "RR", "RR" })
+        {
+            Assert.True(game.TryPlay(1, Card(card), null, out var error), error);
+        }
 
-        Assert.True(game.TryDraw(0, out error), error);
+        Assert.True(game.TryCallFinalCard(1, out var called), called);
 
-        Assert.Null(game.FinalCardPending);
-        AssertRefused(game.TryCatch(1, 0, out error), error, "That player cannot be caught now.");
+        Assert.Equal(new FinalCardEvent(1, FinalCardEventKind.CalledFinalCard), game.Events[^2]);
+        Assert.Equal(new FinalCardEvent(0, FinalCardEventKind.Caught, Count: 2, By: 1), game.Events[^1]);
+        Assert.Equal((3, 1), (game.Hand(0).Count, game.Hand(1).Count));
+        Assert.True(game.CalledFinalCard(1));
     }
 
-    // Player 0 holds GS and BS, and it is their turn (each Skip gave them another turn). Player 1's cards count 126 points.
-    private static FinalCardGame DownToTwo(FinalCardRules? rules = null)
+    // Player 0 has played down to B5 without calling Final Card, and it is player 1's turn.
+    private static FinalCardGame DownToOne(string second = "R1 R2 R3 B+2 W W+4 G0")
     {
-        var game = Deal(rules, "R9", "", "RS RS YS YS GS GS BS", "R1 R2 R3 B+2 W W+4 G0");
+        var game = DownToTwo(final: "G5 B5", second: second);
+        Assert.True(game.TryPlay(0, Card("G5"), null, out var error), error);
+        Assert.Equal((1, 1), (game.Hand(0).Count, game.Turn));
+        return game;
+    }
+
+    // Player 0 holds their two final cards (by default GS and BS), and it is their turn (each Skip gave them another turn).
+    // Player 1's cards (by default) count 126 points.
+    private static FinalCardGame DownToTwo(FinalCardRules? rules = null, string final = "GS BS", string second = "R1 R2 R3 B+2 W W+4 G0")
+    {
+        var game = Deal(rules, "R9", "", $"RS RS YS YS GS {final}", second);
         foreach (var card in new[] { "RS", "RS", "YS", "YS", "GS" })
         {
             Assert.True(game.TryPlay(0, Card(card), null, out var error), error);

@@ -27,13 +27,8 @@ public interface IFinalCardSession : IRoundBasedSession
     bool TryPass(string userKey, int seat, [NotNullWhen(false)] out string? error);
 
     /// <summary>
-    /// <paramref name="seat"/> calls Final Card, before or right after going down to one card.
+    /// <paramref name="seat"/> calls Final Card: it protects the seat on its final card (or before playing its second to
+    /// last), and every other seat holding one card unprotected draws 2 cards.
     /// </summary>
     bool TryCallFinalCard(string userKey, int seat, [NotNullWhen(false)] out string? error);
-
-    /// <summary>
-    /// <paramref name="seat"/> catches <paramref name="targetSeat"/>, who went down to one card without calling Final Card;
-    /// <paramref name="targetSeat"/> draws 2 cards.
-    /// </summary>
-    bool TryCatchFinalCard(string userKey, int seat, int targetSeat, [NotNullWhen(false)] out string? error);
 }
