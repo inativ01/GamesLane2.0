@@ -418,9 +418,9 @@ TRANSLATIONS.pt = {
     "This Yatzee must be scored in the upper box of its number.": "Este Yatzee precisa ser marcado na categoria de cima do seu número.",
     "This Yatzee must be scored in an open lower box.": "Este Yatzee precisa ser marcado numa categoria livre da parte de baixo.",
 
-    // Uno
-    "Uno": "Uno",
-    "Uno - GamesLane": "Uno - GamesLane",
+    // Final Card
+    "Final Card": "Última carta",
+    "Final Card - GamesLane": "Última carta - GamesLane",
     "Match the colour or the number, and be the first to play all your cards.": "Combine a cor ou o número e seja o primeiro a descartar todas as cartas.",
     "2–10 players": "2–10 jogadores",
     "Next hand": "Próxima mão",
@@ -453,11 +453,11 @@ TRANSLATIONS.pt = {
     "{name} misses a turn.": "{name} perde a vez.",
     "You kept the card.": "Você guardou a carta.",
     "{name} kept the card.": "{name} guardou a carta.",
-    "You called UNO!": "Você gritou UNO!",
-    "{name} called UNO!": "{name} gritou UNO!",
-    "{by} caught you without UNO: you drew {n} cards.": "{by} pegou você sem gritar UNO: você comprou {n} cartas.",
-    "You caught {name} without UNO: {name} drew {n} cards.": "Você pegou {name} sem gritar UNO: {name} comprou {n} cartas.",
-    "{by} caught {name} without UNO: {name} drew {n} cards.": "{by} pegou {name} sem gritar UNO: {name} comprou {n} cartas.",
+    "You called Final Card!": "Você gritou Última carta!",
+    "{name} called Final Card!": "{name} gritou Última carta!",
+    "{by} caught you without Final Card: you drew {n} cards.": "{by} pegou você sem gritar Última carta: você comprou {n} cartas.",
+    "You caught {name} without Final Card: {name} drew {n} cards.": "Você pegou {name} sem gritar Última carta: {name} comprou {n} cartas.",
+    "{by} caught {name} without Final Card: {name} drew {n} cards.": "{by} pegou {name} sem gritar Última carta: {name} comprou {n} cartas.",
     "You played all your cards and got {n} new ones.": "Você descartou todas as cartas e recebeu {n} novas.",
     "{name} played all their cards and got {n} new ones.": "{name} descartou todas as cartas e recebeu {n} novas.",
     "You finished in place {n}!": "Você terminou em {n}º lugar!",
@@ -469,7 +469,8 @@ TRANSLATIONS.pt = {
     "Cards to draw: {n}": "Cartas para comprar: {n}",
     "Cards last dealt: {n}": "Cartas distribuídas da última vez: {n}",
     "Catch!": "Peguei!",
-    "{name} did not call UNO: make them draw 2 cards": "{name} não gritou UNO: faça comprar 2 cartas",
+    "Final Card!": "Última carta!",
+    "{name} did not call Final Card: make them draw 2 cards": "{name} não gritou Última carta: faça comprar 2 cartas",
     "Play {card}": "Jogar {card}",
     "Choose the colour to play:": "Escolha a cor:",
     "Draw {n} cards": "Comprar {n} cartas",
@@ -479,7 +480,7 @@ TRANSLATIONS.pt = {
     "Hand {n}": "Mão {n}",
     "To {n} points": "Até {n} pontos",
 
-    // Uno options (from the server)
+    // Final Card options (from the server)
     "Game end": "Fim do jogo",
     "One game": "Uma mão só",
     "The first player to play all their cards wins.": "Vence quem descartar todas as cartas primeiro.",
@@ -500,15 +501,15 @@ TRANSLATIONS.pt = {
     "Draw until you can play": "Comprar até poder jogar",
     "Keep drawing until you get a card you can play.": "Continue comprando até tirar uma carta que possa jogar.",
 
-    // Uno: messages from the server
+    // Final Card: messages from the server
     "You do not have that card.": "Você não tem essa carta.",
     "You can play only the card you drew, or keep it.": "Você só pode jogar a carta que comprou, ou guardá-la.",
     "Choose a colour for the wild card.": "Escolha uma cor para o coringa.",
     "You have already drawn. Play the card you drew, or keep it.": "Você já comprou. Jogue a carta que comprou, ou guarde-a.",
     "Draw a card first.": "Compre uma carta primeiro.",
     "This hand is over.": "Esta mão terminou.",
-    "You have already called UNO.": "Você já gritou UNO.",
-    "Call UNO when you are about to have one card left.": "Grite UNO quando estiver para ficar com uma carta só.",
+    "You have already called Final Card.": "Você já gritou Última carta.",
+    "Call Final Card when you are about to have one card left.": "Grite Última carta quando estiver para ficar com uma carta só.",
     "There is no such player.": "Esse jogador não existe.",
     "You cannot catch yourself.": "Você não pode pegar a si mesmo.",
     "That player cannot be caught now.": "Esse jogador não pode ser pego agora.",

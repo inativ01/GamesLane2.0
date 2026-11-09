@@ -2,7 +2,7 @@ using System.Diagnostics.CodeAnalysis;
 using GamesLane.Server.Games.Backgammon;
 using GamesLane.Server.Games.RichManPoorMan;
 using GamesLane.Server.Games.TheGang;
-using GamesLane.Server.Games.Uno;
+using GamesLane.Server.Games.FinalCard;
 using GamesLane.Server.Games.Yaniv;
 using GamesLane.Server.Sessions;
 
@@ -75,7 +75,7 @@ public static class GameOptions
     {
         GameType.TheGang => TheGangOptions.All,
         GameType.Backgammon => BackgammonOptions.All,
-        GameType.Uno => UnoOptions.All,
+        GameType.FinalCard => FinalCardOptions.All,
         GameType.RichManPoorMan => RichManPoorManOptions.All,
         GameType.Yaniv => YanivOptions.All,
         _ => [],

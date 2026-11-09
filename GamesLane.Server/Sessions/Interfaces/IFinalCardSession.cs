@@ -1,20 +1,20 @@
 using System.Diagnostics.CodeAnalysis;
-using GamesLane.Server.Games.Uno;
+using GamesLane.Server.Games.FinalCard;
 
 namespace GamesLane.Server.Sessions;
 
 /// <summary>
-/// An Uno game for 2 to 10 seats, who play in seat order (until a Reverse). In a game to a score target, the next hand
+/// A Final Card game for 2 to 10 seats, who play in seat order (until a Reverse). In a game to a score target, the next hand
 /// starts with <see cref="IRoundBasedSession.TryNextRound"/> (the round is the hand number). Cards are short text such as
-/// "R7", "GS", "B+2", "W" or "W+4" (see <see cref="UnoCard"/>).
+/// "R7", "GS", "B+2", "W" or "W+4" (see <see cref="FinalCardCard"/>).
 /// </summary>
-public interface IUnoSession : IRoundBasedSession
+public interface IFinalCardSession : IRoundBasedSession
 {
     /// <summary>
     /// <paramref name="seat"/>, which <paramref name="userKey"/> must hold, plays <paramref name="card"/>, choosing
     /// <paramref name="color"/> for a wild card.
     /// </summary>
-    bool TryPlay(string userKey, int seat, string? card, UnoColor? color, [NotNullWhen(false)] out string? error);
+    bool TryPlay(string userKey, int seat, string? card, FinalCardColor? color, [NotNullWhen(false)] out string? error);
 
     /// <summary>
     /// <paramref name="seat"/> draws: the cards stacked for it, or else one card (or, with the option, until it can play).
@@ -27,13 +27,13 @@ public interface IUnoSession : IRoundBasedSession
     bool TryPass(string userKey, int seat, [NotNullWhen(false)] out string? error);
 
     /// <summary>
-    /// <paramref name="seat"/> calls UNO, before or right after going down to one card.
+    /// <paramref name="seat"/> calls Final Card, before or right after going down to one card.
     /// </summary>
-    bool TryCallUno(string userKey, int seat, [NotNullWhen(false)] out string? error);
+    bool TryCallFinalCard(string userKey, int seat, [NotNullWhen(false)] out string? error);
 
     /// <summary>
-    /// <paramref name="seat"/> catches <paramref name="targetSeat"/>, who went down to one card without calling UNO;
+    /// <paramref name="seat"/> catches <paramref name="targetSeat"/>, who went down to one card without calling Final Card;
     /// <paramref name="targetSeat"/> draws 2 cards.
     /// </summary>
-    bool TryCatchUno(string userKey, int seat, int targetSeat, [NotNullWhen(false)] out string? error);
+    bool TryCatchFinalCard(string userKey, int seat, int targetSeat, [NotNullWhen(false)] out string? error);
 }

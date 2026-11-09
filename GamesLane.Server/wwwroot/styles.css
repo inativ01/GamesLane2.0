@@ -1467,7 +1467,7 @@ svg.card-suit {
     font-size: 1.4em;
 }
 
-/* The back: the GamesLane card back picture (also on Uno's draw pile). */
+/* The back: the GamesLane card back picture. */
 .card.empty {
     background: url("images/card-back.png") center / cover no-repeat;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
@@ -3713,90 +3713,25 @@ button.yz-option:not(:disabled):hover {
     opacity: 0.6;
 }
 
-/* Uno: the table (draw pile, discard pile, colour to play and the players) on dark felt, and the user's hands below. */
-main.uno {
+/* Final Card: the table (draw pile, discard pile, colour to play and the players) on dark felt, and the user's hands
+   below. The cards are GamesLane playing cards (.card), each colour drawn as the suit of that colour. */
+main.final-card {
     max-width: 980px;
 }
 
-.uno-card {
-    --uno-color: #1d1a17;
-    position: relative;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 2.6em;
-    height: 3.9em;
-    flex: none;
-    border: 0.18em solid #fff;
-    border-radius: 0.35em;
-    background: var(--uno-color);
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
-    color: #fff;
+.final-card-pile .card,
+.final-card-cards .card {
     font-size: clamp(1rem, min(4.2vw, 3vh), 1.5rem);
-    font-weight: 900;
-    line-height: 1;
-    direction: ltr;
     user-select: none;
 }
 
-.uno-card.red { --uno-color: #d7262e; }
-.uno-card.yellow { --uno-color: #e9b40c; }
-.uno-card.green { --uno-color: #2b9a48; }
-.uno-card.blue { --uno-color: #1f6fd1; }
+/* A wild card on the pile: a ring of the colour chosen. */
+.final-card-pile .card.chose-red { box-shadow: 0 0 0 0.22em #d62828; }
+.final-card-pile .card.chose-yellow { box-shadow: 0 0 0 0.22em #e5a400; }
+.final-card-pile .card.chose-green { box-shadow: 0 0 0 0.22em #23913a; }
+.final-card-pile .card.chose-blue { box-shadow: 0 0 0 0.22em #1d5bd6; }
 
-/* A wild card: black, with the four colours in its oval; on the pile, a ring of the colour chosen. */
-.uno-card.wild .uno-oval {
-    background: conic-gradient(#d7262e 0 25%, #1f6fd1 0 50%, #2b9a48 0 75%, #e9b40c 0);
-}
-
-.uno-card.wild .uno-symbol {
-    color: #fff;
-    text-shadow: 0 0 3px #000, 0 0 2px #000;
-}
-
-.uno-card.chose-red { box-shadow: 0 0 0 0.22em #d7262e; }
-.uno-card.chose-yellow { box-shadow: 0 0 0 0.22em #e9b40c; }
-.uno-card.chose-green { box-shadow: 0 0 0 0.22em #2b9a48; }
-.uno-card.chose-blue { box-shadow: 0 0 0 0.22em #1f6fd1; }
-
-.uno-card.back {
-    border: 0;
-    background: url("images/card-back.png") center / cover no-repeat;
-}
-
-.uno-oval {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 78%;
-    height: 62%;
-    border-radius: 50%;
-    background: #fff;
-    transform: rotate(-25deg);
-}
-
-.uno-symbol {
-    color: var(--uno-color);
-    font-size: 1.05em;
-    transform: rotate(25deg);
-}
-
-.uno-corner {
-    position: absolute;
-    top: 0.18em;
-    left: 0.22em;
-    font-size: 0.5em;
-}
-
-.uno-corner.end {
-    top: auto;
-    left: auto;
-    right: 0.22em;
-    bottom: 0.18em;
-    transform: rotate(180deg);
-}
-
-.uno-table {
+.final-card-table {
     margin: 0.4rem 0;
     padding: 0.6rem;
     border-radius: var(--radius);
@@ -3804,7 +3739,7 @@ main.uno {
     color: #fff;
 }
 
-.uno-pile {
+.final-card-pile {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
@@ -3813,25 +3748,25 @@ main.uno {
     padding: 0.3rem 0 0.5rem;
 }
 
-.uno-draw {
+.final-card-draw {
     position: relative;
     padding: 0;
     border: 0;
     background: none;
 }
 
-.uno-draw:not(:disabled):hover,
-.uno-draw:not(:disabled):focus-visible {
+.final-card-draw:not(:disabled):hover,
+.final-card-draw:not(:disabled):focus-visible {
     background: none;
     transform: translateY(-2px);
 }
 
-.uno-draw:disabled {
+.final-card-draw:disabled {
     opacity: 1;
     cursor: default;
 }
 
-.uno-pile-count {
+.final-card-pile-count {
     position: absolute;
     right: -0.5rem;
     bottom: -0.4rem;
@@ -3843,7 +3778,7 @@ main.uno {
     font-weight: 700;
 }
 
-.uno-pile-info {
+.final-card-pile-info {
     display: flex;
     flex-direction: column;
     align-items: flex-start;
@@ -3851,37 +3786,37 @@ main.uno {
     font-weight: 700;
 }
 
-.uno-color {
+.final-card-color {
     padding: 0.1rem 0.6rem;
     border-radius: 999px;
     background: #fff;
     color: var(--ink);
 }
 
-.uno-color.red, .uno-color-choice.red { background: #d7262e; color: #fff; }
-.uno-color.yellow, .uno-color-choice.yellow { background: #e9b40c; color: var(--ink); }
-.uno-color.green, .uno-color-choice.green { background: #2b9a48; color: #fff; }
-.uno-color.blue, .uno-color-choice.blue { background: #1f6fd1; color: #fff; }
+.final-card-color.red, .final-card-color-choice.red { background: #d62828; color: #fff; }
+.final-card-color.yellow, .final-card-color-choice.yellow { background: #e5a400; color: var(--ink); }
+.final-card-color.green, .final-card-color-choice.green { background: #23913a; color: #fff; }
+.final-card-color.blue, .final-card-color-choice.blue { background: #1d5bd6; color: #fff; }
 
-.uno-direction {
+.final-card-direction {
     font-size: 1.6rem;
     line-height: 1;
 }
 
-.uno-pending {
+.final-card-pending {
     padding: 0.1rem 0.6rem;
     border-radius: 999px;
     background: var(--gold);
     color: var(--ink);
 }
 
-.uno-message {
+.final-card-message {
     margin: 0 0 0.5rem;
     color: #eef0f4;
     text-align: center;
 }
 
-.uno-players {
+.final-card-players {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr));
     gap: 0.3rem;
@@ -3890,7 +3825,7 @@ main.uno {
     list-style: none;
 }
 
-.uno-players li {
+.final-card-players li {
     display: flex;
     align-items: center;
     gap: 0.35rem;
@@ -3902,15 +3837,15 @@ main.uno {
     font-size: 0.9rem;
 }
 
-.uno-players li.turn {
+.final-card-players li.turn {
     box-shadow: inset 0 0 0 3px var(--gold);
 }
 
-.uno-players li.done {
+.final-card-players li.done {
     opacity: 0.7;
 }
 
-.uno-players .seat-label {
+.final-card-players .seat-label {
     flex: 0 1 auto;
     min-width: 0;
     overflow: hidden;
@@ -3918,13 +3853,13 @@ main.uno {
     white-space: nowrap;
 }
 
-.uno-count {
+.final-card-count {
     margin-inline-start: auto;
     color: var(--muted);
     white-space: nowrap;
 }
 
-.uno-tag {
+.final-card-tag {
     padding: 0 0.45em;
     border-radius: 999px;
     background: var(--surface-soft);
@@ -3932,15 +3867,15 @@ main.uno {
     white-space: nowrap;
 }
 
-.uno-tag.uno-said { background: #d7262e; color: #fff; font-weight: 800; }
-.uno-tag.finished { background: #d6efd9; color: #1f6b35; }
+.final-card-tag.called { background: #d62828; color: #fff; font-weight: 800; }
+.final-card-tag.finished { background: #d6efd9; color: #1f6b35; }
 
-.uno-catch {
-    background: #d7262e;
+.final-card-catch {
+    background: #d62828;
 }
 
 /* The hand: cards in rows, from the first colour to the last; the ones that cannot be played are faded on your turn. */
-.uno-cards {
+.final-card-cards {
     display: flex;
     flex-wrap: wrap;
     gap: 0.35rem;
@@ -3949,39 +3884,39 @@ main.uno {
     direction: ltr;
 }
 
-.uno-play {
+.final-card-play {
     padding: 0;
     border: 0;
     border-radius: 0.35em;
     background: none;
 }
 
-.uno-play:hover,
-.uno-play:focus-visible {
+.final-card-play:hover,
+.final-card-play:focus-visible {
     background: none;
 }
 
-.uno-play:hover .uno-card,
-.uno-play:focus-visible .uno-card,
-.uno-card.chosen {
+.final-card-play:hover .card,
+.final-card-play:focus-visible .card,
+.final-card-cards .card.chosen {
     transform: translateY(-0.3em);
 }
 
-.uno-card.drawn,
-.uno-card.chosen {
+.final-card-cards .card.drawn,
+.final-card-cards .card.chosen {
     box-shadow: 0 0 0 3px var(--gold), 0 4px 10px rgba(0, 0, 0, 0.3);
 }
 
-.uno-card.unplayable {
+.final-card-cards .card.unplayable {
     opacity: 0.45;
 }
 
-.uno-colors {
+.final-card-colors {
     flex-wrap: wrap;
 }
 
-.uno-call {
-    background: #d7262e;
+.final-card-call {
+    background: #d62828;
     font-weight: 900;
 }
 

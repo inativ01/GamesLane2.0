@@ -1,13 +1,15 @@
 "use strict";
 
-// Uno: players take turns playing a card that matches the pile's colour, number or symbol, or a wild card; a player who
-// cannot (or does not want to) play draws. Each player's own cards come in view.private. The table (the piles, what just
-// happened and the players) is on top, and the user's own hands below it.
+// Final Card: players take turns playing a card that matches the pile's colour, number or symbol, or a wild card; a
+// player who cannot (or does not want to) play draws. Each player's own cards come in view.private. The table (the
+// piles, what just happened and the players) is on top, and the user's own hands below it.
 
 const COLORS = ["Red", "Yellow", "Green", "Blue"];
 const COLOR_LETTERS = { R: "Red", Y: "Yellow", G: "Green", B: "Blue" };
 const VALUE_NAMES = { S: "Skip", R: "Reverse", "+2": "Draw Two" };
-const SYMBOLS = { S: "⊘", R: "⇄", "+2": "+2", W: "★", "+4": "+4" };
+
+// Each colour is drawn as the suit of that colour on the GamesLane cards.
+const COLOR_SUITS = { R: "♥", Y: "♦", G: "♣", B: "♠" };
 
 // A card's colour ("Wild" for wild cards) and value ("0" to "9", "S", "R", "+2", "W" or "+4") from its short text.
 function parseCard(text) {
@@ -25,14 +27,11 @@ function cardName(text) {
     return t("{color} {value}", { color: t(color), value: VALUE_NAMES[value] ? t(VALUE_NAMES[value]) : value });
 }
 
-// A card: its colour, the symbol in a white oval and in the corners. A wild card on the pile shows the colour chosen.
-function unoCard(text, chosenColor = null) {
+// A card, always a GamesLane card (the classic cards have no Skip, Reverse or wild cards): "R7" is drawn as 7♥, "W" as
+// WILD and "W+4" as +4. A wild card on the pile has a ring of the colour chosen.
+function finalCard(text, chosenColor = null) {
     const { color, value } = parseCard(text);
-    const symbol = SYMBOLS[value] ?? value;
-    const card = el("span", `uno-card ${color.toLowerCase()}`,
-        el("span", "uno-corner", symbol),
-        el("span", "uno-oval", el("span", "uno-symbol", symbol)),
-        el("span", "uno-corner end", symbol));
+    const card = cardElement(color === "Wild" ? (value === "W" ? "WILD" : "+4") : value + COLOR_SUITS[text[0]], "New");
     if (chosenColor && color === "Wild") {
         card.classList.add(`chose-${chosenColor.toLowerCase()}`);
     }
@@ -89,13 +88,13 @@ function eventText(game, state, view, e) {
             return say("You miss your turn.", "{name} misses a turn.");
         case "Passed":
             return say("You kept the card.", "{name} kept the card.");
-        case "CalledUno":
-            return say("You called UNO!", "{name} called UNO!");
+        case "CalledFinalCard":
+            return say("You called Final Card!", "{name} called Final Card!");
         case "Caught": {
             const values = { by: playerName(state, e.bySeat), name: playerName(state, e.seat), n: e.count };
-            return view.isMe(e.seat) && view.mySeats.length === 1 ? t("{by} caught you without UNO: you drew {n} cards.", values)
-                : view.isMe(e.bySeat) && view.mySeats.length === 1 ? t("You caught {name} without UNO: {name} drew {n} cards.", values)
-                    : t("{by} caught {name} without UNO: {name} drew {n} cards.", values);
+            return view.isMe(e.seat) && view.mySeats.length === 1 ? t("{by} caught you without Final Card: you drew {n} cards.", values)
+                : view.isMe(e.bySeat) && view.mySeats.length === 1 ? t("You caught {name} without Final Card: {name} drew {n} cards.", values)
+                    : t("{by} caught {name} without Final Card: {name} drew {n} cards.", values);
         }
         case "NewCards":
             return say("You played all your cards and got {n} new ones.", "{name} played all their cards and got {n} new ones.", { n: e.count });
@@ -106,54 +105,54 @@ function eventText(game, state, view, e) {
     }
 }
 
-const send = (method, ...args) => call(method, uno.sessionId, ...args).catch(() => {});
+const send = (method, ...args) => call(method, page.sessionId, ...args).catch(() => {});
 
 // The middle of the table: the draw pile (tap it to draw on your turn), the discard pile, the colour to play, the
 // direction of play and any cards stacked for the next player.
 function renderPile(game, view) {
     const canDraw = game.phase === "Playing" && view.isMe(game.turn) && !game.hasDrawn;
-    const draw = el("button", "uno-draw", el("span", "uno-card back"), el("span", "uno-pile-count", String(game.drawPile)));
+    const draw = el("button", "final-card-draw", cardElement(), el("span", "final-card-pile-count", String(game.drawPile)));
     draw.type = "button";
     draw.disabled = !canDraw;
     draw.title = t("Draw pile: {n} cards", { n: game.drawPile });
     draw.setAttribute("aria-label", draw.title);
     draw.addEventListener("click", () => send("DrawCard", game.turn));
 
-    const color = el("span", `uno-color ${game.color.toLowerCase()}`, t(game.color));
+    const color = el("span", `final-card-color ${game.color.toLowerCase()}`, t(game.color));
     color.title = t("Colour to play");
-    const direction = el("span", "uno-direction", game.direction === 1 ? "↻" : "↺");
+    const direction = el("span", "final-card-direction", game.direction === 1 ? "↻" : "↺");
     direction.title = t(game.direction === 1 ? "Play goes in seat order" : "Play goes in reverse seat order");
-    const info = el("div", "uno-pile-info", color, direction);
+    const info = el("div", "final-card-pile-info", color, direction);
     if (game.pendingDraw > 0) {
-        const pending = el("span", "uno-pending", `+${game.pendingDraw}`);
+        const pending = el("span", "final-card-pending", `+${game.pendingDraw}`);
         pending.title = t("Cards to draw: {n}", { n: game.pendingDraw });
         info.append(pending);
     }
-    $("uno-pile").replaceChildren(draw, unoCard(game.topCard, game.color), info);
+    $("final-card-pile").replaceChildren(draw, finalCard(game.topCard, game.color), info);
 }
 
-// A player in the list: name, cards left, UNO!, their place in a pyramid (or the cards they were last dealt), and Catch!
-// for a player who went down to one card without calling UNO.
+// A player in the list: name, cards left, Final Card!, their place in a pyramid (or the cards they were last dealt), and
+// Catch! for a player who went down to one card without calling Final Card.
 function playerItem(game, state, view, player) {
     const item = el("li", null, seatLabel(state, player.seat, view));
     item.classList.toggle("turn", game.phase === "Playing" && game.turn === player.seat);
     item.classList.toggle("done", player.finished !== null);
-    const tag = (text, className = "") => item.append(el("span", `uno-tag ${className}`, text));
-    if (player.saidUno && player.cardCount === 1) tag("UNO!", "uno-said");
+    const tag = (text, className = "") => item.append(el("span", `final-card-tag ${className}`, text));
+    if (player.calledFinalCard && player.cardCount === 1) tag(t("Final Card!"), "called");
     if (player.finished !== null) {
         tag(`🏁 ${player.finished}`, "finished");
     } else if (game.end === "Pyramid") {
-        const level = el("span", "uno-tag", `▲ ${player.handSize}`);
+        const level = el("span", "final-card-tag", `▲ ${player.handSize}`);
         level.title = t("Cards last dealt: {n}", { n: player.handSize });
         item.append(level);
     }
-    item.append(el("span", "uno-count", `🂠 ${player.cardCount}`));
+    item.append(el("span", "final-card-count", `🂠 ${player.cardCount}`));
     const catcher = view.mySeats.find((seat) => seat !== player.seat && playerOf(game, seat));
     if (player.canBeCaught && catcher !== undefined) {
-        const button = el("button", "small uno-catch", t("Catch!"));
+        const button = el("button", "small final-card-catch", t("Catch!"));
         button.type = "button";
-        button.title = t("{name} did not call UNO: make them draw 2 cards", { name: playerName(state, player.seat) });
-        button.addEventListener("click", () => send("CatchUno", catcher, player.seat));
+        button.title = t("{name} did not call Final Card: make them draw 2 cards", { name: playerName(state, player.seat) });
+        button.addEventListener("click", () => send("CatchFinalCard", catcher, player.seat));
         item.append(button);
     }
     return item;
@@ -164,15 +163,15 @@ let picking = null;
 let currentGame = null;
 
 // One of the user's hands: its cards (those that can be played are buttons), the colours to choose for a wild card, and
-// the buttons to draw, keep the card drawn and call UNO.
+// the buttons to draw, keep the card drawn and call Final Card.
 function handPanel(game, state, view, hand) {
     const me = playerOf(game, hand.seat);
     const myTurn = game.phase === "Playing" && game.turn === hand.seat;
     const choosing = picking?.seat === hand.seat && hand.playable.includes(picking.card) ? picking.card : null;
     const drawn = myTurn && game.hasDrawn ? hand.playable[0] : null;
 
-    const cards = el("div", "uno-cards", ...hand.cards.map((card) => {
-        const face = unoCard(card);
+    const cards = el("div", "final-card-cards", ...hand.cards.map((card) => {
+        const face = finalCard(card);
         if (!myTurn) {
             return face;
         }
@@ -182,13 +181,13 @@ function handPanel(game, state, view, hand) {
         }
         face.classList.toggle("drawn", card === drawn);
         face.classList.toggle("chosen", card === choosing);
-        const button = el("button", "uno-play", face);
+        const button = el("button", "final-card-play", face);
         button.type = "button";
         button.setAttribute("aria-label", t("Play {card}", { card: cardName(card) }));
         button.addEventListener("click", () => {
             if (parseCard(card).color === "Wild") {
                 picking = { seat: hand.seat, card };
-                uno.refresh();
+                page.refresh();
                 return;
             }
             picking = null;
@@ -198,7 +197,7 @@ function handPanel(game, state, view, hand) {
     }));
 
     const title = view.mySeats.length > 1 ? playerName(state, hand.seat) : t("Your cards");
-    const panel = el("div", "my-hand uno-hand", el("div", "my-hand-title", title), cards);
+    const panel = el("div", "my-hand final-card-hand", el("div", "my-hand-title", title), cards);
     const buttons = el("div", "actions");
     const button = (text, onClick, className = "") => {
         const b = el("button", className, text);
@@ -209,8 +208,8 @@ function handPanel(game, state, view, hand) {
 
     if (choosing) {
         panel.append(el("p", "hint", t("Choose the colour to play:")));
-        const colors = el("div", "actions uno-colors", ...COLORS.map((color) => {
-            const b = el("button", `uno-color-choice ${color.toLowerCase()}`, t(color));
+        const colors = el("div", "actions final-card-colors", ...COLORS.map((color) => {
+            const b = el("button", `final-card-color-choice ${color.toLowerCase()}`, t(color));
             b.type = "button";
             b.addEventListener("click", () => {
                 picking = null;
@@ -222,7 +221,7 @@ function handPanel(game, state, view, hand) {
         cancel.type = "button";
         cancel.addEventListener("click", () => {
             picking = null;
-            uno.refresh();
+            page.refresh();
         });
         colors.append(cancel);
         panel.append(colors);
@@ -236,9 +235,9 @@ function handPanel(game, state, view, hand) {
         panel.append(el("p", "hint", t("You drew {card}. Play it, or keep it.", { card: cardName(drawn) })));
         button(t("Keep the card"), () => send("PassAfterDraw", hand.seat), "secondary");
     }
-    const aboutToHaveOne = myTurn && hand.cards.length === 2 && hand.playable.length > 0 && !me.saidUno;
+    const aboutToHaveOne = myTurn && hand.cards.length === 2 && hand.playable.length > 0 && !me.calledFinalCard;
     if (aboutToHaveOne || me.canBeCaught) {
-        button("UNO!", () => send("CallUno", hand.seat), "uno-call");
+        button(t("Final Card!"), () => send("CallFinalCard", hand.seat), "final-card-call");
     }
     if (me.finished !== null) {
         panel.append(el("p", "hint", t("You finished in place {n}!", { n: me.finished })));
@@ -259,7 +258,7 @@ function noticeSuccess(game, state, view) {
         .forEach((p) => celebrate(state, `finished-${game.handNumber}-${p.seat}`));
 }
 
-const uno = startSessionPage("Uno", (game, state, view) => {
+const page = startSessionPage("FinalCard", (game, state, view) => {
     currentGame = game;
     if (game.phase !== "Playing") {
         picking = null;
@@ -269,11 +268,11 @@ const uno = startSessionPage("Uno", (game, state, view) => {
     $("status").textContent = statusText(game, state, view);
     noticeSuccess(game, state, view);
     const message = game.events.map((e) => eventText(game, state, view, e)).filter(Boolean).join(" ");
-    $("uno-message").textContent = message;
-    $("uno-message").hidden = !message;
+    $("final-card-message").textContent = message;
+    $("final-card-message").hidden = !message;
     renderPile(game, view);
-    $("uno-players").replaceChildren(...game.players.map((p) => playerItem(game, state, view, p)));
-    $("uno-hands").replaceChildren(...(view.private?.hands ?? []).filter((h) => playerOf(game, h.seat))
+    $("final-card-players").replaceChildren(...game.players.map((p) => playerItem(game, state, view, p)));
+    $("final-card-hands").replaceChildren(...(view.private?.hands ?? []).filter((h) => playerOf(game, h.seat))
         .map((hand) => handPanel(game, state, view, hand)));
     $("next-round").hidden = !(view.isPlayer && game.phase === "HandOver");
 });

@@ -1,9 +1,9 @@
-namespace GamesLane.Server.Games.Uno;
+namespace GamesLane.Server.Games.FinalCard;
 
 /// <summary>
-/// When an Uno game ends.
+/// When a Final Card game ends.
 /// </summary>
-public enum UnoEndMode
+public enum FinalCardEndMode
 {
     /// <summary>One hand: the first player to play all their cards wins.</summary>
     OneGame,
@@ -19,9 +19,9 @@ public enum UnoEndMode
 }
 
 /// <summary>
-/// What an Uno game is waiting for.
+/// What a Final Card game is waiting for.
 /// </summary>
-public enum UnoPhase
+public enum FinalCardPhase
 {
     /// <summary>The player to play plays a card, or draws.</summary>
     Playing,
@@ -36,15 +36,15 @@ public enum UnoPhase
 /// <summary>
 /// Something that happened in the last action, for showing it.
 /// </summary>
-public enum UnoEventKind
+public enum FinalCardEventKind
 {
     /// <summary>The first card of the discard pile was turned up.</summary>
     TurnedUp,
 
-    /// <summary>The player played <see cref="UnoEvent.Card"/> (a wild card with the chosen <see cref="UnoEvent.Color"/>).</summary>
+    /// <summary>The player played <see cref="FinalCardEvent.Card"/> (a wild card with the chosen <see cref="FinalCardEvent.Color"/>).</summary>
     Played,
 
-    /// <summary>The player drew <see cref="UnoEvent.Count"/> cards.</summary>
+    /// <summary>The player drew <see cref="FinalCardEvent.Count"/> cards.</summary>
     Drew,
 
     /// <summary>The player misses their turn.</summary>
@@ -53,18 +53,18 @@ public enum UnoEventKind
     /// <summary>The player kept the card they drew.</summary>
     Passed,
 
-    /// <summary>The player called UNO.</summary>
-    CalledUno,
+    /// <summary>The player called Final Card.</summary>
+    CalledFinalCard,
 
-    /// <summary>The player was caught by <see cref="UnoEvent.By"/> without calling UNO and drew <see cref="UnoEvent.Count"/> cards.</summary>
+    /// <summary>The player was caught by <see cref="FinalCardEvent.By"/> without calling Final Card and drew <see cref="FinalCardEvent.Count"/> cards.</summary>
     Caught,
 
-    /// <summary>Pyramid: the player played all their cards and was dealt <see cref="UnoEvent.Count"/> new ones.</summary>
+    /// <summary>Pyramid: the player played all their cards and was dealt <see cref="FinalCardEvent.Count"/> new ones.</summary>
     NewCards,
 
     /// <summary>
-    /// The player played all their cards: they won the hand, whose cards left count <see cref="UnoEvent.Count"/> points; or in
-    /// a pyramid, they finished at place <see cref="UnoEvent.Count"/>.
+    /// The player played all their cards: they won the hand, whose cards left count <see cref="FinalCardEvent.Count"/> points; or in
+    /// a pyramid, they finished at place <see cref="FinalCardEvent.Count"/>.
     /// </summary>
     Finished,
 }
@@ -72,19 +72,19 @@ public enum UnoEventKind
 /// <summary>
 /// Something that happened: the player it is about, what, and the card, count, chosen colour or other player involved.
 /// </summary>
-public record UnoEvent(int Player, UnoEventKind Kind, UnoCard? Card = null, int Count = 0, UnoColor? Color = null, int? By = null);
+public record FinalCardEvent(int Player, FinalCardEventKind Kind, FinalCardCard? Card = null, int Count = 0, FinalCardColor? Color = null, int? By = null);
 
 /// <summary>
 /// The end of a hand: the winner and the points of the cards left in the other hands.
 /// </summary>
-public record UnoHandResult(int Winner, int Points);
+public record FinalCardHandResult(int Winner, int Points);
 
 /// <summary>
 /// The rules of a game, from its options: when it ends (and the score to reach), whether a Draw Two can be answered with a
 /// Draw Two (and a Wild Draw Four with a Wild Draw Four) to pass on the cards to draw, and whether a player who draws keeps
 /// drawing until they get a card they can play.
 /// </summary>
-public record UnoRules(UnoEndMode End = UnoEndMode.Score, int Target = 500, bool Stacking = false, bool DrawUntilPlayable = false)
+public record FinalCardRules(FinalCardEndMode End = FinalCardEndMode.Score, int Target = 500, bool Stacking = false, bool DrawUntilPlayable = false)
 {
     /// <summary>The fewest players.</summary>
     public const int MinPlayers = 2;
@@ -97,14 +97,14 @@ public record UnoRules(UnoEndMode End = UnoEndMode.Score, int Target = 500, bool
 }
 
 /// <summary>
-/// The options of Uno.
+/// The options of Final Card.
 /// </summary>
-public static class UnoOptions
+public static class FinalCardOptions
 {
     /// <summary>The key of the option for when the game ends.</summary>
     public const string End = "end";
 
-    /// <summary>The key of the score target option (with <see cref="UnoEndMode.Score"/>).</summary>
+    /// <summary>The key of the score target option (with <see cref="FinalCardEndMode.Score"/>).</summary>
     public const string Target = "target";
 
     /// <summary>The key of the stacking option.</summary>
@@ -122,19 +122,19 @@ public static class UnoOptions
             End,
             "Game end",
             [
-                new GameOptionChoice(nameof(UnoEndMode.OneGame), "One game", "The first player to play all their cards wins."),
-                new GameOptionChoice(nameof(UnoEndMode.Score), "Score target",
+                new GameOptionChoice(nameof(FinalCardEndMode.OneGame), "One game", "The first player to play all their cards wins."),
+                new GameOptionChoice(nameof(FinalCardEndMode.Score), "Score target",
                     "The winner of each hand scores the cards left in the other hands. The first to reach the target wins."),
-                new GameOptionChoice(nameof(UnoEndMode.Pyramid), "Pyramid",
+                new GameOptionChoice(nameof(FinalCardEndMode.Pyramid), "Pyramid",
                     "Played all your cards? Take one card fewer than last time: 7, 6, 5 … down to 1. The first to play their last single card wins; play goes on until everyone is ranked."),
             ],
-            nameof(UnoEndMode.Score)),
+            nameof(FinalCardEndMode.Score)),
         new GameOption(
             Target,
             "Score target",
             [.. new[] { 100, 200, 300, 500 }.Select(n => new GameOptionChoice(n.ToString(), $"{n} points"))],
             "500",
-            ShownWhen: new GameOptionCondition(End, nameof(UnoEndMode.Score))),
+            ShownWhen: new GameOptionCondition(End, nameof(FinalCardEndMode.Score))),
         new GameOption(
             Stacking,
             "Stacking",
@@ -157,8 +157,8 @@ public static class UnoOptions
     /// <summary>
     /// The rules for the chosen options (as kept by the session, with every option present and valid).
     /// </summary>
-    public static UnoRules RulesFrom(IReadOnlyDictionary<string, string> options) => new(
-        Enum.TryParse<UnoEndMode>(options.GetValueOrDefault(End), out var end) ? end : UnoEndMode.Score,
+    public static FinalCardRules RulesFrom(IReadOnlyDictionary<string, string> options) => new(
+        Enum.TryParse<FinalCardEndMode>(options.GetValueOrDefault(End), out var end) ? end : FinalCardEndMode.Score,
         int.TryParse(options.GetValueOrDefault(Target), out var target) ? target : 500,
         options.GetValueOrDefault(Stacking) == "Yes",
         options.GetValueOrDefault(Draw) == "UntilPlayable");

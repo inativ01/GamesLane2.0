@@ -1,8 +1,8 @@
-using GamesLane.Server.Games.Uno;
+using GamesLane.Server.Games.FinalCard;
 
 namespace GamesLane.Server.Tests;
 
-public class UnoGameTests
+public class FinalCardGameTests
 {
     private const string Reds = "R2 R3 R4 R6 R7 R8 R9";
 
@@ -11,17 +11,17 @@ public class UnoGameTests
     [Fact]
     public void The_deck_has_108_cards_each_with_its_short_text()
     {
-        var deck = UnoCard.Deck();
+        var deck = FinalCardCard.Deck();
 
         Assert.Equal(108, deck.Count);
-        Assert.Equal(25, deck.Count(c => c.Color == UnoColor.Red));
+        Assert.Equal(25, deck.Count(c => c.Color == FinalCardColor.Red));
         Assert.Equal(1, deck.Count(c => c == Card("G0")));
         Assert.Equal(2, deck.Count(c => c == Card("B+2")));
         Assert.Equal(4, deck.Count(c => c == Card("W+4")));
         Assert.Equal(1240, deck.Sum(c => c.Points));
         Assert.All(deck, c => Assert.Equal(c, Card(c.ToString())));
-        Assert.False(UnoCard.TryParse("X5", out _));
-        Assert.False(UnoCard.TryParse("R10", out _));
+        Assert.False(FinalCardCard.TryParse("X5", out _));
+        Assert.False(FinalCardCard.TryParse("R10", out _));
     }
 
     [Fact]
@@ -30,7 +30,7 @@ public class UnoGameTests
         var game = Deal(null, "B5", "", "R5 B7 G2 Y9 R1 B1 G1", Reds);
 
         Assert.All(Enumerable.Range(0, 2), p => Assert.Equal(7, game.Hand(p).Count));
-        Assert.Equal((Card("B5"), UnoColor.Blue, 0, 1), (game.TopCard, game.Color, game.Turn, game.Direction));
+        Assert.Equal((Card("B5"), FinalCardColor.Blue, 0, 1), (game.TopCard, game.Color, game.Turn, game.Direction));
         Assert.Equal(108 - 15, game.DrawPileCount);
     }
 
@@ -65,7 +65,7 @@ public class UnoGameTests
         AssertRefused(game.TryPlay(0, Card("R0"), null, out error), error, "You do not have that card.");
         AssertRefused(game.TryPlay(0, Card("G2"), null, out error), error, "That card does not match the colour or the symbol on the pile.");
         Assert.True(game.TryPlay(0, Card("R5"), null, out error), error);
-        Assert.Equal((UnoColor.Red, 1, 6), (game.Color, game.Turn, game.Hand(0).Count));
+        Assert.Equal((FinalCardColor.Red, 1, 6), (game.Color, game.Turn, game.Hand(0).Count));
         Assert.True(game.TryPlay(1, Card("R2"), null, out error), error);
     }
 
@@ -74,11 +74,11 @@ public class UnoGameTests
     {
         var game = Deal(null, "R5", "G5", "W W+4 R1 B1 G1 Y1 B2", Reds);
 
-        AssertRefused(game.TryPlay(0, Card("W+4"), UnoColor.Blue, out var error), error,
+        AssertRefused(game.TryPlay(0, Card("W+4"), FinalCardColor.Blue, out var error), error,
             "You can play a Wild Draw Four only when you have no card of the colour to play.");
         AssertRefused(game.TryPlay(0, Card("W"), null, out error), error, "Choose a colour for the wild card.");
-        Assert.True(game.TryPlay(0, Card("W"), UnoColor.Green, out error), error);
-        Assert.Equal((Card("W"), UnoColor.Green), (game.TopCard, game.Color));
+        Assert.True(game.TryPlay(0, Card("W"), FinalCardColor.Green, out error), error);
+        Assert.Equal((Card("W"), FinalCardColor.Green), (game.TopCard, game.Color));
         AssertRefused(game.TryPlay(1, Card("R2"), null, out error), error, "That card does not match the colour or the symbol on the pile.");
     }
 
@@ -116,46 +116,46 @@ public class UnoGameTests
     [Fact]
     public void With_the_option_a_player_draws_until_they_can_play()
     {
-        var game = Deal(new UnoRules(DrawUntilPlayable: true), "R5", "G1 G2 R3", "B1 B2 B3 B4 B6 B7 B8", Reds);
+        var game = Deal(new FinalCardRules(DrawUntilPlayable: true), "R5", "G1 G2 R3", "B1 B2 B3 B4 B6 B7 B8", Reds);
 
         Assert.True(game.TryDraw(0, out var error), error);
-        Assert.Equal(new UnoEvent(0, UnoEventKind.Drew, Count: 3), game.Events.Single());
+        Assert.Equal(new FinalCardEvent(0, FinalCardEventKind.Drew, Count: 3), game.Events.Single());
         Assert.Equal(Card("R3"), game.DrawnCard);
         Assert.True(game.TryPlay(0, Card("R3"), null, out error), error);
         Assert.Equal(9, game.Hand(0).Count);
     }
 
-    // UNO
+    // Final Card
 
     [Fact]
-    public void A_player_who_goes_down_to_one_card_without_calling_uno_can_be_caught_and_draws_2()
+    public void A_player_who_goes_down_to_one_card_without_calling_final_card_can_be_caught_and_draws_2()
     {
         var game = DownToTwo();
         Assert.True(game.TryPlay(0, Card("GS"), null, out var error), error);
-        Assert.Equal(0, game.UnoPending);
+        Assert.Equal(0, game.FinalCardPending);
         AssertRefused(game.TryCatch(0, 0, out error), error, "You cannot catch yourself.");
 
         Assert.True(game.TryCatch(1, 0, out error), error);
         Assert.Equal(3, game.Hand(0).Count);
-        Assert.Equal(new UnoEvent(0, UnoEventKind.Caught, Count: 2, By: 1), game.Events[^1]);
+        Assert.Equal(new FinalCardEvent(0, FinalCardEventKind.Caught, Count: 2, By: 1), game.Events[^1]);
         AssertRefused(game.TryCatch(1, 0, out error), error, "That player cannot be caught now.");
     }
 
     [Fact]
-    public void Calling_uno_before_or_right_after_playing_protects_the_player()
+    public void Calling_final_card_before_or_right_after_playing_protects_the_player()
     {
         var before = DownToTwo();
-        Assert.True(before.TryCallUno(0, out var error), error);
-        AssertRefused(before.TryCallUno(0, out error), error, "You have already called UNO.");
+        Assert.True(before.TryCallFinalCard(0, out var error), error);
+        AssertRefused(before.TryCallFinalCard(0, out error), error, "You have already called Final Card.");
         Assert.True(before.TryPlay(0, Card("GS"), null, out error), error);
-        Assert.Null(before.UnoPending);
-        Assert.True(before.SaidUno(0));
+        Assert.Null(before.FinalCardPending);
+        Assert.True(before.CalledFinalCard(0));
 
         var after = DownToTwo();
         Assert.True(after.TryPlay(0, Card("GS"), null, out error), error);
-        Assert.True(after.TryCallUno(0, out error), error);
+        Assert.True(after.TryCallFinalCard(0, out error), error);
         AssertRefused(after.TryCatch(1, 0, out error), error, "That player cannot be caught now.");
-        AssertRefused(after.TryCallUno(1, out error), error, "Call UNO when you are about to have one card left.");
+        AssertRefused(after.TryCallFinalCard(1, out error), error, "Call Final Card when you are about to have one card left.");
     }
 
     [Fact]
@@ -166,12 +166,12 @@ public class UnoGameTests
 
         Assert.True(game.TryDraw(0, out error), error);
 
-        Assert.Null(game.UnoPending);
+        Assert.Null(game.FinalCardPending);
         AssertRefused(game.TryCatch(1, 0, out error), error, "That player cannot be caught now.");
     }
 
     // Player 0 holds GS and BS, and it is their turn (each Skip gave them another turn). Player 1's cards count 126 points.
-    private static UnoGame DownToTwo(UnoRules? rules = null)
+    private static FinalCardGame DownToTwo(FinalCardRules? rules = null)
     {
         var game = Deal(rules, "R9", "", "RS RS YS YS GS GS BS", "R1 R2 R3 B+2 W W+4 G0");
         foreach (var card in new[] { "RS", "RS", "YS", "YS", "GS" })
@@ -182,7 +182,7 @@ public class UnoGameTests
         return game;
     }
 
-    private static void PlayLastTwo(UnoGame game)
+    private static void PlayLastTwo(FinalCardGame game)
     {
         Assert.True(game.TryPlay(0, Card("GS"), null, out var error), error);
         Assert.True(game.TryPlay(0, Card("BS"), null, out error), error);
@@ -193,17 +193,17 @@ public class UnoGameTests
     [Fact]
     public void The_winner_of_a_hand_scores_the_cards_left_and_the_next_player_starts_the_next_hand()
     {
-        var game = DownToTwo(new UnoRules(UnoEndMode.Score, Target: 500));
+        var game = DownToTwo(new FinalCardRules(FinalCardEndMode.Score, Target: 500));
         PlayLastTwo(game);
 
-        Assert.Equal(UnoPhase.HandOver, game.Phase);
-        Assert.Equal(new UnoHandResult(0, 126), game.LastResult);
+        Assert.Equal(FinalCardPhase.HandOver, game.Phase);
+        Assert.Equal(new FinalCardHandResult(0, 126), game.LastResult);
         Assert.Equal([126, 0], game.Scores);
-        Assert.Equal(new UnoEvent(0, UnoEventKind.Finished, Count: 126), game.Events[^1]);
+        Assert.Equal(new FinalCardEvent(0, FinalCardEventKind.Finished, Count: 126), game.Events[^1]);
         AssertRefused(game.TryDraw(1, out var error), error, "This hand is over.");
 
         Assert.True(game.TryNextHand(1, out error), error);
-        Assert.Equal((2, UnoPhase.Playing, 1), (game.HandNumber, game.Phase, game.Turn));
+        Assert.Equal((2, FinalCardPhase.Playing, 1), (game.HandNumber, game.Phase, game.Turn));
         Assert.All(Enumerable.Range(0, 2), p => Assert.Equal(7, game.Hand(p).Count));
         Assert.Equal([126, 0], game.Scores);
         Assert.True(game.TryNextHand(1, out error), error);
@@ -212,11 +212,11 @@ public class UnoGameTests
     }
 
     [Theory]
-    [InlineData(UnoEndMode.Score, 100, 126)]
-    [InlineData(UnoEndMode.OneGame, 500, 0)]
-    public void The_game_ends_at_the_score_target_or_after_one_hand(UnoEndMode end, int target, int score)
+    [InlineData(FinalCardEndMode.Score, 100, 126)]
+    [InlineData(FinalCardEndMode.OneGame, 500, 0)]
+    public void The_game_ends_at_the_score_target_or_after_one_hand(FinalCardEndMode end, int target, int score)
     {
-        var game = DownToTwo(new UnoRules(end, target));
+        var game = DownToTwo(new FinalCardRules(end, target));
         PlayLastTwo(game);
 
         Assert.True(game.IsOver);
@@ -228,7 +228,7 @@ public class UnoGameTests
     [Fact]
     public void With_stacking_the_cards_stacked_for_the_next_player_count_for_the_winner()
     {
-        var game = Deal(new UnoRules(UnoEndMode.Score, Stacking: true), "R9", "", "RS RS YS YS GS GS G+2", "R1 R2 R3 B+2 W W+4 G0");
+        var game = Deal(new FinalCardRules(FinalCardEndMode.Score, Stacking: true), "R9", "", "RS RS YS YS GS GS G+2", "R1 R2 R3 B+2 W W+4 G0");
         foreach (var card in new[] { "RS", "RS", "YS", "YS", "GS", "GS", "G+2" })
         {
             Assert.True(game.TryPlay(0, Card(card), null, out var error), error);
@@ -242,12 +242,12 @@ public class UnoGameTests
     [Fact]
     public void In_a_pyramid_each_player_gets_one_card_fewer_each_time_until_everyone_is_ranked()
     {
-        var game = new UnoGame(3, new UnoRules(UnoEndMode.Pyramid), new Random(3).Shuffle);
+        var game = new FinalCardGame(3, new FinalCardRules(FinalCardEndMode.Pyramid), new Random(3).Shuffle);
         var dealt = Enumerable.Range(0, 3).Select(_ => new List<int>()).ToArray();
 
         PlayOut(game, () =>
         {
-            foreach (var e in game.Events.Where(e => e.Kind == UnoEventKind.NewCards))
+            foreach (var e in game.Events.Where(e => e.Kind == FinalCardEventKind.NewCards))
             {
                 dealt[e.Player].Add(e.Count);
                 Assert.Equal(e.Count, game.HandSize(e.Player));
@@ -267,7 +267,7 @@ public class UnoGameTests
     [Fact]
     public void A_game_to_a_score_target_is_played_hand_after_hand_until_a_player_reaches_it()
     {
-        var game = new UnoGame(4, new UnoRules(UnoEndMode.Score, 200, Stacking: true, DrawUntilPlayable: true), new Random(5).Shuffle);
+        var game = new FinalCardGame(4, new FinalCardRules(FinalCardEndMode.Score, 200, Stacking: true, DrawUntilPlayable: true), new Random(5).Shuffle);
 
         PlayOut(game);
 
@@ -275,13 +275,13 @@ public class UnoGameTests
         Assert.All(game.Scores.Where((_, p) => p != game.Winner), score => Assert.True(score < 200));
     }
 
-    // Plays to the end: the player to play plays their first card they can (calling UNO first), otherwise draws.
-    private static void PlayOut(UnoGame game, Action? afterEach = null)
+    // Plays to the end: the player to play plays their first card they can (calling Final Card first), otherwise draws.
+    private static void PlayOut(FinalCardGame game, Action? afterEach = null)
     {
         for (var actions = 0; actions < 20000 && !game.IsOver; actions++)
         {
             string? error;
-            if (game.Phase == UnoPhase.HandOver)
+            if (game.Phase == FinalCardPhase.HandOver)
             {
                 Assert.True(game.TryNextHand(game.HandNumber, out error), error);
                 continue;
@@ -297,10 +297,10 @@ public class UnoGameTests
             {
                 if (game.Hand(player).Count == 2)
                 {
-                    game.TryCallUno(player, out _);
+                    game.TryCallFinalCard(player, out _);
                 }
 
-                Assert.True(game.TryPlay(player, playable[0], UnoColor.Red, out error), error);
+                Assert.True(game.TryPlay(player, playable[0], FinalCardColor.Red, out error), error);
             }
 
             afterEach?.Invoke();
@@ -314,11 +314,11 @@ public class UnoGameTests
     {
         var game = Deal(null, "R5", "", "W+4 B1 B2 B3 B4 B6 B7", Reds);
 
-        Assert.True(game.TryPlay(0, Card("W+4"), UnoColor.Yellow, out var error), error);
+        Assert.True(game.TryPlay(0, Card("W+4"), FinalCardColor.Yellow, out var error), error);
 
-        Assert.Equal((11, 0, UnoColor.Yellow), (game.Hand(1).Count, game.Turn, game.Color));
-        Assert.Equal([UnoEventKind.Played, UnoEventKind.Drew, UnoEventKind.Skipped], game.Events.Select(e => e.Kind));
-        Assert.Equal(new UnoEvent(1, UnoEventKind.Drew, Count: 4), game.Events[1]);
+        Assert.Equal((11, 0, FinalCardColor.Yellow), (game.Hand(1).Count, game.Turn, game.Color));
+        Assert.Equal([FinalCardEventKind.Played, FinalCardEventKind.Drew, FinalCardEventKind.Skipped], game.Events.Select(e => e.Kind));
+        Assert.Equal(new FinalCardEvent(1, FinalCardEventKind.Drew, Count: 4), game.Events[1]);
     }
 
     [Fact]
@@ -328,7 +328,7 @@ public class UnoGameTests
 
         Assert.True(game.TryPlay(0, Card("RS"), null, out var error), error);
         Assert.Equal(2, game.Turn);
-        Assert.Equal(new UnoEvent(1, UnoEventKind.Skipped), game.Events[1]);
+        Assert.Equal(new FinalCardEvent(1, FinalCardEventKind.Skipped), game.Events[1]);
         Assert.True(game.TryPlay(2, Card("RR"), null, out error), error);
         Assert.Equal((1, -1), (game.Turn, game.Direction));
         Assert.True(game.TryPlay(1, Card("R7"), null, out error), error);
@@ -348,7 +348,7 @@ public class UnoGameTests
     [Fact]
     public void With_stacking_draw_cards_add_up_for_the_next_player()
     {
-        var game = Deal(new UnoRules(Stacking: true), "R9", "", "R+2 G1 G2 G3 G4 G6 G7", "B+2 R1 B2 B3 B4 B6 B7");
+        var game = Deal(new FinalCardRules(Stacking: true), "R9", "", "R+2 G1 G2 G3 G4 G6 G7", "B+2 R1 B2 B3 B4 B6 B7");
 
         Assert.True(game.TryPlay(0, Card("R+2"), null, out var error), error);
         Assert.Equal((2, 1, 7), (game.PendingDraw, game.Turn, game.Hand(1).Count));
@@ -362,11 +362,11 @@ public class UnoGameTests
 
     // A game whose deck gives each player their 7 cards (short text, separated by spaces), turns up turnedUp, and then has
     // drawPile on top of the draw pile.
-    private static UnoGame Deal(UnoRules? rules, string turnedUp, string drawPile, params string[] hands) =>
+    private static FinalCardGame Deal(FinalCardRules? rules, string turnedUp, string drawPile, params string[] hands) =>
         new(hands.Length, rules, Stacked(string.Join(' ', [.. hands, turnedUp, drawPile])));
 
     // A shuffle that puts the given cards first, in order, the first time; later shuffles leave the cards as they are.
-    private static Action<UnoCard[]> Stacked(string cards)
+    private static Action<FinalCardCard[]> Stacked(string cards)
     {
         var used = false;
         return deck =>
@@ -384,9 +384,9 @@ public class UnoGameTests
         };
     }
 
-    private static UnoCard Card(string text)
+    private static FinalCardCard Card(string text)
     {
-        Assert.True(UnoCard.TryParse(text, out var card), text);
+        Assert.True(FinalCardCard.TryParse(text, out var card), text);
         return card;
     }
 

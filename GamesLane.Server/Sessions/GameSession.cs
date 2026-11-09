@@ -14,7 +14,7 @@ public enum GameType
     Backgammon,
     RichManPoorMan,
     Yatzee,
-    Uno,
+    FinalCard,
     Yaniv,
 }
 
