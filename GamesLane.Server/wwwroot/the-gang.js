@@ -50,7 +50,8 @@ function button(text, className, onClick) {
     return b;
 }
 
-// A shared slot: one card, or with jokers, the 2 or 3 cards that replaced a joker, side by side (each hand uses one).
+// A shared slot: one card, or with jokers, the 2 or 3 cards that replaced a joker, stacked in one column (each hand
+// uses one).
 function slotElement(cards) {
     if (!cards || cards.length === 1) {
         return cardElement(cards?.[0]);
