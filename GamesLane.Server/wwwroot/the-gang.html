@@ -31,7 +31,6 @@
     <div id="status-bar" class="status-bar" hidden>
         <p id="status" class="status"></p>
         <span class="status-actions">
-            <button id="gang-confirm" type="button" class="small" hidden aria-pressed="false"></button>
             <button id="next-heist" type="button" class="small" hidden data-i18n>Next heist</button>
             <button id="play-again" type="button" class="small" hidden data-i18n>Play again</button>
             <button id="to-lobby" type="button" class="secondary small" hidden data-i18n>Back to the lobby</button>
@@ -64,6 +63,12 @@
         </div>
 
         <div id="game-screen" hidden>
+            <!-- The top of the table, always shown to players above their hands: the shared cards. Observers get them in
+                 the table below (see the page's script). -->
+            <div id="table-top" class="table-top">
+                <div id="community" class="card-row"></div>
+            </div>
+
             <!-- This user's own cards and controls, and the group decisions of the heist's cards. -->
             <div id="my-hands"></div>
             <div id="my-decisions" class="my-decisions" hidden></div>
@@ -82,17 +87,15 @@
                     <button id="toggle-table" type="button" class="secondary small" hidden>Hide table</button>
                 </div>
                 <div id="table-body" class="table-body">
-                    <div id="community" class="card-row"></div>
                     <div id="middle"></div>
+                    <!-- The heist's challenge or specialist cards. -->
+                    <ul id="heist-cards" class="heist-cards" hidden></ul>
                     <table id="chip-table" class="chip-table"></table>
                     <ol id="revealed" class="revealed"></ol>
-                    <!-- The heist's challenge or specialist cards, and what they showed everyone. -->
-                    <ul id="heist-cards" class="heist-cards" hidden></ul>
+                    <!-- The game's options, one per line (filled by common.js). -->
+                    <div id="game-options" class="game-options" hidden></div>
                 </div>
             </section>
-
-            <!-- The game's options, one per line (filled by common.js). -->
-            <div id="game-options" class="game-options" hidden></div>
         </div>
     </section>
 

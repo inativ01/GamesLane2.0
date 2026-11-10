@@ -247,7 +247,7 @@ const yaniv = startSessionPage("Yaniv", (game, state, view) => {
     $("yaniv-round").textContent = t("Round {n}", { n: game.roundNumber });
     $("yaniv-toggle-table").hidden = !view.isPlayer;
     $("yaniv-toggle-table").textContent = t(shown ? "Hide table" : "Show table");
-    $("yaniv-players").hidden = !shown;
+    $("yaniv-table-body").hidden = !shown;
     $("yaniv-players").replaceChildren(...game.players.map((p) => playerItem(game, state, view, p)));
     $("next-round").hidden = !(view.isPlayer && game.phase === "RoundOver");
 });

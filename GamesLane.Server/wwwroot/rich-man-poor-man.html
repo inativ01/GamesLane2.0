@@ -72,18 +72,19 @@
             <!-- During the exchange: users asking to join, and players accepting them at a place. -->
             <div id="rp-join" class="panel rp-join" hidden></div>
 
-            <!-- The players in place order. Players can hide it; observers always see it. -->
+            <!-- The players in place order, and the game's options. Players can hide them; observers always see them. -->
             <section class="rp-table" aria-label="Table" data-i18n-attr="aria-label">
                 <div class="rp-table-head">
                     <span id="rp-game" class="rp-game"></span>
                     <button id="rp-speech" type="button" class="secondary small" hidden></button>
                     <button id="rp-toggle-table" type="button" class="secondary small" hidden>Show table</button>
                 </div>
-                <ol id="rp-players" class="rp-players"></ol>
+                <div id="rp-table-body">
+                    <ol id="rp-players" class="rp-players"></ol>
+                    <!-- The game's options, one per line (filled by common.js). -->
+                    <div id="game-options" class="game-options" hidden></div>
+                </div>
             </section>
-
-            <!-- The game's options, one per line (filled by common.js). -->
-            <div id="game-options" class="game-options" hidden></div>
         </div>
     </section>
 

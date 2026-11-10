@@ -489,7 +489,7 @@ const rich = startSessionPage("RichManPoorMan", (game, state, view) => {
     $("rp-join").replaceChildren(...(join ?? []));
     $("rp-toggle-table").hidden = !view.isPlayer;
     $("rp-toggle-table").textContent = t(shown ? "Hide table" : "Show table");
-    $("rp-players").hidden = !shown;
+    $("rp-table-body").hidden = !shown;
     $("rp-players").replaceChildren(...game.players.map((p) => playerItem(game, state, view, p)));
     $("next-round").hidden = !(view.isPlayer && game.phase === "GameOver");
     updateSpeech(game, view);
