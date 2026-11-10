@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Admin - GamesLane</title>
+    <link rel="icon" href="images/logo-32.png">
+    <link rel="apple-touch-icon" href="images/logo-180.png">
+    <meta name="theme-color" content="#19285d">
+    <link rel="stylesheet" href="styles.css">
+    <!-- SignalR sets a global "t" while it loads, so it comes before i18n.js, which defines t(). -->
+    <script src="https://cdn.jsdelivr.net/npm/@microsoft/signalr@10.0.11/dist/browser/signalr.min.js"></script>
+    <script src="i18n.js"></script>
+</head>
+<body>
+<header class="top">
+    <a href="/?splash" class="brand" title="Main screen"><img class="brand-name" src="images/name.png" alt="GamesLane"></a>
+    <div id="account" class="account"></div>
+</header>
+<main class="admin">
+    <section class="panel">
+        <h2>Games played</h2>
+        <p id="admin-status" class="hint">Loading…</p>
+        <div id="admin-report" hidden>
+            <form id="admin-days" class="admin-days">
+                <label>Days <input name="days" type="number" min="1" max="365" value="30" required></label>
+                <button type="submit" class="small">Show</button>
+            </form>
+            <p class="hint">Games started per day (UTC): on Start, each Play again, and when the last seat fills.</p>
+            <div id="admin-games" class="admin-games"></div>
+            <div id="admin-chart" class="admin-chart"></div>
+            <p id="admin-tooltip" class="admin-tooltip" hidden></p>
+            <table class="admin-totals">
+                <thead><tr><th>Game</th><th id="admin-total-head">Last 30 days</th></tr></thead>
+                <tbody id="admin-totals"></tbody>
+            </table>
+        </div>
+    </section>
+    <p id="error" class="error" role="alert"></p>
+</main>
+<script src="common.js"></script>
+<script src="admin.js"></script>
+</body>
+</html>

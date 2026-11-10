@@ -259,8 +259,11 @@ public class UserService(
     }
 
     /// <inheritdoc />
-    public Task<int> DeleteInactiveUsersAsync(DateTimeOffset cutoff) =>
-        db.Users.Where(u => u.LastActiveAt < cutoff).ExecuteDeleteAsync();
+    public Task<int> DeleteInactiveUsersAsync(DateTimeOffset cutoff, IReadOnlySet<Guid> kept)
+    {
+        var keptIds = kept.ToList();
+        return db.Users.Where(u => u.LastActiveAt < cutoff && !keptIds.Contains(u.Id)).ExecuteDeleteAsync();
+    }
 
     /// <summary>
     /// A new icon record with a new ID.

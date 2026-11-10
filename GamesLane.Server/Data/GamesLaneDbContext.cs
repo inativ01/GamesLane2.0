@@ -4,8 +4,8 @@ using Microsoft.EntityFrameworkCore;
 namespace GamesLane.Server.Data;
 
 /// <summary>
-/// The GamesLane database: saved users, their external accounts, icons and game options, saved game sessions, and the
-/// keys that sign login tokens.
+/// The GamesLane database: saved users, their external accounts, icons and game options, saved game sessions, the
+/// number of games started per day, and the keys that sign login tokens.
 /// </summary>
 public class GamesLaneDbContext(DbContextOptions<GamesLaneDbContext> options) : DbContext(options), IDataProtectionKeyContext
 {
@@ -33,6 +33,11 @@ public class GamesLaneDbContext(DbContextOptions<GamesLaneDbContext> options) : 
     /// Game sessions, saved after every change.
     /// </summary>
     public DbSet<SavedSession> Sessions => Set<SavedSession>();
+
+    /// <summary>
+    /// The games started per day and game.
+    /// </summary>
+    public DbSet<GamePlay> GamePlays => Set<GamePlay>();
 
     /// <summary>
     /// The keys ASP.NET Core uses to encrypt and sign login tokens, so tokens stay valid after a restart.
@@ -84,6 +89,12 @@ public class GamesLaneDbContext(DbContextOptions<GamesLaneDbContext> options) : 
             session.Property(s => s.GameType).HasMaxLength(50);
             session.Property(s => s.Version).HasMaxLength(64);
             session.HasIndex(s => s.UpdatedAt);
+        });
+
+        modelBuilder.Entity<GamePlay>(play =>
+        {
+            play.HasKey(p => new { p.Day, p.GameType });
+            play.Property(p => p.GameType).HasMaxLength(50);
         });
     }
 }

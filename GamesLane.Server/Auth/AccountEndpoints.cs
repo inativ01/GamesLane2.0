@@ -43,7 +43,8 @@ public static class AccountEndpoints
     /// </summary>
     public static void MapAccountEndpoints(this WebApplication app)
     {
-        app.MapGet("/auth/me", async (HttpContext context, IUserService users, AuthProviders providers, IIssueTracker issues) =>
+        app.MapGet("/auth/me", async (HttpContext context, IUserService users, AuthProviders providers, IIssueTracker issues,
+            AdminUsers admins) =>
         {
             var user = await RefreshAsync(context.User, users);
             var savedId = AuthSetup.GetSavedUserId(user);
@@ -61,6 +62,7 @@ public static class AccountEndpoints
                 providers = providers.Names,
                 icons = UserRules.BuiltInIcons,
                 feedback = issues.IsConfigured,
+                isAdmin = admins.IsAdmin(user),
             });
         });
 

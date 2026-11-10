@@ -91,7 +91,8 @@ public interface IUserService
     Task<string?> SetSettingsAsync(Guid userId, UserSettings settings);
 
     /// <summary>
-    /// Deletes users (with their external accounts and icons) last active before <paramref name="cutoff"/>. Returns how many.
+    /// Deletes users (with their external accounts and icons) last active before <paramref name="cutoff"/>, except those
+    /// in <paramref name="kept"/>. Returns how many.
     /// </summary>
-    Task<int> DeleteInactiveUsersAsync(DateTimeOffset cutoff);
+    Task<int> DeleteInactiveUsersAsync(DateTimeOffset cutoff, IReadOnlySet<Guid> kept);
 }

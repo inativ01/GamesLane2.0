@@ -1,5 +1,6 @@
 using GamesLane.Server.Data;
 using GamesLane.Server.Sessions;
+using GamesLane.Server.Stats;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace GamesLane.Server.Tests;
@@ -204,6 +205,84 @@ public class GameSessionStoreTests
         Assert.Equal(clock.Now, (await repository.FindAsync(session.Id))!.UpdatedAt);
     }
 
+    [Fact]
+    public async Task Each_game_started_is_counted_once_on_its_day_in_utc()
+    {
+        var plays = new MemoryPlays();
+        var clock = new Clock { Now = new DateTimeOffset(2026, 11, 4, 23, 30, 0, TimeSpan.FromHours(-2)) };
+        var store = new GameSessionStore(new MemoryRepository(), clock, null, plays);
+        var session = await Started(store);
+        await store.SaveAsync(session);
+        await store.SaveAsync(session);
+        Assert.Equal([(new DateOnly(2026, 11, 5), "TicTacToe", 1)], plays.Counts);
+
+        Assert.True(session.TryEndGame("user:alice", out var error), error);
+        Assert.True(session.TryNewGame("user:bob", 1, out error), error);
+        await store.SaveAsync(session);
+        Assert.Equal(2, plays.Counts.Sum(c => c.Count));
+    }
+
+    [Fact]
+    public async Task Games_of_a_session_loaded_again_are_not_counted_twice_and_a_lobby_counts_nothing()
+    {
+        var plays = new MemoryPlays();
+        var repository = new MemoryRepository();
+        var store = new GameSessionStore(repository, new Clock(), null, plays);
+        var session = await Started(store);
+        await store.UnloadAsync(session);
+        Assert.Equal(1, plays.Counts.Sum(c => c.Count));
+
+        var loaded = (await store.GetAsync(session.Id))!;
+        loaded.Enter("user:alice", Alice, "conn-a2");
+        await store.SaveAsync(loaded);
+        await store.CreateAsync(GameType.Yaniv);
+
+        Assert.Equal(1, plays.Counts.Sum(c => c.Count));
+    }
+
+    [Fact]
+    public void The_report_has_every_day_and_game_with_zeros_and_each_games_total()
+    {
+        var today = new DateOnly(2026, 11, 10);
+        GamePlay[] kept =
+        [
+            new() { Day = today, GameType = "Yaniv", Count = 3 },
+            new() { Day = today.AddDays(-2), GameType = "Yaniv", Count = 2 },
+            new() { Day = today.AddDays(-2), GameType = "TheGang", Count = 1 },
+            new() { Day = today.AddDays(-3), GameType = "Yaniv", Count = 9 },
+            new() { Day = today, GameType = "Chess", Count = 5 },
+        ];
+
+        var report = GamePlayStats.Report(kept, today, 3);
+
+        Assert.Equal([today.AddDays(-2), today.AddDays(-1), today], report.Days);
+        Assert.Equal(GamePlayStats.UsualOrder, report.Games.Select(g => g.GameType));
+        var yaniv = report.Games.Single(g => g.GameType == GameType.Yaniv);
+        Assert.Equal([2, 0, 3], yaniv.Counts);
+        Assert.Equal(5, yaniv.Total);
+        Assert.Equal(1, report.Games.Single(g => g.GameType == GameType.TheGang).Total);
+        Assert.All(report.Games.Where(g => g.GameType is not (GameType.Yaniv or GameType.TheGang)), g => Assert.Equal([0, 0, 0], g.Counts));
+        Assert.Equal(Enum.GetValues<GameType>().Order(), GamePlayStats.UsualOrder.Order());
+    }
+
+    [Fact]
+    public void Popular_games_come_first_and_ties_keep_the_usual_order()
+    {
+        var today = new DateOnly(2026, 11, 10);
+        GamePlay[] kept =
+        [
+            new() { Day = today, GameType = "Wazoo", Count = 2 },
+            new() { Day = today.AddDays(-1), GameType = "Wazoo", Count = 2 },
+            new() { Day = today, GameType = "Yaniv", Count = 4 },
+            new() { Day = today, GameType = "TicTacToe", Count = 1 },
+        ];
+
+        Assert.Equal(
+            [GameType.Yaniv, GameType.Wazoo, GameType.TicTacToe, GameType.TheGang, GameType.Backgammon, GameType.RichManPoorMan, GameType.FinalCard],
+            GamePlayStats.PopularOrder(kept));
+        Assert.Equal(GamePlayStats.UsualOrder, GamePlayStats.PopularOrder([]));
+    }
+
     // A tic-tac-toe session with Alice and Bob seated and a game started.
     private static async Task<IGameSession> Started(GameSessionStore store)
     {
@@ -219,6 +298,31 @@ public class GameSessionStoreTests
         public DateTimeOffset Now { get; set; } = new(2026, 11, 4, 12, 0, 0, TimeSpan.Zero);
 
         public override DateTimeOffset GetUtcNow() => Now;
+    }
+
+    // The games-played counts, in memory.
+    private sealed class MemoryPlays : IGamePlayRepository
+    {
+        public List<(DateOnly Day, string GameType, int Count)> Counts { get; } = [];
+
+        public Task AddAsync(GameType type, DateOnly day, int count)
+        {
+            var index = Counts.FindIndex(c => c.Day == day && c.GameType == type.ToString());
+            if (index < 0)
+            {
+                Counts.Add((day, type.ToString(), count));
+            }
+            else
+            {
+                Counts[index] = (day, type.ToString(), Counts[index].Count + count);
+            }
+
+            return Task.CompletedTask;
+        }
+
+        public Task<IReadOnlyList<GamePlay>> GetAsync(DateOnly from, DateOnly to) =>
+            Task.FromResult<IReadOnlyList<GamePlay>>([.. Counts.Where(c => c.Day >= from && c.Day <= to)
+                .Select(c => new GamePlay { Day = c.Day, GameType = c.GameType, Count = c.Count })]);
     }
 
     // The database, in memory.

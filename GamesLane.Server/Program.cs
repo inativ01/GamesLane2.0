@@ -5,6 +5,7 @@ using GamesLane.Server.Data;
 using GamesLane.Server.Feedback;
 using GamesLane.Server.Hubs;
 using GamesLane.Server.Sessions;
+using GamesLane.Server.Stats;
 using GamesLane.Server.Users;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -21,8 +22,10 @@ builder.AddGamesLaneFeedback();
 builder.Services.AddHttpClient();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IGameOptionsService, GameOptionsService>();
+builder.Services.AddSingleton(AdminUsers.From(builder.Configuration));
 builder.Services.AddHostedService<InactiveUserCleanup>();
 builder.Services.AddSingleton<ISessionRepository, SessionRepository>();
+builder.Services.AddSingleton<IGamePlayRepository, GamePlayRepository>();
 builder.Services.AddSingleton<IGameSessionStore, GameSessionStore>();
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddHostedService<DisconnectedSeatsMonitor>();
@@ -63,6 +66,7 @@ app.MapGet("/health", () => Results.Ok("Healthy"));
 app.MapAccountEndpoints();
 app.MapExternalSignInEndpoints();
 app.MapFeedbackEndpoints();
+app.MapStatsEndpoints();
 
 // Public games cannot be joined by code, so they are not found here.
 app.MapGet("/api/sessions/{code}", async (string code, IGameSessionStore store) =>

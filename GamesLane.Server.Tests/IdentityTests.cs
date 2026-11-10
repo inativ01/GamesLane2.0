@@ -7,6 +7,7 @@ using GamesLane.Server.Users;
 using Microsoft.AspNetCore.Authentication.BearerToken;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Npgsql;
 
@@ -271,5 +272,25 @@ public class IdentityTests
     {
         Assert.Equal(["Backgammon", "TheGang"], UserRules.ParseGameOrder("Backgammon,Chess,TheGang,Backgammon"));
         Assert.Empty(UserRules.ParseGameOrder(null));
+    }
+
+    [Fact]
+    public void Only_saved_users_listed_in_the_admin_setting_are_admins()
+    {
+        var other = Guid.Parse("1f2e3d4c-5b6a-4978-8a9b-0c1d2e3f4a5b");
+        var admins = AdminUsers.From(new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["Admin:UserIds:0"] = SavedId.ToString(),
+                ["Admin:UserIds:1"] = "not-a-guid",
+            })
+            .Build());
+
+        Assert.Equal([SavedId], admins.Ids);
+        Assert.True(admins.IsAdmin(AuthSetup.CreateUser(SavedId.ToString(), "Ada", "🦊", AuthSetup.RegisteredKind)));
+        Assert.False(admins.IsAdmin(AuthSetup.CreateUser(other.ToString(), "Bob", "🐼", AuthSetup.Google)));
+        Assert.False(admins.IsAdmin(AuthSetup.CreateUser($"guest:{SavedId:N}", "Guest", "🐼", AuthSetup.GuestKind)));
+        Assert.False(admins.IsAdmin(null));
+        Assert.Empty(AdminUsers.From(new ConfigurationBuilder().Build()).Ids);
     }
 }
