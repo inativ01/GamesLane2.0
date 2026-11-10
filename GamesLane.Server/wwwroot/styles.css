@@ -1712,7 +1712,7 @@ svg.card-suit {
 }
 
 /* Cards that replaced a joker on the table: stacked in one column in a gold frame, as one slot. Each card covers the
-   one before it except its top, so the earlier cards' corner (rank and suit) still shows. */
+   one before it except its top, so the earlier cards' corner (rank and suit) still shows, and lies at a slight angle. */
 .card-slot {
     display: inline-flex;
     flex: none;
@@ -1725,6 +1725,11 @@ svg.card-suit {
 
 .card-slot .card + .card {
     margin-top: -2.4em;
+    transform: rotate(5deg);
+}
+
+.card-slot .card + .card + .card {
+    transform: rotate(-5deg);
 }
 
 /* A joker in the player's hand, waiting to be replaced: faded, with a dashed outline. */
