@@ -310,6 +310,18 @@ public abstract class GameSession : IGameSession
         }
     }
 
+    /// <inheritdoc />
+    public int GamesStarted
+    {
+        get
+        {
+            lock (Sync)
+            {
+                return GameNumber;
+            }
+        }
+    }
+
     /// <summary>
     /// Whether this is a public game (see <see cref="MakePublic"/>).
     /// </summary>

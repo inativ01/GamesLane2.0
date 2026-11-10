@@ -58,7 +58,7 @@ let busyElement = null;
 let busyTimer = null;
 
 // The current user, set once accountReady resolves:
-// { signedIn, kind, name, icon, uploadedIcon, gameOrder, settings, providers, icons }. kind is "Guest", "Registered" or a
+// { signedIn, kind, name, icon, uploadedIcon, gameOrder, settings, providers, icons, feedback, isAdmin }. kind is "Guest", "Registered" or a
 // provider such as "Google"; gameOrder is a saved user's order of the games on the main screen, or null; settings is a
 // saved user's { chat, sound, cards } (see userSettings), or null. Everyone is logged in, as a guest at least; signedIn is
 // false only if the server could not be reached.
@@ -452,7 +452,7 @@ function openProfileDialog() {
             </form>
             <div class="login-providers"><p class="hint">${t("Or")}</p></div>
         </div>` : `
-        <div class="actions profile-logout"><button type="button" class="secondary small" data-logout>${t("Log out")}</button></div>`}`);
+        <div class="actions profile-logout">${account.isAdmin ? '<a class="profile-admin" href="/admin.html">Admin page</a>' : ""}<button type="button" class="secondary small" data-logout>${t("Log out")}</button></div>`}`);
     const form = dialog.querySelector("[data-profile]");
     const error = form.querySelector(".error");
     form.elements.name.value = account.name;

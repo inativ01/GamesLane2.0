@@ -1,12 +1,15 @@
+using GamesLane.Server.Auth;
+
 namespace GamesLane.Server.Users;
 
 /// <summary>
-/// Deletes saved users who have not logged in or opened the site for <see cref="InactivityLimit"/>.
+/// Deletes saved users who have not logged in or opened the site for <see cref="InactivityLimit"/>, except the admins.
 /// Runs shortly after the server starts, then every few hours.
 /// </summary>
 public class InactiveUserCleanup(
     IServiceScopeFactory scopeFactory,
     TimeProvider timeProvider,
+    AdminUsers admins,
     ILogger<InactiveUserCleanup> logger) : BackgroundService
 {
     private static readonly TimeSpan InactivityLimit = TimeSpan.FromDays(30);
@@ -26,7 +29,7 @@ public class InactiveUserCleanup(
             {
                 await using var scope = scopeFactory.CreateAsyncScope();
                 var users = scope.ServiceProvider.GetRequiredService<IUserService>();
-                var deleted = await users.DeleteInactiveUsersAsync(timeProvider.GetUtcNow() - InactivityLimit);
+                var deleted = await users.DeleteInactiveUsersAsync(timeProvider.GetUtcNow() - InactivityLimit, admins.Ids);
                 if (deleted > 0)
                 {
                     logger.LogInformation("Deleted {Count} inactive users.", deleted);

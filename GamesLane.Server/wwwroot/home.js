@@ -111,8 +111,10 @@ document.querySelectorAll("[data-pick]").forEach((button) => {
 $("picker-back").addEventListener("click", backToMenu);
 
 // The order of the games, the same whichever button opened the list. Users drag a game by its handle to move it. A
-// saved user's order is kept with their account; a guest's in this browser. It is applied whenever the main screen opens. Games not in the order (e.g.
-// new ones) keep their usual place after the others. Alt+Up and Alt+Down move the focused game with the keyboard.
+// saved user's order is kept with their account; a guest's in this browser. It is applied whenever the main screen opens.
+// Games not in the order (all of them for users who never arranged them, and new ones) follow, most played in the last
+// 30 days first (from /api/games/popular; ties, or without it, in their usual order). Alt+Up and Alt+Down move the
+// focused game with the keyboard.
 const GAME_ORDER_KEY = "gameOrder";
 const gameList = $("game-list");
 const gameTiles = () => [...gameList.querySelectorAll("[data-create]")];
@@ -120,8 +122,15 @@ const currentOrder = () => gameTiles().map((tile) => tile.dataset.create);
 const usualOrder = currentOrder();
 const isSavedUser = () => account.signedIn && account.kind !== "Guest";
 
-function applyGameOrder(order) {
-    const rank = (type) => (order.includes(type) ? order.indexOf(type) : order.length + usualOrder.indexOf(type));
+async function popularOrder() {
+    const response = await fetch("/api/games/popular").catch(() => null);
+    const order = response?.ok ? await response.json().catch(() => null) : null;
+    return Array.isArray(order) ? order : usualOrder;
+}
+
+function applyGameOrder(order, rest) {
+    const after = (type) => (rest.includes(type) ? rest.indexOf(type) : rest.length + usualOrder.indexOf(type));
+    const rank = (type) => (order.includes(type) ? order.indexOf(type) : order.length + after(type));
     gameTiles()
         .sort((a, b) => rank(a.dataset.create) - rank(b.dataset.create))
         .forEach((tile) => gameList.appendChild(tile));
@@ -197,10 +206,13 @@ function makeDraggable(tile) {
     });
 }
 
-accountReady.then(() => {
-    const order = isSavedUser() ? account.gameOrder : JSON.parse(localStorage.getItem(GAME_ORDER_KEY) ?? "null");
-    if (Array.isArray(order)) {
-        applyGameOrder(order);
+accountReady.then(async () => {
+    const saved = isSavedUser() ? account.gameOrder : JSON.parse(localStorage.getItem(GAME_ORDER_KEY) ?? "null");
+    const order = Array.isArray(saved) ? saved : [];
+    if (order.length < usualOrder.length) {
+        applyGameOrder(order, await popularOrder());
+    } else {
+        applyGameOrder(order, usualOrder);
     }
     if (account.signedIn) {
         gameTiles().forEach(makeDraggable);

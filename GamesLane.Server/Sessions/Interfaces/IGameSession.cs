@@ -72,6 +72,11 @@ public interface IGameSession
     bool HasStarted { get; }
 
     /// <summary>
+    /// How many games have been started in this session (Start, each Play again, and starting when the last seat fills).
+    /// </summary>
+    int GamesStarted { get; }
+
+    /// <summary>
     /// Whether this is a public game: joined only from the main screen, at random, with no game code to share.
     /// </summary>
     bool IsPublic { get; }
