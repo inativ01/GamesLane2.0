@@ -522,7 +522,7 @@ function myActions(game, state, view) {
     return null;
 }
 
-// The Confirm button at the right end of the first hand's top row (after its chips), once everyone holds a chip: the user confirms their chips
+// The Confirm button in the top right corner of the first hand (after its chips), once everyone holds a chip: the user confirms their chips
 // for all their hands. Once confirmed it shows "Confirmed", greyed; tapping it again undoes it. Empty when not shown.
 function confirmButton(game, view) {
     const seats = view.mySeats.filter((s) => game.playingSeats.includes(s));
