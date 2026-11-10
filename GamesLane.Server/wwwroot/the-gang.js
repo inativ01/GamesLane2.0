@@ -411,7 +411,7 @@ function myHand(game, state, view, hand) {
         pick.title = t(`${cardAction.verb} {card}`, { card: c });
         pick.addEventListener("click", () => cardAction.run(index).catch(() => {}));
         return pick;
-    })), ...(hand === view.private.hands[0] ? confirmButton(game, view) : []), info));
+    })), info, ...(hand === view.private.hands[0] ? confirmButton(game, view) : [])));
 
     // A joker in the hand: a panel offering two smaller cards; tap the one to keep instead of the joker. Tapping an
     // offered joker swaps it for two more cards.
@@ -501,7 +501,7 @@ function myHand(game, state, view, hand) {
 }
 
 // This user's buttons under their hands, once for all their hands: with Con Artist, "I've seen my cards". Null if there
-// are none now. Confirming the chips is the Confirm button next to the first hand's cards (see confirmButton).
+// are none now. Confirming the chips is the Confirm button in the first hand's top row (see confirmButton).
 function myActions(game, state, view) {
     const seats = view.mySeats.filter((s) => game.playingSeats.includes(s));
     if (!seats.length) {
@@ -519,7 +519,7 @@ function myActions(game, state, view) {
     return null;
 }
 
-// The Confirm button to the right of the first hand's cards, once everyone holds a chip: the user confirms their chips
+// The Confirm button at the right end of the first hand's top row (after its chips), once everyone holds a chip: the user confirms their chips
 // for all their hands. Once confirmed it shows "✓ Confirmed"; tapping it again undoes it. Empty when not shown.
 function confirmButton(game, view) {
     const seats = view.mySeats.filter((s) => game.playingSeats.includes(s));
