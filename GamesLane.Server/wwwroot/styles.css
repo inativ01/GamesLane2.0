@@ -2615,7 +2615,8 @@ button.lobby-options::after {
 }
 
 /* The game's options as "Game options:" and a bulleted list, one per line, aligned to the start: on the session lobby's
-   options button, and under the game screen during a game (#game-options), in every game. */
+   options button, and during a game (#game-options) inside the table players can hide, or under the game screen in
+   games without one. */
 .options-title {
     display: block;
     font-weight: 700;
@@ -3206,6 +3207,12 @@ body.observer main.gang .gang-score {
     font-size: 1em;
 }
 
+/* The game's options across the bottom of the table. */
+body.observer main.gang .table-body > .game-options {
+    grid-column: 1 / -1;
+    margin: 0;
+}
+
 body.observer main.gang .table-body {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
@@ -3605,6 +3612,11 @@ main.final-card .my-hand-title {
 
 .rp-players[hidden] {
     display: none;
+}
+
+/* The game's options, inside the players' table under the players. */
+.rp-table .game-options {
+    margin: 0.5rem 0 0;
 }
 
 .rp-players li {

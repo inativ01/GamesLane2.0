@@ -322,7 +322,7 @@ const page = startSessionPage("FinalCard", (game, state, view) => {
     $("final-card-hand-number").textContent = t("Hand {n}", { n: game.handNumber });
     $("final-card-toggle-table").hidden = !view.isPlayer;
     $("final-card-toggle-table").textContent = t(shown ? "Hide table" : "Show table");
-    $("final-card-players").hidden = !shown;
+    $("final-card-table-body").hidden = !shown;
     $("final-card-players").replaceChildren(...game.players.map((p) => playerItem(game, state, view, p)));
     $("next-round").hidden = !(view.isPlayer && game.phase === "HandOver");
 });
