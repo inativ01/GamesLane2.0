@@ -1,12 +1,16 @@
 "use strict";
 
-// Final Card: players take turns playing a card that matches the pile's color, number or symbol, or a wild card; a
-// player who cannot (or does not want to) play draws. Each player's own cards come in view.private. The table (the
-// piles, what just happened and the players) is on top, and the user's own hands below it.
+// Final Card: players take turns playing a card that matches the pile's color, number or symbol, or a card without a
+// color; a player who cannot (or does not want to) play draws. In US Style the cards are those of UNO, in Israeli Style
+// those of Super TAKI. Each player's own cards come in view.private. The table (the piles, what just happened and the
+// players) is on top, and the user's own hands below it.
 
 const COLORS = ["Red", "Yellow", "Green", "Blue"];
 const COLOR_LETTERS = { R: "Red", Y: "Yellow", G: "Green", B: "Blue" };
-const VALUE_NAMES = { S: "Skip", R: "Reverse", "+2": "Draw Two" };
+const VALUE_NAMES = { S: "Stop", R: "Change Direction", "+": "Plus", T: "TAKI" };
+// The cards without a color, by their value after the "W": names and GamesLane card faces.
+const COLORLESS_NAMES = { W: "Change Color", "+4": "Change Color +4", T: "SuperTAKI", C: "Crown", "+3": "+3", "+3X": "+3 Breaker" };
+const COLORLESS_FACES = { W: "WILD", "+4": "+4", T: "TAKI", C: "CROWN", "+3": "+3", "+3X": "+3X" };
 
 // Each color is drawn as the suit of that color on the GamesLane cards.
 const COLOR_SUITS = { R: "♥", Y: "♦", G: "♣", B: "♠" };
@@ -21,10 +25,11 @@ const tableShown = () => {
     return saved === null ? !narrowScreen.matches : saved === "1";
 };
 
-// A card's color ("Wild" for wild cards) and value ("0" to "9", "S", "R", "+2", "W" or "+4") from its short text.
+// A card's color ("Wild" for the cards without a color) and value ("0" to "9", "S", "R", "+2", "+" or "T"; without a
+// color "W", "+4", "T", "C", "+3" or "+3X") from its short text.
 function parseCard(text) {
-    if (text === "W" || text === "W+4") {
-        return { color: "Wild", value: text === "W" ? "W" : "+4" };
+    if (text[0] === "W") {
+        return { color: "Wild", value: text === "W" ? "W" : text.slice(1) };
     }
     return { color: COLOR_LETTERS[text[0]], value: text.slice(1) };
 }
@@ -32,17 +37,24 @@ function parseCard(text) {
 function cardName(text) {
     const { color, value } = parseCard(text);
     if (color === "Wild") {
-        return t(value === "W" ? "Wild" : "Wild Draw Four");
+        return t(COLORLESS_NAMES[value]);
     }
     return t("{color} {value}", { color: t(color), value: VALUE_NAMES[value] ? t(VALUE_NAMES[value]) : value });
 }
 
-// A card, always a GamesLane card (the classic cards have no Skip, Reverse or wild cards): "R7" is drawn as 7♥, "W" as
-// WILD and "W+4" as +4. A wild card on the pile has a ring of the color chosen.
+// Whether playing a card needs a color chosen: a Change Color, a Change Color +4, or a SuperTAKI after a Crown.
+function choosesColor(game, text) {
+    const { color, value } = parseCard(text);
+    return color === "Wild" && (value === "W" || value === "+4" || (value === "T" && game.anyCard && !game.takiColor));
+}
+
+// A card, always a GamesLane card (the classic cards have no Stop, Change Direction or cards without a color): "R7" is
+// drawn as 7♥, "RT" as TAKI♥, "W" as WILD, "WT" as TAKI, "WC" as CROWN and "W+4" as +4. A card without a color on the
+// pile (but a Crown) has a ring of the color to play.
 function finalCard(text, chosenColor = null) {
     const { color, value } = parseCard(text);
-    const card = cardElement(color === "Wild" ? (value === "W" ? "WILD" : "+4") : value + COLOR_SUITS[text[0]], "New");
-    if (chosenColor && color === "Wild") {
+    const card = cardElement(color === "Wild" ? COLORLESS_FACES[value] : (value === "T" ? "TAKI" : value) + COLOR_SUITS[text[0]], "New");
+    if (chosenColor && color === "Wild" && value !== "C") {
         card.classList.add(`chose-${chosenColor.toLowerCase()}`);
     }
     card.title = cardName(text);
@@ -84,9 +96,13 @@ function statusText(game, state, view) {
     if (!view.isMe(game.turn)) {
         return `⏳ ${t("Waiting for {name}", { name: playerName(state, game.turn) })}`;
     }
-    const action = game.canChallenge ? t("Challenge the Wild Draw Four, or draw {n} cards", { n: game.pendingDraw })
+    const action = game.canChallenge ? t("Challenge the Change Color +4, or draw {n} cards", { n: game.pendingDraw })
+        : game.threeBy !== null ? t("Answer the +3 with a +3 Breaker or a Crown, or draw 3 cards")
+        : game.takiColor ? t("Play more {color} cards, or close the TAKI", { color: t(game.takiColor) })
+        : game.pendingDraw > 0 && game.style === "Israeli" ? t("Stack a +2 or play a Crown, or draw {n} cards", { n: game.pendingDraw })
         : game.pendingDraw > 0 ? t("Stack a draw card, or draw {n} cards", { n: game.pendingDraw })
         : game.hasDrawn ? t("Play the card you drew, or keep it")
+        : game.anyCard ? t("Play any card, or draw")
             : t("Play a card, or draw");
     return `👉 ${view.mySeats.length > 1 ? `${playerName(state, game.turn)}: ` : ""}${action}`;
 }
@@ -113,6 +129,8 @@ function eventText(game, state, view, e) {
             return say("You kept the card.", "{name} kept the card.");
         case "CalledFinalCard":
             return say("You called Final Card!", "{name} called Final Card!");
+        case "ClosedTaki":
+            return say("You closed the TAKI.", "{name} closed the TAKI.");
         case "Caught": {
             const values = { by: playerName(state, e.bySeat), name: playerName(state, e.seat), n: e.count };
             return view.isMe(e.seat) && view.mySeats.length === 1 ? t("{by} caught you without Final Card: you must draw {n} cards.", values)
@@ -120,11 +138,11 @@ function eventText(game, state, view, e) {
                     : t("{by} caught {name} without Final Card: {name} must draw {n} cards.", values);
         }
         case "ChallengeWon":
-            return say("You challenged the Wild Draw Four and were right: {by} draws {n} cards.",
-                "{name} challenged the Wild Draw Four and was right: {by} draws {n} cards.", { by: playerName(state, e.bySeat), n: e.count });
+            return say("You challenged the Change Color +4 and were right: {by} draws {n} cards.",
+                "{name} challenged the Change Color +4 and was right: {by} draws {n} cards.", { by: playerName(state, e.bySeat), n: e.count });
         case "ChallengeLost":
-            return say("You challenged the Wild Draw Four and were wrong: you draw {n} cards.",
-                "{name} challenged the Wild Draw Four and was wrong: {name} draws {n} cards.", { n: e.count });
+            return say("You challenged the Change Color +4 and were wrong: you draw {n} cards.",
+                "{name} challenged the Change Color +4 and was wrong: {name} draws {n} cards.", { n: e.count });
         case "NewCards":
             return say("You played all your cards and got {n} new ones.", "{name} played all their cards and got {n} new ones.", { n: e.count });
         case "Finished":
@@ -136,11 +154,12 @@ function eventText(game, state, view, e) {
 
 const send = (method, ...args) => call(method, page.sessionId, ...args).catch(() => {});
 
-// Whether a seat can draw now: its penalty cards at any time during a hand, otherwise on its turn before it has drawn.
+// Whether a seat can draw now: its penalty cards at any time during a hand, otherwise on its turn before it has drawn
+// (and not during a TAKI).
 function canDraw(game, seat) {
     const player = playerOf(game, seat);
     return game.phase === "Playing" && (player.penaltyCards > 0
-        || (game.turn === seat && !game.hasDrawn && !game.waitingForPenalty));
+        || (game.turn === seat && !game.hasDrawn && !game.waitingForPenalty && !game.takiColor));
 }
 
 // The top of the table, for everyone, centered: the closed pile (face down, with its count; tap it to draw) and the open
@@ -162,9 +181,9 @@ function renderPiles(game, view) {
     $("final-card-piles").replaceChildren(el("div", "final-card-pile-cards", closed, open));
 }
 
-// In the status bar, on the right: the color to play and the direction of play.
+// In the status bar, on the right: the color to play (any card after a Crown) and the direction of play.
 function renderPlay(game) {
-    const color = el("span", `final-card-color ${game.color.toLowerCase()}`, t(game.color));
+    const color = el("span", `final-card-color ${game.anyCard ? "any" : game.color.toLowerCase()}`, game.anyCard ? t("Any card") : t(game.color));
     color.title = t("Color to play");
     const direction = el("span", "final-card-direction", game.direction === 1 ? "↻" : "↺");
     direction.title = t(game.direction === 1 ? "Play goes in seat order" : "Play goes in reverse seat order");
@@ -198,24 +217,25 @@ function playerItem(game, state, view, player) {
     return item;
 }
 
-// The wild card waiting for its color: the seat and the card.
+// The card waiting for its color to be chosen: the seat and the card.
 let picking = null;
 let currentGame = null;
 
-// One of the user's hands, in a box that glows on its turn or with penalty cards to draw: its cards (those that can be
-// played are buttons), the colors to choose for a wild card, and under them Draw (always shown, enabled when it can draw,
-// with the number of cards to draw) and Keep the card on the left, and Final Card! on the right (always shown during a
-// hand).
+// One of the user's hands, in a box that glows on its turn, with penalty cards to draw, or with a +3 Breaker to answer a
+// +3 out of turn: its cards (those that can be played are buttons), the colors to choose for a Change Color, and under
+// them Draw (always shown, enabled when it can draw, with the number of cards to draw), Keep the card and Close TAKI on
+// the left, and Final Card! on the right (always shown during a hand).
 function handPanel(game, state, view, hand) {
     const me = playerOf(game, hand.seat);
     const myTurn = game.phase === "Playing" && game.turn === hand.seat && !game.waitingForPenalty;
-    const glows = myTurn || (game.phase === "Playing" && me.penaltyCards > 0);
+    const breaking = !myTurn && hand.playable.length > 0;
+    const glows = myTurn || breaking || (game.phase === "Playing" && me.penaltyCards > 0);
     const choosing = picking?.seat === hand.seat && hand.playable.includes(picking.card) ? picking.card : null;
     const drawn = myTurn && game.hasDrawn ? hand.playable[0] : null;
 
     const slots = hand.cards.map((card) => {
         const face = finalCard(card);
-        if (!myTurn) {
+        if (!myTurn && !breaking) {
             return el("span", "rp-slot", face);
         }
         if (!hand.playable.includes(card)) {
@@ -228,7 +248,7 @@ function handPanel(game, state, view, hand) {
         button.type = "button";
         button.setAttribute("aria-label", t("Play {card}", { card: cardName(card) }));
         button.addEventListener("click", () => {
-            if (parseCard(card).color === "Wild") {
+            if (choosesColor(game, card)) {
                 picking = { seat: hand.seat, card };
                 page.refresh();
                 return;
@@ -275,14 +295,20 @@ function handPanel(game, state, view, hand) {
     if (drawn) {
         panel.append(el("p", "hint", t("You drew {card}. Play it, or keep it.", { card: cardName(drawn) })));
     }
+    if (breaking) {
+        panel.append(el("p", "hint", t("You can answer the +3 with your +3 Breaker.")));
+    }
     if (me.finished !== null) {
         panel.append(el("p", "hint", t("You finished in place {n}!", { n: me.finished })));
     }
-    const draw = button(drawText(me.penaltyCards > 0 ? me.penaltyCards : myTurn ? game.pendingDraw : 1),
-        () => send("DrawCard", hand.seat), me.penaltyCards > 0 ? "" : "secondary");
+    const toDraw = me.penaltyCards > 0 ? me.penaltyCards : !myTurn ? 1 : game.threeBy !== null ? 3 : game.pendingDraw;
+    const draw = button(drawText(toDraw), () => send("DrawCard", hand.seat), me.penaltyCards > 0 ? "" : "secondary");
     draw.disabled = !canDraw(game, hand.seat);
     if (drawn) {
         button(t("Keep the card"), () => send("PassAfterDraw", hand.seat), "secondary");
+    }
+    if (myTurn && game.takiColor) {
+        button(t("Close TAKI"), () => send("CloseTaki", hand.seat), "final-card-close-taki");
     }
     if (myTurn && game.canChallenge) {
         const challenge = button(t("Challenge!"), () => send("Challenge", hand.seat), "final-card-challenge");

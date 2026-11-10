@@ -22,13 +22,16 @@ public record FinalCardEventState(int Seat, FinalCardEventKind Kind, string? Car
 public record FinalCardResultState(int Seat, int Points);
 
 /// <summary>
-/// Public Final Card state. <see cref="Turn"/>, <see cref="Ranking"/> and <see cref="Winner"/> are seats; <see cref="Players"/>
-/// are in seat order. <see cref="Direction"/> is 1 in seat order, -1 after a Reverse. <see cref="HasDrawn"/> tells that
-/// the seat to play has drawn a card it may play or keep, <see cref="CanChallenge"/> that it can challenge the Wild
-/// Draw Four played on it, and <see cref="WaitingForPenalty"/> that it waits for other players to draw their penalty
-/// cards. <see cref="Actions"/> counts the actions, so a page can tell a new one.
+/// Public Final Card state. <see cref="Turn"/>, <see cref="ThreeBy"/>, <see cref="Ranking"/> and <see cref="Winner"/> are
+/// seats; <see cref="Players"/> are in seat order. <see cref="Direction"/> is 1 in seat order, -1 after a Change Direction.
+/// <see cref="HasDrawn"/> tells that the seat to play has drawn a card it may play or keep, <see cref="CanChallenge"/> that
+/// it can challenge the Change Color +4 played on it, and <see cref="WaitingForPenalty"/> that it waits for other players to
+/// draw their penalty cards. In Israeli Style, <see cref="TakiColor"/> is the color of the TAKI the seat to play is
+/// running, <see cref="ThreeBy"/> the seat of the +3 nobody has answered yet, and <see cref="AnyCard"/> tells that a Crown
+/// leads, so any card can be played. <see cref="Actions"/> counts the actions, so a page can tell a new one.
 /// </summary>
 public record FinalCardState(
+    FinalCardStyle Style,
     FinalCardEndMode End,
     int Target,
     FinalCardStacking Stacking,
@@ -45,6 +48,9 @@ public record FinalCardState(
     bool HasDrawn,
     bool CanChallenge,
     bool WaitingForPenalty,
+    FinalCardColor? TakiColor,
+    int? ThreeBy,
+    bool AnyCard,
     IReadOnlyList<FinalCardPlayerState> Players,
     IReadOnlyList<FinalCardEventState> Events,
     int Actions,
@@ -63,7 +69,7 @@ public record FinalCardHand(int Seat, IReadOnlyList<string> Cards, IReadOnlyList
 public record FinalCardPrivateState(IReadOnlyList<FinalCardHand> Hands);
 
 /// <summary>
-/// A Final Card game for 2 to 10 seats, with the options' end (one game, a score target or a pyramid), stacking and drawing. The
+/// A Final Card game for 2 to 10 seats, with the options' style, end (one game, a score target or a pyramid), stacking and drawing. The
 /// players are the game's seats in seat order. A game that waits for an absent player is paused.
 /// </summary>
 public class FinalCardSession(string id, Action<FinalCardCard[]>? shuffle = null) : GameSession(id), IFinalCardSession
@@ -93,6 +99,10 @@ public class FinalCardSession(string id, Action<FinalCardCard[]>? shuffle = null
     /// <inheritdoc />
     public bool TryDraw(string userKey, int seat, [NotNullWhen(false)] out string? error) =>
         WithPlayer(userKey, seat, (game, player) => (game.TryDraw(player, out var e), e), out error);
+
+    /// <inheritdoc />
+    public bool TryCloseTaki(string userKey, int seat, [NotNullWhen(false)] out string? error) =>
+        WithPlayer(userKey, seat, (game, player) => (game.TryCloseTaki(player, out var e), e), out error);
 
     /// <inheritdoc />
     public bool TryPass(string userKey, int seat, [NotNullWhen(false)] out string? error) =>
@@ -143,6 +153,7 @@ public class FinalCardSession(string id, Action<FinalCardCard[]>? shuffle = null
         var seats = GameSeats;
         var ranking = game.Ranking.ToList();
         return new FinalCardState(
+            game.Rules.Style,
             game.Rules.End,
             game.Rules.Target,
             game.Rules.Stacking,
@@ -159,6 +170,9 @@ public class FinalCardSession(string id, Action<FinalCardCard[]>? shuffle = null
             game.DrawnCard is not null,
             game.CanChallenge,
             game.IsWaitingForPenalty,
+            game.TakiColor,
+            game.ThreeBy is { } threeBy ? seats[threeBy] : null,
+            game.AnyCard,
             [.. Enumerable.Range(0, game.Players).Select(p => new FinalCardPlayerState(
                 seats[p],
                 game.Hand(p).Count,

@@ -90,8 +90,8 @@ public class FinalCardGameTests
         var game = Deal(new FinalCardRules(WildDrawFour: FinalCardWildDrawFour.NoColor), "R5", "G5", "W W+4 R1 B1 G1 Y1 B2", Reds);
 
         AssertRefused(game.TryPlay(0, Card("W+4"), FinalCardColor.Blue, out var error), error,
-            "You can play a Wild Draw Four only when you have no card of the color to play.");
-        AssertRefused(game.TryPlay(0, Card("W"), null, out error), error, "Choose a color for the wild card.");
+            "You can play a Change Color +4 only when you have no card of the color to play.");
+        AssertRefused(game.TryPlay(0, Card("W"), null, out error), error, "Choose the color to play.");
         Assert.True(game.TryPlay(0, Card("W"), FinalCardColor.Green, out error), error);
         Assert.Equal((Card("W"), FinalCardColor.Green), (game.TopCard, game.Color));
         AssertRefused(game.TryPlay(1, Card("R2"), null, out error), error, "That card does not match the color or the symbol on the pile.");
@@ -483,7 +483,7 @@ public class FinalCardGameTests
     public void A_right_challenge_makes_the_player_of_the_wild_draw_four_draw_the_cards_and_the_challenger_plays_on()
     {
         var game = Deal(Challenging, "R5", "", "W+4 R1 B2 B3 B4 B6 B7", Reds);
-        AssertRefused(game.TryChallenge(0, out var error), error, "There is no Wild Draw Four to challenge.");
+        AssertRefused(game.TryChallenge(0, out var error), error, "There is no Change Color +4 to challenge.");
         Assert.True(game.TryPlay(0, Card("W+4"), FinalCardColor.Yellow, out error), error);
         Assert.Equal((4, 1, true), (game.PendingDraw, game.Turn, game.CanChallenge));
 
@@ -539,6 +539,198 @@ public class FinalCardGameTests
     }
 
     private static readonly FinalCardRules Challenging = new(WildDrawFour: FinalCardWildDrawFour.Challenge);
+
+    // Israeli Style
+
+    private static readonly FinalCardRules Israeli = FinalCardRules.Israeli();
+    private const string Blues = "B1 B3 B4 B5 B6 B7 B8 B9";
+    private const string Greens = "G1 G3 G4 G5 G6 G7 G8 G9";
+
+    [Fact]
+    public void The_israeli_deck_has_116_cards_without_0_or_2_and_with_the_super_taki_cards()
+    {
+        var deck = FinalCardCard.IsraeliDeck();
+
+        Assert.Equal(116, deck.Count);
+        Assert.Equal(26, deck.Count(c => c.Color == FinalCardColor.Red));
+        Assert.DoesNotContain(deck, c => c.Value is FinalCardValue.Zero or FinalCardValue.Two or FinalCardValue.WildDrawFour);
+        Assert.Equal(2, deck.Count(c => c == Card("R+")));
+        Assert.Equal(2, deck.Count(c => c == Card("RT")));
+        Assert.Equal(4, deck.Count(c => c == Card("W")));
+        Assert.All(new[] { "WT", "WC", "W+3", "W+3X" }, text => Assert.Equal(2, deck.Count(c => c == Card(text))));
+        Assert.All(deck, c => Assert.Equal(c, Card(c.ToString())));
+    }
+
+    [Fact]
+    public void In_israeli_style_each_player_gets_8_cards_and_a_card_drawn_is_not_played_until_the_next_turn()
+    {
+        var game = Deal(Israeli, "R5", "R6", Blues, Greens);
+        Assert.All(Enumerable.Range(0, 2), p => Assert.Equal(8, game.Hand(p).Count));
+        Assert.Equal(116 - 17, game.DrawPileCount);
+
+        Assert.True(game.TryDraw(0, out var error), error);
+
+        Assert.Equal((null, 1, 9), (game.DrawnCard, game.Turn, game.Hand(0).Count));
+    }
+
+    [Fact]
+    public void In_israeli_style_a_change_direction_with_two_players_changes_nothing_else()
+    {
+        var game = Deal(Israeli, "R5", "", "RR B1 B3 B4 B6 B7 B8 B9", Greens);
+
+        Assert.True(game.TryPlay(0, Card("RR"), null, out var error), error);
+
+        Assert.Equal((1, -1), (game.Turn, game.Direction));
+    }
+
+    [Fact]
+    public void After_a_plus_the_player_plays_again_or_draws_a_card()
+    {
+        var game = Deal(Israeli, "R5", "", "R+ R6 B1 B3 B4 B6 B7 B8", Greens);
+        Assert.True(game.TryPlay(0, Card("R+"), null, out var error), error);
+        Assert.Equal(0, game.Turn);
+        Assert.True(game.TryPlay(0, Card("R6"), null, out error), error);
+        Assert.Equal(1, game.Turn);
+
+        var stuck = Deal(Israeli, "R5", "", "R+ B1 B3 B4 B6 B7 B8 B9", Greens);
+        Assert.True(stuck.TryPlay(0, Card("R+"), null, out error), error);
+        Assert.Empty(stuck.Playable(0));
+        Assert.True(stuck.TryDraw(0, out error), error);
+        Assert.Equal((1, 8), (stuck.Turn, stuck.Hand(0).Count));
+    }
+
+    [Fact]
+    public void A_taki_is_followed_by_cards_of_its_color_until_closed_and_then_its_last_card_acts()
+    {
+        var game = Deal(Israeli, "R5", "", "RT R1 R+2 R3 B1 B3 B4 B6", Greens);
+        Assert.True(game.TryPlay(0, Card("RT"), null, out var error), error);
+        Assert.Equal((FinalCardColor.Red, 0), (game.TakiColor, game.Turn));
+        AssertRefused(game.TryDraw(0, out error), error, "Close the TAKI first.");
+        AssertRefused(game.TryPlay(0, Card("B1"), null, out error), error, "Play a card of the TAKI's color, or close the TAKI.");
+        Assert.True(game.TryPlay(0, Card("R+2"), null, out error), error);
+        Assert.Equal((0, 0), (game.PendingDraw, game.Turn));
+        Assert.True(game.TryPlay(0, Card("R1"), null, out error), error);
+        AssertRefused(game.TryCloseTaki(1, out error), error, "It is not your turn.");
+
+        Assert.True(game.TryCloseTaki(0, out error), error);
+
+        Assert.Equal(new FinalCardEvent(0, FinalCardEventKind.ClosedTaki), game.Events.Single());
+        Assert.Equal((null, 1, 0, 5), (game.TakiColor, game.Turn, game.PendingDraw, game.Hand(0).Count));
+        AssertRefused(game.TryCloseTaki(1, out error), error, "There is no TAKI to close.");
+
+        var drawTwoLast = Deal(Israeli, "R5", "", "RT R+2 R3 B1 B3 B4 B6 B7", Greens);
+        Assert.True(drawTwoLast.TryPlay(0, Card("RT"), null, out error), error);
+        Assert.True(drawTwoLast.TryPlay(0, Card("R+2"), null, out error), error);
+        Assert.True(drawTwoLast.TryCloseTaki(0, out error), error);
+        Assert.Equal((1, 2), (drawTwoLast.Turn, drawTwoLast.PendingDraw));
+    }
+
+    [Fact]
+    public void A_taki_closes_by_itself_when_its_player_has_no_more_cards_of_its_color()
+    {
+        var game = Deal(Israeli, "R5", "", "WT R1 B1 B3 B4 B6 B7 B8", Greens);
+
+        Assert.True(game.TryPlay(0, Card("WT"), null, out var error), error);
+        Assert.Equal((FinalCardColor.Red, FinalCardColor.Red, 0), (game.TakiColor, game.Color, game.Turn));
+        Assert.True(game.TryPlay(0, Card("R1"), null, out error), error);
+
+        Assert.Equal((null, 1), (game.TakiColor, game.Turn));
+        Assert.Equal(new FinalCardEvent(0, FinalCardEventKind.ClosedTaki), game.Events[^1]);
+    }
+
+    [Fact]
+    public void A_plus_as_the_last_card_of_a_taki_makes_its_player_draw_instead_of_winning()
+    {
+        var game = Deal(Israeli, "R5", "", "RT R1 R3 R4 R6 R7 R8 R+", Greens);
+        foreach (var card in new[] { "RT", "R1", "R3", "R4", "R6", "R7", "R8", "R+" })
+        {
+            Assert.True(game.TryPlay(0, Card(card), null, out var error), error);
+        }
+
+        Assert.Equal((FinalCardPhase.Playing, 0, 0), (game.Phase, game.Turn, game.Hand(0).Count));
+        Assert.True(game.TryDraw(0, out var drawError), drawError);
+        Assert.Equal((1, 1), (game.Turn, game.Hand(0).Count));
+    }
+
+    [Fact]
+    public void A_crown_cancels_a_stack_and_its_player_plays_any_card_a_super_taki_then_takes_the_color_chosen()
+    {
+        var game = Deal(Israeli, "R5", "", "R+2 B1 B3 B4 B6 B7 B8 B9", "WC WT G1 G3 G4 G6 G7 G8");
+        Assert.True(game.TryPlay(0, Card("R+2"), null, out var error), error);
+        Assert.Equal(2, game.PendingDraw);
+        AssertRefused(game.TryPlay(1, Card("WT"), FinalCardColor.Green, out error), error, "Answer with a +2 or a Crown, or draw the cards.");
+
+        Assert.True(game.TryPlay(1, Card("WC"), null, out error), error);
+
+        Assert.Equal((0, 1, true), (game.PendingDraw, game.Turn, game.AnyCard));
+        Assert.Contains(Card("G1"), game.Playable(1));
+        AssertRefused(game.TryPlay(1, Card("WT"), null, out error), error, "Choose the color to play.");
+        Assert.True(game.TryPlay(1, Card("WT"), FinalCardColor.Green, out error), error);
+        Assert.Equal((FinalCardColor.Green, FinalCardColor.Green, false), (game.TakiColor, game.Color, game.AnyCard));
+    }
+
+    [Fact]
+    public void Drawing_on_a_plus_three_gives_every_other_player_3_cards_and_the_player_plays_on()
+    {
+        var game = Deal(Israeli, "R5", "", "W+3 B1 B3 B4 B6 B7 B8 B9", Greens, "Y1 Y3 Y4 Y5 Y6 Y7 Y8 Y9");
+        Assert.True(game.TryPlay(0, Card("W+3"), null, out var error), error);
+        Assert.Equal((0, 1, FinalCardColor.Red), (game.ThreeBy, game.Turn, game.Color));
+        Assert.Empty(game.Playable(1));
+        AssertRefused(game.TryPlay(1, Card("G5"), null, out error), error, "Answer the +3 with a +3 Breaker or a Crown, or draw 3 cards.");
+
+        Assert.True(game.TryDraw(1, out error), error);
+
+        Assert.Equal((null, 1, 11, 3, 0), (game.ThreeBy, game.Turn, game.Hand(1).Count, game.PenaltyCards(2), game.PenaltyCards(0)));
+        Assert.True(game.TryDraw(2, out error), error);
+        Assert.True(game.TryPlay(1, Card("G5"), null, out error), error);
+    }
+
+    [Fact]
+    public void Any_other_player_can_break_a_plus_three_out_of_turn_and_its_player_draws_3()
+    {
+        var game = Deal(Israeli, "R5", "", "W+3 B1 B3 B4 B6 B7 B8 B9", Greens, "W+3X Y1 Y3 Y4 Y5 Y6 Y7 Y8");
+        Assert.True(game.TryPlay(0, Card("W+3"), null, out var error), error);
+        Assert.Equal([Card("W+3X")], game.Playable(2));
+
+        Assert.True(game.TryPlay(2, Card("W+3X"), null, out error), error);
+
+        Assert.Equal((null, 1, 3), (game.ThreeBy, game.Turn, game.PenaltyCards(0)));
+        Assert.Equal(new FinalCardEvent(0, FinalCardEventKind.Penalty, Count: 3), game.Events[^1]);
+        Assert.True(game.TryDraw(0, out error), error);
+        Assert.True(game.TryPlay(1, Card("G5"), null, out error), error);
+    }
+
+    [Fact]
+    public void A_plus_three_breaker_played_on_another_card_makes_its_player_draw_3()
+    {
+        var game = Deal(Israeli, "R5", "", "W+3X B1 B3 B4 B6 B7 B8 B9", Greens);
+
+        Assert.True(game.TryPlay(0, Card("W+3X"), null, out var error), error);
+
+        Assert.Equal((1, 3, FinalCardColor.Red), (game.Turn, game.PenaltyCards(0), game.Color));
+    }
+
+    [Fact]
+    public void In_israeli_style_a_player_caught_without_final_card_draws_4()
+    {
+        var game = Deal(Israeli, "R5", "", "RT R1 R3 R4 R6 R7 R8 B1", Greens);
+        foreach (var card in new[] { "RT", "R1", "R3", "R4", "R6", "R7", "R8" })
+        {
+            Assert.True(game.TryPlay(0, Card(card), null, out var error), error);
+        }
+
+        Assert.Equal((1, 1), (game.Turn, game.Hand(0).Count));
+        Assert.True(game.TryCallFinalCard(1, out var callError), callError);
+        Assert.Equal(4, game.PenaltyCards(0));
+    }
+
+    [Fact]
+    public void An_israeli_pyramid_starts_at_8_cards()
+    {
+        var game = Deal(FinalCardRules.Israeli(FinalCardEndMode.Pyramid), "R5", "", Blues, Greens);
+
+        Assert.Equal((8, 8), (game.HandSize(0), game.HandSize(1)));
+    }
 
     // A game whose deck gives each player their 7 cards (short text, separated by spaces), turns up turnedUp, and then has
     // drawPile on top of the draw pile.
