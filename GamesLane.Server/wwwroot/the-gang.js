@@ -2,8 +2,8 @@
 
 // The Gang: players rank their hands by taking numbered chips over four stages (white, yellow, orange, red).
 // Each player's own two cards come in view.private; the shared screen never sees them before the reveal.
-// The page shows players the top of the table (the shared cards and the heist's cards), then their own hand, and the
-// rest of the table below. Players can hide that part of the table, e.g. when a second device shows it; the choice is
+// The page shows players the top of the table (the shared cards), then their own hand, and the rest of the table
+// (with the heist's cards) below. Players can hide that part of the table, e.g. when a second device shows it; the choice is
 // remembered on this device. Observers see the whole table in one piece.
 
 const STAGES = ["White", "Yellow", "Orange", "Red"];
@@ -707,10 +707,10 @@ const gang = startSessionPage("TheGang", (game, state, view) => {
     }
 
     document.body.classList.toggle("observer", !view.isPlayer);
-    // Players get the shared cards and the heist's cards above their hand; observers get them in the table.
+    // Players get the shared cards above their hand; observers get them in the table.
     const cardsPlace = view.isPlayer ? $("table-top") : $("table-body");
     if ($("community").parentElement !== cardsPlace) {
-        cardsPlace.append($("community"), $("heist-cards"));
+        cardsPlace.append($("community"));
     }
     $("table-top").hidden = !view.isPlayer;
     $("heist-cards").hidden = game.cards.length === 0;

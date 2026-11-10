@@ -63,11 +63,10 @@
         </div>
 
         <div id="game-screen" hidden>
-            <!-- The top of the table, always shown to players above their hands: the shared cards, and the heist's
-                 challenge or specialist cards. Observers get these in the table below (see the page's script). -->
+            <!-- The top of the table, always shown to players above their hands: the shared cards. Observers get them in
+                 the table below (see the page's script). -->
             <div id="table-top" class="table-top">
                 <div id="community" class="card-row"></div>
-                <ul id="heist-cards" class="heist-cards" hidden></ul>
             </div>
 
             <!-- This user's own cards and controls, and the group decisions of the heist's cards. -->
@@ -89,6 +88,8 @@
                 </div>
                 <div id="table-body" class="table-body">
                     <div id="middle"></div>
+                    <!-- The heist's challenge or specialist cards. -->
+                    <ul id="heist-cards" class="heist-cards" hidden></ul>
                     <table id="chip-table" class="chip-table"></table>
                     <ol id="revealed" class="revealed"></ol>
                 </div>

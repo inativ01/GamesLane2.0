@@ -2305,7 +2305,7 @@ button.ready-thumb.is-ready:not(:disabled):hover {
     font-weight: 600;
 }
 
-/* The table (everything observers see). Players get its top (the shared cards and the heist's cards) above their hand. */
+/* The table (everything observers see). Players get its top (the shared cards) above their hand. */
 
 .table-view,
 .table-top {
@@ -2335,38 +2335,38 @@ main.gang .table-top #community .card {
     font-size: min(2.4rem, (100cqi - 3rem) / 13);
 }
 
-.table-top .heist-cards {
+/* Players: the heist's cards in large size in the rest of the table, above the chip table. */
+body:not(.observer) main.gang .table-body .heist-cards {
     gap: 0.75rem;
-    margin: 1rem 0 0;
+    margin: 0.25rem 0 1rem;
 }
 
-main.gang .table-top .heist-card {
+body:not(.observer) main.gang .table-body .heist-card {
     flex: 1 1 15rem;
     font-size: 1.3rem;
 }
 
-main.gang .table-top .heist-card.open {
+body:not(.observer) main.gang .table-body .heist-card.open {
     flex-basis: 100%;
     max-width: 40rem;
 }
 
-.table-top .heist-card-art {
+body:not(.observer) main.gang .table-body .heist-card-art {
     width: 3.6em;
     height: 3.6em;
 }
 
-.table-top .heist-card.open .heist-card-art {
+body:not(.observer) main.gang .table-body .heist-card.open .heist-card-art {
     width: 5em;
     height: 5em;
 }
 
-.table-top .heist-card-name,
-.table-top .heist-card.open .heist-card-name {
+body:not(.observer) main.gang .table-body .heist-card-name {
     font-size: 1em;
 }
 
-.table-top .heist-card-kind,
-.table-top .heist-card-new {
+body:not(.observer) main.gang .table-body .heist-card-kind,
+body:not(.observer) main.gang .table-body .heist-card-new {
     font-size: 0.55em;
 }
 
