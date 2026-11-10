@@ -1893,6 +1893,11 @@ svg.card-suit {
     gap: 0.75rem;
 }
 
+/* The Gang's Confirm button, to the right of the pocket cards. */
+.my-hand-top .gang-confirm {
+    flex: none;
+}
+
 .my-hand-info {
     display: flex;
     flex: 1;

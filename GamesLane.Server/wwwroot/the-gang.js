@@ -411,7 +411,7 @@ function myHand(game, state, view, hand) {
         pick.title = t(`${cardAction.verb} {card}`, { card: c });
         pick.addEventListener("click", () => cardAction.run(index).catch(() => {}));
         return pick;
-    })), info));
+    })), ...(hand === view.private.hands[0] ? confirmButton(game, view) : []), info));
 
     // A joker in the hand: a panel offering two smaller cards; tap the one to keep instead of the joker. Tapping an
     // offered joker swaps it for two more cards.
@@ -501,7 +501,7 @@ function myHand(game, state, view, hand) {
 }
 
 // This user's buttons under their hands, once for all their hands: with Con Artist, "I've seen my cards". Null if there
-// are none now. Confirming the chips is the Confirm button in the status bar (see updateConfirm).
+// are none now. Confirming the chips is the Confirm button next to the first hand's cards (see confirmButton).
 function myActions(game, state, view) {
     const seats = view.mySeats.filter((s) => game.playingSeats.includes(s));
     if (!seats.length) {
@@ -519,25 +519,19 @@ function myActions(game, state, view) {
     return null;
 }
 
-// The status bar's Confirm button, once everyone holds a chip: the user confirms their chips for all their hands.
-// Once confirmed it shows "✓ Confirmed"; tapping it again undoes it.
-let confirmSeat = null;
-let confirmed = false;
-
-function updateConfirm(game, view) {
+// The Confirm button to the right of the first hand's cards, once everyone holds a chip: the user confirms their chips
+// for all their hands. Once confirmed it shows "✓ Confirmed"; tapping it again undoes it. Empty when not shown.
+function confirmButton(game, view) {
     const seats = view.mySeats.filter((s) => game.playingSeats.includes(s));
-    const shown = seats.length > 0 && game.phase === "Betting" && game.middleChips.length === 0;
-    const confirm = $("gang-confirm");
-    confirm.hidden = !shown;
-    if (!shown) {
-        return;
+    if (!seats.length || game.phase !== "Betting" || game.middleChips.length > 0) {
+        return [];
     }
-    confirmSeat = seats[0];
-    confirmed = seats.every((s) => game.readySeats.includes(s));
-    confirm.textContent = confirmed ? `✓ ${t("Confirmed")}` : t("Confirm");
-    confirm.classList.toggle("secondary", confirmed);
+    const confirmed = seats.every((s) => game.readySeats.includes(s));
+    const confirm = button(confirmed ? `✓ ${t("Confirmed")}` : t("Confirm"), confirmed ? "gang-confirm secondary" : "gang-confirm",
+        () => call("SetReady", view.sessionId, seats[0], !confirmed).catch(() => {}));
     confirm.title = confirmed ? t("Confirmed: tap to undo") : "";
     confirm.setAttribute("aria-pressed", String(confirmed));
+    return [confirm];
 }
 
 // Every playing seat's chips from all stages, with ✓ for players who are ready. Skipped stages are struck out, and
@@ -727,7 +721,6 @@ const gang = startSessionPage("TheGang", (game, state, view) => {
     $("my-hands").replaceChildren(...hands.map((hand) => myHand(game, state, view, hand)), ...(actions ? [actions] : []));
     $("reveal-next").hidden = !(view.isPlayer && game.phase === "Reveal" && !awaitsScan(game));
     $("next-heist").hidden = !(view.isPlayer && game.phase === "HeistOver" && state.phase !== "Over");
-    updateConfirm(game, view);
 
     // The table. Observers always see it; players may hide it.
     $("heist").textContent = String(game.heist);
@@ -755,9 +748,6 @@ $("toggle-table").addEventListener("click", () => {
 });
 $("reveal-next").addEventListener("click", () => {
     call("RevealNext", gang.sessionId, gangState?.revealed.length ?? 0).catch(() => {});
-});
-$("gang-confirm").addEventListener("click", () => {
-    call("SetReady", gang.sessionId, confirmSeat, !confirmed).catch(() => {});
 });
 $("next-heist").addEventListener("click", () => {
     call("NextHeist", gang.sessionId, gangState?.heist ?? 1).catch(() => {});
