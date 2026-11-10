@@ -471,15 +471,18 @@ function myHand(game, state, view, hand) {
         return box;
     }
 
-    // One button per chip: 1 = weakest hand, N = strongest. The label below shows who holds it.
+    // One button per chip, all in one line: 1 = weakest hand, N = strongest. The icon below shows who holds it.
     const chips = el("div", "my-chips");
+    chips.style.setProperty("--chips", String(game.playingSeats.length));
     for (let number = 1; number <= game.playingSeats.length; number++) {
         const holder = game.playingSeats.find((s) => game.chips[stage][s] === number);
         const mine = holder === seat;
         const label = holder === undefined ? "" : mine ? t("You") : state.seats[holder]?.name ?? "";
         const lockedByOther = isLocked(number) && holder !== undefined && !mine;
-        const chip = el("button", mine ? "chip-button mine" : "chip-button",
-            chipElement(stage, number), el("span", "holder", isLocked(number) ? `🔒 ${label}`.trim() : label));
+        const holderMark = el("span", "holder",
+            ...(isLocked(number) ? ["🔒"] : []),
+            ...(holder === undefined ? [] : [iconElement(state.seats[holder]?.icon, "holder-icon")]));
+        const chip = el("button", mine ? "chip-button mine" : "chip-button", chipElement(stage, number), holderMark);
         // Tapping your own chip returns it to the middle (unless it is locked).
         chip.type = "button";
         chip.disabled = lockedByOther || keepsLockedChip;
@@ -520,14 +523,14 @@ function myActions(game, state, view) {
 }
 
 // The Confirm button at the right end of the first hand's top row (after its chips), once everyone holds a chip: the user confirms their chips
-// for all their hands. Once confirmed it shows "✓ Confirmed"; tapping it again undoes it. Empty when not shown.
+// for all their hands. Once confirmed it shows "Confirmed", greyed; tapping it again undoes it. Empty when not shown.
 function confirmButton(game, view) {
     const seats = view.mySeats.filter((s) => game.playingSeats.includes(s));
     if (!seats.length || game.phase !== "Betting" || game.middleChips.length > 0) {
         return [];
     }
     const confirmed = seats.every((s) => game.readySeats.includes(s));
-    const confirm = button(confirmed ? `✓ ${t("Confirmed")}` : t("Confirm"), confirmed ? "gang-confirm secondary" : "gang-confirm",
+    const confirm = button(t(confirmed ? "Confirmed" : "Confirm"), confirmed ? "gang-confirm secondary" : "gang-confirm",
         () => call("SetReady", view.sessionId, seats[0], !confirmed).catch(() => {}));
     confirm.title = confirmed ? t("Confirmed: tap to undo") : "";
     confirm.setAttribute("aria-pressed", String(confirmed));

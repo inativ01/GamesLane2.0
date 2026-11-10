@@ -1930,24 +1930,27 @@ svg.card-suit {
     font-size: 0.9rem;
 }
 
+/* The chips in one line: each chip button gets an equal share of the width (--chips of them), and the chips and the
+   holders' icons are sized to fit it, up to their full size. */
 .my-chips {
+    container-type: inline-size;
     display: flex;
-    flex-wrap: wrap;
     gap: 0.4rem;
     margin-top: 0.6rem;
 }
 
 .chip-button {
     display: inline-flex;
+    flex: 0 1 3.1rem;
     flex-direction: column;
     align-items: center;
-    gap: 0.15rem;
-    min-width: 3.1rem;
-    padding: 0.3rem 0.25rem;
+    gap: 0.15em;
+    min-width: 0;
+    padding: 0.3em 0.25em;
     border-radius: 12px;
     background: var(--surface-soft);
     color: var(--ink);
-    font-size: 1.05rem;
+    font-size: min(1.05rem, ((100cqi - (var(--chips, 1) - 1) * 0.4rem) / var(--chips, 1)) / 2.7);
     box-shadow: none;
 }
 
@@ -1955,11 +1958,26 @@ svg.card-suit {
     background: #e5dacb;
 }
 
+/* Who holds the chip: their icon (and 🔒 for a locked chip). */
 .chip-button .holder {
-    min-height: 1.2em;
-    font-size: 0.8rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 1.3em;
+    font-size: 0.9em;
     font-weight: 400;
-    line-height: 1.2;
+    line-height: 1;
+    white-space: nowrap;
+}
+
+.chip-button .holder-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.3em;
+    height: 1.3em;
+    border-radius: 50%;
+    object-fit: cover;
 }
 
 .chip-button.mine,
