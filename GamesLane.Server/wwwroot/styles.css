@@ -2291,16 +2291,54 @@ button.ready-thumb.is-ready:not(:disabled):hover {
 }
 
 .table-top {
+    container-type: inline-size;
     margin-top: 0.5rem;
-    padding: 0.75rem;
+    padding: 1rem 0.75rem;
 }
 
 .table-top #community {
     margin: 0;
+    gap: 0.5rem;
+}
+
+/* The shared cards as large as five of them fit across the top of the table. */
+main.gang .table-top #community .card {
+    font-size: clamp(1.1rem, 7cqi, 2.4rem);
 }
 
 .table-top .heist-cards {
-    margin: 0.75rem 0 0;
+    gap: 0.75rem;
+    margin: 1rem 0 0;
+}
+
+main.gang .table-top .heist-card {
+    flex: 1 1 15rem;
+    font-size: 1.3rem;
+}
+
+main.gang .table-top .heist-card.open {
+    flex-basis: 100%;
+    max-width: 40rem;
+}
+
+.table-top .heist-card-art {
+    width: 3.6em;
+    height: 3.6em;
+}
+
+.table-top .heist-card.open .heist-card-art {
+    width: 5em;
+    height: 5em;
+}
+
+.table-top .heist-card-name,
+.table-top .heist-card.open .heist-card-name {
+    font-size: 1em;
+}
+
+.table-top .heist-card-kind,
+.table-top .heist-card-new {
+    font-size: 0.55em;
 }
 
 .table-head {
