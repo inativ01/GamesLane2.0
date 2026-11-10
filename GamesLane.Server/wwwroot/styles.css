@@ -1965,7 +1965,7 @@ svg.card-suit {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-height: 1.3em;
+    min-height: 1.95em;
     font-size: 0.9em;
     font-weight: 400;
     line-height: 1;
@@ -1976,6 +1976,7 @@ svg.card-suit {
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    font-size: 1.5em;
     width: 1.3em;
     height: 1.3em;
     border-radius: 50%;
