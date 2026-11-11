@@ -38,6 +38,11 @@ public static class AuthSetup
     public const string Microsoft = "Microsoft";
 
     /// <summary>
+    /// The Discord sign-in provider and its configuration section.
+    /// </summary>
+    public const string Discord = "Discord";
+
+    /// <summary>
     /// The kind of user who has not logged in with an account. Guests are not saved.
     /// </summary>
     public const string GuestKind = "Guest";
@@ -112,6 +117,23 @@ public static class AuthSetup
             {
                 options.ClientId = microsoftId;
                 options.ClientSecret = microsoftSecret;
+                options.Events.OnRemoteFailure = HandleRemoteFailure;
+            });
+        }
+
+        if (TryGetCredentials(builder.Configuration, Discord, out var discordId, out var discordSecret))
+        {
+            enabled.Add(Discord);
+            auth.AddDiscord(Discord, options =>
+            {
+                options.ClientId = discordId;
+                options.ClientSecret = discordSecret;
+                // The name shown on Discord (global_name) when set, otherwise the username.
+                options.ClaimActions.DeleteClaim(ClaimTypes.Name);
+                options.ClaimActions.MapCustomJson(ClaimTypes.Name, u =>
+                    (u.TryGetProperty("global_name", out var g) ? g.GetString() : null) ?? u.GetProperty("username").GetString());
+                options.ClaimActions.MapCustomJson(PictureClaim, u => DiscordAvatarUrl(
+                    u.GetProperty("id").GetString(), u.TryGetProperty("avatar", out var a) ? a.GetString() : null));
                 options.Events.OnRemoteFailure = HandleRemoteFailure;
             });
         }
@@ -238,6 +260,14 @@ public static class AuthSetup
         returnUrl is { Length: > 0 } && returnUrl[0] == '/' && (returnUrl.Length == 1 || returnUrl[1] is not ('/' or '\\'))
             ? returnUrl
             : "/";
+
+    /// <summary>
+    /// A Discord user's avatar picture (128×128 PNG), or null if they have none.
+    /// </summary>
+    public static string? DiscordAvatarUrl(string? userId, string? avatarHash) =>
+        string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(avatarHash)
+            ? null
+            : $"https://cdn.discordapp.com/avatars/{Uri.EscapeDataString(userId)}/{Uri.EscapeDataString(avatarHash)}.png?size=128";
 
     /// <summary>
     /// Reads a provider's client ID and secret from configuration. Returns false if either is missing.

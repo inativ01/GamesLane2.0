@@ -343,8 +343,9 @@ function renderAccount() {
     bar.replaceChildren(profile);
 }
 
-// A row of icon buttons to choose from. Returns { get value() } with the chosen icon.
-function iconPicker(container, icons, selected) {
+// A row of icon buttons to choose from. Returns { get value() } with the chosen icon; `onChange` is called with it
+// whenever another one is chosen.
+function iconPicker(container, icons, selected, onChange = () => {}) {
     let value = icons.includes(selected) ? selected : icons[0];
     const buttons = icons.map((icon) => {
         const button = document.createElement("button");
@@ -355,6 +356,7 @@ function iconPicker(container, icons, selected) {
         button.addEventListener("click", () => {
             value = icon;
             buttons.forEach((b) => b.setAttribute("aria-pressed", String(b === button)));
+            onChange(icon);
         });
         return button;
     });
@@ -403,75 +405,142 @@ function createDialog(html) {
     return dialog;
 }
 
-// The profile: change the display name and icon, and turn the chat and sound on or off (see userSettings). Saved users
-// can also upload a picture as their icon, and log out (to
-// become a new guest, with a random name and icon). Guests can log in, create an account (with the name and icon chosen
-// above), or sign in with an external provider. The new user keeps the seats the previous one held.
+// How the user logged in, shown under their name in the profile.
+function accountKindText(kind) {
+    if (kind === "Guest") return t("Guest");
+    if (kind === "Registered") return t("GamesLane account");
+    return t("{provider} account", { provider: kind });
+}
+
+// The profile: the user's icon and display name (each changed with its own button), the chat and sound switches, and
+// the card style (see userSettings). Changes are kept only when saved. Saved users can also upload a picture as their
+// icon, and log out (to become a new guest, with a random name and icon); admins also get links to the admin and cards
+// pages. Guests see a button on top that opens logging in, creating an account (with the name and icon chosen below),
+// and signing in with an external provider. The new user keeps the seats the previous one held.
 function openProfileDialog() {
     const isGuest = account.kind === "Guest";
     const icons = account.uploadedIcon ? [account.uploadedIcon, ...account.icons] : account.icons;
     const dialog = createDialog(`
-        <form data-profile>
-            <h2>${t("Your profile")}</h2>
-            <p class="hint" data-welcome hidden>${t("Welcome! Choose how other players see you.")}</p>
-            <label>${t("Display name")} <input name="name" maxlength="30" autocomplete="nickname" required></label>
-            <div class="icon-picker"></div>
-            <label class="upload" ${isGuest ? "hidden" : ""}>${t("Upload a picture")} <input name="picture" type="file" accept="image/*"></label>
-            <div class="profile-settings">
-                <label class="setting"><input type="checkbox" name="chat"> <span>${t("Chat in games")}</span></label>
-                <label class="setting"><input type="checkbox" name="sound"> <span>${t("Sounds (chat, games and reading aloud)")}</span></label>
-                <label class="setting">${t("Card style")} <select name="cards">
-                    <option value="New">GamesLane</option>
-                    <option value="Classic">${t("Classic cards")}</option>
-                </select></label>
-            </div>
-            <p class="error" role="alert"></p>
-            <div class="actions"><button type="submit">${t("Save")}</button><button type="button" class="secondary" data-close>${t("Cancel")}</button></div>
-        </form>
+        <h2 class="profile-title">${t("Your profile")}</h2>
         ${isGuest ? `
-        <div class="profile-account">
+        <section class="profile-guest">
             <p class="hint">${t("You are playing as a guest. Log in, or create an account to keep your name and icon on any device.")}</p>
-            <div class="tabs" role="tablist">
-                <button type="button" role="tab" data-tab="login">${t("Log in")}</button>
-                <button type="button" role="tab" data-tab="register">${t("Create account")}</button>
+            <button type="button" class="secondary" data-show-login aria-expanded="false">${t("Log in or create account")}</button>
+            <div class="profile-account" hidden>
+                <div class="tabs" role="tablist">
+                    <button type="button" role="tab" data-tab="login">${t("Log in")}</button>
+                    <button type="button" role="tab" data-tab="register">${t("Create account")}</button>
+                </div>
+                <form data-panel="login">
+                    <label>${t("Username")} <input name="username" maxlength="20" autocomplete="username" required></label>
+                    <label>${t("Password")} <input name="password" type="password" maxlength="100" autocomplete="current-password" required></label>
+                    <p class="error" role="alert"></p>
+                    <div class="actions"><button type="submit">${t("Log in")}</button></div>
+                </form>
+                <form data-panel="register">
+                    <label>${t("Username")} <input name="username" maxlength="20" autocomplete="username" required pattern="[A-Za-z0-9_]{3,20}"></label>
+                    <p class="hint">${t("3 to 20 letters, digits or underscores. You log in with it; others see your display name.")}</p>
+                    <label>${t("Password")} <input name="password" type="password" minlength="8" maxlength="100" autocomplete="new-password" required></label>
+                    <p class="hint">${t("At least 8 characters. It cannot be reset, so keep it safe.")}</p>
+                    <p class="hint">${t("Your account gets the display name and icon chosen below.")}</p>
+                    <p class="error" role="alert"></p>
+                    <div class="actions"><button type="submit">${t("Create account")}</button></div>
+                </form>
+                <div class="login-providers"><p class="hint">${t("Or")}</p></div>
             </div>
-            <form data-panel="login">
-                <label>${t("Username")} <input name="username" maxlength="20" autocomplete="username" required></label>
-                <label>${t("Password")} <input name="password" type="password" maxlength="100" autocomplete="current-password" required></label>
-                <p class="error" role="alert"></p>
-                <div class="actions"><button type="submit">${t("Log in")}</button></div>
-            </form>
-            <form data-panel="register">
-                <label>${t("Username")} <input name="username" maxlength="20" autocomplete="username" required pattern="[A-Za-z0-9_]{3,20}"></label>
-                <p class="hint">${t("3 to 20 letters, digits or underscores. You log in with it; others see your display name.")}</p>
-                <label>${t("Password")} <input name="password" type="password" minlength="8" maxlength="100" autocomplete="new-password" required></label>
-                <p class="hint">${t("At least 8 characters. It cannot be reset, so keep it safe.")}</p>
-                <p class="hint">${t("Your account gets the display name and icon chosen above.")}</p>
-                <p class="error" role="alert"></p>
-                <div class="actions"><button type="submit">${t("Create account")}</button></div>
-            </form>
-            <div class="login-providers"><p class="hint">${t("Or")}</p></div>
-        </div>` : `
-        <div class="actions profile-logout">${account.isAdmin ? '<a class="profile-admin" href="/admin.html">Admin page</a>' : ""}<button type="button" class="secondary small" data-logout>${t("Log out")}</button></div>`}`);
+        </section>` : ""}
+        <form data-profile>
+            <p class="hint" data-welcome hidden>${t("Welcome! Choose how other players see you.")}</p>
+            <div class="profile-card">
+                <button type="button" class="profile-avatar" data-edit-icon aria-expanded="false" title="${t("Change icon")}" aria-label="${t("Change icon")}">
+                    <span class="profile-avatar-icon"></span><span class="profile-edit-badge" aria-hidden="true">✎</span>
+                </button>
+                <div class="profile-identity">
+                    <div class="profile-name-row" data-name-view>
+                        <strong class="profile-name" data-name-text></strong>
+                        <button type="button" class="profile-edit" data-edit-name title="${t("Change name")}" aria-label="${t("Change name")}">✎</button>
+                    </div>
+                    <label class="profile-name-edit" data-name-edit hidden>${t("Display name")} <input name="name" maxlength="30" autocomplete="nickname" required></label>
+                    <span class="profile-badge">${accountKindText(account.kind)}</span>
+                </div>
+            </div>
+            <div class="profile-icons" data-icons hidden>
+                <div class="icon-picker"></div>
+                <label class="upload" ${isGuest ? "hidden" : ""}>${t("Upload a picture")} <input name="picture" type="file" accept="image/*"></label>
+            </div>
+            <section class="profile-section">
+                <h3>${t("Preferences")}</h3>
+                <label class="switch"><span>${t("Chat in games")}</span><input type="checkbox" role="switch" name="chat"></label>
+                <label class="switch"><span>${t("Sounds (chat, games and reading aloud)")}</span><input type="checkbox" role="switch" name="sound"></label>
+                <fieldset class="card-style">
+                    <legend>${t("Card style")}</legend>
+                    <label class="card-style-choice" data-style="New"><input type="radio" name="cards" value="New"><span class="card-style-preview"></span><span>GamesLane</span></label>
+                    <label class="card-style-choice" data-style="Classic"><input type="radio" name="cards" value="Classic"><span class="card-style-preview"></span><span>${t("Classic cards")}</span></label>
+                </fieldset>
+            </section>
+            <p class="error" role="alert"></p>
+            <div class="actions profile-actions"><button type="submit" disabled>${t("Save")}</button><button type="button" class="secondary" data-close>${t("Cancel")}</button></div>
+        </form>
+        ${isGuest ? "" : `
+        <div class="profile-footer">
+            ${account.isAdmin ? '<span class="profile-admin"><a class="button secondary small" href="/admin.html">Admin page</a><a class="button secondary small" href="/cards.html">All cards</a></span>' : ""}
+            <button type="button" class="secondary small" data-logout>${t("Log out")}</button>
+        </div>`}`);
+    dialog.classList.add("profile-dialog");
     const form = dialog.querySelector("[data-profile]");
     const error = form.querySelector(".error");
+    const save = form.querySelector('[type="submit"]');
+    const initial = { name: account.name, ...userSettings() };
     form.elements.name.value = account.name;
-    form.elements.chat.checked = userSettings().chat;
-    form.elements.sound.checked = userSettings().sound;
-    form.elements.cards.value = userSettings().cards;
+    form.elements.chat.checked = initial.chat;
+    form.elements.sound.checked = initial.sound;
+    form.elements.cards.value = initial.cards;
     form.querySelector("[data-welcome]").hidden = !isNewExternalUser;
-    const picker = iconPicker(form.querySelector(".icon-picker"), icons, account.icon);
+    form.querySelector("[data-name-text]").textContent = account.name;
+    form.querySelectorAll(".card-style-choice").forEach((choice) =>
+        choice.querySelector(".card-style-preview").append(cardElement("K♥", choice.dataset.style), cardElement("A♠", choice.dataset.style)));
+
+    const avatar = form.querySelector(".profile-avatar-icon");
+    const showIcon = (icon) => avatar.replaceChildren(iconElement(icon));
+    // Save is enabled once something differs from what was saved.
+    const updateSave = () => {
+        save.disabled = form.elements.name.value.trim() === initial.name && picker.value === account.icon
+            && form.elements.chat.checked === initial.chat && form.elements.sound.checked === initial.sound
+            && form.elements.cards.value === initial.cards;
+    };
+    const picker = iconPicker(form.querySelector(".icon-picker"), icons, account.icon, (icon) => {
+        showIcon(icon);
+        updateSave();
+    });
+    showIcon(picker.value);
+    updateSave();
+    form.addEventListener("input", updateSave);
+    form.addEventListener("change", updateSave);
+
+    const iconPanel = form.querySelector("[data-icons]");
+    const editIcon = form.querySelector("[data-edit-icon]");
+    editIcon.addEventListener("click", () => {
+        iconPanel.hidden = !iconPanel.hidden;
+        editIcon.setAttribute("aria-expanded", String(!iconPanel.hidden));
+    });
+    form.querySelector("[data-edit-name]").addEventListener("click", () => {
+        form.querySelector("[data-name-view]").hidden = true;
+        form.querySelector("[data-name-edit]").hidden = false;
+        form.elements.name.focus();
+        form.elements.name.select();
+    });
 
     form.elements.picture.addEventListener("change", async () => {
         const file = form.elements.picture.files[0];
         if (file) {
-            await withBusyButton(form.querySelector('[type="submit"]'), t("Uploading…"), () => uploadIcon(file, error));
+            await withBusyButton(save, t("Uploading…"), () => uploadIcon(file, error));
+            updateSave();
         }
     });
     form.addEventListener("submit", (event) => {
         event.preventDefault();
         const settings = { chat: form.elements.chat.checked, sound: form.elements.sound.checked, cards: form.elements.cards.value };
-        withBusyButton(form.querySelector('[type="submit"]'), t("Saving…"), async () => {
+        withBusyButton(save, t("Saving…"), async () => {
             if (!(await saveSettings(settings))) {
                 error.textContent = t("Something went wrong.");
                 return false;
@@ -480,6 +549,12 @@ function openProfileDialog() {
         });
     });
     if (isGuest) {
+        const showLogin = dialog.querySelector("[data-show-login]");
+        showLogin.addEventListener("click", () => {
+            const panel = dialog.querySelector(".profile-account");
+            panel.hidden = !panel.hidden;
+            showLogin.setAttribute("aria-expanded", String(!panel.hidden));
+        });
         setUpLogin(dialog, () => ({ name: form.elements.name.value, icon: picker.value }));
     } else {
         dialog.querySelector("[data-logout]").addEventListener("click", () => {
@@ -559,6 +634,13 @@ function setUpFeedbackLink() {
     });
 }
 
+// Each external provider's logo, for its sign-in button.
+const PROVIDER_LOGOS = {
+    Google: `<svg viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>`,
+    Microsoft: `<svg viewBox="0 0 21 21" aria-hidden="true"><rect x="1" y="1" width="9" height="9" fill="#f25022"/><rect x="11" y="1" width="9" height="9" fill="#7fba00"/><rect x="1" y="11" width="9" height="9" fill="#00a4ef"/><rect x="11" y="11" width="9" height="9" fill="#ffb900"/></svg>`,
+    Discord: `<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M20.317 4.37a19.79 19.79 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.865-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.74 19.74 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.1 13.1 0 0 1-1.872-.892.077.077 0 0 1-.008-.128c.126-.094.252-.192.372-.291a.074.074 0 0 1 .078-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.009c.12.099.246.198.373.292a.077.077 0 0 1-.006.127 12.3 12.3 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.84 19.84 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.095 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.095 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/></svg>`,
+};
+
 // The profile dialog's login part, for guests: Log in and Create account tabs, and a button per external provider.
 // `profile` gives the display name and icon for a new account.
 function setUpLogin(dialog, profile) {
@@ -566,9 +648,12 @@ function setUpLogin(dialog, profile) {
     providers.hidden = account.providers.length === 0;
     for (const provider of account.providers) {
         const link = document.createElement("a");
-        link.className = "button secondary";
+        link.className = `button provider-button provider-${provider.toLowerCase()}`;
         link.href = externalSignInUrl(provider);
-        link.textContent = t("Sign in with {provider}", { provider });
+        const logo = el("span", "provider-logo");
+        logo.innerHTML = PROVIDER_LOGOS[provider] ?? "";
+        const label = el("span", "provider-label", t("Sign in with {provider}", { provider }));
+        link.append(logo, label);
         // The dialog stays open while the browser goes to the provider; the link shows a spinner meanwhile.
         link.addEventListener("click", (event) => {
             if (link.classList.contains("is-busy")) {
@@ -578,13 +663,13 @@ function setUpLogin(dialog, profile) {
             sessionStorage.setItem(PREVIOUS_TOKEN_KEY, token);
             link.classList.add("is-busy");
             link.setAttribute("aria-disabled", "true");
-            link.textContent = t("Connecting to {provider}…", { provider });
+            label.textContent = t("Connecting to {provider}…", { provider });
         });
         // Coming back with the browser's Back button can restore the page with the spinner still showing.
         window.addEventListener("pageshow", () => {
             link.classList.remove("is-busy");
             link.removeAttribute("aria-disabled");
-            link.textContent = t("Sign in with {provider}", { provider });
+            label.textContent = t("Sign in with {provider}", { provider });
         });
         providers.appendChild(link);
     }

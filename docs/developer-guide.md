@@ -51,8 +51,8 @@ GameHub ──► GameSessionStore ──► SessionRepository ──► Session
   - `ExpiredSessionCleanup` (every hour, first 2 minutes after the server starts): saves the sessions in memory, then deletes saved sessions 6 hours after their last activity.
   - `InactiveUserCleanup`: deletes saved users inactive for 30 days, except the admins (`AdminUsers`).
 - **Games played:** `GameSessionStore` counts every game started (`IGameSession.GamesStarted`: Start, each Play again, and starting when the last seat fills) when the session is next saved, adding it to that day's (UTC) row in `GamePlays` (`Stats/GamePlayRepository`, one upsert per count). A session loaded again is not counted again. `Stats/GamePlayStats` builds the admin page's report (every day and game, with zeros) and the order of the games by popularity (last 30 days; ties in `UsualOrder`, the main screen's usual order).
-- **Admins:** the saved users listed by ID in `Admin:UserIds` (`appsettings.json`; e.g. on Render, `Admin__UserIds__0` overrides it). `AdminUsers.IsAdmin` checks the login token's user ID; `/auth/me` returns `isAdmin`, and the profile dialog then links to `/admin.html` (English only): an SVG graph of the games started per day over the last N days (1–365, 30 by default; a checkbox per game shows or hides its line, remembered in `localStorage`), and each game's total.
-- **Pages:** `common.js` holds the shared page framework. `startSessionPage(gameType, render)` connects to the hub, calls `EnterSession`, shows the shared session lobby while the session is in its lobby, and otherwise calls the game's `render(game, state, view)` on every update; `view` holds the user's seats (`mySeats`, `isMe(seat)`) and private state (`view.private`). `startSessionPage` also fills the fixed session bar (the user's role in words, the game code that copies on click, the 💬 chat (`startChat`: its panel, unread count, pop-up and chime), and the ☰ menu with the invite link, players seated and observers, Leave my seat and, during a game, End game for everyone) and shows the status bar (`#status` and any turn buttons the page puts there) during a game, with the "Waiting for …" pop-up and the newcomer's seat offer (`updateWaiting`, `updateSeatOffer`), highlighted (class `act`) while `#status` contains 👉 or a primary button in its `.status-actions` is shown, so each game marks the texts that ask the user to act with 👉 and puts its turn and between-rounds buttons (and the shared `#play-again` and `#to-lobby`) there; games that keep a score fill the status bar's score row (`#scores`) with `showScores(state, view, facts, players)`; the optional `seatRole(seat, state)` gives a seat's name for "You: …" in the session bar (by default "Seat 2"). Each game page (e.g. `rich-man-poor-man.js`) only draws its game screen and calls its hub methods. The user's profile settings come from `userSettings()` (`{ chat, sound, cards }`; a saved user's from `/auth/me`, a guest's from `localStorage`) and are changed with `saveSettings(settings)`; pages listen for the `settingschange` event (`SETTINGS_EVENT`), sent once the user is known and after every change (`startSessionPage` redraws the game screen then). Playing cards are drawn by `cardElement(text, style)` in the user's card style unless `style` is given (`cards`: `"New"`, the default, or `"Classic"`, drawn by `classicCard`); the new cards draw the suits as SVG shapes (`SUIT_SHAPES`) and each rank as a script road (`ROAD_RANKS`, the centre line of each letter; `WIDE_ROAD_RANKS` for +2, +3 and +4; `BOXED_ROADS` for TAKI, TA above KI in block letters, and the crown, one road per part with classes `part-1`, `part-2` …), and also draw cards the classic style does not have: 0 and 1, Skip (`"S♥"`), Reverse (`"R♥"`), `"+2♥"`, a big plus sign (`"+♥"`), TAKI (`"TAKI♥"`, written downwards in the corners), `"TAKI"` (no suit: the joker's octagon, each letter's rim in a suit color in turn), `"CROWN"` (the joker's octagon with a crown rimmed in gold and a gold ♛ in the corners), `"WILD"` (like the joker), `"+4"` (the joker's octagon with a road +4), `"+3"` (like +4) and `"+3X"` (+3 crossed out: a red slash, `CROSS_OUT`, across the middle, and a slash through each corner's +3, yellow in the top left and green in the bottom right); the developer page `/dev/cards.html` shows them all; the classic ones keep their own class names (`classic-…`, `pip`, `court-…`) so the two styles' CSS does not clash. Every sound must check `userSettings().sound` (the chat's chime, The Gang's chip alert, Rich man, poor man's turn chime and reading aloud, the confetti fanfare). `celebrate(state, key)` shows confetti and plays a fanfare (`playFanfare`) for a success of the user; each game page calls it when a seat the user holds wins (or, in The Gang, for everyone, observers too, each time the gang opens a vault), with a `key` naming the success within the session's game (e.g. `round-3`), which is remembered in `sessionStorage` so it shows once.
+- **Admins:** the saved users listed by ID in `Admin:UserIds` (`appsettings.json`; e.g. on Render, `Admin__UserIds__0` overrides it). `AdminUsers.IsAdmin` checks the login token's user ID; `/auth/me` returns `isAdmin`, and the profile dialog then links to `/cards.html` (every GamesLane card; the page has no private data, so it is not checked) and `/admin.html` (English only; the page itself can be opened by anyone, but `/api/admin/stats` answers only admins, so others see "This page is only for admins."): an SVG graph of the games started per day over the last N days (1–365, 30 by default; a checkbox per game shows or hides its line, remembered in `localStorage`), and each game's total.
+- **Pages:** `common.js` holds the shared page framework. `startSessionPage(gameType, render)` connects to the hub, calls `EnterSession`, shows the shared session lobby while the session is in its lobby, and otherwise calls the game's `render(game, state, view)` on every update; `view` holds the user's seats (`mySeats`, `isMe(seat)`) and private state (`view.private`). `startSessionPage` also fills the fixed session bar (the user's role in words, the game code that copies on click, the 💬 chat (`startChat`: its panel, unread count, pop-up and chime), and the ☰ menu with the invite link, players seated and observers, Leave my seat and, during a game, End game for everyone) and shows the status bar (`#status` and any turn buttons the page puts there) during a game, with the "Waiting for …" pop-up and the newcomer's seat offer (`updateWaiting`, `updateSeatOffer`), highlighted (class `act`) while `#status` contains 👉 or a primary button in its `.status-actions` is shown, so each game marks the texts that ask the user to act with 👉 and puts its turn and between-rounds buttons (and the shared `#play-again` and `#to-lobby`) there; games that keep a score fill the status bar's score row (`#scores`) with `showScores(state, view, facts, players)`; the optional `seatRole(seat, state)` gives a seat's name for "You: …" in the session bar (by default "Seat 2"). Each game page (e.g. `rich-man-poor-man.js`) only draws its game screen and calls its hub methods. The user's profile settings come from `userSettings()` (`{ chat, sound, cards }`; a saved user's from `/auth/me`, a guest's from `localStorage`) and are changed with `saveSettings(settings)`; pages listen for the `settingschange` event (`SETTINGS_EVENT`), sent once the user is known and after every change (`startSessionPage` redraws the game screen then). Playing cards are drawn by `cardElement(text, style)` in the user's card style unless `style` is given (`cards`: `"New"`, the default, or `"Classic"`, drawn by `classicCard`); the new cards draw the suits as SVG shapes (`SUIT_SHAPES`) and each rank as a script road (`ROAD_RANKS`, the centre line of each letter; `WIDE_ROAD_RANKS` for +2, +3 and +4; `BOXED_ROADS` for TAKI, TA above KI in block letters, and the crown, one road per part with classes `part-1`, `part-2` …), and also draw cards the classic style does not have: 0 and 1, Skip (`"S♥"`), Reverse (`"R♥"`), `"+2♥"`, a big plus sign (`"+♥"`), TAKI (`"TAKI♥"`, written downwards in the corners), `"TAKI"` (no suit: the joker's octagon, each letter's rim in a suit color in turn), `"CROWN"` (the joker's octagon with a crown rimmed in gold and a gold ♛ in the corners), `"WILD"` (like the joker), `"+4"` (the joker's octagon with a road +4), `"+3"` (like +4) and `"+3X"` (+3 crossed out: a red slash, `CROSS_OUT`, across the middle, and a slash through each corner's +3, yellow in the top left and green in the bottom right); the cards page `/cards.html` shows them all; the classic ones keep their own class names (`classic-…`, `pip`, `court-…`) so the two styles' CSS does not clash. Every sound must check `userSettings().sound` (the chat's chime, The Gang's chip alert, Rich man, poor man's turn chime and reading aloud, the confetti fanfare). `celebrate(state, key)` shows confetti and plays a fanfare (`playFanfare`) for a success of the user; each game page calls it when a seat the user holds wins (or, in The Gang, for everyone, observers too, each time the gang opens a vault), with a `key` naming the success within the session's game (e.g. `round-3`), which is remembered in `sessionStorage` so it shows once.
 
 ## Project structure
 
@@ -61,7 +61,7 @@ GamesLane.slnx                 Solution file
 Dockerfile                     Build for Render
 GamesLane.Server/              ASP.NET Core backend
   Program.cs                   Services, endpoints and the hub
-  Auth/AuthSetup.cs            Login tokens, rate limiting, Google/Microsoft sign-in
+  Auth/AuthSetup.cs            Login tokens, rate limiting, Google/Microsoft/Discord sign-in
   Auth/AccountEndpoints.cs     Guests, registration, login, seat transfer, profile, icon and saved game options endpoints
   Data/                        Database (EF Core + PostgreSQL): tables, migrations, connection setup
   Feedback/                    The feedback form's endpoint: FeedbackRules (a comment's checks and its GitHub issue), GitHubIssueTracker (creates the issue), FeedbackEndpoints (POST /api/feedback, rate limit)
@@ -79,7 +79,6 @@ GamesLane.Server/              ASP.NET Core backend
   Games/Wazoo/                Wazoo rules: scoring each box (with the joker rule), scorecards and bonuses, turns
   Games/FinalCard/             Final Card rules: cards and decks (US and Israeli Style), turns and action cards (TAKI runs, Crown, +3 and +3 Breaker in Israeli Style), drawing, Final Card calls, hands and scores, the pyramid, options
   Games/Yaniv/                 Yaniv rules: the deck with 2 jokers, card values, series and straights (YanivCards), turns, Yaniv and Assaf, scores, the bonus, players out, options
-  dev/cards.html               Developer page: the card back and every GamesLane playing card at several sizes; served at /dev/cards.html only in Development
   wwwroot/                     Web pages
     index.html, home.js        Main screen: public games (create, or join a random one) and private games (create, or join by code); the list of games to choose from; going back to games waiting for the user
     common.js                  Shared: automatic guest, account bar and profile dialog (with login), hub connection, session lobby and page framework, playing cards (new and classic styles)
@@ -87,6 +86,7 @@ GamesLane.Server/              ASP.NET Core backend
     lang/he.js, es.js, fr.js, pt.js  Hebrew, Spanish (Mexico), French (France) and Portuguese (Brazil) translations (a page offers a language by loading its file before i18n.js)
     styles.css                 Styles for all pages
     admin.html/.js             Admin page: games played per day (graph) and per game (totals), for admins only
+    cards.html                 Cards page: the card back and every GamesLane playing card at several sizes (linked from the profile for admins)
     privacy.html               Privacy policy in English (the address registered with Google); privacy.he.html, .es.html, .fr.html, .pt.html: the policy in each language, linked from the main screen in the chosen language
     tictactoe.html/.js         Tic-tac-toe page
     the-gang.html/.js          The Gang page
@@ -302,7 +302,7 @@ Each option has a key, a label and a list of choices with a default; `Games/Game
 | `POST /auth/profile` | Body `{ name, icon }`, logged-in users only. Changes the display name and icon (a built-in icon, or the user's uploaded picture) |
 | `POST /auth/icon` | Body: a PNG, JPEG or WebP picture (up to 200 KB). Saved users only. Uploads it and makes it the icon |
 | `GET /api/icons/{id}` | An uploaded picture |
-| `GET /auth/signin/{provider}?returnUrl=/...` | Starts sign-in with `google` or `microsoft` |
+| `GET /auth/signin/{provider}?returnUrl=/...` | Starts sign-in with `google`, `microsoft` or `discord` |
 | `POST /auth/external` | Exchanges the result of an external sign-in for `{ accessToken, isNew }` |
 | `GET /api/options/{gameType}` | Saved users only. `{ saved, options }`: the user's saved options for the game, or its defaults (`saved: false`) |
 | `PUT /api/options/{gameType}` | Saved users only. Body: the options, e.g. `{ "mode": "Advanced" }`. Saves them as the user's preferences (204), or `{ error }` (400) |
@@ -325,8 +325,11 @@ Guests and username logins always work. Each external provider appears on the si
 | --- | --- | --- | --- |
 | Google | `Authentication__Google__ClientId`, `Authentication__Google__ClientSecret` | [Google Cloud Console](https://console.cloud.google.com/apis/credentials) → Create credentials → OAuth client ID → Web application | `https://<your-site>/signin-google` |
 | Microsoft | `Authentication__Microsoft__ClientId`, `Authentication__Microsoft__ClientSecret` | [Microsoft Entra admin center](https://entra.microsoft.com/) → App registrations → New registration, choosing "personal Microsoft accounts" plus work/school accounts; then Certificates & secrets → New client secret | `https://<your-site>/signin-microsoft` |
+| Discord | `Authentication__Discord__ClientId`, `Authentication__Discord__ClientSecret` | [Discord Developer Portal](https://discord.com/developers/applications) → New Application → OAuth2 (Client ID, Reset Secret) | `https://<your-site>/signin-discord` |
 
-For local testing, use `dotnet user-secrets` in `GamesLane.Server` and register `https://localhost:<port>/signin-google` (or `-microsoft`) as an extra redirect URI.
+For local testing, use `dotnet user-secrets` in `GamesLane.Server` and register `https://localhost:<port>/signin-google` (or `-microsoft`, `-discord`) as an extra redirect URI.
+
+Discord sign-in (the `AspNet.Security.OAuth.Discord` package) asks only for the `identify` scope. The display name defaults to the user's Discord name (`global_name`, or the username if not set), and the icon to their avatar (`AuthSetup.DiscordAvatarUrl`, from Discord's CDN).
 
 ## Feedback setup
 
@@ -353,7 +356,7 @@ dotnet run --project GamesLane.Server
 - Web page: `/` (the address is shown in the console, e.g. `http://localhost:5xxx`)
 - Join link: `/join/{code}` opens the session's page
 - Health check: `GET /health`
-- Cards (developer page, Development only): `/dev/cards.html`
+- Cards page: `/cards.html`
 - SignalR hub: `/hubs/game`
 
 To try several players on one computer, use a separate tab for each user. To play from phones on the same Wi-Fi, run the server with `--urls http://0.0.0.0:5000` and open `http://<computer's IP address>:5000`.
@@ -388,6 +391,7 @@ _Last updated: 2026-11-05. Keep this section current; it is the hand-off point b
   - `ConnectionStrings__GamesLane`: Neon `production` branch (set; required — the server does not start without it). Either the .NET (`Host=...;`) or the URL (`postgresql://...`) format works.
   - `Authentication__Google__ClientId` / `__ClientSecret`: set, working
   - `Authentication__Microsoft__ClientId` / `__ClientSecret`: not set yet
+  - `Authentication__Discord__ClientId` / `__ClientSecret`: not set yet
 
 ### Neon (PostgreSQL database)
 - Project `GamesLane` (ID `gentle-cherry-51286211`), region AWS US East 2 (Ohio).
@@ -398,11 +402,12 @@ _Last updated: 2026-11-05. Keep this section current; it is the hand-off point b
 ### Sign-in providers
 - **Google:** working on the live site. OAuth client in Google Cloud Console (project "GamesLane"); redirect URI `https://gameslane.onrender.com/signin-google`; privacy policy at `/privacy.html`.
 - **Microsoft:** code ready; app registration in the Entra admin center not done yet (redirect URI `https://gameslane.onrender.com/signin-microsoft`).
+- **Discord:** code ready; application in the Discord Developer Portal not created yet (redirect URI `https://gameslane.onrender.com/signin-discord`).
 - **Apple:** deferred (needs a paid Apple Developer membership).
 
 ### Next steps
 1. Linking a Google account to a registered user (deferred).
-2. Microsoft sign-in: app registration in the Entra admin center and the two environment variables on Render.
+2. Microsoft and Discord sign-in: app registration (Entra admin center, Discord Developer Portal) and the environment variables on Render.
 3. Game history and stats (deferred).
 4. Backgammon: first play-test on phones and a TV; possible extras later (a move list, variants such as Nackgammon or Acey-deucey).
 5. Rich man, poor man: first play-test with real players on phones and a TV.
