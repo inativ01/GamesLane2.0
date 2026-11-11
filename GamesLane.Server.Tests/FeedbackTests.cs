@@ -36,6 +36,20 @@ public class FeedbackTests
     }
 
     [Theory]
+    [InlineData("zh-CN", true)]
+    [InlineData("zh-TW", true)]
+    [InlineData("zh-tw", false)]
+    [InlineData("zh-Hant", false)]
+    public void Languages_with_a_region_are_kept(string language, bool kept)
+    {
+        var request = new FeedbackRequest(FeedbackType.Other, "Hi", false, null, language);
+
+        Assert.True(FeedbackRules.TryCreateIssue(request, null, out var issue, out _));
+
+        Assert.Equal(kept, issue.Body.Contains($"Language: {language}"));
+    }
+
+    [Theory]
     [InlineData(null)]
     [InlineData("   ")]
     public void Empty_comments_are_refused(string? text)

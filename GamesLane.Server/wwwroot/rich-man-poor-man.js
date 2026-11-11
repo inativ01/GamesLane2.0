@@ -339,9 +339,13 @@ const SPOKEN_VALUES = {
 
 // Many computers have no voice for some languages (e.g. Hebrew), and another language's voice misreads the text, so
 // without one the throws are read in English. Until the browser has listed its voices, the page's language is tried
-// anyway. A voice for the language's locale (e.g. Mexican Spanish) is preferred over another variant of it.
+// anyway. A voice for the language's locale (e.g. Mexican Spanish) is preferred over another variant of it, and for
+// Chinese, a Mandarin voice over a Hong Kong (Cantonese) one.
 const voiceLang = (voice) => voice.lang.replace("_", "-").toLowerCase();
-const speaks = (lang) => (voice) => [lang.code, ...(lang.code === "he" ? ["iw"] : [])].includes(voiceLang(voice).split("-")[0]);
+const speaks = (lang) => (voice) => {
+    const code = lang.locale.split("-")[0];
+    return [code, ...(code === "he" ? ["iw"] : [])].includes(voiceLang(voice).split("-")[0]);
+};
 
 function missingVoice() {
     const voices = speechSynthesis.getVoices();
@@ -358,7 +362,8 @@ function speak(key, values = {}) {
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = lang.locale;
     const voices = speechSynthesis.getVoices().filter(speaks(lang));
-    utterance.voice = voices.find((voice) => voiceLang(voice) === lang.locale.toLowerCase()) ?? voices[0] ?? null;
+    utterance.voice = voices.find((voice) => voiceLang(voice) === lang.locale.toLowerCase())
+        ?? voices.find((voice) => !voiceLang(voice).startsWith("zh-hk")) ?? voices[0] ?? null;
     speechSynthesis.speak(utterance);
 }
 

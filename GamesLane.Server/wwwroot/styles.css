@@ -38,6 +38,14 @@ body {
     line-height: 1.4;
 }
 
+:lang(zh-CN) body {
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, "PingFang SC", "Microsoft YaHei", "Noto Sans SC", sans-serif;
+}
+
+:lang(zh-TW) body {
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, "PingFang TC", "Microsoft JhengHei", "Noto Sans TC", sans-serif;
+}
+
 main {
     max-width: 680px;
     margin: 0 auto;

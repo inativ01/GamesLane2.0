@@ -27,7 +27,7 @@ public partial class TranslationsTests
     [GeneratedRegex(@"""([^""]+)""")]
     private static partial Regex Quoted();
 
-    [GeneratedRegex(@"code: ""(\w+)""")]
+    [GeneratedRegex(@"code: ""([\w-]+)""")]
     private static partial Regex LanguageCode();
 
     [GeneratedRegex(@"flag: ""([^""]+)""")]

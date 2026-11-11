@@ -61,10 +61,11 @@ A typical setup is a shared screen (such as a TV or laptop) connected as a spect
 
 ## Languages
 
-- English, Hebrew, Spanish (Mexico), French (France) and Portuguese (Brazil). Every page is translated (including the profile dialog, the session lobby, the game options and the server's messages); the top bar shows the current language's flag; tapping it opens a menu of the languages, and choosing one reloads the page in it.
+- English, Hebrew, Spanish (Mexico), French (France), Portuguese (Brazil), Simplified Chinese (mainland China) and Traditional Chinese (Taiwan). Every page is translated (including the profile dialog, the session lobby, the game options and the server's messages); the top bar shows the current language's flag; tapping it opens a menu of the languages, and choosing one reloads the page in it.
 - Hebrew pages read from right to left (the backgammon board stays as it is).
-- The choice is remembered in the browser; until the user chooses, the first of the browser's preferred languages that GamesLane has (e.g. a browser set to French opens in French), otherwise English.
-- Some games have a local name rather than a translation of the English one, e.g. Tic-tac-toe is Gato in Spanish, Morpion in French and Jogo da Velha in Portuguese. The Gang, Wazoo and Yaniv keep their names; Final Card is translated (e.g. Última carta, Dernière carte).
+- The choice is remembered in the browser; until the user chooses, the first of the browser's preferred languages that GamesLane has (e.g. a browser set to French opens in French), otherwise English. A browser set to Chinese opens in Simplified Chinese, or in Traditional Chinese when it is set to the Traditional script or to Taiwan, Hong Kong or Macau.
+- Some games have a local name rather than a translation of the English one, e.g. Tic-tac-toe is Gato in Spanish, Morpion in French, Jogo da Velha in Portuguese and 井字棋 / 井字遊戲 in Chinese. The Gang, Wazoo and Yaniv keep their names; Final Card is translated (e.g. Última carta, Dernière carte, 最后一张).
+- In Chinese, Rich man, poor man reads the throws aloud with a Mandarin voice (mainland China for Simplified, Taiwan for Traditional, otherwise any Mandarin voice on the device).
 
 ## Help
 
