@@ -5,7 +5,7 @@ namespace GamesLane.Server.Data;
 
 /// <summary>
 /// The GamesLane database: saved users, their external accounts, icons and game options, saved game sessions, the
-/// number of games started per day, and the keys that sign login tokens.
+/// number of games started per day, the anonymous daily activity counts, and the keys that sign login tokens.
 /// </summary>
 public class GamesLaneDbContext(DbContextOptions<GamesLaneDbContext> options) : DbContext(options), IDataProtectionKeyContext
 {
@@ -38,6 +38,11 @@ public class GamesLaneDbContext(DbContextOptions<GamesLaneDbContext> options) : 
     /// The games started per day and game.
     /// </summary>
     public DbSet<GamePlay> GamePlays => Set<GamePlay>();
+
+    /// <summary>
+    /// The anonymous activity counts per day: visits, games opened, created, joined and finished, and invites opened.
+    /// </summary>
+    public DbSet<ActivityCount> ActivityCounts => Set<ActivityCount>();
 
     /// <summary>
     /// The keys ASP.NET Core uses to encrypt and sign login tokens, so tokens stay valid after a restart.
@@ -95,6 +100,14 @@ public class GamesLaneDbContext(DbContextOptions<GamesLaneDbContext> options) : 
         {
             play.HasKey(p => new { p.Day, p.GameType });
             play.Property(p => p.GameType).HasMaxLength(50);
+        });
+
+        modelBuilder.Entity<ActivityCount>(count =>
+        {
+            count.HasKey(c => new { c.Day, c.Event, c.GameType, c.Detail });
+            count.Property(c => c.Event).HasMaxLength(30);
+            count.Property(c => c.GameType).HasMaxLength(50);
+            count.Property(c => c.Detail).HasMaxLength(50);
         });
     }
 }
