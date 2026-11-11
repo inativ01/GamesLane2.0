@@ -1911,7 +1911,8 @@ public class GameSessionTests
         return session;
     }
 
-    private static void Sit(RichManPoorManSession session, int player)
+    // Seats player `player` in the next seat, with the connection "conn-{player}".
+    private static void Sit(GameSession session, int player)
     {
         var profile = new PlayerProfile($"P{player}", "🙂");
         session.Enter(Players[player], profile, $"conn-{player}");
