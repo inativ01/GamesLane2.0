@@ -4807,6 +4807,134 @@ button.yaniv-call {
     white-space: nowrap;
 }
 
+/* Dominoes: ivory tiles, each half a 3 × 3 grid of spots (or its number above 6), in rows that read from left to right
+   in every language; on top, the players and the line (or the engine and the trains, one per row). */
+.domino {
+    display: inline-flex;
+    flex: none;
+    font-size: clamp(0.8rem, min(3.6vw, 2.4vh), 1.1rem);
+    border: 1px solid #3b3127;
+    border-radius: 0.35em;
+    background: #fffdf5;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.25);
+    color: #1d1a17;
+}
+
+.domino-half {
+    display: grid;
+    grid-template: repeat(3, 1fr) / repeat(3, 1fr);
+    width: 1.7em;
+    height: 1.7em;
+    padding: 0.15em;
+}
+
+.domino-half + .domino-half {
+    border-left: 2px solid #3b3127;
+}
+
+.domino-half.number {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+}
+
+.pip {
+    margin: 0.07em;
+    border-radius: 50%;
+}
+
+.pip.on {
+    background: #1d1a17;
+}
+
+.domino.chosen {
+    transform: translateY(-0.3em);
+    box-shadow: 0 0 0 3px var(--gold), 0 4px 10px rgba(0, 0, 0, 0.3);
+}
+
+.domino.unplayable {
+    filter: grayscale(0.7) brightness(0.85);
+    opacity: 0.6;
+}
+
+.domino-row,
+.domino-line {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.25rem;
+    direction: ltr;
+}
+
+.domino-line {
+    justify-content: center;
+    min-height: 2.6rem;
+    margin: 0.4rem 0;
+}
+
+.domino-row.small .domino {
+    font-size: 0.65rem;
+}
+
+button.domino-button {
+    padding: 0;
+    border: 0;
+    background: none;
+}
+
+.dominoes-players {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.3rem;
+}
+
+.domino-ends {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.5rem;
+    direction: ltr;
+}
+
+.domino-engine {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0.4rem 0;
+    font-weight: 700;
+}
+
+.domino-train {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem 0.5rem;
+    margin-top: 0.3rem;
+    padding: 0.25rem 0.45rem;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.92);
+    color: var(--ink);
+    font-size: 0.9rem;
+}
+
+.domino-train.marker {
+    box-shadow: inset 0 0 0 2px var(--gold);
+}
+
+.domino-train-tiles {
+    display: flex;
+    flex: 1;
+    gap: 0.15rem;
+    min-width: 0;
+    overflow-x: auto;
+    direction: ltr;
+}
+
+.domino-train-tiles .domino {
+    font-size: 0.75rem;
+}
+
 .trick-hand .card.unplayable {
     filter: grayscale(0.7) brightness(0.85);
 }

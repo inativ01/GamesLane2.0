@@ -1,4 +1,5 @@
 using GamesLane.Server.Games.Backgammon;
+using GamesLane.Server.Games.Dominoes;
 using GamesLane.Server.Games.RichManPoorMan;
 using GamesLane.Server.Games.TheGang;
 using GamesLane.Server.Games.TicTacToe;
@@ -907,6 +908,11 @@ public class GameSessionTests
         yaniv.TryDiscard(Alice, 0, ["2♣", "3♣", "4♣"], false, out _);
         AssertSameAfterReload(yaniv, () => new YanivSession("ABC123", UnshuffledYaniv),
             s => s.TryDiscard(Bob, 1, ["7♣"], true, out var e) ? null : e);
+
+        var dominoes = Started(new DominoesSession("ABC123", UnshuffledDominoes));
+        dominoes.TryPlayTile(Bob, 1, "2-2", 0, out _);
+        AssertSameAfterReload(dominoes, () => new DominoesSession("ABC123", UnshuffledDominoes),
+            s => s.TryDraw(Alice, 0, out var e) ? null : e);
     }
 
     // Saves the session, loads it into a new one, reconnects its users, and checks both give the same public state
@@ -1564,6 +1570,61 @@ public class GameSessionTests
 
     private static YanivState Yaniv(YanivSession session) =>
         Assert.IsType<YanivState>(session.GetPublicState().Game);
+
+    // Dominoes
+
+    // Leaves the set in order: seat 0 gets 0-0 to 0-6, seat 1 gets 1-1 to 1-6 and 2-2 (Draw, 2 players), and seat 1
+    // starts with 2-2.
+    private static void UnshuffledDominoes(Tile[] tiles)
+    {
+    }
+
+    [Fact]
+    public void Dominoes_seats_as_many_players_as_the_style_allows()
+    {
+        var session = new DominoesSession("ABC123", UnshuffledDominoes);
+        Assert.Equal((2, 4), (session.GetPublicState().MinSeats, session.GetPublicState().MaxSeats));
+        for (var i = 0; i < 4; i++)
+        {
+            Sit(session, i);
+        }
+
+        Assert.False(session.TryTakeNextSeat(Players[4], new PlayerProfile("P4", "🙂"), "conn-4", out var error));
+        Assert.Equal("All seats are taken.", error);
+        Assert.True(session.TrySetOptions(Players[0], new Dictionary<string, string> { [DominoesOptions.Style] = "MexicanTrain" }, out error), error);
+        Assert.Equal(8, session.GetPublicState().MaxSeats);
+        Sit(session, 4);
+        Assert.False(session.TrySetOptions(Players[0], null, out error));
+        Assert.Equal("With these options, at most 4 players can play.", error);
+    }
+
+    [Fact]
+    public void Dominoes_seats_play_their_own_tiles_and_an_absent_player_can_be_skipped()
+    {
+        var session = Started(new DominoesSession("ABC123", UnshuffledDominoes));
+        var state = Dominoes(session);
+        Assert.Equal((DominoesStyle.Draw, 1, 14), (state.Style, state.Turn, state.Boneyard));
+        var hand = Assert.IsType<DominoesPrivateState>(session.GetPrivateState(Bob)).Hands.Single();
+        Assert.Equal(["1-1", "1-2", "1-3", "1-4", "1-5", "1-6", "2-2"], hand.Tiles);
+        Assert.Equal(7, hand.Moves.Count);
+        Assert.False(session.TryPlayTile(Bob, 1, "9-x", 0, out var error));
+        Assert.Equal("Unknown tile.", error);
+        Assert.False(session.TryPlayTile(Bob, 1, "2-2", 5, out error));
+        Assert.Equal("That tile does not match there.", error);
+
+        Assert.True(session.TryPlayTile(Bob, 1, "2-2", 0, out error), error);
+        Assert.Equal(["2-2"], Dominoes(session).Line);
+        Assert.Equal([new DominoesMoveState("0-2", 0), new DominoesMoveState("0-2", 1)],
+            Assert.IsType<DominoesPrivateState>(session.GetPrivateState(Alice)).Hands.Single().Moves);
+
+        session.Disconnect("conn-a", Now);
+        AssertWaiting(session, [0], canSkip: true);
+        Assert.True(session.TrySkipPlayer(Bob, 0, out error), error);
+        Assert.Equal((1, DominoesActionKind.Skipped), (Dominoes(session).Turn, Dominoes(session).LastAction!.Kind));
+    }
+
+    private static DominoesState Dominoes(DominoesSession session) =>
+        Assert.IsType<DominoesState>(session.GetPublicState().Game);
 
     // Rich man, poor man
 

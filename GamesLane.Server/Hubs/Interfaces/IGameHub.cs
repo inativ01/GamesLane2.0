@@ -322,6 +322,24 @@ public interface IGameHub
     Task PlayTrickCard(string sessionId, int seat, string? card);
 
     /// <summary>
+    /// Dominoes: <paramref name="seat"/>, which the caller must hold, plays <paramref name="tile"/> (short text such as
+    /// "3-5") on its turn: in the line styles at the left end (<paramref name="target"/> 0) or the right end (1); in
+    /// Mexican Train on the train of seat <paramref name="target"/>, or on the Mexican train (-1).
+    /// </summary>
+    Task PlayTile(string sessionId, int seat, string? tile, int target);
+
+    /// <summary>
+    /// Dominoes: <paramref name="seat"/>, which the caller must hold and which cannot play, draws a tile from the boneyard.
+    /// </summary>
+    Task DrawTile(string sessionId, int seat);
+
+    /// <summary>
+    /// Dominoes: <paramref name="seat"/>, which the caller must hold and which cannot play or draw, passes (in Mexican
+    /// Train, its train gets a marker).
+    /// </summary>
+    Task PassTurn(string sessionId, int seat);
+
+    /// <summary>
     /// The Gang: reveals the next hand, if <paramref name="revealed"/> hands have been revealed so far.
     /// </summary>
     Task RevealNext(string sessionId, int revealed);
