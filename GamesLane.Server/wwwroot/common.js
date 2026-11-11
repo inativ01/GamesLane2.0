@@ -14,6 +14,8 @@ const GAME_PAGES = {
     RichManPoorMan: "/rich-man-poor-man.html", Wazoo: "/wazoo.html", FinalCard: "/final-card.html", Yaniv: "/yaniv.html",
 };
 
+const help = startHelp();
+
 // The login token is kept per browser tab, so each tab can have its own user.
 // A new tab starts with the most recently logged-in user. A guest exists only in their token, which does not expire.
 const TOKEN_KEY = "loginToken";
@@ -802,6 +804,97 @@ function el(tag, className, ...content) {
     }
     element.append(...content);
     return element;
+}
+
+// The help: ? in the top bar opens a side panel (the whole screen on phones) with the help in the chosen language,
+// help.html in English and help.<code>.html in the others. Each section is a folded title with a short text and, folded
+// inside it, More details. Opening the panel unfolds the sections about what the page shows: the main screen, or on a
+// game page the game (and the session lobby while it is shown, see setLobby), and the other sections stay folded, so
+// any game's rules can be read from anywhere. The first time a user opens the main screen or a game's page in this
+// browser, a tip under ? points to it for 10 seconds (after the splash screen). Pages without help (e.g. the admin page)
+// have no ?.
+function startHelp() {
+    const page = location.pathname === "/" ? "/index.html" : location.pathname;
+    const section = page === "/index.html" ? "main-screen"
+        : Object.values(GAME_PAGES).includes(page) ? page.slice(1, -".html".length) : null;
+    if (!section) {
+        return { setLobby() {} };
+    }
+    let topics = [section];
+
+    const button = el("button", "help-button", "?");
+    button.type = "button";
+    button.title = t("Help");
+    button.setAttribute("aria-label", t("Help"));
+    button.setAttribute("aria-haspopup", "dialog");
+    button.setAttribute("aria-expanded", "false");
+    const tip = el("button", "help-tip", t(section === "main-screen" ? "New here? Tap ? for help." : "New to this game? Tap ? for how to play."));
+    tip.type = "button";
+    tip.hidden = true;
+    (document.querySelector(".top .language") ?? $("account")).before(el("div", "help", button, tip));
+
+    const close = el("button", "chat-close", "✕");
+    close.type = "button";
+    close.title = t("Close the help");
+    close.setAttribute("aria-label", t("Close the help"));
+    const body = el("div", "chat-body help-body", el("p", "hint", t("Loading…")));
+    const panel = el("aside", "chat-panel help-panel", el("div", "chat-head", el("h2", null, t("Help")), close), body);
+    panel.hidden = true;
+    panel.setAttribute("role", "dialog");
+    panel.setAttribute("aria-label", t("Help"));
+    document.body.append(panel);
+
+    const url = language === LANGUAGES[0] ? "/help.html" : `/help.${language.code}.html`;
+    let loading = null;
+    const load = () => loading ??= fetch(url)
+        .then((response) => (response.ok ? response.text() : Promise.reject(new Error(response.statusText))))
+        .then((html) => {
+            const content = new DOMParser().parseFromString(html, "text/html").querySelector(".help-content");
+            body.replaceChildren(...content.children);
+            return true;
+        })
+        .catch(() => {
+            loading = null;
+            body.replaceChildren(el("p", "error", t("Could not load the help. Check your connection and try again.")));
+            return false;
+        });
+
+    async function show(open) {
+        panel.hidden = !open;
+        button.setAttribute("aria-expanded", String(open));
+        if (!open) return;
+        tip.hidden = true;
+        if (!(await load())) return;
+        body.querySelectorAll(".help-section").forEach((s) => { s.open = topics.some((topic) => s.id === `help-${topic}`); });
+        body.querySelectorAll(".help-more").forEach((more) => { more.open = false; });
+        const first = body.querySelector(`#help-${topics[0]}`);
+        body.scrollTop = first ? first.offsetTop - body.offsetTop : 0;
+    }
+
+    button.addEventListener("click", () => show(panel.hidden));
+    close.addEventListener("click", () => show(false));
+    tip.addEventListener("click", () => show(true));
+    document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape" && !panel.hidden) show(false);
+    });
+
+    const tipKey = `helpTipSeen:${section}`;
+    if (!localStorage.getItem(tipKey)) {
+        const splashing = document.documentElement.classList.contains("splashing");
+        setTimeout(() => {
+            if (!panel.hidden) return;
+            localStorage.setItem(tipKey, "1");
+            tip.hidden = false;
+            setTimeout(() => { tip.hidden = true; }, 10000);
+        }, splashing ? 5600 : 1000);
+    }
+
+    return {
+        // While a game page shows the session lobby, the help also unfolds the lobby's section, first.
+        setLobby(inLobby) {
+            topics = inLobby ? ["lobby", section] : [section];
+        },
+    };
 }
 
 // Confetti falling over the page for a success of the user (e.g. winning a round, or the team reaching its goal in a
@@ -1827,6 +1920,7 @@ function startSessionPage(gameType, render, seatRole = (seat) => t("Seat {n}", {
 
         $("session-lobby").hidden = !inLobby;
         $("game-screen").hidden = inLobby;
+        help.setLobby(inLobby);
         $("status-bar").hidden = inLobby;
         $("invite").hidden = !inLobby || state.isPublic;
         $("session-code").closest(".code").hidden = state.isPublic;

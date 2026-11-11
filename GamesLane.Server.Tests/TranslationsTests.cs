@@ -1,10 +1,11 @@
 using System.Text.RegularExpressions;
 using GamesLane.Server.Games.RichManPoorMan;
+using GamesLane.Server.Sessions;
 
 namespace GamesLane.Server.Tests;
 
-// Checks the translation files in wwwroot/lang against each other, the languages in i18n.js, the pages and the
-// translated privacy policies.
+// Checks the translation files in wwwroot/lang against each other, the languages in i18n.js, the pages, and the
+// translated privacy policies and help.
 public partial class TranslationsTests
 {
     private static readonly string Wwwroot = FindWwwroot();
@@ -31,6 +32,9 @@ public partial class TranslationsTests
 
     [GeneratedRegex(@"flag: ""([^""]+)""")]
     private static partial Regex LanguageFlag();
+
+    [GeneratedRegex(@"<details class=""help-section"" id=""help-([a-z-]+)""")]
+    private static partial Regex HelpSection();
 
     [Theory]
     [MemberData(nameof(TranslatedLanguages))]
@@ -109,6 +113,36 @@ public partial class TranslationsTests
             }
         }
     }
+
+    [Fact]
+    public void Every_language_has_the_help_with_the_same_sections()
+    {
+        var english = File.ReadAllText(Path.Combine(Wwwroot, "help.html"));
+        foreach (var code in Translated)
+        {
+            var path = Path.Combine(Wwwroot, $"help.{code}.html");
+            Assert.True(File.Exists(path), $"help.{code}.html is missing.");
+            var help = File.ReadAllText(path);
+            Assert.Contains($"<html lang=\"{code}\"", help);
+            Assert.Equal(HelpSections(english), HelpSections(help));
+            foreach (var tag in new[] { "<details", "<h4>", "<li>" })
+            {
+                Assert.True(Count(english, tag) == Count(help, tag), $"help.{code}.html has a different number of {tag} than help.html.");
+            }
+        }
+    }
+
+    // The help panel opens the section named after the page (e.g. help-yaniv on /yaniv.html), and help-lobby in the lobby.
+    [Fact]
+    public void The_help_has_a_section_for_the_main_screen_the_lobby_and_every_game()
+    {
+        var games = Enum.GetValues<GameType>().Select(type => GameSessionStore.PageFor(type).Trim('/').Replace(".html", ""));
+        var expected = new[] { "main-screen", "lobby" }.Concat(games).Order();
+
+        Assert.Equal(expected, HelpSections(File.ReadAllText(Path.Combine(Wwwroot, "help.html"))).Order());
+    }
+
+    private static List<string> HelpSections(string html) => HelpSection().Matches(html).Select(match => match.Groups[1].Value).ToList();
 
     private static int Count(string text, string tag) => text.Split(tag).Length - 1;
 
