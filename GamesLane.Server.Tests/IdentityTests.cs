@@ -73,6 +73,16 @@ public class IdentityTests
     }
 
     [Theory]
+    [InlineData("80351110224678912", "8342729096ea3675442027381ff50dfe", "https://cdn.discordapp.com/avatars/80351110224678912/8342729096ea3675442027381ff50dfe.png?size=128")]
+    [InlineData("80351110224678912", null, null)]
+    [InlineData("80351110224678912", "", null)]
+    [InlineData(null, "8342729096ea3675442027381ff50dfe", null)]
+    public void Discord_avatars_are_downloaded_from_the_discord_cdn(string? userId, string? avatarHash, string? expected)
+    {
+        Assert.Equal(expected, AuthSetup.DiscordAvatarUrl(userId, avatarHash));
+    }
+
+    [Theory]
     [InlineData("ada", true)]
     [InlineData("Ada_Lovelace_1815", true)]
     [InlineData("abcdefghij0123456789", true)]

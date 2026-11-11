@@ -24,7 +24,7 @@
     <ul>
         <li><strong>Your display name and icon</strong>, which you choose. They are shown to the other people in your game.</li>
         <li><strong>If you create an account:</strong> your username and a password. The password is stored only in scrambled form (a salted hash), so nobody, including GamesLane, can read it.</li>
-        <li><strong>If you sign in with Google or Microsoft:</strong> your account ID at that service, used only to recognise you next time, and your name and profile picture, used once as your default display name and icon. GamesLane never sees your Google or Microsoft password, and does not keep your email address.</li>
+        <li><strong>If you sign in with Google, Microsoft or Discord:</strong> your account ID at that service, used only to recognise you next time, and your name and profile picture, used once as your default display name and icon. GamesLane never sees your password at that service, and does not keep your email address.</li>
         <li><strong>If you upload a picture</strong> as your icon: a small copy of it (128×128 pixels).</li>
         <li><strong>Game information:</strong> the games you create or join, and the moves you make.</li>
         <li><strong>Chat messages</strong> you write in a game, with your display name and icon. Everyone with that game open (players and watchers) sees them.</li>
@@ -33,11 +33,11 @@
     <h3>How it is stored</h3>
     <ul>
         <li>Guests (everyone who has not logged in with an account) are stored only in their browser's local storage, never on the server, and do not expire.</li>
-        <li>Accounts (username or Google/Microsoft) are saved in a database: the information above, plus your chat and sound settings, and when the account was created and last used. <strong>An account that is not used for 30 days is deleted automatically</strong>, together with its picture.</li>
+        <li>Accounts (username or Google/Microsoft/Discord) are saved in a database: the information above, plus your chat and sound settings, and when the account was created and last used. <strong>An account that is not used for 30 days is deleted automatically</strong>, together with its picture.</li>
         <li>Games are saved in the database, so they can be continued after a break or a server restart. A game that has started is deleted 6 hours after everyone has left it; a game that never started is deleted soon after everyone has left it.</li>
         <li>A game keeps only its latest 100 chat messages, which are deleted together with the game.</li>
         <li>Your browser stores a login token. For an account, it keeps you logged in for up to 30 days after your last visit, or until you log out. For a guest, it holds the guest's display name and icon, and lasts until you clear your browser's site data.</li>
-        <li>While you sign in with Google or Microsoft, a cookie is used for a few moments to complete the sign-in, and is then removed.</li>
+        <li>While you sign in with Google, Microsoft or Discord, a cookie is used for a few moments to complete the sign-in, and is then removed.</li>
     </ul>
 
     <h3>Sharing</h3>

@@ -3,31 +3,33 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Cards - GamesLane developer page</title>
-    <link rel="icon" href="/images/logo-32.png">
-    <link rel="stylesheet" href="/styles.css">
+    <title>Cards - GamesLane</title>
+    <link rel="icon" href="images/logo-32.png">
+    <link rel="apple-touch-icon" href="images/logo-180.png">
+    <meta name="theme-color" content="#19285d">
+    <link rel="stylesheet" href="styles.css">
     <!-- SignalR sets a global "t" while it loads, so it comes before i18n.js, which defines t(). -->
     <script src="https://cdn.jsdelivr.net/npm/@microsoft/signalr@10.0.11/dist/browser/signalr.min.js"></script>
-    <script src="/i18n.js"></script>
-    <style>
-        body { padding: 1rem; background: #f4f1ea; font-family: system-ui, sans-serif; }
-        h2 { margin: 1.2rem 0 0.4rem; font-size: 1rem; }
-        .row { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin-bottom: 0.5rem; }
-        .dark { padding: 0.8rem; border-radius: 12px; background: radial-gradient(circle at 50% 30%, #3a3f4a, #1c1f26); }
-    </style>
+    <script src="i18n.js"></script>
 </head>
 <body>
-<!-- common.js puts the language picker next to the account bar. -->
-<div hidden><div id="account"></div></div>
-<h1>GamesLane cards</h1>
-<p>Every card drawn by <code>cardElement</code> in the GamesLane style. Developer page, served only in Development.</p>
-<h2>Card back and cards without a suit, large</h2><div class="row" id="special-large"></div>
-<h2>Card back and cards without a suit, hand size</h2><div class="row" id="special-hand"></div>
-<h2>Card back and cards without a suit, small, on a dark table</h2><div class="row dark" id="special-small"></div>
-<h2>Select Large suit cards</h2><div class="row" id="suited-large"></div>
-<h2>Every card in each suit, hand size</h2><div id="suits"></div>
-<h2>Every card in each suit, small, on a dark table</h2><div class="dark" id="suits-small"></div>
-<script src="/common.js"></script>
+<header class="top">
+    <a href="/?splash" class="brand" title="Main screen"><img class="brand-name" src="images/name.png" alt="GamesLane"></a>
+    <div id="account" class="account"></div>
+</header>
+<main class="admin cards-page">
+    <section class="panel">
+        <h2>GamesLane cards</h2>
+        <p class="hint">Every card drawn by <code>cardElement</code> in the GamesLane style. Linked from the profile for admins.</p>
+        <h3>Card back and cards without a suit, large</h3><div class="cards-row" id="special-large"></div>
+        <h3>Card back and cards without a suit, hand size</h3><div class="cards-row" id="special-hand"></div>
+        <h3>Card back and cards without a suit, small, on a dark table</h3><div class="cards-row cards-dark" id="special-small"></div>
+        <h3>Select large suit cards</h3><div class="cards-row" id="suited-large"></div>
+        <h3>Every card in each suit, hand size</h3><div id="suits"></div>
+        <h3>Every card in each suit, small, on a dark table</h3><div class="cards-dark" id="suits-small"></div>
+    </section>
+</main>
+<script src="common.js"></script>
 <script>
     "use strict";
     const SUITS = ["♥", "♦", "♣", "♠"];
@@ -39,7 +41,7 @@
 
     // A row of cards at a font size, in the parent if it is a row, otherwise in a new row added to it.
     function cardRow(parent, texts, size) {
-        const row = parent.classList.contains("row") ? parent : parent.appendChild(el("div", "row"));
+        const row = parent.classList.contains("cards-row") ? parent : parent.appendChild(el("div", "cards-row"));
         texts.forEach((text) => {
             const card = cardElement(text, "New");
             card.style.fontSize = size;

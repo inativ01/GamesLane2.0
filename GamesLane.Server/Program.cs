@@ -1,5 +1,4 @@
 using System.Text.Json.Serialization;
-using Microsoft.Extensions.FileProviders;
 using GamesLane.Server.Auth;
 using GamesLane.Server.Data;
 using GamesLane.Server.Feedback;
@@ -49,16 +48,6 @@ app.UseStaticFiles(new StaticFileOptions
 {
     OnPrepareResponse = context => context.Context.Response.Headers.CacheControl = "no-cache",
 });
-// Developer pages in the dev folder (e.g. /dev/cards.html, every playing card), only when running locally.
-if (app.Environment.IsDevelopment())
-{
-    app.UseStaticFiles(new StaticFileOptions
-    {
-        FileProvider = new PhysicalFileProvider(Path.Combine(app.Environment.ContentRootPath, "dev")),
-        RequestPath = "/dev",
-        OnPrepareResponse = context => context.Context.Response.Headers.CacheControl = "no-cache",
-    });
-}
 app.UseAuthentication();
 app.UseRateLimiter();
 

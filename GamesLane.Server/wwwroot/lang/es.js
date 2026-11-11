@@ -20,9 +20,15 @@ TRANSLATIONS.es = {
     "Log in": "Iniciar sesión",
     "Too many attempts. Wait a minute and try again.": "Demasiados intentos. Espera un minuto e inténtalo de nuevo.",
     "Create account": "Crear cuenta",
-    "You are playing as a guest. Log in, or create an account to keep your name and icon on any device.":
-        "Estás jugando como invitado. Inicia sesión o crea una cuenta para conservar tu nombre e ícono en cualquier dispositivo.",
-    "Your account gets the display name and icon chosen above.": "Tu cuenta tendrá el nombre visible y el ícono que elegiste arriba.",
+    "Playing as a guest. Log in or create an account to keep your profile, game order and game options on any device.":
+        "Juegas como invitado. Inicia sesión o crea una cuenta para conservar tu perfil, el orden de los juegos y las opciones de partida en cualquier dispositivo.",
+    "Log in or create account": "Iniciar sesión o crear cuenta",
+    "Change icon": "Cambiar ícono",
+    "Change name": "Cambiar nombre",
+    "Guest": "Invitado",
+    "GamesLane account": "Cuenta de GamesLane",
+    "{provider} account": "Cuenta de {provider}",
+    "Preferences": "Preferencias",
     "Cancel": "Cancelar",
     "Username": "Usuario",
     "Password": "Contraseña",

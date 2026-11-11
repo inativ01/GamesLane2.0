@@ -20,9 +20,15 @@ TRANSLATIONS.fr = {
     "Log in": "Se connecter",
     "Too many attempts. Wait a minute and try again.": "Trop de tentatives. Attends une minute et réessaie.",
     "Create account": "Créer un compte",
-    "You are playing as a guest. Log in, or create an account to keep your name and icon on any device.":
-        "Tu joues en tant qu'invité. Connecte-toi ou crée un compte pour garder ton nom et ton icône sur tous tes appareils.",
-    "Your account gets the display name and icon chosen above.": "Ton compte reçoit le pseudo et l'icône choisis ci-dessus.",
+    "Playing as a guest. Log in or create an account to keep your profile, game order and game options on any device.":
+        "Tu joues en tant qu'invité. Connecte-toi ou crée un compte pour garder ton profil, l'ordre des jeux et les options de partie sur tous tes appareils.",
+    "Log in or create account": "Se connecter ou créer un compte",
+    "Change icon": "Changer d'icône",
+    "Change name": "Changer de pseudo",
+    "Guest": "Invité",
+    "GamesLane account": "Compte GamesLane",
+    "{provider} account": "Compte {provider}",
+    "Preferences": "Préférences",
     "Cancel": "Annuler",
     "Username": "Identifiant",
     "Password": "Mot de passe",

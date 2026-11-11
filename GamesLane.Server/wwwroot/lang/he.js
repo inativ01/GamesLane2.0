@@ -20,9 +20,15 @@ TRANSLATIONS.he = {
     "Log in": "התחברות",
     "Too many attempts. Wait a minute and try again.": "יותר מדי ניסיונות. חכו דקה ונסו שוב.",
     "Create account": "יצירת חשבון",
-    "You are playing as a guest. Log in, or create an account to keep your name and icon on any device.":
-        "אתם משחקים כאורחים. התחברו, או צרו חשבון כדי לשמור את השם והסמל שלכם בכל מכשיר.",
-    "Your account gets the display name and icon chosen above.": "החשבון יקבל את שם התצוגה והסמל שנבחרו למעלה.",
+    "Playing as a guest. Log in or create an account to keep your profile, game order and game options on any device.":
+        "משחקים כאורחים. התחברו או צרו חשבון כדי לשמור את הפרופיל, סדר המשחקים ואפשרויות המשחק שלכם בכל מכשיר.",
+    "Log in or create account": "התחברות או יצירת חשבון",
+    "Change icon": "שינוי הסמל",
+    "Change name": "שינוי השם",
+    "Guest": "אורח",
+    "GamesLane account": "חשבון GamesLane",
+    "{provider} account": "חשבון {provider}",
+    "Preferences": "העדפות",
     "Cancel": "ביטול",
     "Username": "שם משתמש",
     "Password": "סיסמה",
