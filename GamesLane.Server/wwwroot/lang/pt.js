@@ -636,6 +636,29 @@ TRANSLATIONS.pt = {
     "Play a card.": "Jogue uma carta.",
     "Hand {n} is over.": "A mão {n} terminou.",
 
+    // Hearts
+    "Hearts": "Copas",
+    "Hearts - GamesLane": "Copas - GamesLane",
+    "Avoid the hearts and the queen of spades, or take them all.": "Fuja das copas e da dama de espadas, ou leve todas.",
+    "Pass 3 cards to the left, to {name}.": "Passe 3 cartas para a esquerda, para {name}.",
+    "Pass 3 cards to the right, to {name}.": "Passe 3 cartas para a direita, para {name}.",
+    "Pass 3 cards across, to {name}.": "Passe 3 cartas para a frente, para {name}.",
+    "Waiting for the others to pass their cards.": "Esperando os outros passarem as cartas.",
+    "No passing in this hand.": "Nesta mão não se passam cartas.",
+    "Shot the moon!": "Levou tudo!",
+    "Pass {n} cards": "Passar {n} cartas",
+    "You passed {cards}.": "Você passou {cards}.",
+    "You received {cards}.": "Você recebeu {cards}.",
+    "Passed": "Passou",
+
+    // Hearts: messages from the server
+    "The cards are not being passed now.": "Agora não é hora de passar cartas.",
+    "You have already passed your cards.": "Você já passou suas cartas.",
+    "Choose {n} cards to pass.": "Escolha {n} cartas para passar.",
+    "Lead the 2♣.": "Comece com o 2♣.",
+    "Hearts are not broken yet.": "Nenhuma carta de copas foi jogada ainda.",
+    "No points on the first trick: play another card.": "Na primeira vaza não se dão pontos: jogue outra carta.",
+
     // Tic-tac-toe
     "Tic-tac-toe - GamesLane": "Jogo da Velha - GamesLane",
     "Next round": "Próxima rodada",

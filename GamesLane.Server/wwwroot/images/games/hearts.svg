@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" role="img" aria-label="Hearts">
+  <defs>
+    <linearGradient id="felt" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#8e2a3a"/>
+      <stop offset="1" stop-color="#4f1220"/>
+    </linearGradient>
+  </defs>
+  <rect width="120" height="120" rx="26" fill="url(#felt)"/>
+  <!-- A big heart over a fan of the queen of spades and a heart. -->
+  <path d="M60 50 C60 38 46 30 38 38 C30 46 36 58 60 74 C84 58 90 46 82 38 C74 30 60 38 60 50 Z" fill="#f05a6e" stroke="#fff" stroke-width="2" transform="translate(0 -26)"/>
+  <g font-family="Georgia, serif" font-weight="700">
+    <g transform="rotate(-14 52 110)">
+      <rect x="30" y="52" width="34" height="48" rx="4" fill="#fff" stroke="#c9c2b6"/>
+      <text x="34" y="66" font-size="12" fill="#1d1a17">Q</text>
+      <text x="47" y="90" font-size="20" fill="#1d1a17" text-anchor="middle">♠</text>
+    </g>
+    <g transform="rotate(14 68 110)">
+      <rect x="56" y="52" width="34" height="48" rx="4" fill="#fff" stroke="#c9c2b6"/>
+      <text x="60" y="66" font-size="12" fill="#c0281b">A</text>
+      <text x="73" y="90" font-size="20" fill="#c0281b" text-anchor="middle">♥</text>
+    </g>
+  </g>
+</svg>
