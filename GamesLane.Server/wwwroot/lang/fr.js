@@ -22,7 +22,6 @@ TRANSLATIONS.fr = {
     "Create account": "Créer un compte",
     "You are playing as a guest. Log in, or create an account to keep your name and icon on any device.":
         "Tu joues en tant qu'invité. Connecte-toi ou crée un compte pour garder ton nom et ton icône sur tous tes appareils.",
-    "Your account gets the display name and icon chosen below.": "Ton compte reçoit le pseudo et l'icône choisis ci-dessous.",
     "Log in or create account": "Se connecter ou créer un compte",
     "Change icon": "Changer d'icône",
     "Change name": "Changer de pseudo",

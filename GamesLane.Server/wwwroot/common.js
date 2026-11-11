@@ -442,7 +442,6 @@ function openProfileDialog() {
                     <p class="hint">${t("3 to 20 letters, digits or underscores. You log in with it; others see your display name.")}</p>
                     <label>${t("Password")} <input name="password" type="password" minlength="8" maxlength="100" autocomplete="new-password" required></label>
                     <p class="hint">${t("At least 8 characters. It cannot be reset, so keep it safe.")}</p>
-                    <p class="hint">${t("Your account gets the display name and icon chosen below.")}</p>
                     <p class="error" role="alert"></p>
                     <div class="actions"><button type="submit">${t("Create account")}</button></div>
                 </form>

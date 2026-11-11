@@ -22,7 +22,6 @@ TRANSLATIONS.pt = {
     "Create account": "Criar conta",
     "You are playing as a guest. Log in, or create an account to keep your name and icon on any device.":
         "Você está jogando como convidado. Entre ou crie uma conta para manter seu nome e ícone em qualquer dispositivo.",
-    "Your account gets the display name and icon chosen below.": "Sua conta recebe o nome de exibição e o ícone escolhidos abaixo.",
     "Log in or create account": "Entrar ou criar conta",
     "Change icon": "Trocar ícone",
     "Change name": "Trocar nome",

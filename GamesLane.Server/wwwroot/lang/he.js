@@ -22,7 +22,6 @@ TRANSLATIONS.he = {
     "Create account": "יצירת חשבון",
     "You are playing as a guest. Log in, or create an account to keep your name and icon on any device.":
         "אתם משחקים כאורחים. התחברו, או צרו חשבון כדי לשמור את השם והסמל שלכם בכל מכשיר.",
-    "Your account gets the display name and icon chosen below.": "החשבון יקבל את שם התצוגה והסמל שנבחרו למטה.",
     "Log in or create account": "התחברות או יצירת חשבון",
     "Change icon": "שינוי הסמל",
     "Change name": "שינוי השם",

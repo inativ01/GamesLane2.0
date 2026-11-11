@@ -353,6 +353,19 @@ button:not(.cell):disabled {
     padding-top: 0.25rem;
 }
 
+/* No room is kept for an error until there is one, and a field's hint sits right under it. */
+.profile-dialog p {
+    margin: 0;
+}
+
+.profile-dialog .error:empty {
+    display: none;
+}
+
+.profile-account label + .hint {
+    margin-top: -0.45rem;
+}
+
 .profile-card {
     display: flex;
     align-items: center;
