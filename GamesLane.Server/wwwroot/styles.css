@@ -26,8 +26,10 @@
     display: none !important;
 }
 
+/* Two fast taps do not zoom in on phones; pinching still zooms. */
 html {
     -webkit-text-size-adjust: 100%;
+    touch-action: manipulation;
 }
 
 body {
