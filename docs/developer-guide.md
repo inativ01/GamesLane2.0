@@ -85,7 +85,7 @@ GamesLane.Server/              ASP.NET Core backend
     common.js                  Shared: automatic guest, account bar and profile dialog (with login), help button and panel, hub connection, session lobby and page framework, playing cards (new and classic styles)
     i18n.js                    Shared: languages. The English texts in the code are the keys: t("Log in") gives the chosen language's text. Also matches the server's English messages to their translations, and the language picker
     lang/he.js, es.js, fr.js, pt.js, zh-CN.js, zh-TW.js  Hebrew, Spanish (Mexico), French (France), Portuguese (Brazil), Simplified Chinese (mainland China) and Traditional Chinese (Taiwan) translations (a page offers a language by loading its file before i18n.js)
-    styles.css                 Styles for all pages
+    styles.css                 Styles for all pages (on phones, double-tapping does not zoom in; pinching still zooms)
     admin.html/.js             Admin page: games played per day (graph) and per game (totals), and the activity (visits, each game's activity, returns, sources, languages), for admins only
     cards.html                 Cards page: the card back and every GamesLane playing card at several sizes (linked from the profile for admins)
     privacy.html               Privacy policy in English (the address registered with Google); privacy.he.html, .es.html, .fr.html, .pt.html, .zh-CN.html, .zh-TW.html: the policy in each language, linked from the main screen in the chosen language
