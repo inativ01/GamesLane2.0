@@ -46,7 +46,7 @@ public static partial class FeedbackRules
     [GeneratedRegex(@"^/[A-Za-z0-9._/-]{0,60}$")]
     private static partial Regex PagePath();
 
-    [GeneratedRegex(@"^[a-z]{2}$")]
+    [GeneratedRegex(@"^[a-z]{2}(-[A-Z]{2})?$")]
     private static partial Regex LanguageCode();
 
     /// <summary>

@@ -6,7 +6,8 @@
 // TRANSLATIONS and is loaded before this script. A page offers the languages whose translations it loads; pages
 // without translations stay in English. The choice is remembered in this browser; until the user chooses, the first of
 // the browser's preferred languages that the page offers, otherwise English. The locale is the variant of the language
-// (e.g. Mexican Spanish), used to choose a voice for reading aloud.
+// (e.g. Mexican Spanish), used to choose a voice for reading aloud. Chinese has two languages: Simplified (zh-CN) and
+// Traditional (zh-TW), which browsers set to the Traditional script or to Taiwan, Hong Kong or Macau get.
 
 var TRANSLATIONS = window.TRANSLATIONS ?? {};
 
@@ -16,12 +17,23 @@ const LANGUAGES = [
     { code: "es", locale: "es-MX", name: "Español", flag: "images/flags/mx.svg" },
     { code: "fr", locale: "fr-FR", name: "Français", flag: "images/flags/fr.svg" },
     { code: "pt", locale: "pt-BR", name: "Português", flag: "images/flags/br.svg" },
+    { code: "zh-CN", locale: "zh-CN", name: "简体中文", flag: "images/flags/cn.svg" },
+    { code: "zh-TW", locale: "zh-TW", name: "繁體中文", flag: "images/flags/tw.svg" },
 ];
 const LANGUAGE_KEY = "language";
 const offeredLanguages = LANGUAGES.filter((lang) => lang.code === "en" || TRANSLATIONS[lang.code]);
+
+// The code in LANGUAGES for a browser's language tag, e.g. "fr" for "fr-CA" and "zh-TW" for "zh-Hant" or "zh-HK".
+function languageCode(tag) {
+    const parts = tag.toLowerCase().split("-");
+    if (parts[0] !== "zh") return parts[0];
+    const traditional = !parts.includes("hans") && parts.some((part) => ["hant", "tw", "hk", "mo"].includes(part));
+    return traditional ? "zh-TW" : "zh-CN";
+}
+
 const language = (() => {
     const browserLanguage = (navigator.languages?.length ? navigator.languages : [navigator.language ?? ""])
-        .map((tag) => tag.toLowerCase().split("-")[0])
+        .map(languageCode)
         .find((code) => offeredLanguages.some((lang) => lang.code === code));
     const preferred = localStorage.getItem(LANGUAGE_KEY) ?? browserLanguage;
     return offeredLanguages.find((lang) => lang.code === preferred) ?? LANGUAGES[0];
