@@ -322,6 +322,18 @@ public interface IGameHub
     Task PlayTrickCard(string sessionId, int seat, string? card);
 
     /// <summary>
+    /// Spades, while bidding with Blind Nil: <paramref name="seat"/>, which the caller must hold, looks at its cards, so it
+    /// can no longer bid Blind Nil.
+    /// </summary>
+    Task LookAtCards(string sessionId, int seat);
+
+    /// <summary>
+    /// Spades: <paramref name="seat"/>, which the caller must hold and whose turn it is to bid, bids
+    /// <paramref name="tricks"/> (1 to 13, or 0 for Nil with the option), <paramref name="blind"/> for Blind Nil.
+    /// </summary>
+    Task Bid(string sessionId, int seat, int tricks, bool blind);
+
+    /// <summary>
     /// The Gang: reveals the next hand, if <paramref name="revealed"/> hands have been revealed so far.
     /// </summary>
     Task RevealNext(string sessionId, int revealed);

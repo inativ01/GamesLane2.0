@@ -635,6 +635,52 @@ TRANSLATIONS.fr = {
     "Play a card.": "Joue une carte.",
     "Hand {n} is over.": "La donne {n} est terminée.",
 
+    // Spades
+    "Spades": "Pique",
+    "Spades - GamesLane": "Pique - GamesLane",
+    "Bid your tricks with your partner. Spades are trumps.": "Annonce tes plis avec ton partenaire. Pique est l'atout.",
+    "Your team wins!": "Ton équipe gagne !",
+    "{name} win!": "{name} gagnent !",
+    "Bid the tricks you expect to take.": "Annonce les plis que tu penses remporter.",
+    "Bid Blind Nil, or look at your cards.": "Annonce Nil aveugle, ou regarde tes cartes.",
+    "Waiting for {name} to bid.": "En attente de l'annonce de {name}.",
+    "Bid made": "Contrat rempli",
+    "Bid missed": "Contrat chuté",
+    "{name}: Nil made": "{name} : Nil réussi",
+    "{name}: Nil missed": "{name} : Nil chuté",
+    "{name}: Blind Nil made": "{name} : Nil aveugle réussi",
+    "{name}: Blind Nil missed": "{name} : Nil aveugle chuté",
+    "10 bags: −100": "10 plis en trop : −100",
+    "Bid {bid}, took {tricks}": "Annonce {bid}, plis {tricks}",
+    "Nil": "Nil",
+    "Blind Nil": "Nil aveugle",
+    "Show my cards": "Voir mes cartes",
+    "Your bid": "Ton annonce",
+    "Bid": "Annoncer",
+    "Dealer": "Donneur",
+    "Bid: {bid}": "Annonce : {bid}",
+    "Tricks: {n}": "Plis : {n}",
+    "Bags: {n}": "En trop : {n}",
+
+    // Spades options (from the server)
+    "Nil allowed": "Avec Nil",
+    "Bid to take no trick: 100 points if you take none, otherwise 100 off.": "Annonce de ne faire aucun pli : 100 points si tu réussis, sinon 100 de moins.",
+    "No Nil": "Sans Nil",
+    "Every player bids at least 1 trick.": "Chaque joueur annonce au moins 1 pli.",
+    "No Blind Nil": "Sans Nil aveugle",
+    "Every player looks at their cards before bidding.": "Chaque joueur regarde ses cartes avant d'annoncer.",
+    "Blind Nil allowed": "Avec Nil aveugle",
+    "Bid Nil before looking at your cards: 200 points if you take no trick, otherwise 200 off.":
+        "Annonce Nil avant de regarder tes cartes : 200 points si tu ne fais aucun pli, sinon 200 de moins.",
+
+    // Spades: messages from the server
+    "The bidding is over.": "Les annonces sont terminées.",
+    "It is not your turn to bid.": "Ce n'est pas ton tour d'annoncer.",
+    "Bid 1 to {n} tricks.": "Annonce de 1 à {n} plis.",
+    "Only Nil can be bid blind.": "Seul Nil peut être annoncé à l'aveugle.",
+    "You have looked at your cards: Blind Nil is no longer possible.": "Tu as regardé tes cartes : Nil aveugle n'est plus possible.",
+    "Spades are not broken yet.": "Aucun pique n'a encore été joué.",
+
     // Tic-tac-toe
     "Tic-tac-toe - GamesLane": "Morpion - GamesLane",
     "Next round": "Manche suivante",

@@ -389,6 +389,14 @@ public class GameHub(
         Act(sessionId, (ITrickTakingSession s, out string? error) => s.TryPlayCard(UserKey, seat, card, out error));
 
     /// <inheritdoc />
+    public Task LookAtCards(string sessionId, int seat) =>
+        Act(sessionId, (ISpadesSession s, out string? error) => s.TryLook(UserKey, seat, out error));
+
+    /// <inheritdoc />
+    public Task Bid(string sessionId, int seat, int tricks, bool blind) =>
+        Act(sessionId, (ISpadesSession s, out string? error) => s.TryBid(UserKey, seat, tricks, blind, out error));
+
+    /// <inheritdoc />
     public Task RevealNext(string sessionId, int revealed) =>
         Act(sessionId, (ITheGangSession s, out string? error) => s.TryRevealNext(UserKey, revealed, out error));
 

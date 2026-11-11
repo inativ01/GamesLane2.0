@@ -5,11 +5,11 @@
 
 const GAME_LABELS = {
     TheGang: "The Gang", Backgammon: "Backgammon", RichManPoorMan: "Rich man, poor man", FinalCard: "Final Card",
-    Yaniv: "Yaniv", Wazoo: "Wazoo", TicTacToe: "Tic-tac-toe",
+    Yaniv: "Yaniv", Spades: "Spades", Wazoo: "Wazoo", TicTacToe: "Tic-tac-toe",
 };
 const GAME_COLORS = {
     TheGang: "#d62828", Backgammon: "#8a5a2b", RichManPoorMan: "#e5a400", FinalCard: "#1d5bd6",
-    Yaniv: "#23913a", Wazoo: "#8e44ad", TicTacToe: "#17a2b8",
+    Yaniv: "#23913a", Spades: "#2c3e50", Wazoo: "#8e44ad", TicTacToe: "#17a2b8",
 };
 const HIDDEN_KEY = "admin.hiddenGames";
 const CHART = { width: 800, height: 320, left: 44, right: 12, top: 12, bottom: 34 };

@@ -3,6 +3,7 @@ using GamesLane.Server.Games.RichManPoorMan;
 using GamesLane.Server.Games.TheGang;
 using GamesLane.Server.Games.TicTacToe;
 using GamesLane.Server.Games.FinalCard;
+using GamesLane.Server.Games.Spades;
 using GamesLane.Server.Games.Yaniv;
 using GamesLane.Server.Games.Wazoo;
 using GamesLane.Server.Hubs;
@@ -907,6 +908,11 @@ public class GameSessionTests
         yaniv.TryDiscard(Alice, 0, ["2♣", "3♣", "4♣"], false, out _);
         AssertSameAfterReload(yaniv, () => new YanivSession("ABC123", UnshuffledYaniv),
             s => s.TryDiscard(Bob, 1, ["7♣"], true, out var e) ? null : e);
+
+        var spades = StartedSpades();
+        spades.TryBid(Players[0], 0, 4, false, out _);
+        AssertSameAfterReload(spades, () => new SpadesSession("ABC123", _ => { }),
+            s => s.TryBid(Players[1], 1, 2, false, out var e) ? null : e);
     }
 
     // Saves the session, loads it into a new one, reconnects its users, and checks both give the same public state
@@ -1564,6 +1570,68 @@ public class GameSessionTests
 
     private static YanivState Yaniv(YanivSession session) =>
         Assert.IsType<YanivState>(session.GetPublicState().Game);
+
+    // Spades
+
+    // A Spades game with 4 seats, unshuffled: seat 0 holds the clubs, 1 the diamonds, 2 the spades and 3 the hearts.
+    private static SpadesSession StartedSpades(Dictionary<string, string>? options = null)
+    {
+        var session = new SpadesSession("ABC123", _ => { });
+        for (var i = 0; i < 4; i++)
+        {
+            Sit(session, i);
+        }
+
+        Assert.True(session.TrySetOptions(Players[0], options, out var error), error);
+        Assert.True(session.TryNewGame(Players[0], 0, out error), error);
+        return session;
+    }
+
+    [Fact]
+    public void Spades_seats_bid_in_turn_in_teams_of_partners_across()
+    {
+        var session = StartedSpades();
+        var state = Spades(session);
+        Assert.Equal((SpadesPhase.Bidding, 3, 0), (state.Phase, state.Dealer, state.Bidder));
+        Assert.Equal([[0, 2], [1, 3]], state.Teams.Select(t => t.Seats));
+        Assert.False(session.TryBid(Players[1], 1, 3, false, out var error));
+        Assert.Equal("It is not your turn to bid.", error);
+
+        foreach (var (seat, bid) in new[] { (0, 4), (1, 0), (2, 5), (3, 2) })
+        {
+            Assert.True(session.TryBid(Players[seat], seat, bid, false, out error), error);
+        }
+
+        state = Spades(session);
+        Assert.Equal((SpadesPhase.Playing, 0), (state.Phase, state.Turn));
+        Assert.Equal([4, 0, 5, 2], state.Players.Select(p => p.Bid));
+        var hand = Assert.IsType<SpadesPrivateState>(session.GetPrivateState(Players[0])).Hands.Single();
+        Assert.Equal(13, hand.Playable.Count);
+        Assert.True(session.TryPlayCard(Players[0], 0, "A♣", out error), error);
+        Assert.Equal([new TrickCardState(0, "A♣")], Spades(session).Trick.Cards);
+    }
+
+    [Fact]
+    public void With_blind_nil_a_seat_sees_its_cards_only_once_it_looks_or_bids()
+    {
+        var session = StartedSpades(new() { [SpadesOptions.BlindNil] = "Yes" });
+        Assert.Equal((0, false), (Hand(0).Cards.Count, Hand(0).Looked));
+
+        Assert.True(session.TryBid(Players[0], 0, 0, true, out var error), error);
+        Assert.Equal(13, Hand(0).Cards.Count);
+        Assert.True(session.TryLook(Players[1], 1, out error), error);
+        Assert.True(Hand(1).Looked);
+        Assert.True(Spades(session).Players[0].Blind);
+
+        (IReadOnlyList<string> Cards, bool Looked) Hand(int seat)
+        {
+            var hand = Assert.IsType<SpadesPrivateState>(session.GetPrivateState(Players[seat])).Hands.Single();
+            return (hand.Cards, hand.Looked);
+        }
+    }
+
+    private static SpadesState Spades(SpadesSession session) =>
+        Assert.IsType<SpadesState>(session.GetPublicState().Game);
 
     // Rich man, poor man
 

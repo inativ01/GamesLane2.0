@@ -636,6 +636,52 @@ TRANSLATIONS["zh-CN"] = {
     "Play a card.": "请出一张牌。",
     "Hand {n} is over.": "第 {n} 手已结束。",
 
+    // Spades
+    "Spades": "黑桃王",
+    "Spades - GamesLane": "黑桃王 - GamesLane",
+    "Bid your tricks with your partner. Spades are trumps.": "和搭档一起叫墩。黑桃是将牌。",
+    "Your team wins!": "您的队伍获胜！",
+    "{name} win!": "{name} 获胜！",
+    "Bid the tricks you expect to take.": "请叫出您预计能赢的墩数。",
+    "Bid Blind Nil, or look at your cards.": "请叫盲零墩，或者查看您的牌。",
+    "Waiting for {name} to bid.": "正在等待 {name} 叫墩。",
+    "Bid made": "完成叫墩",
+    "Bid missed": "未完成叫墩",
+    "{name}: Nil made": "{name}：零墩成功",
+    "{name}: Nil missed": "{name}：零墩失败",
+    "{name}: Blind Nil made": "{name}：盲零墩成功",
+    "{name}: Blind Nil missed": "{name}：盲零墩失败",
+    "10 bags: −100": "10 个超墩：−100",
+    "Bid {bid}, took {tricks}": "叫 {bid} 墩，赢 {tricks} 墩",
+    "Nil": "零墩",
+    "Blind Nil": "盲零墩",
+    "Show my cards": "查看我的牌",
+    "Your bid": "您的叫墩",
+    "Bid": "叫墩",
+    "Dealer": "庄家",
+    "Bid: {bid}": "叫墩：{bid}",
+    "Tricks: {n}": "墩数：{n}",
+    "Bags: {n}": "超墩：{n}",
+
+    // Spades options (from the server)
+    "Nil allowed": "允许零墩",
+    "Bid to take no trick: 100 points if you take none, otherwise 100 off.": "叫一墩都不赢：成功得 100 分，否则扣 100 分。",
+    "No Nil": "不允许零墩",
+    "Every player bids at least 1 trick.": "每位玩家至少叫 1 墩。",
+    "No Blind Nil": "不允许盲零墩",
+    "Every player looks at their cards before bidding.": "每位玩家叫墩前先看牌。",
+    "Blind Nil allowed": "允许盲零墩",
+    "Bid Nil before looking at your cards: 200 points if you take no trick, otherwise 200 off.":
+        "看牌前叫零墩：一墩都不赢得 200 分，否则扣 200 分。",
+
+    // Spades: messages from the server
+    "The bidding is over.": "叫墩已经结束。",
+    "It is not your turn to bid.": "现在不是您叫墩。",
+    "Bid 1 to {n} tricks.": "请叫 1 到 {n} 墩。",
+    "Only Nil can be bid blind.": "只有零墩可以盲叫。",
+    "You have looked at your cards: Blind Nil is no longer possible.": "您已经看过牌了：不能再叫盲零墩。",
+    "Spades are not broken yet.": "还没有人出过黑桃。",
+
     // Tic-tac-toe
     "Tic-tac-toe - GamesLane": "井字棋 - GamesLane",
     "Next round": "下一轮",

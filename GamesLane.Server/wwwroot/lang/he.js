@@ -635,6 +635,52 @@ TRANSLATIONS.he = {
     "Play a card.": "הניחו קלף.",
     "Hand {n} is over.": "יד {n} הסתיימה.",
 
+    // Spades
+    "Spades": "ספיידס",
+    "Spades - GamesLane": "ספיידס - GamesLane",
+    "Bid your tricks with your partner. Spades are trumps.": "הכריזו על הלקיחות יחד עם השותף. העלה הוא השליט.",
+    "Your team wins!": "הקבוצה שלך ניצחה!",
+    "{name} win!": "{name} מנצחים!",
+    "Bid the tricks you expect to take.": "הכריזו כמה לקיחות תיקחו.",
+    "Bid Blind Nil, or look at your cards.": "הכריזו אפס עיוור, או הסתכלו בקלפים.",
+    "Waiting for {name} to bid.": "ממתינים להכרזה של {name}.",
+    "Bid made": "ההכרזה הצליחה",
+    "Bid missed": "ההכרזה נכשלה",
+    "{name}: Nil made": "{name}: אפס הצליח",
+    "{name}: Nil missed": "{name}: אפס נכשל",
+    "{name}: Blind Nil made": "{name}: אפס עיוור הצליח",
+    "{name}: Blind Nil missed": "{name}: אפס עיוור נכשל",
+    "10 bags: −100": "10 עודפים: −100",
+    "Bid {bid}, took {tricks}": "הכרזה {bid}, לקיחות {tricks}",
+    "Nil": "אפס",
+    "Blind Nil": "אפס עיוור",
+    "Show my cards": "הצגת הקלפים שלי",
+    "Your bid": "ההכרזה שלך",
+    "Bid": "הכרזה",
+    "Dealer": "מחלק",
+    "Bid: {bid}": "הכרזה: {bid}",
+    "Tricks: {n}": "לקיחות: {n}",
+    "Bags: {n}": "עודפים: {n}",
+
+    // Spades options (from the server)
+    "Nil allowed": "מותר להכריז אפס",
+    "Bid to take no trick: 100 points if you take none, otherwise 100 off.": "הכרזה שלא תיקחו אף לקיחה: 100 נקודות אם הצלחתם, אחרת מינוס 100.",
+    "No Nil": "בלי אפס",
+    "Every player bids at least 1 trick.": "כל שחקן מכריז על לקיחה אחת לפחות.",
+    "No Blind Nil": "בלי אפס עיוור",
+    "Every player looks at their cards before bidding.": "כל שחקן מסתכל בקלפים לפני ההכרזה.",
+    "Blind Nil allowed": "מותר להכריז אפס עיוור",
+    "Bid Nil before looking at your cards: 200 points if you take no trick, otherwise 200 off.":
+        "הכרזת אפס לפני שמסתכלים בקלפים: 200 נקודות אם לא לקחתם אף לקיחה, אחרת מינוס 200.",
+
+    // Spades: messages from the server
+    "The bidding is over.": "ההכרזות הסתיימו.",
+    "It is not your turn to bid.": "זה לא התור שלך להכריז.",
+    "Bid 1 to {n} tricks.": "הכריזו 1 עד {n} לקיחות.",
+    "Only Nil can be bid blind.": "רק אפס אפשר להכריז בלי להסתכל.",
+    "You have looked at your cards: Blind Nil is no longer possible.": "כבר הסתכלת בקלפים: אי אפשר להכריז אפס עיוור.",
+    "Spades are not broken yet.": "עוד לא שוחק עלה, אי אפשר לפתוח בעלה.",
+
     // Tic-tac-toe
     "Tic-tac-toe - GamesLane": "איקס־עיגול - GamesLane",
     "Next round": "הסיבוב הבא",
