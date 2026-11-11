@@ -20,8 +20,8 @@ TRANSLATIONS.fr = {
     "Log in": "Se connecter",
     "Too many attempts. Wait a minute and try again.": "Trop de tentatives. Attends une minute et réessaie.",
     "Create account": "Créer un compte",
-    "You are playing as a guest. Log in, or create an account to keep your name and icon on any device.":
-        "Tu joues en tant qu'invité. Connecte-toi ou crée un compte pour garder ton nom et ton icône sur tous tes appareils.",
+    "Playing as a guest. Log in or create an account to keep your profile, game order and game options on any device.":
+        "Tu joues en tant qu'invité. Connecte-toi ou crée un compte pour garder ton profil, l'ordre des jeux et les options de partie sur tous tes appareils.",
     "Log in or create account": "Se connecter ou créer un compte",
     "Change icon": "Changer d'icône",
     "Change name": "Changer de pseudo",

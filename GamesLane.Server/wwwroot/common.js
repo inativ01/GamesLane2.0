@@ -424,7 +424,7 @@ function openProfileDialog() {
         <h2 class="profile-title">${t("Your profile")}</h2>
         ${isGuest ? `
         <section class="profile-guest">
-            <p class="hint">${t("You are playing as a guest. Log in, or create an account to keep your name and icon on any device.")}</p>
+            <p class="hint">${t("Playing as a guest. Log in or create an account to keep your profile, game order and game options on any device.")}</p>
             <button type="button" class="secondary" data-show-login aria-expanded="false">${t("Log in or create account")}</button>
             <div class="profile-account" hidden>
                 <div class="tabs" role="tablist">
