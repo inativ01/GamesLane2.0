@@ -631,6 +631,9 @@ TRANSLATIONS.es = {
     // Trick-taking games
     "You won the trick.": "Ganaste la baza.",
     "{name} won the trick.": "{name} ganó la baza.",
+    "4 players": "4 jugadores",
+    "Play a card.": "Juega una carta.",
+    "Hand {n} is over.": "La mano {n} terminó.",
 
     // Tic-tac-toe
     "Tic-tac-toe - GamesLane": "Gato - GamesLane",

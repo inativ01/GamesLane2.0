@@ -631,6 +631,9 @@ TRANSLATIONS.he = {
     // Trick-taking games
     "You won the trick.": "זכית בלקיחה.",
     "{name} won the trick.": "{name} זכה בלקיחה.",
+    "4 players": "4 שחקנים",
+    "Play a card.": "הניחו קלף.",
+    "Hand {n} is over.": "יד {n} הסתיימה.",
 
     // Tic-tac-toe
     "Tic-tac-toe - GamesLane": "איקס־עיגול - GamesLane",

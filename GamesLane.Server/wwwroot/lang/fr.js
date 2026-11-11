@@ -631,6 +631,9 @@ TRANSLATIONS.fr = {
     // Trick-taking games
     "You won the trick.": "Tu as remporté le pli.",
     "{name} won the trick.": "{name} a remporté le pli.",
+    "4 players": "4 joueurs",
+    "Play a card.": "Joue une carte.",
+    "Hand {n} is over.": "La donne {n} est terminée.",
 
     // Tic-tac-toe
     "Tic-tac-toe - GamesLane": "Morpion - GamesLane",

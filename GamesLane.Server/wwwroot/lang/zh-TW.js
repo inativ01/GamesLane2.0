@@ -632,6 +632,9 @@ TRANSLATIONS["zh-TW"] = {
     // Trick-taking games
     "You won the trick.": "您贏得了這一墩。",
     "{name} won the trick.": "{name} 贏得了這一墩。",
+    "4 players": "4 位玩家",
+    "Play a card.": "請出一張牌。",
+    "Hand {n} is over.": "第 {n} 手已結束。",
 
     // Tic-tac-toe
     "Tic-tac-toe - GamesLane": "井字遊戲 - GamesLane",

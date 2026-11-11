@@ -632,6 +632,9 @@ TRANSLATIONS.pt = {
     // Trick-taking games
     "You won the trick.": "Você ganhou a vaza.",
     "{name} won the trick.": "{name} ganhou a vaza.",
+    "4 players": "4 jogadores",
+    "Play a card.": "Jogue uma carta.",
+    "Hand {n} is over.": "A mão {n} terminou.",
 
     // Tic-tac-toe
     "Tic-tac-toe - GamesLane": "Jogo da Velha - GamesLane",
