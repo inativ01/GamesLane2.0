@@ -910,7 +910,11 @@ public class GameSessionTests
             s => s.TryDiscard(Bob, 1, ["7♣"], true, out var e) ? null : e);
 
         var hearts = new HeartsSession("ABC123", _ => { });
-        SitPlayers(hearts, 4);
+        for (var i = 0; i < 4; i++)
+        {
+            Sit(hearts, i);
+        }
+
         hearts.TryNewGame(Players[0], 0, out _);
         for (var seat = 0; seat < 4; seat++)
         {
@@ -1585,10 +1589,14 @@ public class GameSessionTests
     public void Hearts_needs_4_seats_and_each_seat_passes_and_plays_its_own_cards()
     {
         var session = new HeartsSession("ABC123", _ => { });
-        SitPlayers(session, 3);
+        for (var i = 0; i < 3; i++)
+        {
+            Sit(session, i);
+        }
+
         Assert.False(session.TryNewGame(Players[0], 0, out var error));
         Assert.Equal("At least 4 players must be seated.", error);
-        SitPlayers(session, 4, from: 3);
+        Sit(session, 3);
         Assert.True(session.TryNewGame(Players[0], 0, out error), error);
 
         var hand = Assert.IsType<HeartsPrivateState>(session.GetPrivateState(Players[0])).Hands.Single();
@@ -1618,7 +1626,11 @@ public class GameSessionTests
     public void A_hearts_game_waits_for_an_absent_player_who_cannot_be_skipped()
     {
         var session = new HeartsSession("ABC123", _ => { });
-        SitPlayers(session, 4);
+        for (var i = 0; i < 4; i++)
+        {
+            Sit(session, i);
+        }
+
         session.TryNewGame(Players[0], 0, out _);
 
         session.Disconnect("conn-2", Now);
@@ -1636,17 +1648,6 @@ public class GameSessionTests
 
     private static HeartsState Hearts(HeartsSession session) =>
         Assert.IsType<HeartsState>(session.GetPublicState().Game);
-
-    // Seats players from..count - 1, each in their own seat, with their connection "conn-{player}".
-    private static void SitPlayers(GameSession session, int count, int from = 0)
-    {
-        for (var i = from; i < count; i++)
-        {
-            var profile = new PlayerProfile($"P{i}", "🙂");
-            session.Enter(Players[i], profile, $"conn-{i}");
-            Assert.True(session.TryTakeNextSeat(Players[i], profile, $"conn-{i}", out var error), error);
-        }
-    }
 
     // Rich man, poor man
 
