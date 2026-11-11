@@ -1904,6 +1904,67 @@ public class GameSessionTests
         return session;
     }
 
+    // Seat limits by options
+
+    [Fact]
+    public void A_game_seats_only_as_many_players_as_its_options_allow()
+    {
+        var session = new LimitedSession("ABC123");
+        Assert.True(session.TrySetOptions(Alice, OneRound, out var error), error);
+        Assert.Equal(2, session.GetPublicState().MaxSeats);
+        Seated(session);
+
+        Assert.False(session.TryTakeNextSeat(Carol, CarolProfile, "conn-c", out error));
+        Assert.Equal("All seats are taken.", error);
+        Assert.False(session.TryTakeSeat(Carol, CarolProfile, "conn-c", 2, out error));
+        Assert.Equal("All seats are taken.", error);
+
+        Assert.True(session.TrySetOptions(Alice, null, out error), error);
+        Assert.True(session.TryTakeNextSeat(Carol, CarolProfile, "conn-c", out error), error);
+        Assert.Equal(4, session.GetPublicState().MaxSeats);
+        Assert.False(session.TrySetOptions(Alice, OneRound, out error));
+        Assert.Equal("With these options, at most 2 players can play.", error);
+    }
+
+    [Fact]
+    public void A_public_game_starts_by_itself_once_the_seats_its_options_allow_are_taken()
+    {
+        var session = Public(new LimitedSession("ABC123"));
+        session.TryTakeNextSeat(Alice, AliceProfile, "conn-a", out _);
+        Assert.True(session.TrySetOptions(Alice, OneRound, out var error), error);
+        Assert.True(session.IsOpenToJoin);
+
+        session.TryTakeNextSeat(Bob, BobProfile, "conn-b", out _);
+
+        Assert.False(session.IsOpenToJoin);
+        Assert.Equal(SessionPhase.Playing, session.GetPublicState().Phase);
+    }
+
+    private static readonly Dictionary<string, string> OneRound = new() { [YanivOptions.End] = nameof(YanivEndMode.OneRound) };
+
+    /// <summary>
+    /// A game of 1 to 4 seats (with Yaniv's options) that seats only 2 players with the One round option.
+    /// </summary>
+    private sealed class LimitedSession(string id) : GameSession(id)
+    {
+        public override GameType Type => GameType.Yaniv;
+
+        protected override int MinSeats => 1;
+
+        protected override int MaxSeats => 4;
+
+        protected override bool IsGameOver => false;
+
+        protected override int SeatLimitFor(IReadOnlyDictionary<string, string> options) =>
+            options.GetValueOrDefault(YanivOptions.End) == nameof(YanivEndMode.OneRound) ? 2 : 4;
+
+        protected override void StartNewGame(IReadOnlyList<int> seats)
+        {
+        }
+
+        protected override object GetGameState() => new { };
+    }
+
     /// <summary>
     /// A two-seat game that ends only when the test calls <see cref="End"/>, for testing what happens after a game ends.
     /// </summary>

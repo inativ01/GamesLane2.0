@@ -1496,9 +1496,9 @@ function startChat(sessionId, view) {
 // A set option's value lists the choices turned off, separated by commas.
 const turnedOff = (value) => (value ?? "").split(",").filter(Boolean);
 // Whether an option applies, given the chosen values and all the options (e.g. card options only in Advanced mode): the
-// option it depends on has the value and applies too.
+// option it depends on has one of its values and applies too.
 const applies = (option, values, options) => !option.shownWhen
-    || (values[option.shownWhen.key] === option.shownWhen.value
+    || (option.shownWhen.values.includes(values[option.shownWhen.key])
         && applies(options.find((o) => o.key === option.shownWhen.key) ?? {}, values, options));
 
 // A session's chosen options, one text per option that applies, e.g. ["Mode: Advanced", "Challenge cards: 5 of 6"].
@@ -1565,8 +1565,9 @@ function startSessionPage(gameType, render, seatRole = (seat) => t("Seat {n}", {
 
     const act = (method, ...args) => call(method, sessionId, ...args).catch(() => {});
 
-    // The one empty seat shown in the lobby: the next available one, or -1 if there is none.
-    const nextSeat = (state) => state.seats.findIndex((s) => !s);
+    // The one empty seat shown in the lobby: the next available one, or -1 if there is none (state.maxSeats is the number
+    // of seats the chosen options allow).
+    const nextSeat = (state) => state.seats.slice(0, state.maxSeats).findIndex((s) => !s);
 
     const holderName = (state, seat) => state.seats[seat]?.name ?? t("Empty seat");
 
@@ -1934,7 +1935,7 @@ function startSessionPage(gameType, render, seatRole = (seat) => t("Seat {n}", {
         updateSeatOffer(state);
         if (inLobby) {
             $("lobby-status").textContent = [translateServerText(state.notice), lobbyStatus(state, taken)].filter(Boolean).join(" ");
-            $("seat-count").textContent = `${taken} / ${state.seats.length}`;
+            $("seat-count").textContent = `${taken} / ${state.maxSeats}`;
             const next = nextSeat(state);
             $("seats").replaceChildren(...state.seats.flatMap((info, seat) => (info || seat === next ? [seatItem(state, seat)] : [])));
             $("lobby-options").hidden = state.optionList.length === 0;

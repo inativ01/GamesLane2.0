@@ -316,6 +316,12 @@ public interface IGameHub
     Task CallYaniv(string sessionId, int seat);
 
     /// <summary>
+    /// Trick-taking games: <paramref name="seat"/>, which the caller must hold, plays <paramref name="card"/> (short text
+    /// such as "10♥") to the trick on its turn, following the suit led if it can.
+    /// </summary>
+    Task PlayTrickCard(string sessionId, int seat, string? card);
+
+    /// <summary>
     /// The Gang: reveals the next hand, if <paramref name="revealed"/> hands have been revealed so far.
     /// </summary>
     Task RevealNext(string sessionId, int revealed);

@@ -39,6 +39,24 @@ public class GameOptionsTests
             c => Assert.Null(c.Image));
     }
 
+    // Pages show an option only when the option it depends on, shown before it, has one of the condition's values.
+    [Fact]
+    public void Every_condition_names_an_earlier_option_and_some_of_its_choices()
+    {
+        foreach (var type in Enum.GetValues<GameType>())
+        {
+            var options = GameOptions.For(type);
+            foreach (var (option, index) in options.Select((o, i) => (o, i)).Where(x => x.o.ShownWhen is not null))
+            {
+                var condition = option.ShownWhen!;
+                var source = options.Take(index).SingleOrDefault(o => o.Key == condition.Key);
+                Assert.True(source is not null, $"{type}: {option.Key} depends on {condition.Key}, which is not shown before it.");
+                Assert.NotEmpty(condition.Values);
+                Assert.All(condition.Values, value => Assert.Contains(value, source.Choices.Select(c => c.Value)));
+            }
+        }
+    }
+
     [Theory]
     [InlineData("blackout,noise-sensors", true)]
     [InlineData("", true)]
