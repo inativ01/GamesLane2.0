@@ -9,13 +9,15 @@ namespace GamesLane.Server.Sessions;
 /// <summary>
 /// The sessions: those being played in memory, all of them saved in the database (see <see cref="ISessionRepository"/>).
 /// Codes are 6 characters, without easily confused characters such as 0/O and 1/I. Each game started in a session is
-/// counted in <paramref name="plays"/> (if given) when the session is next saved, on that day (UTC).
+/// counted in <paramref name="plays"/> (if given) when the session is next saved, on that day (UTC); each game played to
+/// its end, in <paramref name="activity"/> (if given).
 /// </summary>
 public class GameSessionStore(
     ISessionRepository repository,
     TimeProvider? timeProvider = null,
     ILogger<GameSessionStore>? logger = null,
-    IGamePlayRepository? plays = null) : IGameSessionStore
+    IGamePlayRepository? plays = null,
+    ActivityCounter? activity = null) : IGameSessionStore
 {
     private const string CodeChars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
     private const int CodeLength = 6;
@@ -32,6 +34,9 @@ public class GameSessionStore(
 
     // How many games each session in memory had started when they were last counted.
     private readonly ConcurrentDictionary<string, int> _countedGames = new(StringComparer.OrdinalIgnoreCase);
+
+    // The number of the last game of each session in memory counted as finished.
+    private readonly ConcurrentDictionary<string, int> _countedFinishes = new(StringComparer.OrdinalIgnoreCase);
 
     // Loading and unloading wait for each other, so a session is never in memory twice.
     private readonly SemaphoreSlim _loading = new(1, 1);
@@ -89,6 +94,7 @@ public class GameSessionStore(
             loaded.Restore(saved.Data, saved.UpdatedAt);
             loaded.UpdateAwaySeats(_time.GetUtcNow());
             _countedGames[id] = loaded.GamesStarted;
+            _countedFinishes[id] = loaded.HasFinishedGame ? loaded.GamesStarted : 0;
             _savedData[id] = loaded.Save();
             _sessions[id] = loaded;
             return loaded;
@@ -107,6 +113,7 @@ public class GameSessionStore(
         try
         {
             await CountNewGamesAsync(session);
+            await CountFinishedGameAsync(session);
             var now = _time.GetUtcNow();
             var data = session.Save();
             _lastSaved[session.Id] = now;
@@ -150,6 +157,7 @@ public class GameSessionStore(
             _lastSaved.TryRemove(session.Id, out _);
             _savedData.TryRemove(session.Id, out _);
             _countedGames.TryRemove(session.Id, out _);
+            _countedFinishes.TryRemove(session.Id, out _);
         }
         finally
         {
@@ -183,6 +191,25 @@ public class GameSessionStore(
         catch (Exception ex)
         {
             _logger.LogError(ex, "Could not count the games started in session {SessionId}.", session.Id);
+        }
+    }
+
+    /// <summary>
+    /// Counts the current game of <paramref name="session"/> as finished if it was played to its end and has not been
+    /// counted yet.
+    /// </summary>
+    private async Task CountFinishedGameAsync(IGameSession session)
+    {
+        var game = session.GamesStarted;
+        if (!session.HasFinishedGame || _countedFinishes.GetValueOrDefault(session.Id) >= game)
+        {
+            return;
+        }
+
+        _countedFinishes[session.Id] = game;
+        if (activity is not null)
+        {
+            await activity.CountAsync(ActivityEvent.FinishGame, session.Type);
         }
     }
 

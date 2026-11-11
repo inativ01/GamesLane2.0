@@ -77,6 +77,11 @@ public interface IGameSession
     int GamesStarted { get; }
 
     /// <summary>
+    /// Whether the current game was played to its end and its result is showing (not ended early, back in the lobby).
+    /// </summary>
+    bool HasFinishedGame { get; }
+
+    /// <summary>
     /// Whether this is a public game: joined only from the main screen, at random, with no game code to share.
     /// </summary>
     bool IsPublic { get; }
