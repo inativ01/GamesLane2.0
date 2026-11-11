@@ -6,6 +6,7 @@ How to use GamesLane and the rules of each game. For how it is built, see the [d
 - [Users and logging in](#users-and-logging-in)
 - [Main screen](#main-screen)
 - [Languages](#languages)
+- [Help](#help)
 - [Sessions](#sessions)
 - [Session lobby](#session-lobby)
 - [Public games](#public-games)
@@ -47,7 +48,7 @@ A typical setup is a shared screen (such as a TV or laptop) connected as a spect
 ## Main screen
 
 - A splash screen (the portrait or landscape picture, to suit the screen) is shown for 5 seconds when the app is first opened in a browser tab and whenever the GamesLane name in the top bar is used (on every page, the main screen too); then the main screen appears. It is not shown again when the page reloads (e.g. after logging in).
-- The top bar of every page shows the GamesLane name picture and, on the right, the user's icon and name, which open their profile (see [Users and logging in](#users-and-logging-in)).
+- The top bar of every page shows the GamesLane name picture and, on the right, the help button (**?**, on the main screen and the game pages; see [Help](#help)), the language flag, and the user's icon and name, which open their profile (see [Users and logging in](#users-and-logging-in)).
 - Two columns (one under the other on narrow screens such as phones):
   - **Private games** (family and friends): **Create a game**, and a box to join a game by its code.
   - **Public games:** **Create a game** and **Join a game** (see [Public games](#public-games)).
@@ -64,6 +65,14 @@ A typical setup is a shared screen (such as a TV or laptop) connected as a spect
 - Hebrew pages read from right to left (the backgammon board stays as it is).
 - The choice is remembered in the browser; until the user chooses, the first of the browser's preferred languages that GamesLane has (e.g. a browser set to French opens in French), otherwise English.
 - Some games have a local name rather than a translation of the English one, e.g. Tic-tac-toe is Gato in Spanish, Morpion in French and Jogo da Velha in Portuguese. The Gang, Wazoo and Yaniv keep their names; Final Card is translated (e.g. Última carta, Dernière carte).
+
+## Help
+
+- **?** in the top bar (on the main screen and every game page) opens the help, in the chosen language, on the side of the page (on the right, or on the left in Hebrew; on a phone, the whole screen). ✕ or Escape closes it.
+- The help has one section for the main screen, one for getting a game started (the session lobby), and one per game. Each section is a title that unfolds; the help opens with the sections about the current page unfolded: the main screen's on the main screen, and on a game page that game's (with the lobby's first while the lobby is shown). The other sections stay folded, so any game's rules can be read from anywhere.
+- Each section is short: for a game, **How to play** (the rules) and **On this screen** (how to play it on GamesLane). **More details**, folded at the bottom of each section, has the rest.
+- The first time a user opens the main screen, or a game's page, in a browser, a tip under **?** says "New here? Tap ? for help." (on a game page, "New to this game? Tap ? for how to play.") for 10 seconds (on the main screen, after the splash screen); tapping it opens the help. It is not shown again on that page in that browser.
+- The help is also a page of its own: `/help.html` in English, e.g. `/help.fr.html` in French.
 
 ## Sessions
 

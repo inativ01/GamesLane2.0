@@ -177,6 +177,71 @@ html.splash-done .splash {
     object-fit: contain;
 }
 
+/* The help button in the header, before the language picker, and the tip under it on a user's first visit. */
+.help {
+    position: relative;
+    flex: none;
+    margin-inline-start: auto;
+}
+
+.help + .language {
+    margin-inline-start: 0;
+}
+
+button.help-button {
+    width: 38px;
+    height: 38px;
+    padding: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.1);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.2);
+    color: #fff;
+    font-size: 1.15rem;
+    font-weight: 800;
+    line-height: 1;
+}
+
+button.help-button:not(:disabled):hover {
+    background: rgba(255, 255, 255, 0.22);
+}
+
+button.help-tip {
+    position: absolute;
+    top: calc(100% + 0.6rem);
+    inset-inline-end: -4rem;
+    z-index: 16;
+    width: max-content;
+    max-width: min(16rem, 60vw);
+    padding: 0.5rem 0.75rem;
+    border-radius: 10px;
+    background: var(--gold);
+    color: var(--black);
+    font-size: 0.9rem;
+    font-weight: 700;
+    text-align: start;
+    white-space: normal;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.3);
+    animation: help-tip-in 0.3s ease-out;
+}
+
+button.help-tip::before {
+    content: "";
+    position: absolute;
+    top: -6px;
+    inset-inline-end: calc(4rem + 13px);
+    border: 6px solid transparent;
+    border-top: 0;
+    border-bottom-color: var(--gold);
+}
+
+button.help-tip:not(:disabled):hover {
+    background: #f0bb5a;
+}
+
+@keyframes help-tip-in {
+    from { opacity: 0; transform: translateY(-4px); }
+}
+
 /* The language picker in the header, before the account: the current language's flag, which opens a menu. */
 .language {
     position: relative;
@@ -1421,6 +1486,63 @@ button.chat-toast {
 
 button.chat-toast:not(:disabled):hover {
     background: #2b2622;
+}
+
+/* The help panel, on the side like the chat (above it when both are open): one folded section per topic, each with
+   its folded More details. */
+.help-panel {
+    z-index: 19;
+    width: min(26rem, 100%);
+}
+
+.help-section {
+    border-bottom: 1px solid var(--line);
+}
+
+.help-section > summary {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.6rem 0.1rem;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.help-section > summary img {
+    width: 28px;
+    height: 28px;
+    border-radius: 7px;
+}
+
+.help-section[open] > summary {
+    color: var(--primary-dark);
+}
+
+.help-section h4 {
+    margin: 0.4rem 0 0.2rem;
+    font-size: 0.95rem;
+}
+
+.help-section ul {
+    margin: 0 0 0.5rem;
+    padding-inline-start: 1.2rem;
+}
+
+.help-section li {
+    margin: 0.2rem 0;
+}
+
+.help-more {
+    margin: 0 0 0.6rem;
+    padding: 0.3rem 0.6rem;
+    border-radius: 8px;
+    background: var(--surface-soft);
+}
+
+.help-more > summary {
+    color: var(--primary-dark);
+    font-weight: 600;
+    cursor: pointer;
 }
 
 button.chat-toast:not(:disabled):active {
@@ -3693,7 +3815,7 @@ body.observer main.gang .heist-card-name { font-size: 1em; }
 @media (max-height: 500px) {
     .masthead .top { padding-top: 0.2rem; padding-bottom: 0.2rem; }
     .masthead .brand-name { height: 30px; }
-    .masthead .language-button { width: 32px; height: 32px; }
+    .masthead .language-button, .masthead button.help-button { width: 32px; height: 32px; }
     .session-bar { min-height: calc(30px + 0.4rem); padding-top: 0.1rem; padding-bottom: 0.1rem; }
     .session-art { width: 26px; height: 26px; border-radius: 7px; }
     .session-name { font-size: 1rem; }

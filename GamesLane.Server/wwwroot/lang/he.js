@@ -8,6 +8,11 @@ TRANSLATIONS.he = {
     // Shared: header, connection, account and dialogs
     "Language": "שפה",
     "Main screen": "מסך ראשי",
+    "Help": "עזרה",
+    "Close the help": "סגירת העזרה",
+    "New here? Tap ? for help.": "חדשים כאן? הקישו על ? לעזרה.",
+    "New to this game? Tap ? for how to play.": "חדשים במשחק הזה? הקישו על ? כדי לדעת איך משחקים.",
+    "Could not load the help. Check your connection and try again.": "לא ניתן לטעון את העזרה. בדקו את החיבור ונסו שוב.",
     "Connection lost. Reconnecting…": "החיבור אבד. מתחברים מחדש…",
     "Connection lost. Reload the page to reconnect.": "החיבור אבד. טענו את הדף מחדש כדי להתחבר.",
     "Could not connect to the server. Reload the page to try again.": "לא ניתן להתחבר לשרת. טענו את הדף מחדש כדי לנסות שוב.",

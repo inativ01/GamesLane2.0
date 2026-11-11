@@ -13,6 +13,7 @@ It is a complete reimplementation of the original [GamesLane](https://github.com
 - **Accounts:** everyone starts as a guest (a random name and icon) and can log in with a username and password, or with Google.
 - **Never lose a game:** players who drop out get their seat back when they return; meanwhile the others can skip their turn (Rich man, poor man) or end the game, a newcomer can take over their seat, and sessions survive a server restart (they are kept for 6 hours after everyone has left).
 - **Languages:** English and Hebrew (right to left).
+- **Help on every page:** the ? button shows how to use the current page and the rules of its game, short first with more details on request.
 
 ## Documentation
 

@@ -8,6 +8,11 @@ TRANSLATIONS.es = {
     // Shared: header, connection, account and dialogs
     "Language": "Idioma",
     "Main screen": "Pantalla principal",
+    "Help": "Ayuda",
+    "Close the help": "Cerrar la ayuda",
+    "New here? Tap ? for help.": "¿Eres nuevo? Toca ? para ver la ayuda.",
+    "New to this game? Tap ? for how to play.": "¿Nuevo en este juego? Toca ? para ver cómo se juega.",
+    "Could not load the help. Check your connection and try again.": "No se pudo cargar la ayuda. Revisa tu conexión e inténtalo de nuevo.",
     "Connection lost. Reconnecting…": "Se perdió la conexión. Reconectando…",
     "Connection lost. Reload the page to reconnect.": "Se perdió la conexión. Recarga la página para reconectarte.",
     "Could not connect to the server. Reload the page to try again.": "No se pudo conectar con el servidor. Recarga la página para intentarlo de nuevo.",
