@@ -24,6 +24,13 @@ function shownTrick(game) {
     return game.trick.cards.length > 0 || !game.lastTrick ? game.trick : game.lastTrick;
 }
 
+// Between tricks, who won the last one; otherwise "".
+function lastTrickText(game, state, view) {
+    return game.trick.cards.length === 0 && game.lastTrick
+        ? aboutSeat(state, view, game.lastTrick.winnerSeat, "You won the trick.", "{name} won the trick.")
+        : "";
+}
+
 // The table, on felt: each player at their place (bottom, left, top, right) with their name, what `facts(seat)` gives
 // (e.g. tricks won) and the card they played to the trick shown; the player whose turn it is (`turn`, or null) is
 // outlined.
@@ -67,6 +74,15 @@ function trickHand(state, view, hand, { title, myTurn = false, active = false, c
         panel.append(el("div", "trick-hand-foot", ...foot));
     }
     return panel;
+}
+
+// After a hand: a line per player (or team) with `who` (e.g. seat labels), `tags` ([text, class] pairs such as
+// ["🏆 Winner", "finished"]) and `points` (e.g. "+5 · 32").
+function trickResult(rows) {
+    return rows.map((row) => el("div", "trick-result-row",
+        el("span", "trick-result-who", ...row.who),
+        el("span", "trick-result-tags", ...(row.tags ?? []).map(([text, className]) => el("span", `rp-tag ${className}`, text))),
+        el("span", "trick-result-points", row.points)));
 }
 
 // A button for a hand's foot.

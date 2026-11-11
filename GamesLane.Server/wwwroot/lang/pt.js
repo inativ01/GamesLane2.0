@@ -629,6 +629,10 @@ TRANSLATIONS.pt = {
     "This round is over.": "Esta rodada terminou.",
     "The next round cannot start yet.": "A próxima rodada ainda não pode começar.",
 
+    // Trick-taking games
+    "You won the trick.": "Você ganhou a vaza.",
+    "{name} won the trick.": "{name} ganhou a vaza.",
+
     // Tic-tac-toe
     "Tic-tac-toe - GamesLane": "Jogo da Velha - GamesLane",
     "Next round": "Próxima rodada",

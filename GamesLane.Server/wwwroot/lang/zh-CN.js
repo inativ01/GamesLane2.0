@@ -629,6 +629,10 @@ TRANSLATIONS["zh-CN"] = {
     "This round is over.": "这一轮已经结束。",
     "The next round cannot start yet.": "下一轮还不能开始。",
 
+    // Trick-taking games
+    "You won the trick.": "您赢得了这一墩。",
+    "{name} won the trick.": "{name} 赢得了这一墩。",
+
     // Tic-tac-toe
     "Tic-tac-toe - GamesLane": "井字棋 - GamesLane",
     "Next round": "下一轮",

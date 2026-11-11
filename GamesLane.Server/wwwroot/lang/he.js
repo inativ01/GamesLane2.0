@@ -628,6 +628,10 @@ TRANSLATIONS.he = {
     "This round is over.": "הסיבוב הזה הסתיים.",
     "The next round cannot start yet.": "הסיבוב הבא עוד לא יכול להתחיל.",
 
+    // Trick-taking games
+    "You won the trick.": "זכית בלקיחה.",
+    "{name} won the trick.": "{name} זכה בלקיחה.",
+
     // Tic-tac-toe
     "Tic-tac-toe - GamesLane": "איקס־עיגול - GamesLane",
     "Next round": "הסיבוב הבא",

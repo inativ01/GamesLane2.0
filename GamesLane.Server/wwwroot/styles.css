@@ -4769,6 +4769,44 @@ button.yaniv-call {
     text-align: center;
 }
 
+/* After a hand: a line per player (or team), with tags and the points. */
+.trick-result {
+    display: grid;
+    gap: 0.3rem;
+    margin-top: 0.5rem;
+}
+
+.trick-result[hidden] {
+    display: none;
+}
+
+.trick-result-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.2rem 0.4rem;
+    padding: 0.3rem 0.5rem;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.92);
+    color: var(--ink);
+    font-size: 0.9rem;
+}
+
+.trick-result-who,
+.trick-result-tags {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.25rem 0.4rem;
+    min-width: 0;
+}
+
+.trick-result-points {
+    margin-inline-start: auto;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
 .trick-hand .card.unplayable {
     filter: grayscale(0.7) brightness(0.85);
 }

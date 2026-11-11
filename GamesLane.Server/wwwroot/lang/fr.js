@@ -628,6 +628,10 @@ TRANSLATIONS.fr = {
     "This round is over.": "Cette manche est terminée.",
     "The next round cannot start yet.": "La manche suivante ne peut pas encore commencer.",
 
+    // Trick-taking games
+    "You won the trick.": "Tu as remporté le pli.",
+    "{name} won the trick.": "{name} a remporté le pli.",
+
     // Tic-tac-toe
     "Tic-tac-toe - GamesLane": "Morpion - GamesLane",
     "Next round": "Manche suivante",
