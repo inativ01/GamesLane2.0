@@ -12,6 +12,7 @@ $("account").before(languagePicker() ?? "");
 const GAME_PAGES = {
     TicTacToe: "/tictactoe.html", TheGang: "/the-gang.html", Backgammon: "/backgammon.html",
     RichManPoorMan: "/rich-man-poor-man.html", Wazoo: "/wazoo.html", FinalCard: "/final-card.html", Yaniv: "/yaniv.html",
+    Hearts: "/hearts.html",
     Dominoes: "/dominoes.html",
 };
 
@@ -996,6 +997,14 @@ function playFanfare() {
             tone.stop(start + delay + length + 0.02);
         });
     }).catch(() => {});
+}
+
+// Plays `sound(audio, start)` (built by the browser) on the same audio as the fanfare, unless sound is off in the
+// user's profile.
+function playSound(sound) {
+    const audio = celebrationAudio;
+    if (!audio || !userSettings().sound) return;
+    (audio.state === "running" ? Promise.resolve() : audio.resume()).then(() => sound(audio, audio.currentTime)).catch(() => {});
 }
 
 function celebrate(state, key) {

@@ -630,11 +630,39 @@ TRANSLATIONS["zh-TW"] = {
     "The next round cannot start yet.": "下一輪還不能開始。",
 
     // Trick-taking games
+    "Claim all": "攤牌全收",
+    "You claimed the remaining tricks.": "您攤牌收下了剩餘的墩。",
+    "{name} claimed the remaining tricks.": "{name} 攤牌收下了剩餘的墩。",
+    "You can claim only at the start of a trick.": "只能在一墩開始時攤牌全收。",
+    "Your cards do not win every remaining trick.": "您的牌不能贏下剩餘的每一墩。",
     "You won the trick.": "您贏得了這一墩。",
     "{name} won the trick.": "{name} 贏得了這一墩。",
     "4 players": "4 位玩家",
     "Play a card.": "請出一張牌。",
     "Hand {n} is over.": "第 {n} 手已結束。",
+
+    // Hearts
+    "Hearts": "傷心小棧",
+    "Hearts - GamesLane": "傷心小棧 - GamesLane",
+    "Avoid the hearts and the queen of spades, or take them all.": "避開紅心和黑桃 Q，或者把它們全部收下。",
+    "Pass 3 cards to the left, to {name}.": "向左傳 3 張牌給 {name}。",
+    "Pass 3 cards to the right, to {name}.": "向右傳 3 張牌給 {name}。",
+    "Pass 3 cards across, to {name}.": "向對家傳 3 張牌給 {name}。",
+    "Waiting for the others to pass their cards.": "正在等待其他人傳牌。",
+    "No passing in this hand.": "這一手不傳牌。",
+    "Shot the moon!": "全收！",
+    "Pass {n} cards": "傳 {n} 張牌",
+    "You passed {cards}.": "您傳出了 {cards}。",
+    "You received {cards}.": "您收到了 {cards}。",
+    "Passed": "已傳牌",
+
+    // Hearts: messages from the server
+    "The cards are not being passed now.": "現在不是傳牌的時候。",
+    "You have already passed your cards.": "您已經傳過牌了。",
+    "Choose {n} cards to pass.": "請選擇 {n} 張要傳的牌。",
+    "Lead the 2♣.": "請先出梅花 2。",
+    "Hearts are not broken yet.": "還沒有人出過紅心。",
+    "No points on the first trick: play another card.": "第一墩不能出分牌：請出另一張牌。",
 
     // Dominoes
     "Dominoes": "骨牌",

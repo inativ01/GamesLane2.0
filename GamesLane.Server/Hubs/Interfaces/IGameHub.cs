@@ -322,6 +322,20 @@ public interface IGameHub
     Task PlayTrickCard(string sessionId, int seat, string? card);
 
     /// <summary>
+    /// Trick-taking games: <paramref name="seat"/>, which the caller must hold, claims the remaining tricks of the hand at
+    /// the start of a trick it leads, when its cards win every one of them whatever anyone plays (judged from its own
+    /// cards and those already played). It takes every card still in a hand, and the hand is scored.
+    /// </summary>
+    Task ClaimTricks(string sessionId, int seat);
+
+    /// <summary>
+    /// Hearts: <paramref name="seat"/>, which the caller must hold, passes <paramref name="cards"/> (3 of its cards, short
+    /// text such as "Q♠") before the hand's play. Once every seat has, each gets the cards passed to it.
+    /// </summary>
+    Task PassCards(string sessionId, int seat, string[]? cards);
+
+    /// <summary>
+
     /// Dominoes: <paramref name="seat"/>, which the caller must hold, plays <paramref name="tile"/> (short text such as
     /// "3-5") on its turn: in the line styles at the left end (<paramref name="target"/> 0) or the right end (1); in
     /// Mexican Train on the train of seat <paramref name="target"/>, or on the Mexican train (-1).

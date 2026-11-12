@@ -62,17 +62,20 @@
         <ul>
             <li>2 joueurs, X et O, posent leur marque à tour de rôle. Trois alignés (en ligne, en colonne ou en diagonale) gagnent la manche.</li>
         </ul>
-        <h4>Sur cet écran</h4>
-        <ul>
-            <li>Touche une case vide quand c'est ton tour. La barre du haut devient dorée quand c'est à toi, et montre le score.</li>
-        </ul>
         <details class="help-more">
             <summary>Plus de détails</summary>
             <ul>
-                <li>Les victoires et les matchs nuls sont comptés de manche en manche. X commence les manches impaires, O les paires.</li>
+                <li>La grille a 9 cases. La première place joue X et la deuxième O. À ton tour, pose ta marque dans n'importe quelle case vide.</li>
+                <li>Le premier qui aligne trois marques, en ligne, en colonne ou en diagonale, gagne la manche. Si les 9 cases sont remplies sans alignement de trois, la manche est nulle.</li>
+                <li>La partie continue de manche en manche, en comptant les victoires de chaque joueur et les matchs nuls. X commence les manches impaires (1, 3, 5…) et O les paires.</li>
                 <li>La partie ne finit jamais d'elle-même : quitte ta place ou la partie quand tu as fini.</li>
             </ul>
         </details>
+        <h4>Sur cet écran</h4>
+        <ul>
+            <li>Touche une case vide quand c'est ton tour. La barre du haut devient dorée quand c'est à toi, et montre le score.</li>
+            <li>Quand une manche est finie, appuie sur <strong>Manche suivante</strong>.</li>
+        </ul>
     </details>
 
     <details class="help-section" id="help-backgammon">
@@ -82,6 +85,22 @@
             <li>2 joueurs font faire le tour du plateau à leurs 15 dames jusqu'à leur jan intérieur, puis les sortent. Le premier à sortir toutes ses dames gagne la partie.</li>
             <li>On joue un match en un nombre de points (5 par défaut).</li>
         </ul>
+        <details class="help-more">
+            <summary>Plus de détails</summary>
+            <ul>
+                <li><strong>Le plateau :</strong> 24 flèches, et 15 dames pour chaque joueur. La première place joue les blancs et la deuxième les noirs. Les joueurs avancent en sens opposés, vers leur propre jan intérieur (leurs 6 dernières flèches).</li>
+                <li><strong>Le premier lancer :</strong> chaque joueur lance un dé. Le dé le plus haut commence et joue les deux dés comme premier lancer. En cas d'égalité, les deux relancent.</li>
+                <li><strong>Un tour :</strong> lance deux dés et avance du nombre de points obtenus : une dame pour chaque dé, ou une seule dame pour les deux. Un double se joue quatre fois (par exemple 4-4 avance de 4 quatre fois).</li>
+                <li><strong>Où une dame peut arriver :</strong> sur une flèche vide, sur tes propres dames, ou sur une dame adverse seule, qui est frappée et mise sur la barre. Une flèche avec deux dames adverses ou plus est bloquée.</li>
+                <li><strong>La barre :</strong> une dame frappée doit rentrer dans le jan intérieur de l'adversaire avant que son joueur puisse bouger une autre dame.</li>
+                <li><strong>Jouer les dés :</strong> tu dois jouer autant de dés que possible (les quatre avec un double). Si un seul dé peut être joué, ce doit être le plus grand quand c'est possible. Si rien ne peut bouger, le tour passe.</li>
+                <li><strong>Sortir les dames :</strong> une fois toutes tes dames dans ton jan intérieur, sors-les du plateau. Un nombre plus grand que nécessaire ne peut sortir une dame que si aucune de tes dames n'est sur une flèche plus haute.</li>
+                <li><strong>Gagner une partie :</strong> le premier à sortir ses 15 dames gagne 1 point ; 2 pour un gammon (le perdant n'a sorti aucune dame) ; 3 pour un backgammon (le perdant a encore une dame sur la barre ou dans le jan intérieur du gagnant). Les points sont multipliés par le videau.</li>
+                <li><strong>Le videau :</strong> avant de lancer, un joueur peut doubler l'enjeu. L'autre joueur accepte (la partie vaut deux fois plus, et lui seul pourra doubler ensuite) ou refuse (et perd la partie à la valeur actuelle du videau).</li>
+                <li><strong>Règle de Crawford :</strong> personne ne peut doubler dans la partie qui suit le moment où un joueur arrive pour la première fois à un point de gagner le match.</li>
+                <li><strong>Options :</strong> <strong>Longueur du match</strong> 1, 3, 5, 7 ou 9 points (5 par défaut), et le <strong>Videau</strong> (activé par défaut ; jamais dans un match en 1 point).</li>
+            </ul>
+        </details>
         <h4>Sur cet écran</h4>
         <ul>
             <li>Touche le plateau ou 🎲 <strong>Lancer</strong> pour lancer les dés. Touche une dame, puis l'une de ses flèches indiquées, et appuie sur <strong>Terminer</strong>.</li>
@@ -90,10 +109,10 @@
         <details class="help-more">
             <summary>Plus de détails</summary>
             <ul>
-                <li>Le jeu vérifie les règles : une dame sur la barre rentre d'abord, une flèche avec deux dames adverses ou plus est bloquée, une dame adverse seule est frappée, et tu dois jouer autant de dés que possible.</li>
-                <li>Un gammon (le perdant n'a sorti aucune dame) vaut 2 points, un backgammon 3, multipliés par le videau.</li>
-                <li><strong>Doubler</strong> avant de lancer double l'enjeu ; l'autre joueur choisit <strong>Accepter</strong> ou <strong>Refuser</strong> (et perd la partie).</li>
-                <li>Une dame peut avancer des deux dés à la fois quand toutes les façons donnent le même résultat. S'il n'y a qu'un coup possible, le jeu le joue pour toi.</li>
+                <li><strong>Doubler</strong>, <strong>Accepter</strong> et <strong>Refuser</strong> sont dans la barre du haut quand on peut les utiliser ; tu peux aussi toucher le videau quand il est entouré pour doubler.</li>
+                <li>Une dame qui ne peut aller qu'à un seul endroit y va aussitôt. Une dame peut aussi avancer des deux dés à la fois, quand toutes les façons d'y arriver donnent le même résultat. S'il n'y a qu'une façon de jouer les dés, le jeu la joue pour toi.</li>
+                <li>La barre du haut montre la longueur du match, les scores et le compte des points de course. Tu vois le plateau de ton côté ; les spectateurs le voient du côté des blancs.</li>
+                <li>Entre deux parties, appuie sur <strong>Partie suivante</strong> ; quand le match est fini, <strong>Rejouer</strong> en commence un nouveau.</li>
             </ul>
         </details>
     </details>
@@ -106,6 +125,21 @@
             <li>En 4 étapes, chaque joueur prend un jeton numéroté : 1 pour la main de poker la plus faible, jusqu'au nombre de joueurs pour la plus forte. Tu ne peux dire tes cartes à personne ; les jetons sont ton seul moyen de communiquer.</li>
             <li>Les mains sont révélées à partir du jeton rouge le plus bas. Dans l'ordre, le coffre s'ouvre ; dans le désordre, l'alarme se déclenche. 3 coffres gagnent, 3 alarmes perdent.</li>
         </ul>
+        <details class="help-more">
+            <summary>Plus de détails</summary>
+            <ul>
+                <li><strong>Les cartes :</strong> chaque joueur reçoit 2 cartes en main que lui seul voit. Les 5 cartes communes arrivent au fil des étapes : aucune à la première étape, puis 3, 4 et 5. Ta main est la meilleure main de poker de 5 cartes faite de tes 2 cartes et des cartes communes.</li>
+                <li><strong>Les mains,</strong> de la plus faible : carte haute, paire, double paire, brelan, quinte, couleur, full, carré, quinte flush. À combinaison égale, les cartes les plus hautes gagnent (une paire de 9 bat une paire de 5). Des mains égales peuvent être dans n'importe quel ordre.</li>
+                <li><strong>Les étapes :</strong> il y en a quatre, avec des jetons blancs, jaunes, orange et rouges. À chacune, chaque joueur prend un jeton, numéroté de 1 au nombre de joueurs, au centre ou chez un autre joueur. L'étape se termine quand chaque joueur a un jeton et que tout le monde est d'accord.</li>
+                <li><strong>Pas un mot sur les cartes :</strong> personne ne peut rien dire ni montrer de ses cartes. Les jetons sont le seul moyen de dire aux autres la force de ta main.</li>
+                <li><strong>La révélation :</strong> après l'étape rouge, les mains sont montrées du jeton rouge le plus bas au plus haut. Si chaque main est au moins aussi forte que la précédente, le coffre s'ouvre ; sinon, l'alarme se déclenche.</li>
+                <li><strong>Gagner :</strong> la bande gagne la partie avec 3 coffres ouverts et la perd avec 3 alarmes.</li>
+                <li><strong>Jokers</strong> (option, désactivée par défaut) : le paquet a deux jokers. Un joueur qui reçoit un joker reçoit deux cartes à la place et en garde une. Un joker parmi les cartes communes est remplacé par deux cartes, et chaque main peut utiliser l'une des deux.</li>
+                <li><strong>Mode avancé</strong> (l'option <strong>Mode</strong>) : ajoute des cartes défi, qui rendent les casses plus difficiles, et des cartes spécialiste, qui aident. La première casse commence avec 0 à 3 cartes défi (1 par défaut) ; une carte défi de plus s'ajoute après chaque coffre ouvert, et une carte spécialiste après chaque alarme. Les cartes restent jusqu'à la fin de la partie. Les joueurs peuvent désactiver des cartes, et éviter les cartes qui s'annulent.</li>
+                <li><strong>Les cartes spécialiste qui commencent par « Décidez lequel d'entre vous… »</strong> sont facultatives : le groupe peut utiliser chacune au plus une fois par casse, à tout moment pendant les étapes. Une décision de groupe s'applique quand chaque joueur a donné son accord avec 👍.</li>
+                <li><strong>La combinaison de ma main</strong> (option, Masquée par défaut) : quand elle est Affichée, chaque joueur voit la combinaison de sa main jusque-là, à côté de ses cartes.</li>
+            </ul>
+        </details>
         <h4>Sur cet écran</h4>
         <ul>
             <li>Touche un jeton au centre ou le jeton d'un autre joueur pour le prendre ; touche le tien pour le remettre. Appuie sur <strong>Confirmer</strong> quand tout le monde a un jeton.</li>
@@ -114,10 +148,9 @@
         <details class="help-more">
             <summary>Plus de détails</summary>
             <ul>
-                <li>Les mains, de la plus faible : carte haute, paire, double paire, brelan, quinte, couleur, full, carré, quinte flush.</li>
-                <li>Tout changement de jeton annule la confirmation de tout le monde.</li>
-                <li>Le mode <strong>Avancé</strong> ajoute des cartes défi (après un coffre ouvert) et des cartes spécialiste (après une alarme). Touche une carte pour lire ce qu'elle fait.</li>
-                <li>Avec l'option <strong>Jokers</strong>, un joueur qui reçoit un joker l'échange contre l'une de deux cartes.</li>
+                <li>Tout changement de jeton annule la confirmation de tout le monde. Un utilisateur qui a plusieurs places confirme une seule fois pour toutes.</li>
+                <li>🔒 marque un jeton verrouillé, qui ne peut être ni pris ni remis. Un petit son retentit quand un autre joueur prend ton jeton.</li>
+                <li>Touche une carte défi ou spécialiste pour lire ce qu'elle fait ; touche-la encore pour la refermer. Les cartes qui n'ont pas encore d'effet sont estompées. Ce que les cartes ont fait est indiqué dans le tableau des jetons, sous le nom de chaque joueur.</li>
             </ul>
         </details>
     </details>
@@ -130,6 +163,22 @@
             <li>Celui qui ouvre la manche pose autant de cartes d'une même valeur qu'il veut. Chaque joueur, à son tour, pose le même nombre de cartes d'une valeur plus haute, ou passe. Quand tous les autres ont passé, le dernier à avoir posé gagne la manche et ouvre la suivante. Les as gagnent la manche aussitôt.</li>
             <li>L'ordre dans lequel les joueurs vident leur main fixe les places de la partie suivante : le premier est le riche, le dernier le fauché.</li>
         </ul>
+        <details class="help-more">
+            <summary>Plus de détails</summary>
+            <ul>
+                <li><strong>Les cartes :</strong> une série de 2 à A par joueur, donc chacun reçoit 13 cartes. Les couleurs n'ont pas d'importance. De la plus basse à la plus haute : 2, 3 … 10, J, Q, K, A.</li>
+                <li><strong>Une manche :</strong> celui qui l'ouvre pose autant de cartes d'une même valeur qu'il veut (par exemple un 5, ou trois 9). Ce nombre de cartes reste le même toute la manche. À son tour, chaque joueur pose autant de cartes d'une valeur strictement plus haute, ou passe. Un joueur qui a passé peut reposer quand son tour revient.</li>
+                <li><strong>Gagner une manche :</strong> quand le jeu revient au dernier joueur qui a posé, tous les autres ayant passé, ce joueur gagne la manche et ouvre la suivante, avec le nombre de cartes qu'il veut. Les as gagnent la manche aussitôt.</li>
+                <li><strong>Vider sa main :</strong> tu prends la place suivante du classement et tu ne joues plus. Si le gagnant de la manche n'a plus de cartes, le joueur suivant qui en a ouvre la manche. La partie se termine quand un seul joueur a encore des cartes : il prend la dernière place.</li>
+                <li><strong>Qui commence :</strong> dans la première partie, le joueur qui a le plus de 2 (à égalité, le plus de 3, et ainsi de suite) ; dans chaque partie suivante, le plus pauvre.</li>
+                <li><strong>Ordre de jeu :</strong> des pauvres vers les riches, puis du plus riche directement au plus pauvre.</li>
+                <li><strong>Entre deux parties :</strong> les joueurs sont placés selon le classement de la partie précédente : le gagnant est le n° 1, le riche, et le dernier est le fauché. Les cartes sont redistribuées, puis le n° 1 échange des cartes avec le dernier, le n° 2 avec l'avant-dernier, et ainsi de suite.</li>
+                <li><strong>Combien de cartes s'échangent</strong> (la paire la plus riche d'abord) : 4 joueurs : 2, 1. 5 joueurs : 2, 1. 6 joueurs : 3, 2, 1. 7 joueurs : 3, 2, 1. 8 à 10 joueurs : 4, 3, 2, 1. 11 et 12 joueurs : 4, 3, 2, 1, 1. Un joueur du milieu sans partenaire n'échange pas.</li>
+                <li><strong>L'échange :</strong> le plus pauvre de chaque paire donne ses cartes les plus hautes ; le plus riche donne les cartes de son choix. Les cartes s'échangent quand toutes les paires ont donné, et personne ne voit ce qu'il va recevoir avant de donner.</li>
+                <li><strong>Moins de 4 joueurs :</strong> il n'y a pas d'échange, donc la partie suivante recommence depuis le salon.</li>
+                <li><strong>Première partie</strong> (option) : <strong>Sans échange</strong> (par défaut), ou <strong>Échange selon le classement actuel</strong> : les places du salon donnent le classement (la place 1 est le riche), les paires échangent avant la première partie, et le plus pauvre commence.</li>
+            </ul>
+        </details>
         <h4>Sur cet écran</h4>
         <ul>
             <li>Touche des cartes d'une même valeur, puis <strong>Choisir</strong> pour les poser, ou <strong>Passer</strong>. Toucher une carte en choisit autant qu'il en faut.</li>
@@ -138,9 +187,10 @@
         <details class="help-more">
             <summary>Plus de détails</summary>
             <ul>
-                <li>Avant chaque partie suivante, les riches donnent aux pauvres les cartes de leur choix, et les pauvres donnent aux riches leurs cartes les plus hautes (plus de cartes entre les joueurs les plus éloignés).</li>
-                <li>Le plus pauvre ouvre chaque partie suivante. Dans la première, c'est le joueur qui a le plus de 2.</li>
-                <li>Un joueur absent peut être passé. Les spectateurs peuvent activer <strong>Lire les coups à voix haute</strong>.</li>
+                <li>Quand tu ouvres une manche, toucher une carte choisit toutes tes cartes de cette valeur ; touche une carte choisie pour en poser moins.</li>
+                <li>Pendant l'échange, les cartes les plus hautes du plus pauvre sont choisies pour lui : appuie sur <strong>Donner ces cartes</strong>. Le plus riche touche les cartes à donner et appuie sur <strong>Donner</strong>.</li>
+                <li>Le tableau des joueurs montre les places, les cartes en main de chacun et sa dernière annonce. <strong>Masquer la table</strong> et <strong>Afficher la table</strong> le masquent et l'affichent.</li>
+                <li>Un joueur absent peut être passé avec <strong>Passer ce joueur</strong>. Les spectateurs peuvent activer <strong>Lire les coups à voix haute</strong>.</li>
             </ul>
         </details>
     </details>
@@ -152,6 +202,18 @@
             <li>1 à 8 joueurs, 13 manches. À ton tour, lance cinq dés jusqu'à trois fois, en gardant entre les lancers les dés que tu veux.</li>
             <li>Inscris ensuite les dés dans une case libre de ta feuille. Chaque case est remplie une fois ; le plus haut total gagne.</li>
         </ul>
+        <details class="help-more">
+            <summary>Plus de détails</summary>
+            <ul>
+                <li><strong>Un tour :</strong> lance les cinq dés. Tu peux relancer encore deux fois au plus, en gardant les dés que tu veux entre les lancers et en relançant les autres. Ensuite tu dois marquer les dés dans une case libre, ce qui termine ton tour.</li>
+                <li><strong>Les cases du haut :</strong> les As aux Six marquent chacun le total des dés de ce nombre (par exemple trois 4 dans les Quatre marquent 12). Si ces six cases font 63 ou plus, tu reçois un bonus de 35 points.</li>
+                <li><strong>Les cases du bas :</strong> Brelan et Carré marquent le total des cinq dés. Full (trois d'un nombre et deux d'un autre) marque 25, Petite suite (quatre nombres qui se suivent) 30, Grande suite (cinq qui se suivent) 40, et Wazoo (cinq identiques) 50. Chance marque le total des cinq dés, sans figure à faire.</li>
+                <li><strong>Marquer 0 :</strong> tu peux marquer dans une case dont tu n'as pas la figure ; elle marque alors 0. Chaque case ne sert qu'une fois.</li>
+                <li><strong>Wazoo de plus :</strong> chaque Wazoo obtenu quand la case Wazoo contient déjà 50 rapporte un bonus de 100 points.</li>
+                <li><strong>Règle du joker :</strong> un Wazoo obtenu une fois la case Wazoo remplie (par 50 ou 0) doit aller dans la case du haut de son nombre si elle est libre ; sinon dans une case du bas libre, où le Full et les suites marquent leurs points en entier ; sinon dans une case du haut libre, pour 0.</li>
+                <li><strong>La fin :</strong> après 13 manches, toutes les cases sont remplies, et le plus haut total gagne (à égalité, tous gagnent).</li>
+            </ul>
+        </details>
         <h4>Sur cet écran</h4>
         <ul>
             <li>Appuie sur 🎲 <strong>Lancer</strong>. Touche des dés pour les garder (touche-les encore pour les relâcher). Touche une case libre pour y marquer ; elle montre ce que les dés y rapporteraient.</li>
@@ -159,9 +221,8 @@
         <details class="help-more">
             <summary>Plus de détails</summary>
             <ul>
-                <li>Les As aux Six comptent les dés de ce nombre ; 63 ou plus dans ces cases donnent un bonus de 35.</li>
-                <li>Brelan et Carré comptent tous les dés ; full 25, petite suite (4 qui se suivent) 30, grande suite (5 qui se suivent) 40, Wazoo (cinq identiques) 50, Chance tous les dés.</li>
-                <li>Chaque Wazoo de plus, après avoir marqué 50 pour un, rapporte 100 de plus, et peut se marquer dans d'autres cases (la règle du joker).</li>
+                <li>Un dé gardé est soulevé et marqué <strong>Gardé</strong>. La barre du haut indique combien de lancers il reste, la manche et le total de chaque joueur.</li>
+                <li>La page demande confirmation avant de marquer 0 dans une case. <strong>Rejouer</strong> commence une nouvelle partie une fois celle-ci finie.</li>
             </ul>
         </details>
     </details>
@@ -174,6 +235,28 @@
             <li>Cartes action : Stop fait passer le joueur suivant, Changement de sens inverse le jeu, +2 et Changement de couleur +4 font piocher le joueur suivant.</li>
             <li>Avec une seule carte, appuie sur <strong>Dernière carte !</strong>, sinon tu peux être pris et piocher des cartes de pénalité.</li>
         </ul>
+        <details class="help-more">
+            <summary>Plus de détails</summary>
+            <ul>
+                <li><strong>Style</strong> (option) : le <strong>Style américain</strong> (par défaut) suit les règles du UNO ; le <strong>Style israélien</strong> suit les règles du Super TAKI (plus bas).</li>
+                <li><strong>Les cartes (style américain) :</strong> 108 cartes. Dans chaque couleur (rouge, jaune, vert, bleu) : un 0, deux de chaque nombre de 1 à 9, deux Stop, deux Changement de sens et deux +2. Plus quatre Changement de couleur et quatre Changement de couleur +4, qui n'ont pas de couleur. Chaque joueur reçoit 7 cartes, et une carte est retournée pour commencer la défausse.</li>
+                <li><strong>Un tour :</strong> joue une carte de la même couleur, ou du même nombre ou symbole, que celle du dessus, ou une carte sans couleur ; ou pioche. Un Changement de couleur te fait choisir la couleur à jouer ensuite. Tu peux piocher même si tu pourrais jouer.</li>
+                <li><strong>Piocher :</strong> pioche une carte. Si tu peux la jouer, tu peux la jouer ou la garder ; sinon le tour passe. Quand la pioche est vide, la défausse (sauf sa carte du dessus) est mélangée pour en faire une nouvelle.</li>
+                <li><strong>Cartes action :</strong> Stop : le joueur suivant passe son tour. Changement de sens : le jeu repart dans l'autre sens (à 2 joueurs, il agit comme un Stop). +2 et Changement de couleur +4 : le joueur suivant pioche 2 ou 4 cartes et passe son tour.</li>
+                <li><strong>Cartes de pénalité</strong> (d'un +2, d'un Changement de couleur +4, d'une contestation, ou quand tu es pris) : tu dois toutes les piocher avant toute autre chose, et le tour ne passe pas tant que ce n'est pas fait.</li>
+                <li><strong>Dernière carte ! :</strong> appuie quand tu as ta dernière carte, ou avant de jouer ton avant-dernière carte, pour être protégé. Le bouton prend aussi tous les autres joueurs qui ont une seule carte et ne sont pas protégés : ils piochent 2 cartes de pénalité (4 en style israélien). Piocher une carte, quelle qu'elle soit, met fin à ta protection.</li>
+                <li><strong>Fin de la partie</strong> (option) : <strong>Une seule donne</strong> : le premier à jouer toutes ses cartes gagne. <strong>Score à atteindre</strong> (par défaut ; 100, 200, 300 ou 500 points, 500 par défaut) : le gagnant de chaque donne marque les cartes restées dans les autres mains (un nombre sa valeur, une carte action 20, une carte sans couleur 50), et le premier à atteindre le score gagne. <strong>Pyramide :</strong> un joueur qui joue toutes ses cartes reçoit une carte de moins que la fois précédente (7, puis 6 … 1), et le premier à jouer sa dernière carte seule gagne.</li>
+                <li><strong>Cumul des cartes de pioche</strong> (option) : <strong>Sans cumul</strong> (par défaut), ou permettre un +2 sur un +2, un +4 sur un +4, et un +4 sur un +2. Une carte cumulée passe toutes les cartes à piocher au joueur suivant, sauf s'il cumule à son tour.</li>
+                <li><strong>Pioche</strong> (option) : <strong>Piocher une carte</strong> (par défaut), ou <strong>Piocher jusqu'à pouvoir jouer</strong>.</li>
+                <li><strong>Changement de couleur +4</strong> (option) : <strong>Toujours autorisé</strong> ; <strong>Seulement sans la couleur</strong> (seulement quand tu n'as aucune carte de la couleur à jouer) ; ou <strong>Peut être contesté</strong> (par défaut) : le joueur suivant peut contester au lieu de piocher. Si le joueur du +4 avait une carte de la couleur à jouer, c'est lui qui pioche les 4 cartes ; sinon, celui qui conteste pioche 6 cartes et passe son tour.</li>
+                <li><strong>Les cartes du style israélien :</strong> 116 cartes. Dans chaque couleur : deux de chaque nombre 1 et 3 à 9, deux Stop, deux Changement de sens, deux +2, deux Plus et deux TAKI. Plus quatre Changement de couleur, et deux de chaque : SuperTAKI, Couronne, +3 et Casse +3. Chaque joueur reçoit 8 cartes. Seule l'option Fin de la partie s'applique : Une seule donne ou Pyramide.</li>
+                <li><strong>Les règles du style israélien :</strong> une carte piochée ne peut pas être jouée avant ton tour suivant. À 2 joueurs, Changement de sens change seulement le sens. On peut toujours répondre à un +2 par un +2 ; le joueur qui ne peut pas répondre les pioche tous.</li>
+                <li><strong>Plus :</strong> joue une autre carte ; si tu ne peux pas, pioche. Un Plus ne peut pas être ta dernière carte.</li>
+                <li><strong>TAKI :</strong> joue autant de cartes de sa couleur que tu veux, une par une, puis ferme le TAKI. Seule la dernière carte action jouée dedans fait son action. Un <strong>SuperTAKI</strong> est un TAKI de la couleur à jouer.</li>
+                <li><strong>Couronne :</strong> se joue sur n'importe quelle carte, et annule les +2 ou le +3 qui attendent d'être piochés ; ensuite joue la carte que tu veux, ou pioche.</li>
+                <li><strong>+3 :</strong> chacun des autres joueurs doit piocher 3 cartes. Le joueur suivant peut l'annuler avec une Couronne. N'importe quel autre joueur peut y répondre avec un <strong>Casse +3</strong>, même hors de son tour : c'est alors le joueur du +3 qui pioche les 3 cartes. Un Casse +3 joué sur une autre carte fait piocher 3 cartes à son propre joueur.</li>
+            </ul>
+        </details>
         <h4>Sur cet écran</h4>
         <ul>
             <li>Touche une carte pour la jouer (celles que tu ne peux pas jouer sont grisées). Touche la pioche ou <strong>Piocher une carte</strong> pour piocher.</li>
@@ -182,10 +265,9 @@
         <details class="help-more">
             <summary>Plus de détails</summary>
             <ul>
-                <li>L'option <strong>Style</strong> choisit le style américain (les règles du UNO) ou le style israélien (les règles du Super TAKI, avec les cartes TAKI, Plus, Couronne et +3).</li>
-                <li>Les options fixent aussi la fin de la partie (une manche, un score à atteindre ou une pyramide), le cumul des cartes à piocher, et quand un Changement de couleur +4 peut être joué ou contesté.</li>
-                <li>Les cartes de pénalité se piochent avant toute autre chose.</li>
-                <li>Dans un TAKI, joue autant de cartes de sa couleur que tu veux, puis appuie sur <strong>Fermer le TAKI</strong>.</li>
+                <li>Sous tes cartes, quand on peut les utiliser : <strong>Piocher une carte</strong> (ou Piocher N cartes), <strong>Garder la carte</strong> après avoir pioché, <strong>Fermer le TAKI</strong> pendant ton TAKI, et <strong>Je conteste !</strong> contre un Changement de couleur +4.</li>
+                <li>La barre du haut montre la couleur à jouer et le sens du jeu (↻ ou ↺).</li>
+                <li>Le tableau des joueurs montre 🛡 pour un joueur protégé, les cartes en main de chacun et, avec un score à atteindre, ses points. <strong>Masquer la table</strong> et <strong>Afficher la table</strong> le masquent et l'affichent.</li>
             </ul>
         </details>
     </details>
@@ -194,10 +276,24 @@
         <summary><img src="/images/games/yaniv.svg" alt=""> Yaniv</summary>
         <h4>Comment jouer</h4>
         <ul>
-            <li>2 à 4 joueurs, 5 cartes chacun. Baisse les points de ta main : as 1, joker 0, 2 à 10 leur valeur, J, Q et K 10.</li>
+            <li>2 à 4 joueurs, 5 cartes chacun. Baisse les points de ta main : un point pour l'as, zéro pour le joker, la valeur de la carte pour 2 à 10, 10 points pour J, Q, K.</li>
             <li>À ton tour, défausse une carte, une série de même valeur, ou une suite de 3 cartes ou plus de la même couleur ; puis prends une carte du tas fermé ou celle du dessus du tas ouvert.</li>
             <li>Avec 7 points ou moins, annonce <strong>Yaniv !</strong> Si personne n'a moins, tu gagnes la manche ; sinon tu es Assaf et tu prends 30 points de plus.</li>
         </ul>
+        <details class="help-more">
+            <summary>Plus de détails</summary>
+            <ul>
+                <li><strong>Les cartes :</strong> un paquet de 52 cartes et 2 jokers. À chaque manche, chaque joueur reçoit 5 cartes ; le reste forme le tas fermé, et le tas ouvert commence vide. La première place commence la manche 1, et le gagnant de chaque manche commence la suivante.</li>
+                <li><strong>Points de la main :</strong> le total des points de tes cartes (par exemple A, 7, 10, K font 1 + 7 + 10 + 10 = 28).</li>
+                <li><strong>Défausser :</strong> une carte ; une série de 2 à 4 cartes de même valeur (par exemple deux 7) ; ou une suite d'au moins 3 cartes qui se suivent dans la même couleur (par exemple 5♣ 6♣ 7♣). L'as est seulement bas : A-2-3 est une suite, Q-K-A non.</li>
+                <li><strong>Jokers :</strong> un joker peut remplacer n'importe quelle carte dans une série ou une suite (par exemple 9♥ joker J♥).</li>
+                <li><strong>Prendre une carte :</strong> après avoir choisi ce que tu défausses, prends la carte du dessus du tas fermé ou du tas ouvert. Tes cartes défaussées vont ensuite sur le tas ouvert.</li>
+                <li><strong>Annoncer Yaniv :</strong> avec 7 points ou moins en main, annonce Yaniv à ton tour au lieu de défausser. Chacun des autres joueurs joue alors un dernier tour (sans pouvoir annoncer Yaniv), puis toutes les mains sont montrées.</li>
+                <li><strong>Qui gagne la manche :</strong> si aucune main n'a moins de points que celle de l'annonceur (une égalité va à l'annonceur), l'annonceur gagne. Sinon, l'annonceur est Assaf et prend 30 points en plus des points de sa main, et la main la plus basse gagne. Le gagnant de la manche ne prend aucun point ; chacun des autres prend les points de sa main.</li>
+                <li><strong>Fin de la partie</strong> (option) : <strong>Une manche</strong> : son gagnant gagne la partie. <strong>Score à atteindre</strong> (100, 150, 200 ou 300 points ; 200 par défaut) : un joueur dont les points dépassent le score est éliminé, et le dernier joueur restant gagne.</li>
+                <li><strong>Bonus</strong> (option, avec un score à atteindre ; activé par défaut) : tomber pile sur la moitié du score ou sur le score enlève 50 points (par exemple avec 200, 100 devient 50 et 200 devient 150).</li>
+            </ul>
+        </details>
         <h4>Sur cet écran</h4>
         <ul>
             <li>Touche les cartes à défausser, puis le tas où prendre une carte. <strong>Yaniv !</strong> apparaît à côté des points de ta main quand tu peux l'annoncer.</li>
@@ -205,9 +301,44 @@
         <details class="help-more">
             <summary>Plus de détails</summary>
             <ul>
-                <li>Un joker peut remplacer n'importe quelle carte dans une série ou une suite. L'as est seulement bas : A-2-3 est une suite, Q-K-A non.</li>
-                <li>Après un Yaniv, chacun des autres joue un dernier tour, puis toutes les mains sont montrées.</li>
-                <li>Avec un score à atteindre, un joueur qui le dépasse est éliminé ; tomber pile sur la moitié du score ou sur le score enlève 50 points.</li>
+                <li>Les cartes que tu choisis attendent à côté du tas ouvert jusqu'à ce que tu prennes une carte ; elles sont entourées de rouge quand elles ne peuvent pas être défaussées ensemble.</li>
+                <li>Après une manche, les cartes et les points de chacun sont montrés. Un joueur absent peut être passé avec <strong>Passer ce joueur</strong>. <strong>Masquer la table</strong> et <strong>Afficher la table</strong> masquent et affichent le tableau des joueurs.</li>
+            </ul>
+        </details>
+    </details>
+
+    <details class="help-section" id="help-hearts">
+        <summary><img src="/images/games/hearts.svg" alt=""> Dame de pique</summary>
+        <h4>Comment jouer</h4>
+        <ul>
+            <li>4 joueurs, 13 cartes chacun. Évite de prendre des points : chaque cœur vaut 1 point et la dame de pique 13.</li>
+            <li>Avant chaque donne, passe 3 cartes : à gauche, puis à droite, puis en face ; une donne sur quatre, personne ne passe.</li>
+            <li>Le 2♣ entame le premier pli. Fournis à la couleur demandée si tu peux ; la plus haute carte de cette couleur remporte le pli. Dès qu'un joueur atteint 100 points, le plus petit score gagne.</li>
+        </ul>
+        <details class="help-more">
+            <summary>Plus de détails</summary>
+            <ul>
+                <li><strong>Les cartes :</strong> un paquet de 52 cartes, 13 cartes par joueur. On joue dans le sens des aiguilles d'une montre (vers la gauche). Chaque cœur vaut 1 point et la dame de pique (Q♠) 13 ; les autres cartes ne valent rien (26 points en tout).</li>
+                <li><strong>Passer des cartes :</strong> avant chaque donne, chaque joueur choisit 3 cartes à passer : à la première donne vers la gauche, à la deuxième vers la droite, à la troisième en face, et à la quatrième personne ne passe ; puis on recommence. Tout le monde choisit en même temps, et reçoit les cartes qu'on lui passe quand tous ont passé.</li>
+                <li><strong>Les plis :</strong> le joueur qui a le 2♣ l'entame au premier pli. Chaque joueur, à son tour, joue une carte, en fournissant à la couleur demandée s'il peut ; sinon, n'importe quelle carte. La plus haute carte de la couleur demandée remporte le pli (il n'y a pas d'atout), et son gagnant entame le pli suivant.</li>
+                <li><strong>Le premier pli :</strong> personne ne peut y jouer un cœur ni la Q♠, sauf s'il n'a rien d'autre.</li>
+                <li><strong>Ouvrir les cœurs :</strong> on ne peut pas entamer à cœur tant qu'aucun cœur n'a été joué dans la donne, sauf si celui qui entame n'a que des cœurs. La Q♠ peut être entamée à tout moment.</li>
+                <li><strong>Le score :</strong> après les 13 plis, chaque joueur marque les points des cartes qu'il a prises. Grand chelem : un joueur qui prend les 13 cœurs et la Q♠ ne marque rien, et chacun des autres marque 26 points.</li>
+                <li><strong>Réclamer :</strong> au début d'un pli, celui qui entame et dont les cartes gagnent tous les plis restants, quoi que jouent les autres, peut les réclamer : la donne se termine, et il prend toutes les cartes restantes.</li>
+                <li><strong>La fin :</strong> après une donne où un joueur atteint 100 points ou plus, la partie est finie et le plus petit score gagne (à égalité, tous les plus petits gagnent).</li>
+            </ul>
+        </details>
+        <h4>Sur cet écran</h4>
+        <ul>
+            <li>Pour passer, touche 3 cartes, puis <strong>Passer 3 cartes</strong>. Pour jouer, touche une carte (celles que tu ne peux pas jouer sont grisées).</li>
+            <li>La table du bas montre le score de chaque joueur, et les cœurs (♥) et la dame de pique (Q♠) qu'il a pris dans cette donne. <strong>Masquer la table</strong> la masque.</li>
+        </ul>
+        <details class="help-more">
+            <summary>Plus de détails</summary>
+            <ul>
+                <li>Quand tu entames et que tes cartes gagnent tous les plis restants, <strong>Tout réclamer</strong> apparaît sous tes cartes. Tu peux aussi continuer à jouer. Après une réclamation, les cartes de chacun sont montrées face visible, pour que tous puissent vérifier.</li>
+                <li>Un verre se brise quand le premier cœur est joué, et une fanfare funeste retentit quand la dame de pique est jouée.</li>
+                <li>Entre deux plis, le dernier pli reste sur la table avec la carte du gagnant entourée. Après une donne, <strong>Donne suivante</strong> distribue la suivante.</li>
             </ul>
         </details>
     </details>

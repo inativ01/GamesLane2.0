@@ -232,9 +232,6 @@ const tableShown = () => {
 
 const yaniv = startSessionPage("Yaniv", (game, state, view) => {
     currentGame = game;
-    const scored = game.end === "Score";
-    showScores(state, view, scored ? [t("Round {n}", { n: game.roundNumber }), t("To {n} points", { n: game.target })] : [],
-        scored ? game.players.map((p) => ({ seat: p.seat, score: p.score, acting: game.phase === "Playing" && p.seat === game.turn })) : []);
     $("status").textContent = statusText(game, state, view);
     noticeSuccess(game, state, view);
     const message = messageText(game, state, view);
@@ -244,7 +241,8 @@ const yaniv = startSessionPage("Yaniv", (game, state, view) => {
     renderResult(game, state, view);
     $("yaniv-hands").replaceChildren(...myHands(game, view).map((hand) => handPanel(game, state, view, hand)));
     const shown = !view.isPlayer || tableShown();
-    $("yaniv-round").textContent = t("Round {n}", { n: game.roundNumber });
+    $("yaniv-round").textContent = [t("Round {n}", { n: game.roundNumber }), game.end === "Score" && t("To {n} points", { n: game.target })]
+        .filter(Boolean).join(" · ");
     $("yaniv-toggle-table").hidden = !view.isPlayer;
     $("yaniv-toggle-table").textContent = t(shown ? "Hide table" : "Show table");
     $("yaniv-table-body").hidden = !shown;

@@ -62,17 +62,20 @@
         <ul>
             <li>2 jogadores, X e O, marcam uma casa por vez. Três em linha (na horizontal, na vertical ou na diagonal) ganham a rodada.</li>
         </ul>
-        <h4>Nesta tela</h4>
-        <ul>
-            <li>Toque numa casa vazia na sua vez. A barra no alto fica dourada quando é a sua vez, e mostra o placar.</li>
-        </ul>
         <details class="help-more">
             <summary>Mais detalhes</summary>
             <ul>
-                <li>As vitórias e os empates são contados rodada após rodada. X começa as rodadas ímpares, O as pares.</li>
+                <li>O tabuleiro tem 9 casas. O primeiro lugar joga com X e o segundo com O. Na sua vez, marque qualquer casa vazia.</li>
+                <li>Quem fizer primeiro três marcas em linha, na horizontal, na vertical ou na diagonal, ganha a rodada. Se as 9 casas forem preenchidas sem uma linha de três, a rodada empata.</li>
+                <li>A partida continua rodada após rodada, contando as vitórias de cada jogador e os empates. X começa as rodadas ímpares (1, 3, 5…) e O as pares.</li>
                 <li>A partida nunca termina sozinha: saia do seu lugar ou da partida quando terminar.</li>
             </ul>
         </details>
+        <h4>Nesta tela</h4>
+        <ul>
+            <li>Toque numa casa vazia na sua vez. A barra no alto fica dourada quando é a sua vez, e mostra o placar.</li>
+            <li>Quando uma rodada termina, aperte <strong>Próxima rodada</strong>.</li>
+        </ul>
     </details>
 
     <details class="help-section" id="help-backgammon">
@@ -82,6 +85,22 @@
             <li>2 jogadores levam suas 15 pedras ao redor do tabuleiro até a sua casa, e depois as retiram. Quem retirar primeiro todas as pedras ganha o jogo.</li>
             <li>Joga-se uma partida até um número de pontos (5 por padrão).</li>
         </ul>
+        <details class="help-more">
+            <summary>Mais detalhes</summary>
+            <ul>
+                <li><strong>O tabuleiro:</strong> 24 casas, e 15 pedras para cada jogador. O primeiro lugar joga com as brancas e o segundo com as pretas. Os jogadores andam em sentidos opostos, rumo à sua própria casa (suas últimas 6 casas).</li>
+                <li><strong>A primeira rolagem:</strong> cada jogador rola um dado. O dado mais alto começa e joga os dois dados como primeira rolagem. Se empatar, os dois rolam de novo.</li>
+                <li><strong>Uma vez:</strong> role dois dados e ande os números tirados: uma pedra para cada dado, ou uma só pedra pelos dois. Uma dupla é jogada quatro vezes (por exemplo, 4-4 anda 4 quatro vezes).</li>
+                <li><strong>Onde uma pedra pode parar:</strong> numa casa vazia, sobre as suas próprias pedras, ou sobre uma pedra adversária sozinha, que é capturada e vai para a barra. Uma casa com duas ou mais pedras adversárias está bloqueada.</li>
+                <li><strong>A barra:</strong> uma pedra capturada precisa entrar de novo na casa do adversário antes que o seu jogador possa mover qualquer outra pedra.</li>
+                <li><strong>Usar os dados:</strong> você deve usar o máximo de dados possível (os quatro com uma dupla). Se só um dado puder ser usado, tem de ser o maior quando possível. Se nada puder andar, a vez passa.</li>
+                <li><strong>Retirar pedras:</strong> quando todas as suas pedras estiverem na sua casa, tire-as do tabuleiro. Um número maior que o necessário só pode retirar uma pedra se nenhuma das suas pedras estiver numa casa mais alta.</li>
+                <li><strong>Ganhar um jogo:</strong> quem retirar primeiro as 15 pedras ganha 1 ponto; 2 por um gammon (o perdedor não retirou nenhuma pedra); 3 por um backgammon (o perdedor ainda tem uma pedra na barra ou na casa do vencedor). Os pontos são multiplicados pelo dado de dobra.</li>
+                <li><strong>O dado de dobra:</strong> antes de rolar, um jogador pode dobrar a aposta. O outro jogador aceita (o jogo vale o dobro, e só ele pode dobrar depois) ou recusa (e perde o jogo pelo valor atual do dado).</li>
+                <li><strong>Regra de Crawford:</strong> ninguém pode dobrar no jogo logo depois que um jogador fica pela primeira vez a um ponto de ganhar a partida.</li>
+                <li><strong>Opções:</strong> <strong>Duração da partida</strong> 1, 3, 5, 7 ou 9 pontos (5 por padrão), e o <strong>Dado de dobra</strong> (ligado por padrão; nunca numa partida de 1 ponto).</li>
+            </ul>
+        </details>
         <h4>Nesta tela</h4>
         <ul>
             <li>Toque no tabuleiro ou em 🎲 <strong>Rolar</strong> para rolar os dados. Toque numa pedra, depois numa das casas destacadas, e aperte <strong>Concluir</strong>.</li>
@@ -90,10 +109,10 @@
         <details class="help-more">
             <summary>Mais detalhes</summary>
             <ul>
-                <li>O jogo confere as regras: uma pedra na barra entra primeiro, uma casa com duas ou mais pedras adversárias está bloqueada, uma pedra adversária sozinha é capturada, e você deve usar o máximo de dados possível.</li>
-                <li>Um gammon (o perdedor não retirou nenhuma pedra) vale 2 pontos, um backgammon 3, vezes o dado de dobra.</li>
-                <li><strong>Dobrar</strong> antes de rolar dobra a aposta; o outro jogador escolhe <strong>Aceitar</strong> ou <strong>Recusar</strong> (e perde o jogo).</li>
-                <li>Uma pedra pode andar os dois dados de uma vez quando todos os caminhos dão o mesmo resultado. Se só houver um movimento possível, o jogo faz por você.</li>
+                <li><strong>Dobrar</strong>, <strong>Aceitar</strong> e <strong>Recusar</strong> ficam na barra no alto quando podem ser usados; você também pode tocar no dado de dobra quando ele estiver destacado para dobrar.</li>
+                <li>Uma pedra que só pode ir para um lugar vai na hora. Uma pedra também pode andar os dois dados de uma vez, quando todos os caminhos até lá dão o mesmo resultado. Se só houver um jeito de jogar os dados, o jogo joga por você.</li>
+                <li>A barra no alto mostra a duração da partida, o placar e a contagem de pontos do percurso. Você vê o tabuleiro do seu lado; quem assiste o vê do lado das brancas.</li>
+                <li>Entre jogos, aperte <strong>Próximo jogo</strong>; quando a partida termina, <strong>Jogar de novo</strong> começa uma nova.</li>
             </ul>
         </details>
     </details>
@@ -106,6 +125,21 @@
             <li>Em 4 etapas, cada jogador pega uma ficha numerada: 1 para a mão de pôquer mais fraca, até o número de jogadores para a mais forte. Você não pode contar suas cartas a ninguém; as fichas são o único jeito de se comunicar.</li>
             <li>As mãos são reveladas a partir da ficha vermelha mais baixa. Em ordem, o cofre abre; fora de ordem, o alarme dispara. 3 cofres ganham, 3 alarmes perdem.</li>
         </ul>
+        <details class="help-more">
+            <summary>Mais detalhes</summary>
+            <ul>
+                <li><strong>As cartas:</strong> cada jogador recebe 2 cartas na mão que só ele vê. As 5 cartas comunitárias saem ao longo das etapas: nenhuma na primeira etapa, depois 3, 4 e 5. A sua mão é a melhor mão de pôquer de 5 cartas com as suas 2 cartas e as comunitárias.</li>
+                <li><strong>As mãos,</strong> da mais fraca: carta alta, par, dois pares, trinca, sequência, flush, full house, quadra, straight flush. Na mesma combinação, ganham as cartas mais altas (um par de 9 ganha de um par de 5). Mãos iguais podem ficar em qualquer ordem.</li>
+                <li><strong>As etapas:</strong> são quatro, com fichas brancas, amarelas, laranja e vermelhas. Em cada uma, cada jogador pega uma ficha, numerada de 1 até o número de jogadores, do centro ou de outro jogador. A etapa termina quando cada jogador tem uma ficha e todos estão de acordo.</li>
+                <li><strong>Nada de falar das cartas:</strong> ninguém pode dizer nem mostrar nada das suas cartas. As fichas são o único jeito de dizer aos outros o quanto a sua mão é forte.</li>
+                <li><strong>A revelação:</strong> depois da etapa vermelha, as mãos são mostradas da ficha vermelha mais baixa à mais alta. Se cada mão for pelo menos tão forte quanto a anterior, o cofre abre; senão, o alarme dispara.</li>
+                <li><strong>Ganhar:</strong> a gangue ganha o jogo com 3 cofres abertos e perde com 3 alarmes.</li>
+                <li><strong>Coringas</strong> (opção, desligada por padrão): o baralho tem dois coringas. Um jogador que recebe um coringa ganha duas cartas no lugar dele e fica com uma. Um coringa entre as cartas comunitárias é trocado por duas cartas, e cada mão pode usar uma das duas.</li>
+                <li><strong>Modo avançado</strong> (a opção <strong>Modo</strong>): acrescenta cartas de desafio, que deixam os assaltos mais difíceis, e cartas de especialista, que ajudam. O primeiro assalto começa com 0 a 3 cartas de desafio (1 por padrão); mais uma carta de desafio entra depois de cada cofre aberto, e uma carta de especialista depois de cada alarme. As cartas ficam até o fim do jogo. Os jogadores podem desligar cartas, e evitar as cartas que se anulam.</li>
+                <li><strong>As cartas de especialista que começam com "Decidam qual de vocês…"</strong> são opcionais: o grupo pode usar cada uma no máximo uma vez por assalto, a qualquer momento durante as etapas. Uma decisão do grupo vale quando todos os jogadores concordam com 👍.</li>
+                <li><strong>A combinação da minha mão</strong> (opção, Oculta por padrão): quando está Visível, cada jogador vê a combinação da sua própria mão até o momento, ao lado das suas cartas.</li>
+            </ul>
+        </details>
         <h4>Nesta tela</h4>
         <ul>
             <li>Toque numa ficha do centro ou na ficha de outro jogador para pegá-la; toque na sua para devolvê-la. Aperte <strong>Confirmar</strong> quando todos tiverem uma ficha.</li>
@@ -114,10 +148,9 @@
         <details class="help-more">
             <summary>Mais detalhes</summary>
             <ul>
-                <li>As mãos, da mais fraca: carta alta, par, dois pares, trinca, sequência, flush, full house, quadra, straight flush.</li>
-                <li>Qualquer mudança de fichas apaga a confirmação de todos.</li>
-                <li>O modo <strong>Avançado</strong> acrescenta cartas de desafio (depois de abrir um cofre) e cartas de especialista (depois de um alarme). Toque numa carta para ler o que ela faz.</li>
-                <li>Com a opção <strong>Coringas</strong>, um jogador que recebe um coringa o troca por uma de duas cartas.</li>
+                <li>Qualquer mudança de fichas apaga a confirmação de todos. Um usuário com vários lugares confirma uma vez só por todos.</li>
+                <li>🔒 marca uma ficha travada, que não pode ser pega nem devolvida. Um som curto toca quando outro jogador pega a sua ficha.</li>
+                <li>Toque numa carta de desafio ou de especialista para ler o que ela faz; toque de novo para fechá-la. As cartas que ainda não têm efeito ficam apagadas. O que as cartas fizeram aparece na tabela de fichas, embaixo do nome de cada jogador.</li>
             </ul>
         </details>
     </details>
@@ -130,6 +163,22 @@
             <li>Quem começa a rodada joga quantas cartas quiser de um mesmo número. Cada jogador, na sua vez, joga a mesma quantidade de cartas de um número mais alto, ou passa. Quando todos os outros passaram, o último que jogou ganha a rodada e começa a próxima. Ases ganham a rodada na hora.</li>
             <li>A ordem em que os jogadores esvaziam a mão define os lugares da próxima partida: o primeiro é o rico, o último o pobre.</li>
         </ul>
+        <details class="help-more">
+            <summary>Mais detalhes</summary>
+            <ul>
+                <li><strong>As cartas:</strong> um conjunto de 2 a A por jogador, então cada um recebe 13 cartas. Os naipes não importam. Da mais baixa à mais alta: 2, 3 … 10, J, Q, K, A.</li>
+                <li><strong>Uma rodada:</strong> quem a começa joga quantas cartas quiser de um mesmo número (por exemplo um 5, ou três 9). Essa quantidade de cartas fica a mesma a rodada toda. Na sua vez, cada jogador joga a mesma quantidade de cartas de um número estritamente mais alto, ou passa. Um jogador que passou pode jogar de novo quando a vez dele voltar.</li>
+                <li><strong>Ganhar uma rodada:</strong> quando o jogo volta ao último jogador que jogou, com todos os outros tendo passado, esse jogador ganha a rodada e começa a próxima, com a quantidade de cartas que quiser. Ases ganham a rodada na hora.</li>
+                <li><strong>Esvaziar a mão:</strong> você fica com o próximo lugar da classificação e para de jogar. Se o vencedor da rodada não tiver mais cartas, começa o próximo jogador que ainda tem. A partida termina quando só um jogador ainda tem cartas: ele fica com o último lugar.</li>
+                <li><strong>Quem começa:</strong> na primeira partida, o jogador com mais 2 (se empatar, com mais 3, e assim por diante); em cada partida seguinte, o mais pobre.</li>
+                <li><strong>Ordem de jogo:</strong> dos pobres para os ricos, e depois do mais rico direto para o mais pobre.</li>
+                <li><strong>Entre partidas:</strong> os jogadores se sentam pela classificação da partida anterior: o vencedor é o nº 1, o rico, e o último é o pobre. As cartas são distribuídas de novo, e então o nº 1 troca cartas com o último, o nº 2 com o penúltimo, e assim por diante.</li>
+                <li><strong>Quantas cartas são trocadas</strong> (primeiro a dupla mais rica): 4 jogadores: 2, 1. 5 jogadores: 2, 1. 6 jogadores: 3, 2, 1. 7 jogadores: 3, 2, 1. 8 a 10 jogadores: 4, 3, 2, 1. 11 e 12 jogadores: 4, 3, 2, 1, 1. Um jogador do meio sem dupla não troca.</li>
+                <li><strong>A troca:</strong> o mais pobre de cada dupla dá as suas cartas mais altas; o mais rico dá as cartas que escolher. As cartas são trocadas quando todas as duplas deram, e ninguém vê o que vai receber antes de dar.</li>
+                <li><strong>Menos de 4 jogadores:</strong> não há troca, então a próxima partida recomeça na sala.</li>
+                <li><strong>Primeira partida</strong> (opção): <strong>Sem troca</strong> (padrão), ou <strong>Troca pela classificação atual</strong>: os lugares da sala dão a classificação (o lugar 1 é o rico), as duplas trocam antes da primeira partida, e o mais pobre começa.</li>
+            </ul>
+        </details>
         <h4>Nesta tela</h4>
         <ul>
             <li>Toque em cartas de um mesmo número, e depois em <strong>Escolher</strong> para jogá-las, ou <strong>Passo</strong>. Tocar numa carta escolhe quantas forem necessárias.</li>
@@ -138,9 +187,10 @@
         <details class="help-more">
             <summary>Mais detalhes</summary>
             <ul>
-                <li>Antes de cada próxima partida, os ricos dão aos pobres as cartas que escolherem, e os pobres dão aos ricos suas cartas mais altas (mais cartas entre os jogadores mais distantes).</li>
-                <li>O mais pobre começa cada próxima partida. Na primeira, começa o jogador com mais 2.</li>
-                <li>Um jogador ausente pode ser pulado. Quem assiste pode ligar <strong>Ler as jogadas em voz alta</strong>.</li>
+                <li>Quando você começa uma rodada, tocar numa carta escolhe todas as suas cartas daquele número; toque numa carta escolhida para jogar menos.</li>
+                <li>Na troca, as cartas mais altas do mais pobre são escolhidas por ele: aperte <strong>Dar estas cartas</strong>. O mais rico toca nas cartas que vai dar e aperta <strong>Dar</strong>.</li>
+                <li>A tabela de jogadores mostra os lugares, as cartas na mão de cada um e a sua última jogada. <strong>Esconder a mesa</strong> e <strong>Mostrar a mesa</strong> a escondem e a mostram.</li>
+                <li>Um jogador ausente pode ser pulado com <strong>Pular jogador</strong>. Quem assiste pode ligar <strong>Ler as jogadas em voz alta</strong>.</li>
             </ul>
         </details>
     </details>
@@ -152,6 +202,18 @@
             <li>1–8 jogadores, 13 rodadas. Na sua vez, role cinco dados até três vezes, guardando entre as rolagens os dados que quiser.</li>
             <li>Depois marque os dados numa casa livre da sua cartela. Cada casa é preenchida uma vez; ganha o maior total.</li>
         </ul>
+        <details class="help-more">
+            <summary>Mais detalhes</summary>
+            <ul>
+                <li><strong>Uma vez:</strong> role os cinco dados. Você pode rolar de novo até mais duas vezes, guardando entre as rolagens os dados que quiser e rolando os outros. Depois você deve marcar os dados numa casa livre, e a sua vez termina.</li>
+                <li><strong>As casas de cima:</strong> Uns a Seis marcam cada uma a soma dos dados daquele número (por exemplo, três 4 em Quatros marcam 12). Se essas seis casas somarem 63 ou mais, você ganha um bônus de 35 pontos.</li>
+                <li><strong>As casas de baixo:</strong> Trinca e Quadra marcam a soma dos cinco dados. Full house (três de um número e dois de outro) marca 25, Sequência baixa (quatro números seguidos) 30, Sequência alta (cinco seguidos) 40, e Wazoo (cinco iguais) 50. Chance marca a soma dos cinco dados, sem precisar de figura.</li>
+                <li><strong>Marcar 0:</strong> você pode marcar numa casa cuja figura não tem; ela marca 0. Cada casa só é usada uma vez.</li>
+                <li><strong>Wazoo extra:</strong> cada Wazoo tirado quando a casa Wazoo já tem 50 vale um bônus de 100 pontos.</li>
+                <li><strong>Regra do coringa:</strong> um Wazoo tirado quando a casa Wazoo já está preenchida (com 50 ou 0) deve ir para a casa de cima do seu número se ela estiver livre; senão para qualquer casa de baixo livre, onde o Full house e as sequências marcam o valor cheio; senão para qualquer casa de cima livre, valendo 0.</li>
+                <li><strong>O fim:</strong> depois de 13 rodadas todas as casas estão preenchidas, e ganha o maior total (se empatar, todos ganham).</li>
+            </ul>
+        </details>
         <h4>Nesta tela</h4>
         <ul>
             <li>Aperte 🎲 <strong>Rolar</strong>. Toque nos dados para guardá-los (toque de novo para soltá-los). Toque numa casa livre para marcar nela; ela mostra quanto os dados valeriam ali.</li>
@@ -159,9 +221,8 @@
         <details class="help-more">
             <summary>Mais detalhes</summary>
             <ul>
-                <li>Uns a Seis somam os dados daquele número; 63 ou mais neles dão um bônus de 35.</li>
-                <li>Trinca e Quadra somam todos os dados; full house 25, sequência baixa (4 seguidos) 30, sequência alta (5 seguidos) 40, Wazoo (cinco iguais) 50, Chance todos os dados.</li>
-                <li>Cada Wazoo extra, depois de marcar 50 por um, vale mais 100, e pode ser marcado em outras casas (a regra do coringa).</li>
+                <li>Um dado guardado fica levantado e marcado <strong>Guardado</strong>. A barra no alto diz quantas rolagens faltam, a rodada e o total de cada jogador.</li>
+                <li>A página pergunta antes de marcar 0 numa casa. <strong>Jogar de novo</strong> começa uma partida nova quando esta termina.</li>
             </ul>
         </details>
     </details>
@@ -174,6 +235,28 @@
             <li>Cartas de ação: Pare pula o próximo jogador, Mudar sentido inverte o jogo, +2 e Mudar cor +4 fazem o próximo jogador comprar.</li>
             <li>Com uma carta na mão, aperte <strong>Última carta!</strong>, ou você pode ser pego e comprar cartas de castigo.</li>
         </ul>
+        <details class="help-more">
+            <summary>Mais detalhes</summary>
+            <ul>
+                <li><strong>Estilo</strong> (opção): o <strong>Estilo americano</strong> (padrão) segue as regras do UNO; o <strong>Estilo israelense</strong> segue as regras do Super TAKI (abaixo).</li>
+                <li><strong>As cartas (estilo americano):</strong> 108 cartas. Em cada cor (vermelho, amarelo, verde, azul): um 0, duas de cada número de 1 a 9, dois Pare, dois Mudar sentido e dois +2. Além disso, quatro Mudar cor e quatro Mudar cor +4, que não têm cor. Cada jogador recebe 7 cartas, e uma carta é virada para começar a pilha de descarte.</li>
+                <li><strong>Uma vez:</strong> jogue uma carta que combine com a de cima pela cor, ou pelo número ou símbolo, ou uma carta sem cor; ou compre. Um Mudar cor deixa você escolher a cor a jogar em seguida. Você pode comprar mesmo podendo jogar.</li>
+                <li><strong>Comprar:</strong> compre uma carta. Se puder jogá-la, você pode jogá-la ou guardá-la; senão a vez passa. Quando o monte acaba, a pilha de descarte (menos a carta de cima) é embaralhada para formar um novo.</li>
+                <li><strong>Cartas de ação:</strong> Pare: o próximo jogador perde a vez. Mudar sentido: o jogo vai para o outro lado (com 2 jogadores, funciona como um Pare). +2 e Mudar cor +4: o próximo jogador compra 2 ou 4 cartas e perde a vez.</li>
+                <li><strong>Cartas de castigo</strong> (de um +2, de um Mudar cor +4, de uma contestação, ou por ser pego): você deve comprar todas antes de qualquer outra coisa, e a vez não passa até você comprar.</li>
+                <li><strong>Última carta!:</strong> aperte quando tiver a sua última carta, ou antes de jogar a penúltima, para ficar protegido. O botão também pega todos os outros jogadores que têm uma carta só e não estão protegidos: eles compram 2 cartas de castigo (4 no estilo israelense). Comprar qualquer carta acaba com a sua proteção.</li>
+                <li><strong>Fim do jogo</strong> (opção): <strong>Uma mão só</strong>: ganha o primeiro a jogar todas as cartas. <strong>Meta de pontos</strong> (padrão; 100, 200, 300 ou 500 pontos, 500 por padrão): o vencedor de cada mão marca as cartas que ficaram nas outras mãos (um número o seu valor, uma carta de ação 20, uma carta sem cor 50), e ganha o primeiro a chegar à meta. <strong>Pirâmide:</strong> um jogador que joga todas as cartas recebe uma carta a menos que da vez anterior (7, depois 6 … 1), e ganha o primeiro a jogar a sua última carta sozinha.</li>
+                <li><strong>Acumular cartas de compra</strong> (opção): <strong>Sem acumular</strong> (padrão), ou permitir um +2 sobre um +2, um +4 sobre um +4, e um +4 sobre um +2. Uma carta acumulada passa todas as cartas a comprar para o próximo jogador, a não ser que ele acumule de novo.</li>
+                <li><strong>Compra</strong> (opção): <strong>Comprar uma carta</strong> (padrão), ou <strong>Comprar até poder jogar</strong>.</li>
+                <li><strong>Mudar cor +4</strong> (opção): <strong>Sempre permitido</strong>; <strong>Só sem a cor</strong> (só quando você não tem nenhuma carta da cor a jogar); ou <strong>Pode ser contestado</strong> (padrão): o próximo jogador pode contestar em vez de comprar. Se quem jogou o +4 tinha uma carta da cor a jogar, ele compra as 4 cartas; senão, quem contestou compra 6 cartas e perde a vez.</li>
+                <li><strong>As cartas do estilo israelense:</strong> 116 cartas. Em cada cor: duas de cada número 1 e de 3 a 9, dois Pare, dois Mudar sentido, dois +2, dois Mais e dois TAKI. Além disso, quatro Mudar cor, e duas de cada: SuperTAKI, Coroa, +3 e Quebra +3. Cada jogador recebe 8 cartas. Só vale a opção Fim do jogo: Uma mão só ou Pirâmide.</li>
+                <li><strong>As regras do estilo israelense:</strong> uma carta comprada não pode ser jogada até a sua próxima vez. Com 2 jogadores, Mudar sentido só muda o sentido. Sempre se pode responder a um +2 com um +2; o jogador que não puder responder compra todas.</li>
+                <li><strong>Mais:</strong> jogue outra carta; se não puder, compre. Um Mais não pode ser a sua última carta.</li>
+                <li><strong>TAKI:</strong> jogue quantas cartas da cor dele quiser, uma por uma, e depois feche o TAKI. Só a última carta de ação dentro dele faz a sua ação. Um <strong>SuperTAKI</strong> é um TAKI da cor a jogar.</li>
+                <li><strong>Coroa:</strong> pode ser jogada sobre qualquer carta, e cancela os +2 ou o +3 esperando para serem comprados; depois jogue a carta que quiser, ou compre.</li>
+                <li><strong>+3:</strong> todos os outros jogadores devem comprar 3 cartas. O próximo jogador pode cancelá-lo com uma Coroa. Qualquer outro jogador pode respondê-lo com um <strong>Quebra +3</strong>, mesmo fora da sua vez: então quem jogou o +3 compra as 3 cartas. Um Quebra +3 jogado sobre qualquer outra carta faz o seu próprio jogador comprar 3.</li>
+            </ul>
+        </details>
         <h4>Nesta tela</h4>
         <ul>
             <li>Toque numa carta para jogá-la (as que você não pode jogar ficam cinza). Toque no monte ou em <strong>Comprar uma carta</strong> para comprar.</li>
@@ -182,10 +265,9 @@
         <details class="help-more">
             <summary>Mais detalhes</summary>
             <ul>
-                <li>A opção <strong>Estilo</strong> escolhe o estilo americano (as regras do UNO) ou o estilo israelense (as regras do Super TAKI, com as cartas TAKI, Mais, Coroa e +3).</li>
-                <li>As opções também definem quando a partida termina (um jogo, uma meta de pontos ou uma pirâmide), o acúmulo de cartas de comprar, e quando um Mudar cor +4 pode ser jogado ou contestado.</li>
-                <li>As cartas de castigo são compradas antes de qualquer outra coisa.</li>
-                <li>Num TAKI, jogue quantas cartas da cor dele quiser, e depois aperte <strong>Fechar TAKI</strong>.</li>
+                <li>Embaixo das suas cartas, quando podem ser usados: <strong>Comprar uma carta</strong> (ou Comprar N cartas), <strong>Guardar a carta</strong> depois de comprar, <strong>Fechar TAKI</strong> durante o seu TAKI, e <strong>Contestar!</strong> contra um Mudar cor +4.</li>
+                <li>A barra no alto mostra a cor a jogar e o sentido do jogo (↻ ou ↺).</li>
+                <li>A tabela de jogadores mostra 🛡 para um jogador protegido, as cartas na mão de cada um e, com meta de pontos, os seus pontos. <strong>Esconder a mesa</strong> e <strong>Mostrar a mesa</strong> a escondem e a mostram.</li>
             </ul>
         </details>
     </details>
@@ -194,10 +276,24 @@
         <summary><img src="/images/games/yaniv.svg" alt=""> Yaniv</summary>
         <h4>Como jogar</h4>
         <ul>
-            <li>2–4 jogadores, 5 cartas cada. Baixe os pontos da sua mão: ás 1, coringa 0, 2–10 o seu número, J, Q e K 10.</li>
+            <li>2–4 jogadores, 5 cartas cada. Baixe os pontos da sua mão: um ponto pelo ás, zero pelo coringa, o valor da carta para 2–10, 10 pontos para J, Q, K.</li>
             <li>Na sua vez, descarte uma carta, uma série do mesmo valor ou uma sequência de 3 ou mais do mesmo naipe; depois pegue uma carta do monte fechado ou a de cima do monte aberto.</li>
             <li>Com 7 pontos ou menos, diga <strong>Yaniv!</strong> Se ninguém tiver menos, você ganha a rodada; senão você é Assaf e ganha 30 pontos extras.</li>
         </ul>
+        <details class="help-more">
+            <summary>Mais detalhes</summary>
+            <ul>
+                <li><strong>As cartas:</strong> um baralho de 52 cartas e 2 coringas. Em cada rodada, cada jogador recebe 5 cartas; o resto é o monte fechado, e o monte aberto começa vazio. O primeiro lugar começa a rodada 1, e o vencedor de cada rodada começa a próxima.</li>
+                <li><strong>Pontos da mão:</strong> a soma dos pontos das suas cartas (por exemplo, A, 7, 10, K somam 1 + 7 + 10 + 10 = 28).</li>
+                <li><strong>Descartar:</strong> uma carta; uma série de 2 a 4 cartas do mesmo valor (por exemplo, dois 7); ou uma sequência de 3 ou mais cartas seguidas do mesmo naipe (por exemplo, 5♣ 6♣ 7♣). O ás é só baixo: A-2-3 é sequência, Q-K-A não.</li>
+                <li><strong>Coringas:</strong> um coringa pode valer qualquer carta numa série ou sequência (por exemplo, 9♥ coringa J♥).</li>
+                <li><strong>Pegar uma carta:</strong> depois de escolher o que descartar, pegue a carta de cima do monte fechado ou do monte aberto. As suas cartas descartadas vão então para o monte aberto.</li>
+                <li><strong>Dizer Yaniv:</strong> com 7 pontos ou menos na mão, diga Yaniv na sua vez em vez de descartar. Cada um dos outros jogadores joga então uma última vez (sem poder dizer Yaniv), e todas as mãos são mostradas.</li>
+                <li><strong>Quem ganha a rodada:</strong> se nenhuma mão tiver menos pontos que a de quem disse Yaniv (um empate fica com quem disse), quem disse ganha. Senão, quem disse é Assaf e ganha 30 pontos além dos pontos da sua mão, e a mão mais baixa vence. O vencedor da rodada não ganha pontos; cada um dos outros ganha os pontos da sua mão.</li>
+                <li><strong>Fim do jogo</strong> (opção): <strong>Uma rodada</strong>: o seu vencedor ganha o jogo. <strong>Meta de pontos</strong> (100, 150, 200 ou 300 pontos; 200 por padrão): um jogador cujos pontos passam da meta sai, e o último jogador que sobrar ganha.</li>
+                <li><strong>Bônus</strong> (opção, com meta de pontos; ligado por padrão): cair exatamente na metade da meta ou na meta tira 50 pontos (por exemplo, com 200, 100 vira 50 e 200 vira 150).</li>
+            </ul>
+        </details>
         <h4>Nesta tela</h4>
         <ul>
             <li>Toque nas cartas a descartar, e depois na pilha de onde pegar uma carta. <strong>Yaniv!</strong> aparece ao lado dos pontos da sua mão quando você pode dizê-lo.</li>
@@ -205,9 +301,44 @@
         <details class="help-more">
             <summary>Mais detalhes</summary>
             <ul>
-                <li>Um coringa pode valer qualquer carta numa série ou sequência. O ás é só baixo: A-2-3 é sequência, Q-K-A não.</li>
-                <li>Depois de um Yaniv, cada um dos outros joga uma última vez, e então todas as mãos são mostradas.</li>
-                <li>Com meta de pontos, quem passa da meta sai; cair exatamente na metade da meta ou na meta tira 50 pontos.</li>
+                <li>As cartas que você escolhe esperam ao lado do monte aberto até você pegar uma carta; ficam contornadas de vermelho quando não podem ser descartadas juntas.</li>
+                <li>Depois de uma rodada, as cartas e os pontos de todos são mostrados. Um jogador ausente pode ser pulado com <strong>Pular jogador</strong>. <strong>Esconder a mesa</strong> e <strong>Mostrar a mesa</strong> escondem e mostram a tabela de jogadores.</li>
+            </ul>
+        </details>
+    </details>
+
+    <details class="help-section" id="help-hearts">
+        <summary><img src="/images/games/hearts.svg" alt=""> Copas</summary>
+        <h4>Como jogar</h4>
+        <ul>
+            <li>4 jogadores, 13 cartas cada. Evite levar pontos: cada carta de copas vale 1 ponto e a dama de espadas 13.</li>
+            <li>Antes de cada mão, passe 3 cartas: para a esquerda, depois para a direita, depois para a frente; a cada quarta mão ninguém passa.</li>
+            <li>O 2♣ abre a primeira vaza. Siga o naipe da saída se puder; a carta mais alta desse naipe ganha a vaza. Quando alguém chega a 100 pontos, vence a menor pontuação.</li>
+        </ul>
+        <details class="help-more">
+            <summary>Mais detalhes</summary>
+            <ul>
+                <li><strong>As cartas:</strong> um baralho de 52 cartas, 13 cartas para cada jogador. Joga-se no sentido horário (para a esquerda). Cada carta de copas vale 1 ponto e a dama de espadas (Q♠) 13; as outras cartas não valem nada (26 pontos ao todo).</li>
+                <li><strong>Passar cartas:</strong> antes de cada mão, cada jogador escolhe 3 cartas para passar: na primeira mão para a esquerda, na segunda para a direita, na terceira para a frente, e na quarta ninguém passa; depois recomeça. Todos escolhem ao mesmo tempo, e recebem as cartas passadas a eles quando todos já passaram.</li>
+                <li><strong>As vazas:</strong> quem tem o 2♣ sai com ele na primeira vaza. Cada jogador, na sua vez, joga uma carta, seguindo o naipe da saída se puder; senão, qualquer carta. A carta mais alta do naipe da saída ganha a vaza (não há trunfo), e quem ganha sai na próxima.</li>
+                <li><strong>A primeira vaza:</strong> ninguém pode jogar nela copas nem a Q♠, a não ser que não tenha outra carta.</li>
+                <li><strong>Quebrar copas:</strong> não se pode sair com copas até que uma carta de copas tenha sido jogada na mão, a não ser que quem sai só tenha copas. A Q♠ pode sair a qualquer momento.</li>
+                <li><strong>A pontuação:</strong> depois das 13 vazas, cada jogador soma os pontos das cartas que levou. Levar tudo: um jogador que leva as 13 cartas de copas e a Q♠ não soma nada, e cada um dos outros soma 26 pontos.</li>
+                <li><strong>Reivindicar:</strong> no começo de uma vaza, quem sai e tem cartas que ganham todas as vazas restantes, seja o que for que os outros joguem, pode reivindicá-las: a mão termina, e ele leva todas as cartas restantes.</li>
+                <li><strong>O fim:</strong> depois de uma mão em que alguém chega a 100 pontos ou mais, o jogo termina e vence a menor pontuação (se empatar, vencem todos os de menor pontuação).</li>
+            </ul>
+        </details>
+        <h4>Nesta tela</h4>
+        <ul>
+            <li>Para passar, toque em 3 cartas e depois em <strong>Passar 3 cartas</strong>. Para jogar, toque numa carta (as que você não pode jogar ficam em cinza).</li>
+            <li>A mesa de baixo mostra a pontuação de cada jogador, e as copas (♥) e a dama de espadas (Q♠) que ele levou nesta mão. <strong>Esconder a mesa</strong> a esconde.</li>
+        </ul>
+        <details class="help-more">
+            <summary>Mais detalhes</summary>
+            <ul>
+                <li>Quando você sai e suas cartas ganham todas as vazas restantes, <strong>Reivindicar todas</strong> aparece embaixo das suas cartas. Você também pode continuar jogando. Depois de uma reivindicação, as cartas de todos são mostradas viradas para cima, para que todos possam conferir.</li>
+                <li>Um vidro se quebra quando a primeira carta de copas é jogada, e uma fanfarra sombria soa quando a dama de espadas é jogada.</li>
+                <li>Entre as vazas, a última vaza fica na mesa com a carta do vencedor contornada. Depois de uma mão, <strong>Próxima mão</strong> distribui a seguinte.</li>
             </ul>
         </details>
     </details>

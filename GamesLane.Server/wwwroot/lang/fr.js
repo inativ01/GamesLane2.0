@@ -629,11 +629,39 @@ TRANSLATIONS.fr = {
     "The next round cannot start yet.": "La manche suivante ne peut pas encore commencer.",
 
     // Trick-taking games
+    "Claim all": "Tout réclamer",
+    "You claimed the remaining tricks.": "Tu as réclamé les plis restants.",
+    "{name} claimed the remaining tricks.": "{name} a réclamé les plis restants.",
+    "You can claim only at the start of a trick.": "Tu ne peux réclamer qu'au début d'un pli.",
+    "Your cards do not win every remaining trick.": "Tes cartes ne gagnent pas tous les plis restants.",
     "You won the trick.": "Tu as remporté le pli.",
     "{name} won the trick.": "{name} a remporté le pli.",
     "4 players": "4 joueurs",
     "Play a card.": "Joue une carte.",
     "Hand {n} is over.": "La donne {n} est terminée.",
+
+    // Hearts
+    "Hearts": "Dame de pique",
+    "Hearts - GamesLane": "Dame de pique - GamesLane",
+    "Avoid the hearts and the queen of spades, or take them all.": "Évite les cœurs et la dame de pique, ou prends-les tous.",
+    "Pass 3 cards to the left, to {name}.": "Passe 3 cartes à gauche, à {name}.",
+    "Pass 3 cards to the right, to {name}.": "Passe 3 cartes à droite, à {name}.",
+    "Pass 3 cards across, to {name}.": "Passe 3 cartes en face, à {name}.",
+    "Waiting for the others to pass their cards.": "En attente que les autres passent leurs cartes.",
+    "No passing in this hand.": "Pas d'échange de cartes dans cette donne.",
+    "Shot the moon!": "Grand chelem !",
+    "Pass {n} cards": "Passer {n} cartes",
+    "You passed {cards}.": "Tu as passé {cards}.",
+    "You received {cards}.": "Tu as reçu {cards}.",
+    "Passed": "A passé",
+
+    // Hearts: messages from the server
+    "The cards are not being passed now.": "Ce n'est pas le moment de passer des cartes.",
+    "You have already passed your cards.": "Tu as déjà passé tes cartes.",
+    "Choose {n} cards to pass.": "Choisis {n} cartes à passer.",
+    "Lead the 2♣.": "Entame avec le 2♣.",
+    "Hearts are not broken yet.": "Aucun cœur n'a encore été joué.",
+    "No points on the first trick: play another card.": "Pas de points au premier pli : joue une autre carte.",
 
     // Dominoes
     "Dominoes": "Dominos",

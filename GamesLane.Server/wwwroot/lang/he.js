@@ -629,11 +629,39 @@ TRANSLATIONS.he = {
     "The next round cannot start yet.": "הסיבוב הבא עוד לא יכול להתחיל.",
 
     // Trick-taking games
+    "Claim all": "לקיחת כל השאר",
+    "You claimed the remaining tricks.": "לקחת את כל הלקיחות שנותרו.",
+    "{name} claimed the remaining tricks.": "{name} לקח את כל הלקיחות שנותרו.",
+    "You can claim only at the start of a trick.": "אפשר לקחת את כל השאר רק בתחילת לקיחה.",
+    "Your cards do not win every remaining trick.": "הקלפים שלך לא זוכים בכל הלקיחות שנותרו.",
     "You won the trick.": "זכית בלקיחה.",
     "{name} won the trick.": "{name} זכה בלקיחה.",
     "4 players": "4 שחקנים",
     "Play a card.": "הניחו קלף.",
     "Hand {n} is over.": "יד {n} הסתיימה.",
+
+    // Hearts
+    "Hearts": "לבבות",
+    "Hearts - GamesLane": "לבבות - GamesLane",
+    "Avoid the hearts and the queen of spades, or take them all.": "התחמקו מהלבבות וממלכת העלה, או קחו את כולם.",
+    "Pass 3 cards to the left, to {name}.": "העבירו 3 קלפים שמאלה, ל־{name}.",
+    "Pass 3 cards to the right, to {name}.": "העבירו 3 קלפים ימינה, ל־{name}.",
+    "Pass 3 cards across, to {name}.": "העבירו 3 קלפים לשחקן שמולכם, ל־{name}.",
+    "Waiting for the others to pass their cards.": "ממתינים שהאחרים יעבירו את הקלפים שלהם.",
+    "No passing in this hand.": "ביד הזו לא מעבירים קלפים.",
+    "Shot the moon!": "לקח את כל הנקודות!",
+    "Pass {n} cards": "העברת {n} קלפים",
+    "You passed {cards}.": "העברת {cards}.",
+    "You received {cards}.": "קיבלת {cards}.",
+    "Passed": "העביר",
+
+    // Hearts: messages from the server
+    "The cards are not being passed now.": "עכשיו לא מעבירים קלפים.",
+    "You have already passed your cards.": "כבר העברת את הקלפים שלך.",
+    "Choose {n} cards to pass.": "בחרו {n} קלפים להעברה.",
+    "Lead the 2♣.": "פתחו ב־2♣.",
+    "Hearts are not broken yet.": "עוד לא שוחק לב, אי אפשר לפתוח בלב.",
+    "No points on the first trick: play another card.": "בלקיחה הראשונה אסור לתת נקודות: הניחו קלף אחר.",
 
     // Dominoes
     "Dominoes": "דומינו",

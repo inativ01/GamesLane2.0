@@ -4,6 +4,7 @@ using GamesLane.Server.Games.RichManPoorMan;
 using GamesLane.Server.Games.TheGang;
 using GamesLane.Server.Games.TicTacToe;
 using GamesLane.Server.Games.FinalCard;
+using GamesLane.Server.Games.Hearts;
 using GamesLane.Server.Games.Yaniv;
 using GamesLane.Server.Games.Wazoo;
 using GamesLane.Server.Hubs;
@@ -909,6 +910,23 @@ public class GameSessionTests
         AssertSameAfterReload(yaniv, () => new YanivSession("ABC123", UnshuffledYaniv),
             s => s.TryDiscard(Bob, 1, ["7♣"], true, out var e) ? null : e);
 
+        var hearts = new HeartsSession("ABC123", _ => { });
+        for (var i = 0; i < 4; i++)
+        {
+            Sit(hearts, i);
+        }
+
+        hearts.TryNewGame(Players[0], 0, out _);
+        for (var seat = 0; seat < 4; seat++)
+        {
+            var cards = Assert.IsType<HeartsPrivateState>(hearts.GetPrivateState(Players[seat])).Hands.Single().Cards.Take(3).ToArray();
+            hearts.TryPass(Players[seat], seat, cards, out _);
+        }
+
+        hearts.TryPlayCard(Players[1], 1, "2♣", out _);
+        AssertSameAfterReload(hearts, () => new HeartsSession("ABC123", _ => { }),
+            s => s.TryPlayCard(Players[2], 2, "2♦", out var e) ? null : e);
+
         var dominoes = Started(new DominoesSession("ABC123", UnshuffledDominoes));
         dominoes.TryPlayTile(Bob, 1, "2-2", 0, out _);
         AssertSameAfterReload(dominoes, () => new DominoesSession("ABC123", UnshuffledDominoes),
@@ -1570,6 +1588,102 @@ public class GameSessionTests
 
     private static YanivState Yaniv(YanivSession session) =>
         Assert.IsType<YanivState>(session.GetPublicState().Game);
+
+    // Hearts
+
+    [Fact]
+    public void Hearts_needs_4_seats_and_each_seat_passes_and_plays_its_own_cards()
+    {
+        var session = new HeartsSession("ABC123", _ => { });
+        for (var i = 0; i < 3; i++)
+        {
+            Sit(session, i);
+        }
+
+        Assert.False(session.TryNewGame(Players[0], 0, out var error));
+        Assert.Equal("At least 4 players must be seated.", error);
+        Sit(session, 3);
+        Assert.True(session.TryNewGame(Players[0], 0, out error), error);
+
+        var hand = Assert.IsType<HeartsPrivateState>(session.GetPrivateState(Players[0])).Hands.Single();
+        Assert.Equal((0, 1, 13), (hand.Seat, hand.PassTo, hand.Cards.Count));
+        Assert.Null(hand.Passed);
+        Assert.False(session.TryPass(Players[1], 0, ["2♣", "3♣", "4♣"], out error));
+        Assert.Equal("Only players in this game can make moves.", error);
+        Assert.False(session.TryPass(Players[0], 0, ["2♣", "XX", "4♣"], out error));
+        Assert.Equal("Unknown card.", error);
+        for (var seat = 0; seat < 4; seat++)
+        {
+            var cards = Assert.IsType<HeartsPrivateState>(session.GetPrivateState(Players[seat])).Hands.Single().Cards.Take(3).ToArray();
+            Assert.True(session.TryPass(Players[seat], seat, cards, out error), error);
+        }
+
+        var state = Hearts(session);
+        Assert.Equal((HeartsPhase.Playing, 1), (state.Phase, state.Turn));
+        Assert.Equal(["2♣", "3♣", "4♣"], Assert.IsType<HeartsPrivateState>(session.GetPrivateState(Players[1])).Hands.Single().Received);
+        Assert.Equal(["2♣"], Assert.IsType<HeartsPrivateState>(session.GetPrivateState(Players[1])).Hands.Single().Playable);
+        Assert.True(session.TryPlayCard(Players[1], 1, "2♣", out error), error);
+        Assert.Equal([new TrickCardState(1, "2♣")], Hearts(session).Trick.Cards);
+        Assert.False(session.TryNextRound(Players[0], 1, out error));
+        Assert.Equal("This hand is not finished yet.", error);
+    }
+
+    [Fact]
+    public void A_hearts_game_waits_for_an_absent_player_who_cannot_be_skipped()
+    {
+        var session = new HeartsSession("ABC123", _ => { });
+        for (var i = 0; i < 4; i++)
+        {
+            Sit(session, i);
+        }
+
+        session.TryNewGame(Players[0], 0, out _);
+
+        session.Disconnect("conn-2", Now);
+        Assert.Empty(session.GetPublicState().WaitingSeats);
+        for (var seat = 0; seat < 4; seat += seat == 1 ? 2 : 1)
+        {
+            var cards = Assert.IsType<HeartsPrivateState>(session.GetPrivateState(Players[seat])).Hands.Single().Cards.Take(3).ToArray();
+            Assert.True(session.TryPass(Players[seat], seat, cards, out var error), error);
+        }
+
+        AssertWaiting(session, [2], canSkip: false);
+        Assert.False(session.TrySkipPlayer(Players[0], 2, out var skipError));
+        Assert.Equal("This player cannot be skipped. You can end the game.", skipError);
+    }
+
+    [Fact]
+    public void Each_hearts_player_shows_the_hearts_and_the_queen_of_spades_taken_in_the_hand()
+    {
+        var session = new HeartsSession("ABC123", _ => { });
+        for (var i = 0; i < 4; i++)
+        {
+            Sit(session, i);
+        }
+
+        session.TryNewGame(Players[0], 0, out _);
+        for (var seat = 0; seat < 4; seat++)
+        {
+            var cards = Assert.IsType<HeartsPrivateState>(session.GetPrivateState(Players[seat])).Hands.Single().Cards.Take(3).ToArray();
+            Assert.True(session.TryPass(Players[seat], seat, cards, out var error), error);
+        }
+
+        Assert.All(Hearts(session).Players, p => Assert.Equal((0, false), (p.HeartsTaken, p.TookQueen)));
+        while (Hearts(session).Phase == HeartsPhase.Playing)
+        {
+            var turn = Hearts(session).Turn;
+            var card = Assert.IsType<HeartsPrivateState>(session.GetPrivateState(Players[turn])).Hands.Single().Playable[0];
+            Assert.True(session.TryPlayCard(Players[turn], turn, card, out var error), error);
+        }
+
+        var players = Hearts(session).Players;
+        Assert.Equal(13, players.Sum(p => p.HeartsTaken));
+        Assert.Single(players, p => p.TookQueen);
+        Assert.All(players, p => Assert.Equal(p.HandPoints, p.HeartsTaken + (p.TookQueen ? 13 : 0)));
+    }
+
+    private static HeartsState Hearts(HeartsSession session) =>
+        Assert.IsType<HeartsState>(session.GetPublicState().Game);
 
     // Dominoes
 

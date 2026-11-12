@@ -15,6 +15,17 @@ public record TrickCardState(int Seat, string Card);
 public record TrickState(IReadOnlyList<TrickCardState> Cards, int? WinnerSeat);
 
 /// <summary>
+/// A seat's cards when the remaining tricks were claimed.
+/// </summary>
+public record TrickClaimHand(int Seat, IReadOnlyList<string> Cards);
+
+/// <summary>
+/// A claim of the remaining tricks of a hand: the seat that claimed them, and every seat's cards then, the claimer's
+/// first and then in turn order, so everyone can check the claim.
+/// </summary>
+public record TrickClaimState(int Seat, IReadOnlyList<TrickClaimHand> Hands);
+
+/// <summary>
 /// A trick-taking game for 4 seats (see <see cref="TrickTakingGame"/>). The players are the game's seats in seat order.
 /// Each game adds its own actions and states; the trick, the cards and the hands are shared. A game that waits for an
 /// absent player cannot skip them: the players wait, or end the game.
@@ -44,6 +55,10 @@ public abstract class TrickTakingSession<TGame>(string id, Action<Card[]>? shuff
         WithPlayer(userKey, seat, (game, player) => TryParse(card is null ? null : [card], out var parsed) && parsed.Length == 1
             ? (game.TryPlay(player, parsed[0], out var e), e)
             : (false, "Unknown card."), out error);
+
+    /// <inheritdoc />
+    public bool TryClaim(string userKey, int seat, [NotNullWhen(false)] out string? error) =>
+        WithPlayer(userKey, seat, (game, player) => (game.TryClaim(player, out var e), e), out error);
 
     /// <inheritdoc />
     public bool TryNextRound(string userKey, int round, [NotNullWhen(false)] out string? error)
@@ -79,6 +94,12 @@ public abstract class TrickTakingSession<TGame>(string id, Action<Card[]>? shuff
     /// <summary>The last trick completed in this hand, as everyone sees it, or null.</summary>
     protected TrickState? LastTrick() => Game.LastTrick is { } trick
         ? new TrickState([.. trick.Cards.Select(c => new TrickCardState(SeatOf(c.Player), c.Card.ToString()))], SeatOf(trick.Winner))
+        : null;
+
+    /// <summary>The claim of this hand's remaining tricks, as everyone sees it, or null.</summary>
+    protected TrickClaimState? Claim() => Game.Claimer is { } claimer
+        ? new(SeatOf(claimer), [.. Enumerable.Range(0, TrickTakingGame.PlayerCount).Select(i => (claimer + i) % TrickTakingGame.PlayerCount)
+            .Select(p => new TrickClaimHand(SeatOf(p), Text(Game.ClaimedHand(p))))])
         : null;
 
     /// <summary>The game's player at <paramref name="seat"/>.</summary>
