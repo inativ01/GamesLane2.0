@@ -30,10 +30,10 @@ public enum GameOptionKind
 }
 
 /// <summary>
-/// An option that only matters when option <see cref="Key"/> has the value <see cref="Value"/> and is itself shown; pages
-/// show it only then.
+/// An option that only matters when option <see cref="Key"/> has one of the values <see cref="Values"/> and is itself
+/// shown; pages show it only then.
 /// </summary>
-public record GameOptionCondition(string Key, string Value);
+public record GameOptionCondition(string Key, params IReadOnlyList<string> Values);
 
 /// <summary>
 /// A rule variant players choose before a game starts. A <see cref="GameOptionKind.Choice"/> option is one of

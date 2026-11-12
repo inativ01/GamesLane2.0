@@ -629,6 +629,13 @@ TRANSLATIONS["zh-CN"] = {
     "This round is over.": "这一轮已经结束。",
     "The next round cannot start yet.": "下一轮还不能开始。",
 
+    // Trick-taking games
+    "You won the trick.": "您赢得了这一墩。",
+    "{name} won the trick.": "{name} 赢得了这一墩。",
+    "4 players": "4 名玩家",
+    "Play a card.": "请出一张牌。",
+    "Hand {n} is over.": "第 {n} 手已结束。",
+
     // Tic-tac-toe
     "Tic-tac-toe - GamesLane": "井字棋 - GamesLane",
     "Next round": "下一轮",
@@ -863,6 +870,9 @@ TRANSLATIONS["zh-CN"] = {
     "That is not your seat.": "这不是您的座位。",
     "The game is not over yet.": "游戏还没有结束。",
     "At least {n} players must be seated.": "至少需要 {n} 名玩家入座。",
+    "With these options, at most {n} players can play.": "使用这些选项时，最多可以有 {n} 名玩家参加。",
+    "You must follow suit.": "您必须跟出首家的花色。",
+    "Wait until it is time to play a card.": "请等到可以出牌的时候。",
     "Options can only be changed in the lobby.": "只能在大厅中更改选项。",
     "There is no game in progress to end.": "没有正在进行的游戏可以结束。",
     "The game is over. Wait for the next game to take a seat.": "游戏已结束。请等待下一局再入座。",

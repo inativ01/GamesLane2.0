@@ -63,7 +63,8 @@ public record PlayerProfile(string Name, string Icon);
 public record SeatInfo(string PlayerId, string Name, string Icon, SeatStatus Status);
 
 /// <summary>
-/// Public session state, safe to send to everyone in the session. <see cref="Seats"/> has one entry per seat (null when empty).
+/// Public session state, safe to send to everyone in the session. <see cref="Seats"/> has one entry per seat (null when empty);
+/// <see cref="MaxSeats"/> is the number of them a game can use with the chosen options.
 /// <see cref="GameNumber"/> is 0 until the first game starts; <see cref="Game"/> is the game-specific state, or null before then.
 /// <see cref="Options"/> are the chosen values of the game's options (<see cref="OptionList"/>), used by the next new game.
 /// <see cref="AbsentSeats"/> are, during a game, its seats that are empty or whose holder is not connected, in order (a
@@ -209,6 +210,12 @@ public abstract class GameSession : IGameSession
     /// The number of seats (at most 12).
     /// </summary>
     protected abstract int MaxSeats { get; }
+
+    /// <summary>
+    /// The number of seats a game can use with <paramref name="options"/> (at most <see cref="MaxSeats"/>), for a game
+    /// whose number of players depends on its options (e.g. a style for fewer players). All of them by default.
+    /// </summary>
+    protected virtual int SeatLimitFor(IReadOnlyDictionary<string, string> options) => MaxSeats;
 
     /// <summary>
     /// Whether a public game goes on when one of its players gives up their seat. Otherwise it ends, back in the lobby.
@@ -372,7 +379,7 @@ public abstract class GameSession : IGameSession
         {
             lock (Sync)
             {
-                return _isPublic && !_onGameScreen && _seats.Any(s => s is null) && _seats.Any(s => s is not null);
+                return _isPublic && !_onGameScreen && OccupiedSeats().Count() < SeatLimit && _seats.Any(s => s is not null);
             }
         }
     }
@@ -727,7 +734,7 @@ public abstract class GameSession : IGameSession
 
             error = _isPublic && _onGameScreen ? "A public game cannot be joined once it has started."
                 : Phase == SessionPhase.Over ? "The game is over. Wait for the next game to take a seat."
-                : !HasUnfinishedGame ? (_seats[seat] is null ? null : "That seat is taken.")
+                : !HasUnfinishedGame ? (seat >= SeatLimit ? "All seats are taken." : _seats[seat] is null ? null : "That seat is taken.")
                 : !_gameSeats.Contains(seat) ? "The game has already started. You can watch it."
                 : !IsAbsent(seat) ? "That seat is taken."
                 : !_seatOffers.Contains(userKey) ? "Only a user opening the game without a seat can take a disconnected player's seat."
@@ -752,7 +759,7 @@ public abstract class GameSession : IGameSession
             if (_isPublic)
             {
                 _host ??= userKey;
-                if (OccupiedSeats().Count() == MaxSeats)
+                if (OccupiedSeats().Count() >= SeatLimit)
                 {
                     TryStartGame(out _);
                 }
@@ -773,7 +780,7 @@ public abstract class GameSession : IGameSession
         {
             var seat = HasUnfinishedGame
                 ? AbsentGameSeats().Where(s => SeatingDuringGameError(s) is null).DefaultIfEmpty(-1).First()
-                : Array.FindIndex(_seats, s => s is null);
+                : Enumerable.Range(0, SeatLimit).Where(s => _seats[s] is null).DefaultIfEmpty(-1).First();
             if (seat < 0)
             {
                 error = Phase == SessionPhase.Over ? "The game is over. Wait for the next game to take a seat."
@@ -904,6 +911,13 @@ public abstract class GameSession : IGameSession
                 return false;
             }
 
+            var limit = SeatLimitFor(normalized);
+            if (OccupiedSeats().Count() > limit)
+            {
+                error = $"With these options, at most {limit} players can play.";
+                return false;
+            }
+
             _options = normalized;
             return true;
         }
@@ -983,7 +997,7 @@ public abstract class GameSession : IGameSession
                 Type,
                 Phase,
                 MinSeats,
-                MaxSeats,
+                SeatLimit,
                 _seats.Select(s => s is null
                     ? null
                     : new SeatInfo(PlayerIdFor(s.UserKey), s.Profile.Name, s.Profile.Icon, StatusOf(s.UserKey))).ToArray(),
@@ -1344,6 +1358,11 @@ public abstract class GameSession : IGameSession
     /// The numbers of the taken seats, in order.
     /// </summary>
     private IEnumerable<int> OccupiedSeats() => Enumerable.Range(0, MaxSeats).Where(i => _seats[i] is not null);
+
+    /// <summary>
+    /// The number of seats a game can use with the chosen options (see <see cref="SeatLimitFor"/>).
+    /// </summary>
+    private int SeatLimit => SeatLimitFor(_options);
 
     /// <summary>
     /// Whether <paramref name="userKey"/> holds any seat.

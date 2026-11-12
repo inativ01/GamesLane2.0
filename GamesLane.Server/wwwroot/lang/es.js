@@ -628,6 +628,13 @@ TRANSLATIONS.es = {
     "This round is over.": "Esta ronda terminó.",
     "The next round cannot start yet.": "La siguiente ronda aún no puede empezar.",
 
+    // Trick-taking games
+    "You won the trick.": "Ganaste la baza.",
+    "{name} won the trick.": "{name} ganó la baza.",
+    "4 players": "4 jugadores",
+    "Play a card.": "Juega una carta.",
+    "Hand {n} is over.": "La mano {n} terminó.",
+
     // Tic-tac-toe
     "Tic-tac-toe - GamesLane": "Gato - GamesLane",
     "Next round": "Siguiente ronda",
@@ -862,6 +869,9 @@ TRANSLATIONS.es = {
     "That is not your seat.": "Ese no es tu lugar.",
     "The game is not over yet.": "La partida todavía no termina.",
     "At least {n} players must be seated.": "Deben sentarse al menos {n} jugadores.",
+    "With these options, at most {n} players can play.": "Con estas opciones, pueden jugar como máximo {n} jugadores.",
+    "You must follow suit.": "Debes seguir el palo.",
+    "Wait until it is time to play a card.": "Espera a que sea momento de jugar una carta.",
     "Options can only be changed in the lobby.": "Las opciones solo se pueden cambiar en la sala.",
     "There is no game in progress to end.": "No hay ninguna partida en curso que terminar.",
     "The game is over. Wait for the next game to take a seat.": "La partida terminó. Espera a la siguiente para tomar un lugar.",

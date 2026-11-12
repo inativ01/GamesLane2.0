@@ -628,6 +628,13 @@ TRANSLATIONS.he = {
     "This round is over.": "הסיבוב הזה הסתיים.",
     "The next round cannot start yet.": "הסיבוב הבא עוד לא יכול להתחיל.",
 
+    // Trick-taking games
+    "You won the trick.": "זכית בלקיחה.",
+    "{name} won the trick.": "{name} זכה בלקיחה.",
+    "4 players": "4 שחקנים",
+    "Play a card.": "הניחו קלף.",
+    "Hand {n} is over.": "יד {n} הסתיימה.",
+
     // Tic-tac-toe
     "Tic-tac-toe - GamesLane": "איקס־עיגול - GamesLane",
     "Next round": "הסיבוב הבא",
@@ -862,6 +869,9 @@ TRANSLATIONS.he = {
     "That is not your seat.": "זה לא המקום שלך.",
     "The game is not over yet.": "המשחק עוד לא הסתיים.",
     "At least {n} players must be seated.": "צריכים לשבת לפחות {n} שחקנים.",
+    "With these options, at most {n} players can play.": "עם האפשרויות האלה יכולים לשחק לכל היותר {n} שחקנים.",
+    "You must follow suit.": "חובה להניח קלף מהצורה שפתחו בה.",
+    "Wait until it is time to play a card.": "חכו עד שיגיע הזמן להניח קלף.",
     "Options can only be changed in the lobby.": "אפשר לשנות את האפשרויות רק בלובי.",
     "There is no game in progress to end.": "אין משחק פעיל לסיים.",
     "The game is over. Wait for the next game to take a seat.": "המשחק הסתיים. חכו למשחק הבא כדי לשבת.",
