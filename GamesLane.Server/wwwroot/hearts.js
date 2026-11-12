@@ -140,11 +140,17 @@ function playRegalDoom() {
     });
 }
 
-// For everyone with the page open: the glass when hearts are broken, the doom when the Q♠ is taken. Only changes seen
-// while the page is open count; a claim does not break hearts.
+// For everyone with the page open, as soon as the card is played: the glass when the first heart breaks hearts, the
+// doom when the Q♠ is played (or taken by a claim). Only changes seen while the page is open count; a claim does not
+// break hearts.
 let heard = null;
 function playSounds(game, state) {
-    const now = { hand: `${state.gameNumber}:${game.handNumber}`, broken: game.heartsBroken, queen: game.players.some((p) => p.tookQueen) };
+    const played = [...game.trick.cards, ...(game.lastTrick?.cards ?? [])].some((c) => c.card === "Q♠");
+    const now = {
+        hand: `${state.gameNumber}:${game.handNumber}`,
+        broken: game.heartsBroken,
+        queen: played || game.players.some((p) => p.tookQueen),
+    };
     if (heard?.hand === now.hand) {
         const broke = now.broken && !heard.broken;
         if (broke) playGlassBreak();
