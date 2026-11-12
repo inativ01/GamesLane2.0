@@ -13,4 +13,10 @@ public interface ITrickTakingSession : IRoundBasedSession
     /// on its turn.
     /// </summary>
     bool TryPlayCard(string userKey, int seat, string? card, [NotNullWhen(false)] out string? error);
+
+    /// <summary>
+    /// <paramref name="seat"/>, which <paramref name="userKey"/> must hold, claims the remaining tricks of the hand when
+    /// it leads and its cards win them all.
+    /// </summary>
+    bool TryClaim(string userKey, int seat, [NotNullWhen(false)] out string? error);
 }

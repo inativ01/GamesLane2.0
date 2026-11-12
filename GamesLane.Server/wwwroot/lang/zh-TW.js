@@ -630,6 +630,11 @@ TRANSLATIONS["zh-TW"] = {
     "The next round cannot start yet.": "下一輪還不能開始。",
 
     // Trick-taking games
+    "Claim all": "攤牌全收",
+    "You claimed the remaining tricks.": "您攤牌收下了剩餘的墩。",
+    "{name} claimed the remaining tricks.": "{name} 攤牌收下了剩餘的墩。",
+    "You can claim only at the start of a trick.": "只能在一墩開始時攤牌全收。",
+    "Your cards do not win every remaining trick.": "您的牌不能贏下剩餘的每一墩。",
     "You won the trick.": "您贏得了這一墩。",
     "{name} won the trick.": "{name} 贏得了這一墩。",
     "4 players": "4 位玩家",

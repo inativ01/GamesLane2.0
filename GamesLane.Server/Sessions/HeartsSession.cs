@@ -22,8 +22,9 @@ public record HeartsResultPlayerState(int Seat, int Points, int Score);
 public record HeartsResultState(IReadOnlyList<HeartsResultPlayerState> Players, int? MoonSeat);
 
 /// <summary>
-/// Public Hearts state. <see cref="Turn"/>, <see cref="Winners"/> and the seats in the tricks and players are seats;
-/// <see cref="Players"/> are in seat order. <see cref="Actions"/> counts the actions, so a page can tell a new one.
+/// Public Hearts state. <see cref="Turn"/>, <see cref="Winners"/> and the seats in the tricks, players and claim are
+/// seats; <see cref="Players"/> are in seat order. <see cref="Claim"/> is the claim of this hand's remaining tricks, or
+/// null. <see cref="Actions"/> counts the actions, so a page can tell a new one.
 /// </summary>
 public record HeartsState(
     int Target,
@@ -34,6 +35,7 @@ public record HeartsState(
     bool HeartsBroken,
     TrickState Trick,
     TrickState? LastTrick,
+    TrickClaimState? Claim,
     IReadOnlyList<HeartsPlayerState> Players,
     int Actions,
     HeartsResultState? LastResult,
@@ -41,10 +43,10 @@ public record HeartsState(
 
 /// <summary>
 /// A seat's private Hearts information: its cards (by suit, from 2 to A), those it may play now, the seat it passes to
-/// in this hand, the cards it chose to pass (or null), and those it received.
+/// in this hand, the cards it chose to pass (or null), those it received, and whether it may claim the remaining tricks.
 /// </summary>
 public record HeartsHand(int Seat, IReadOnlyList<string> Cards, IReadOnlyList<string> Playable, int PassTo,
-    IReadOnlyList<string>? Passed, IReadOnlyList<string> Received);
+    IReadOnlyList<string>? Passed, IReadOnlyList<string> Received, bool CanClaim);
 
 /// <summary>
 /// The private information of a user's seats in the game.
@@ -81,6 +83,7 @@ public class HeartsSession(string id, Action<Card[]>? shuffle = null) : TrickTak
             game.HeartsBroken,
             CurrentTrick(),
             LastTrick(),
+            Claim(),
             [.. Enumerable.Range(0, game.Players).Select(p => new HeartsPlayerState(
                 SeatOf(p), game.Hand(p).Count, game.Scores[p], game.HandPoints(p), game.Passed(p) is not null,
                 game.Won(p).Count(c => c.Suit == Suit.Hearts), game.Won(p).Contains(HeartsRules.QueenOfSpades)))],
@@ -102,6 +105,7 @@ public class HeartsSession(string id, Action<Card[]>? shuffle = null) : TrickTak
             Text(game.Playable(player)),
             SeatOf(HeartsRules.PassTarget(player, game.Pass)),
             game.Passed(player) is { } passed ? Text(passed) : null,
-            Text(game.Received(player))))]);
+            Text(game.Received(player)),
+            game.CanClaim(player)))]);
     }
 }

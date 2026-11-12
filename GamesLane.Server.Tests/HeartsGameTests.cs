@@ -104,6 +104,40 @@ public class HeartsGameTests
         AssertRefused(game.TryPlay(game.Turn, game.Hand(game.Turn).FirstOrDefault(), out error), error, "The game is over.");
     }
 
+    [Fact]
+    public void A_leader_whose_cards_win_every_remaining_trick_may_claim_them()
+    {
+        var game = Unshuffled();
+        PassLowest(game);
+        // Player 1 leads with 2♣ 3♣ 4♣ while player 0 holds the higher clubs.
+        Assert.False(game.CanClaim(1));
+        AssertRefused(game.TryClaim(1, out var error), error, "Your cards do not win every remaining trick.");
+        AssertRefused(game.TryClaim(0, out error), error, "It is not your turn.");
+        Assert.True(game.TryPlay(1, Card("2♣"), out error), error);
+        AssertRefused(game.TryClaim(2, out error), error, "You can claim only at the start of a trick.");
+
+        game = Unshuffled();
+        for (var hand = 1; hand <= 3; hand++)
+        {
+            PlayHand(game);
+            game.TryNextHand(hand, out _);
+        }
+
+        // The fourth hand is held: player 0 leads holding all 13 clubs.
+        Assert.True(game.CanClaim(0));
+        Assert.False(game.CanClaim(1));
+        var before = game.Scores.ToArray();
+        Assert.True(game.TryClaim(0, out error), error);
+        Assert.Equal((0, 13), (game.Claimer, game.ClaimedCards.Count));
+        Assert.All(Enumerable.Range(0, 4), p => Assert.Empty(game.Hand(p)));
+        Assert.Equal((13, 52), (game.TricksWon[0], game.Won(0).Count));
+        Assert.Equal(0, game.LastResult!.Moon);
+        Assert.Equal(before.Select((score, p) => score + (p == 0 ? 0 : 26)), game.Scores);
+
+        game.TryNextHand(4, out _);
+        Assert.Equal((null, 0), (game.Claimer, game.ClaimedCards.Count));
+    }
+
     // Each player passes their first 3 cards, if they have not passed yet.
     private static void PassLowest(HeartsGame game)
     {

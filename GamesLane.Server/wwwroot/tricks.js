@@ -20,9 +20,20 @@ function tableSeats(view) {
 }
 
 // The trick on the table: the one being played; between tricks, the last one completed (its winner's card outlined),
-// until the next card is played.
+// until the next card is played; none once the remaining tricks were claimed.
 function shownTrick(game) {
+    if (game.claim) return { cards: [] };
     return game.trick.cards.length > 0 || !game.lastTrick ? game.trick : game.lastTrick;
+}
+
+// Once a player has claimed the remaining tricks (`game.claim`: { seat, cards }), who claimed them; otherwise "".
+function claimText(game, state, view) {
+    return game.claim ? aboutSeat(state, view, game.claim.seat, "You claimed the remaining tricks.", "{name} claimed the remaining tricks.") : "";
+}
+
+// The claimer's cards, face up on the table (none without a claim).
+function claimCards(game) {
+    return (game.claim?.cards ?? []).map((card) => cardElement(card));
 }
 
 // Between tricks, who won the last one; otherwise "".

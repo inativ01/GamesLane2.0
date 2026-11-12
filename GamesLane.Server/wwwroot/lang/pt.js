@@ -630,6 +630,11 @@ TRANSLATIONS.pt = {
     "The next round cannot start yet.": "A próxima rodada ainda não pode começar.",
 
     // Trick-taking games
+    "Claim all": "Reivindicar todas",
+    "You claimed the remaining tricks.": "Você reivindicou as vazas restantes.",
+    "{name} claimed the remaining tricks.": "{name} reivindicou as vazas restantes.",
+    "You can claim only at the start of a trick.": "Você só pode reivindicar no início de uma vaza.",
+    "Your cards do not win every remaining trick.": "Suas cartas não ganham todas as vazas restantes.",
     "You won the trick.": "Você ganhou a vaza.",
     "{name} won the trick.": "{name} ganhou a vaza.",
     "4 players": "4 jogadores",

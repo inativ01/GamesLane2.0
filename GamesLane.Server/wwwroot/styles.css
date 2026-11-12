@@ -4792,6 +4792,17 @@ button.yaniv-call {
     text-align: center;
 }
 
+/* The claimer's cards, face up under the message, in one centred row (two on a narrow screen). */
+.trick-claim {
+    display: flex;
+    margin-top: 0.4rem;
+    direction: ltr;
+}
+
+.trick-claim[hidden] {
+    display: none;
+}
+
 /* After a hand: a line per player (or team), with tags and the points. */
 .trick-result {
     display: grid;

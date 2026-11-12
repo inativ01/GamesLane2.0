@@ -15,6 +15,11 @@ public record TrickCardState(int Seat, string Card);
 public record TrickState(IReadOnlyList<TrickCardState> Cards, int? WinnerSeat);
 
 /// <summary>
+/// A claim of the remaining tricks of a hand: the seat that claimed them, and the cards it held then.
+/// </summary>
+public record TrickClaimState(int Seat, IReadOnlyList<string> Cards);
+
+/// <summary>
 /// A trick-taking game for 4 seats (see <see cref="TrickTakingGame"/>). The players are the game's seats in seat order.
 /// Each game adds its own actions and states; the trick, the cards and the hands are shared. A game that waits for an
 /// absent player cannot skip them: the players wait, or end the game.
@@ -44,6 +49,10 @@ public abstract class TrickTakingSession<TGame>(string id, Action<Card[]>? shuff
         WithPlayer(userKey, seat, (game, player) => TryParse(card is null ? null : [card], out var parsed) && parsed.Length == 1
             ? (game.TryPlay(player, parsed[0], out var e), e)
             : (false, "Unknown card."), out error);
+
+    /// <inheritdoc />
+    public bool TryClaim(string userKey, int seat, [NotNullWhen(false)] out string? error) =>
+        WithPlayer(userKey, seat, (game, player) => (game.TryClaim(player, out var e), e), out error);
 
     /// <inheritdoc />
     public bool TryNextRound(string userKey, int round, [NotNullWhen(false)] out string? error)
@@ -80,6 +89,9 @@ public abstract class TrickTakingSession<TGame>(string id, Action<Card[]>? shuff
     protected TrickState? LastTrick() => Game.LastTrick is { } trick
         ? new TrickState([.. trick.Cards.Select(c => new TrickCardState(SeatOf(c.Player), c.Card.ToString()))], SeatOf(trick.Winner))
         : null;
+
+    /// <summary>The claim of this hand's remaining tricks, as everyone sees it, or null.</summary>
+    protected TrickClaimState? Claim() => Game.Claimer is { } claimer ? new(SeatOf(claimer), Text(Game.ClaimedCards)) : null;
 
     /// <summary>The game's player at <paramref name="seat"/>.</summary>
     protected int PlayerOf(int seat) => GameSeats.ToList().IndexOf(seat);
