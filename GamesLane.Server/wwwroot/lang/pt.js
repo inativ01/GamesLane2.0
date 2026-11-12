@@ -664,6 +664,52 @@ TRANSLATIONS.pt = {
     "Hearts are not broken yet.": "Nenhuma carta de copas foi jogada ainda.",
     "No points on the first trick: play another card.": "Na primeira vaza não se dão pontos: jogue outra carta.",
 
+    // Spades
+    "Spades": "Espadas",
+    "Spades - GamesLane": "Espadas - GamesLane",
+    "Bid your tricks with your partner. Spades are trumps.": "Aposte suas vazas com seu parceiro. Espadas são trunfo.",
+    "Your team wins!": "Sua equipe venceu!",
+    "{name} win!": "{name} venceram!",
+    "Bid the tricks you expect to take.": "Aposte as vazas que você acha que vai ganhar.",
+    "Bid Blind Nil, or look at your cards.": "Aposte Nil às cegas, ou olhe suas cartas.",
+    "Waiting for {name} to bid.": "Esperando a aposta de {name}.",
+    "Bid made": "Aposta cumprida",
+    "Bid missed": "Aposta falhou",
+    "{name}: Nil made": "{name}: Nil cumprido",
+    "{name}: Nil missed": "{name}: Nil falhou",
+    "{name}: Blind Nil made": "{name}: Nil às cegas cumprido",
+    "{name}: Blind Nil missed": "{name}: Nil às cegas falhou",
+    "10 bags: −100": "10 vazas a mais: −100",
+    "Bid {bid}, took {tricks}": "Apostou {bid}, ganhou {tricks}",
+    "Nil": "Nil",
+    "Blind Nil": "Nil às cegas",
+    "Show my cards": "Ver minhas cartas",
+    "Your bid": "Sua aposta",
+    "Bid": "Apostar",
+    "Dealer": "Carteador",
+    "Bid: {bid}": "Aposta: {bid}",
+    "Tricks: {n}": "Vazas: {n}",
+    "Bags: {n}": "A mais: {n}",
+
+    // Spades options (from the server)
+    "Nil allowed": "Com Nil",
+    "Bid to take no trick: 100 points if you take none, otherwise 100 off.": "Aposte não ganhar nenhuma vaza: 100 pontos se cumprir, senão 100 a menos.",
+    "No Nil": "Sem Nil",
+    "Every player bids at least 1 trick.": "Cada jogador aposta pelo menos 1 vaza.",
+    "No Blind Nil": "Sem Nil às cegas",
+    "Every player looks at their cards before bidding.": "Cada jogador olha suas cartas antes de apostar.",
+    "Blind Nil allowed": "Com Nil às cegas",
+    "Bid Nil before looking at your cards: 200 points if you take no trick, otherwise 200 off.":
+        "Aposte Nil antes de olhar suas cartas: 200 pontos se não ganhar nenhuma vaza, senão 200 a menos.",
+
+    // Spades: messages from the server
+    "The bidding is over.": "As apostas terminaram.",
+    "It is not your turn to bid.": "Não é a sua vez de apostar.",
+    "Bid 1 to {n} tricks.": "Aposte de 1 a {n} vazas.",
+    "Only Nil can be bid blind.": "Só Nil pode ser apostado às cegas.",
+    "You have looked at your cards: Blind Nil is no longer possible.": "Você já olhou suas cartas: Nil às cegas não é mais possível.",
+    "Spades are not broken yet.": "Nenhuma carta de espadas foi jogada ainda.",
+
     // Tic-tac-toe
     "Tic-tac-toe - GamesLane": "Jogo da Velha - GamesLane",
     "Next round": "Próxima rodada",

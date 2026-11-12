@@ -4865,6 +4865,20 @@ button.yaniv-call {
     filter: grayscale(0.7) brightness(0.85);
 }
 
+/* Spades: the bid under the hand, a number of tricks (or Nil) to choose and Bid. */
+.spades-bid {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-weight: 700;
+}
+
+.spades-bid-select {
+    min-width: 4.5rem;
+    padding: 0.35rem 0.5rem;
+    font-size: 1rem;
+}
+
 .trick-hand-foot {
     display: flex;
     flex-wrap: wrap;

@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Spades - GamesLane</title>
+    <link rel="icon" href="images/logo-32.png">
+    <link rel="apple-touch-icon" href="images/logo-180.png">
+    <meta name="theme-color" content="#19285d">
+    <link rel="stylesheet" href="styles.css">
+    <!-- SignalR sets a global "t" while it loads, so it comes before i18n.js, which defines t(). -->
+    <script src="https://cdn.jsdelivr.net/npm/@microsoft/signalr@10.0.11/dist/browser/signalr.min.js"></script>
+    <script src="lang/he.js"></script>
+    <script src="lang/es.js"></script>
+    <script src="lang/fr.js"></script>
+    <script src="lang/pt.js"></script>
+    <script src="lang/zh-CN.js"></script>
+    <script src="lang/zh-TW.js"></script>
+    <script src="i18n.js"></script>
+</head>
+<body>
+<div class="masthead">
+    <header class="top">
+        <a href="/?splash" class="brand" data-leave title="Main screen" data-i18n-attr="title"><img class="brand-name" src="images/name.png" alt="GamesLane"></a>
+        <div id="account" class="account"></div>
+    </header>
+    <div class="session-bar">
+        <img class="session-art" src="images/games/spades.svg" alt="">
+        <h2 class="session-name" data-i18n>Spades</h2>
+        <span id="session-info" class="session-info"></span>
+        <p class="code" title="Game code" data-i18n-attr="title"><span aria-hidden="true">🔑</span> <strong id="session-code"></strong></p>
+    </div>
+    <div id="status-bar" class="status-bar" hidden>
+        <p id="status" class="status"></p>
+        <span class="status-actions">
+            <button id="next-round" type="button" class="small" hidden data-i18n>Next hand</button>
+            <button id="play-again" type="button" class="small" hidden data-i18n>Play again</button>
+            <button id="to-lobby" type="button" class="secondary small" hidden data-i18n>Back to the lobby</button>
+        </span>
+    </div>
+</div>
+<main class="tricks spades">
+    <section id="session">
+        <div id="invite" class="invite" hidden>
+            <h3 data-i18n>Invite friends</h3>
+            <p class="hint" data-i18n>Send them this link, or tell them the game code.</p>
+            <a id="join-url" class="join-url"></a>
+            <div class="actions center">
+                <button id="copy-link" type="button" class="secondary" hidden data-i18n>Copy link</button>
+                <button id="share-link" type="button" class="secondary" hidden data-i18n>Share…</button>
+            </div>
+        </div>
+
+        <div id="session-lobby" class="panel lobby" hidden>
+            <div class="lobby-head">
+                <h3 data-i18n>Players</h3>
+                <span id="seat-count" class="seat-count"></span>
+            </div>
+            <button id="lobby-options" type="button" class="lobby-options" hidden><span id="options-summary"></span></button>
+            <p id="lobby-status" class="status"></p>
+            <ul id="seats" class="seats"></ul>
+            <div class="actions center">
+                <button id="start-game" type="button" class="big" hidden data-i18n>Start</button>
+            </div>
+        </div>
+
+        <div id="game-screen" hidden>
+            <!-- On top for everyone: the four players around the trick (partners across), the last trick's winner, and
+                 after a hand, each team's result. -->
+            <section class="rp-top" aria-label="Table" data-i18n-attr="aria-label">
+                <div id="spades-table"></div>
+                <p id="spades-message" class="trick-message" hidden></p>
+                <div id="spades-claim" class="trick-claim" hidden></div>
+                <div id="spades-result" class="trick-result" hidden></div>
+            </section>
+
+            <!-- This user's own cards and bid, one panel per seat they hold. -->
+            <div id="spades-hands"></div>
+
+            <!-- The teams, with their bids, tricks, scores and bags, and the game's options. Players can hide them;
+                 observers always see them. -->
+            <section class="rp-table" aria-label="Players" data-i18n-attr="aria-label">
+                <div class="rp-table-head">
+                    <span id="spades-hand-number" class="rp-game"></span>
+                    <button id="spades-toggle-table" type="button" class="secondary small" hidden>Show table</button>
+                </div>
+                <div id="spades-table-body">
+                    <ol id="spades-teams" class="rp-players"></ol>
+                    <!-- The game's options, one per line (filled by common.js). -->
+                    <div id="game-options" class="game-options" hidden></div>
+                </div>
+            </section>
+        </div>
+    </section>
+
+    <p id="error" class="error" role="alert"></p>
+</main>
+<script src="common.js"></script>
+<script src="tricks.js"></script>
+<script src="spades.js"></script>
+</body>
+</html>

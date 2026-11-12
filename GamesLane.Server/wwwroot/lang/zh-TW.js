@@ -664,6 +664,52 @@ TRANSLATIONS["zh-TW"] = {
     "Hearts are not broken yet.": "還沒有人出過紅心。",
     "No points on the first trick: play another card.": "第一墩不能出分牌：請出另一張牌。",
 
+    // Spades
+    "Spades": "黑桃王",
+    "Spades - GamesLane": "黑桃王 - GamesLane",
+    "Bid your tricks with your partner. Spades are trumps.": "和搭檔一起叫墩。黑桃是王牌。",
+    "Your team wins!": "您的隊伍獲勝！",
+    "{name} win!": "{name} 獲勝！",
+    "Bid the tricks you expect to take.": "請叫出您預計能贏的墩數。",
+    "Bid Blind Nil, or look at your cards.": "請叫盲零墩，或者查看您的牌。",
+    "Waiting for {name} to bid.": "正在等待 {name} 叫墩。",
+    "Bid made": "完成叫墩",
+    "Bid missed": "未完成叫墩",
+    "{name}: Nil made": "{name}：零墩成功",
+    "{name}: Nil missed": "{name}：零墩失敗",
+    "{name}: Blind Nil made": "{name}：盲零墩成功",
+    "{name}: Blind Nil missed": "{name}：盲零墩失敗",
+    "10 bags: −100": "10 個超墩：−100",
+    "Bid {bid}, took {tricks}": "叫 {bid} 墩，贏 {tricks} 墩",
+    "Nil": "零墩",
+    "Blind Nil": "盲零墩",
+    "Show my cards": "查看我的牌",
+    "Your bid": "您的叫墩",
+    "Bid": "叫墩",
+    "Dealer": "莊家",
+    "Bid: {bid}": "叫墩：{bid}",
+    "Tricks: {n}": "墩數：{n}",
+    "Bags: {n}": "超墩：{n}",
+
+    // Spades options (from the server)
+    "Nil allowed": "允許零墩",
+    "Bid to take no trick: 100 points if you take none, otherwise 100 off.": "叫一墩都不贏：成功得 100 分，否則扣 100 分。",
+    "No Nil": "不允許零墩",
+    "Every player bids at least 1 trick.": "每位玩家至少叫 1 墩。",
+    "No Blind Nil": "不允許盲零墩",
+    "Every player looks at their cards before bidding.": "每位玩家叫墩前先看牌。",
+    "Blind Nil allowed": "允許盲零墩",
+    "Bid Nil before looking at your cards: 200 points if you take no trick, otherwise 200 off.":
+        "看牌前叫零墩：一墩都不贏得 200 分，否則扣 200 分。",
+
+    // Spades: messages from the server
+    "The bidding is over.": "叫墩已經結束。",
+    "It is not your turn to bid.": "現在不是您叫墩。",
+    "Bid 1 to {n} tricks.": "請叫 1 到 {n} 墩。",
+    "Only Nil can be bid blind.": "只有零墩可以盲叫。",
+    "You have looked at your cards: Blind Nil is no longer possible.": "您已經看過牌了：不能再叫盲零墩。",
+    "Spades are not broken yet.": "還沒有人出過黑桃。",
+
     // Tic-tac-toe
     "Tic-tac-toe - GamesLane": "井字遊戲 - GamesLane",
     "Next round": "下一輪",

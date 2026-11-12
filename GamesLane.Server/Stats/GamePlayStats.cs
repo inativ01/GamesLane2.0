@@ -33,7 +33,7 @@ public static class GamePlayStats
     public static IReadOnlyList<GameType> UsualOrder { get; } =
     [
         GameType.TheGang, GameType.Backgammon, GameType.RichManPoorMan, GameType.FinalCard, GameType.Yaniv, GameType.Hearts,
-        GameType.Wazoo, GameType.TicTacToe,
+        GameType.Spades, GameType.Wazoo, GameType.TicTacToe,
     ];
 
     /// <summary>

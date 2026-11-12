@@ -16,6 +16,7 @@ public enum GameType
     FinalCard,
     Yaniv,
     Hearts,
+    Spades,
 }
 
 /// <summary>
