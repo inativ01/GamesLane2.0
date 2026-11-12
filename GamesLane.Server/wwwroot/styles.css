@@ -4767,7 +4767,7 @@ button.yaniv-call {
 }
 
 .trick-place .card {
-    font-size: clamp(1.1rem, min(5.5vw, 2.9vh), 2rem);
+    font-size: clamp(1.3rem, min(5.5vw, 3.6vh), 2.2rem);
 }
 
 .trick-player-score {
@@ -4828,10 +4828,6 @@ button.yaniv-call {
     margin-inline-start: auto;
     font-weight: 700;
     white-space: nowrap;
-}
-
-.trick-hand .rp-cards {
-    --rp-card: clamp(1.8rem, min(8vw, 4.6vh), 3rem);
 }
 
 .trick-hand .card.unplayable {
