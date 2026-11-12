@@ -32,8 +32,9 @@ public record SpadesResultState(IReadOnlyList<SpadesTeamResultState> Teams, IRea
 
 /// <summary>
 /// Public Spades state. <see cref="Turn"/>, <see cref="Dealer"/>, <see cref="Bidder"/> and the seats in the tricks,
-/// players and teams are seats; <see cref="Players"/> are in seat order, <see cref="Teams"/> by team, and
-/// <see cref="Winner"/> is a team. <see cref="Actions"/> counts the actions, so a page can tell a new one.
+/// claim, players and teams are seats; <see cref="Players"/> are in seat order, <see cref="Teams"/> by team, and
+/// <see cref="Winner"/> is a team. <see cref="Claim"/> is the claim of this hand's remaining tricks, or null.
+/// <see cref="Actions"/> counts the actions, so a page can tell a new one.
 /// </summary>
 public record SpadesState(
     bool Nil,
@@ -47,6 +48,7 @@ public record SpadesState(
     bool SpadesBroken,
     TrickState Trick,
     TrickState? LastTrick,
+    TrickClaimState? Claim,
     IReadOnlyList<SpadesPlayerState> Players,
     IReadOnlyList<SpadesTeamState> Teams,
     int Actions,
@@ -55,9 +57,9 @@ public record SpadesState(
 
 /// <summary>
 /// A seat's private Spades information: its cards (by suit, from 2 to A; none while it has not looked at them), those it
-/// may play now, and whether it has looked at them.
+/// may play now, whether it has looked at them, and whether it may claim the remaining tricks.
 /// </summary>
-public record SpadesHand(int Seat, IReadOnlyList<string> Cards, IReadOnlyList<string> Playable, bool Looked);
+public record SpadesHand(int Seat, IReadOnlyList<string> Cards, IReadOnlyList<string> Playable, bool Looked, bool CanClaim);
 
 /// <summary>
 /// The private information of a user's seats in the game.
@@ -102,6 +104,7 @@ public class SpadesSession(string id, Action<Card[]>? shuffle = null) : TrickTak
             game.SpadesBroken,
             CurrentTrick(),
             LastTrick(),
+            Claim(),
             [.. players.Select(p => new SpadesPlayerState(SeatOf(p), SpadesRules.TeamOf(p), game.Hand(p).Count,
                 game.BidOf(p)?.Tricks, game.BidOf(p)?.Blind ?? false, game.TricksWon[p]))],
             [.. Enumerable.Range(0, 2).Select(team => new SpadesTeamState(team,
@@ -123,6 +126,7 @@ public class SpadesSession(string id, Action<Card[]>? shuffle = null) : TrickTak
             SeatOf(player),
             game.HasLooked(player) ? Text(game.Hand(player)) : [],
             Text(game.Playable(player)),
-            game.HasLooked(player)))]);
+            game.HasLooked(player),
+            game.CanClaim(player)))]);
     }
 }

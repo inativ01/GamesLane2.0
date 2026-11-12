@@ -4,7 +4,10 @@
 // the tricks they expect to take (or Nil, or Blind Nil before looking at their cards, with the options); then 13 tricks,
 // following suit, spades trumps. A team that makes its bid scores 10 a trick bid and 1 a bag; 10 bags cost 100. The first
 // team to 500 wins. Each player's own cards come in view.private. On top, the four players around the trick (the
-// partner at the top); below, the user's hands with the bid.
+// partner at the top); below, the user's hands with the bid, then the teams' table (players can hide it).
+
+const TABLE_SHOWN_KEY = "spades.tableShown";
+const TABLE_IDS = { head: "spades-hand-number", toggle: "spades-toggle-table", body: "spades-table-body", players: "spades-teams" };
 
 // The bid chosen in a hand's box before pressing Bid, by seat.
 const chosenBids = {};
@@ -81,7 +84,7 @@ function bidControls(game, hand) {
 }
 
 // One of the user's hands: face down until it looks at them (with Blind Nil); the bid on its turn to bid; the cards it
-// may play on its turn.
+// may play on its turn, and Claim all when its cards win every remaining trick (it can still play them one by one).
 function handPanel(game, state, view, hand) {
     const bidding = game.phase === "Bidding" && game.bidder === hand.seat;
     const myTurn = game.phase === "Playing" && game.turn === hand.seat;
@@ -93,8 +96,26 @@ function handPanel(game, state, view, hand) {
         onPick: (card) => send("PlayTrickCard", hand.seat, card),
         foot: bidding ? bidControls(game, hand)
             : game.phase === "Bidding" && !hand.looked ? [trickButton(t("Show my cards"), () => send("LookAtCards", hand.seat), "secondary")]
-                : [],
+                : myTurn && hand.canClaim ? [trickButton(t("Claim all"), () => send("ClaimTricks", hand.seat))]
+                    : [],
     });
+}
+
+// A team in the teams' table: its players, its bid (the sum of its non-Nil bids, … until both have bid), the tricks
+// it has taken in this hand, its score and its bags; the team to bid or play is outlined.
+function teamItem(game, state, team) {
+    const players = team.seats.map((seat) => playerOf(game, seat));
+    const bid = players.some((p) => p.bid === null) ? "…" : String(players.reduce((sum, p) => sum + p.bid, 0));
+    const start = el("span", "rp-start", el("span", "seat-label", teamNames(state, team)));
+    const end = el("span", "rp-end",
+        el("span", "rp-tag call", t("Bid: {bid}", { bid })),
+        ...(game.phase === "Bidding" ? [] : [el("span", "rp-count", t("Tricks: {n}", { n: players.reduce((sum, p) => sum + p.tricks, 0) }))]),
+        el("span", "rp-count", t("Bags: {n}", { n: team.bags })),
+        el("strong", "trick-player-score", t("{n} points", { n: team.score })));
+    const acting = game.phase === "Playing" ? game.turn : game.phase === "Bidding" ? game.bidder : null;
+    const item = el("li", null, start, end);
+    item.classList.toggle("turn", team.seats.includes(acting));
+    return item;
 }
 
 // A player's facts at the table: dealer, bid, and the tricks taken.
@@ -116,22 +137,24 @@ function noticeSuccess(game, state, view) {
 
 const spades = startSessionPage("Spades", (game, state, view) => {
     currentGame = game;
-    showScores(state, view, [
-        t("Hand {n}", { n: game.handNumber }), t("To {n} points", { n: game.target }),
-        ...game.teams.map((team) => `${teamNames(state, team)}: ${team.score} (${t("Bags: {n}", { n: team.bags })})`),
-    ], []);
     $("status").textContent = statusText(game, state, view);
     noticeSuccess(game, state, view);
     $("spades-table").replaceChildren(trickTable(game, state, view, {
         turn: game.phase === "Playing" ? game.turn : game.phase === "Bidding" ? game.bidder : null,
         facts: (seat) => facts(game, seat),
     }));
-    const message = game.phase === "Playing" ? lastTrickText(game, state, view) : "";
+    const message = game.claim ? claimText(game, state, view) : game.phase === "Playing" ? lastTrickText(game, state, view) : "";
     $("spades-message").textContent = message;
     $("spades-message").hidden = !message;
+    $("spades-claim").replaceChildren(...claimHands(game, state, view));
+    $("spades-claim").hidden = !game.claim;
     renderResult(game, state);
     $("spades-hands").replaceChildren(...myHands(game, view).map((hand) => handPanel(game, state, view, hand)));
+    renderTrickTable(view, TABLE_SHOWN_KEY, TABLE_IDS,
+        `${t("Hand {n}", { n: game.handNumber })} · ${t("To {n} points", { n: game.target })}`,
+        game.teams.map((team) => teamItem(game, state, team)));
     $("next-round").hidden = !(view.isPlayer && game.phase === "HandOver");
 });
 
 $("next-round").addEventListener("click", () => send("NextRound", currentGame?.handNumber ?? 0));
+wireTrickTable(TABLE_SHOWN_KEY, TABLE_IDS.toggle, () => spades.refresh());

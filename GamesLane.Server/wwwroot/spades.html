@@ -37,7 +37,6 @@
             <button id="play-again" type="button" class="small" hidden data-i18n>Play again</button>
             <button id="to-lobby" type="button" class="secondary small" hidden data-i18n>Back to the lobby</button>
         </span>
-        <ul id="scores" class="score-row"></ul>
     </div>
 </div>
 <main class="tricks spades">
@@ -71,14 +70,26 @@
             <section class="rp-top" aria-label="Table" data-i18n-attr="aria-label">
                 <div id="spades-table"></div>
                 <p id="spades-message" class="trick-message" hidden></p>
+                <div id="spades-claim" class="trick-claim" hidden></div>
                 <div id="spades-result" class="trick-result" hidden></div>
             </section>
 
             <!-- This user's own cards and bid, one panel per seat they hold. -->
             <div id="spades-hands"></div>
 
-            <!-- The game's options, one per line (filled by common.js). -->
-            <div id="game-options" class="game-options" hidden></div>
+            <!-- The teams, with their bids, tricks, scores and bags, and the game's options. Players can hide them;
+                 observers always see them. -->
+            <section class="rp-table" aria-label="Players" data-i18n-attr="aria-label">
+                <div class="rp-table-head">
+                    <span id="spades-hand-number" class="rp-game"></span>
+                    <button id="spades-toggle-table" type="button" class="secondary small" hidden>Show table</button>
+                </div>
+                <div id="spades-table-body">
+                    <ol id="spades-teams" class="rp-players"></ol>
+                    <!-- The game's options, one per line (filled by common.js). -->
+                    <div id="game-options" class="game-options" hidden></div>
+                </div>
+            </section>
         </div>
     </section>
 

@@ -117,6 +117,27 @@ public class SpadesGameTests
         Assert.Equal(game.Scores[0] > game.Scores[1] ? 0 : 1, game.Winner);
     }
 
+    [Fact]
+    public void A_leader_may_claim_only_when_no_trump_is_out_or_they_hold_only_trumps()
+    {
+        var game = Unshuffled();
+        Bid(game, 4, 4, 4, 1);
+        // Player 0 holds every club, but the spades are out: a void player could trump.
+        Assert.False(game.CanClaim(0));
+        AssertRefused(game.TryClaim(0, out var error), error, "Your cards do not win every remaining trick.");
+        Assert.True(game.TryPlay(0, Card("A♣"), out error), error);
+        Assert.True(game.TryPlay(1, Card("A♦"), out error), error);
+        Assert.True(game.TryPlay(2, Card("2♠"), out error), error);
+        Assert.True(game.TryPlay(3, Card("A♥"), out error), error);
+
+        // Player 2, holding only spades, leads and claims the other 12 tricks.
+        Assert.True(game.CanClaim(2));
+        Assert.True(game.TryClaim(2, out error), error);
+        Assert.Equal((2, 13), (game.Claimer, game.TricksWon[2]));
+        Assert.Equal(SpadesPhase.HandOver, game.Phase);
+        Assert.True(game.LastResult!.Teams[0].Made);
+    }
+
     // The players bid in turn from the bidder.
     private static void Bid(SpadesGame game, params int[] bids)
     {
