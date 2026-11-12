@@ -18,13 +18,13 @@ if (builder.Configuration["PORT"] is { Length: > 0 } port)
 builder.AddGamesLaneDatabase();
 builder.AddGamesLaneAuth();
 builder.AddGamesLaneFeedback();
+builder.AddGamesLaneStats();
 builder.Services.AddHttpClient();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IGameOptionsService, GameOptionsService>();
 builder.Services.AddSingleton(AdminUsers.From(builder.Configuration));
 builder.Services.AddHostedService<InactiveUserCleanup>();
 builder.Services.AddSingleton<ISessionRepository, SessionRepository>();
-builder.Services.AddSingleton<IGamePlayRepository, GamePlayRepository>();
 builder.Services.AddSingleton<IGameSessionStore, GameSessionStore>();
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddHostedService<DisconnectedSeatsMonitor>();
@@ -61,10 +61,17 @@ app.MapStatsEndpoints();
 app.MapGet("/api/sessions/{code}", async (string code, IGameSessionStore store) =>
     await store.GetAsync(code) is { IsPublic: false } session ? Results.Ok(SessionInfo(session)) : Results.NotFound());
 
-app.MapGet("/join/{code}", async (string code, IGameSessionStore store) =>
-    await store.GetAsync(code) is { IsPublic: false } session
-        ? Results.Redirect($"{GameSessionStore.PageFor(session.Type)}?session={session.Id}")
-        : Results.Redirect($"/?session={Uri.EscapeDataString(code.ToUpperInvariant())}&notfound=1"));
+// Each invite link opened to a game is counted.
+app.MapGet("/join/{code}", async (string code, IGameSessionStore store, ActivityCounter activity) =>
+{
+    if (await store.GetAsync(code) is not { IsPublic: false } session)
+    {
+        return Results.Redirect($"/?session={Uri.EscapeDataString(code.ToUpperInvariant())}&notfound=1");
+    }
+
+    await activity.CountAsync(ActivityEvent.OpenInvite, session.Type);
+    return Results.Redirect($"{GameSessionStore.PageFor(session.Type)}?session={session.Id}");
+});
 
 app.MapHub<GameHub>("/hubs/game");
 

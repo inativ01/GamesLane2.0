@@ -1,7 +1,9 @@
 "use strict";
 
 // The admin page (English only): the games started per day over the last N days, as a line per game (each game can be
-// shown or hidden), and each game's total. Only admins get the report; anyone else is told the page is not available.
+// shown or hidden), and each game's total; then the activity over the same days: the visits per day, each game from
+// opening its page to finishing a game, and the visits by return, source and language. Only admins get the reports;
+// anyone else is told the page is not available.
 
 const GAME_LABELS = {
     TheGang: "The Gang", Backgammon: "Backgammon", RichManPoorMan: "Rich man, poor man", FinalCard: "Final Card",
@@ -14,7 +16,11 @@ const GAME_COLORS = {
 const HIDDEN_KEY = "admin.hiddenGames";
 const CHART = { width: 800, height: 320, left: 44, right: 12, top: 12, bottom: 34 };
 
+const RETURN_LABELS = { New: "New", Within7Days: "Back within 7 days", After7Days: "Back after 7 days or more" };
+const VISITS_COLOR = "#19285d";
+
 let report = null;
+let activity = null;
 const hidden = new Set(JSON.parse(localStorage.getItem(HIDDEN_KEY) ?? "[]"));
 
 // The highest value of the y axis and its step: about 5 round steps above the highest count shown.
@@ -25,18 +31,16 @@ function yScale(max) {
     return { step: Math.max(1, step), top: Math.max(1, Math.ceil(Math.max(1, max) / Math.max(1, step)) * Math.max(1, step)) };
 }
 
-// The graph: a line per game shown, the days along the bottom (about 10 labels), the counts up the side, and a column
-// per day that shows that day's counts when hovered or tapped.
-function renderChart() {
+// A graph: a line per series ({ name, color, counts }), the days along the bottom (about 10 labels), the counts up the
+// side, and a column per day that shows that day's counts in `tooltip` when hovered or tapped.
+function lineChart(days, shown, label, tooltip) {
     const { width, height, left, right, top, bottom } = CHART;
-    const shown = report.games.filter((g) => !hidden.has(g.gameType));
-    const days = report.days;
-    const { step, top: yTop } = yScale(Math.max(0, ...shown.flatMap((g) => g.counts)));
+    const { step, top: yTop } = yScale(Math.max(0, ...shown.flatMap((s) => s.counts)));
     const plotWidth = width - left - right;
     const plotHeight = height - top - bottom;
     const x = (i) => left + (days.length === 1 ? plotWidth / 2 : (i * plotWidth) / (days.length - 1));
     const y = (n) => top + plotHeight - (n * plotHeight) / yTop;
-    const svg = svgElement("svg", { viewBox: `0 0 ${width} ${height}`, class: "admin-svg", role: "img", "aria-label": "Games played per day" });
+    const svg = svgElement("svg", { viewBox: `0 0 ${width} ${height}`, class: "admin-svg", role: "img", "aria-label": label });
 
     for (let n = 0; n <= yTop; n += step) {
         svg.append(svgElement("line", { x1: left, x2: width - right, y1: y(n), y2: y(n), class: "admin-grid" }));
@@ -52,13 +56,13 @@ function renderChart() {
             svg.append(label);
         }
     });
-    shown.forEach((game) => {
+    shown.forEach((series) => {
         svg.append(svgElement("polyline", {
-            points: game.counts.map((n, i) => `${x(i)},${y(n)}`).join(" "),
-            class: "admin-line", stroke: GAME_COLORS[game.gameType] ?? "#555",
+            points: series.counts.map((n, i) => `${x(i)},${y(n)}`).join(" "),
+            class: "admin-line", stroke: series.color,
         }));
         if (days.length <= 60) {
-            game.counts.forEach((n, i) => svg.append(svgElement("circle", { cx: x(i), cy: y(n), r: 3, fill: GAME_COLORS[game.gameType] ?? "#555" })));
+            series.counts.forEach((n, i) => svg.append(svgElement("circle", { cx: x(i), cy: y(n), r: 3, fill: series.color })));
         }
     });
 
@@ -71,9 +75,8 @@ function renderChart() {
             guide.setAttribute("x1", x(i));
             guide.setAttribute("x2", x(i));
             guide.setAttribute("visibility", "visible");
-            const tip = $("admin-tooltip");
-            tip.textContent = `${day}: ${shown.map((g) => `${GAME_LABELS[g.gameType] ?? g.gameType} ${g.counts[i]}`).join(", ") || "no game shown"}`;
-            tip.hidden = false;
+            tooltip.textContent = `${day}: ${shown.map((s) => `${s.name} ${s.counts[i]}`).join(", ") || "no game shown"}`;
+            tooltip.hidden = false;
         };
         column.addEventListener("mouseenter", show);
         column.addEventListener("click", show);
@@ -81,9 +84,16 @@ function renderChart() {
     });
     svg.addEventListener("mouseleave", () => {
         guide.setAttribute("visibility", "hidden");
-        $("admin-tooltip").hidden = true;
+        tooltip.hidden = true;
     });
-    $("admin-chart").replaceChildren(svg);
+    return svg;
+}
+
+// The games played graph: a line per game shown.
+function renderChart() {
+    const shown = report.games.filter((g) => !hidden.has(g.gameType))
+        .map((g) => ({ name: GAME_LABELS[g.gameType] ?? g.gameType, color: GAME_COLORS[g.gameType] ?? "#555", counts: g.counts }));
+    $("admin-chart").replaceChildren(lineChart(report.days, shown, "Games played per day", $("admin-tooltip")));
 }
 
 // A checkbox per game, in its line's color, to show or hide its line (remembered on this device).
@@ -113,12 +123,60 @@ function renderTotals() {
     $("admin-totals").replaceChildren(...rows);
 }
 
+// A table body's rows, from an array of cells per row; rows with a class are given as { className, cells }.
+function tableRows(rows) {
+    return rows.map((row) => el("tr", row.className ?? null, ...(row.cells ?? row).map((cell) => el("td", null, String(cell)))));
+}
+
+// The share of `part` in `whole`, as a whole percentage, or "–" without a whole.
+const percent = (part, whole) => (whole > 0 ? `${Math.round((100 * part) / whole)}%` : "–");
+
+// Each game from opening its page to finishing a game, most started first, and all games together.
+function renderFunnel() {
+    const columns = ["opened", "created", "joined", "started", "finished", "invitesOpened", "invitedJoins"];
+    const cells = (name, g) => [name, g.opened, g.created, g.joined, g.started, g.finished, percent(g.finished, g.started), g.invitesOpened, g.invitedJoins];
+    const all = Object.fromEntries(columns.map((c) => [c, activity.games.reduce((sum, g) => sum + g[c], 0)]));
+    $("activity-games").replaceChildren(...tableRows([
+        ...[...activity.games].sort((a, b) => b.started - a.started).map((g) => cells(GAME_LABELS[g.gameType] ?? g.gameType, g)),
+        { className: "admin-all", cells: cells("All games", all) },
+    ]));
+}
+
+// The visits per day, and by return, source and language.
+function renderActivity() {
+    const total = activity.visits.reduce((sum, n) => sum + n, 0);
+    $("activity-total").textContent = `${total} visits in the last ${activity.days.length} days.`;
+    $("activity-chart").replaceChildren(lineChart(activity.days, [{ name: "Visits", color: VISITS_COLOR, counts: activity.visits }],
+        "Visits per day", $("activity-tooltip")));
+    renderFunnel();
+    const named = (list, label = (name) => name) => tableRows(list.map((c) => [label(c.name), c.count, percent(c.count, total)]));
+    $("activity-returning").replaceChildren(...named(activity.returning, (name) => RETURN_LABELS[name] ?? name));
+    $("activity-sources").replaceChildren(...named(activity.sources));
+    $("activity-languages").replaceChildren(...named(activity.languages));
+}
+
+async function loadActivity(days) {
+    $("activity-status").textContent = "Loading…";
+    $("activity-status").hidden = false;
+    const response = await authFetch(`/api/admin/activity?days=${days}`).catch(() => null);
+    if (!response?.ok) {
+        $("activity-report").hidden = true;
+        $("activity-status").textContent = response?.status === 404 ? "This page is only for admins." : "Could not load the activity. Try again.";
+        return;
+    }
+    activity = await response.json();
+    $("activity-status").hidden = true;
+    $("activity-report").hidden = false;
+    renderActivity();
+}
+
 async function load(days) {
     $("admin-status").textContent = "Loading…";
     $("admin-status").hidden = false;
     const response = await authFetch(`/api/admin/stats?days=${days}`).catch(() => null);
     if (!response?.ok) {
         $("admin-report").hidden = true;
+        $("activity-panel").hidden = true;
         $("admin-status").textContent = response?.status === 404 ? "This page is only for admins."
             : response?.status === 400 ? (await response.json().catch(() => null))?.error ?? "Choose 1 to 365 days."
                 : "Could not reach the server. Try again.";
@@ -127,9 +185,11 @@ async function load(days) {
     report = await response.json();
     $("admin-status").hidden = true;
     $("admin-report").hidden = false;
+    $("activity-panel").hidden = false;
     renderGames();
     renderChart();
     renderTotals();
+    await loadActivity(days);
 }
 
 $("admin-days").addEventListener("submit", (event) => {

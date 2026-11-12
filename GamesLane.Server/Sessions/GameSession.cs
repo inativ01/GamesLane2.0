@@ -330,6 +330,18 @@ public abstract class GameSession : IGameSession
         }
     }
 
+    /// <inheritdoc />
+    public bool HasFinishedGame
+    {
+        get
+        {
+            lock (Sync)
+            {
+                return Phase == SessionPhase.Over;
+            }
+        }
+    }
+
     /// <summary>
     /// Whether this is a public game (see <see cref="MakePublic"/>).
     /// </summary>

@@ -36,6 +36,46 @@
             </table>
         </div>
     </section>
+    <section id="activity-panel" class="panel" hidden>
+        <h2>Activity</h2>
+        <p id="activity-status" class="hint">Loading…</p>
+        <div id="activity-report" hidden>
+            <p class="hint">Anonymous daily counts (UTC) over the same days. A visit is a browser's first visit of the day to the main screen or a game's page.</p>
+            <p id="activity-total"></p>
+            <div id="activity-chart" class="admin-chart"></div>
+            <p id="activity-tooltip" class="admin-tooltip" hidden></p>
+
+            <h3>Games</h3>
+            <p class="hint">Opened: browsers opening the game's page (once a day each). Joined: players joining someone else's game. Finished: games played to their end (never Tic-tac-toe, which goes on round after round). Invites opened: invite links opened. Invited joins: players joining a private game beside its creator.</p>
+            <div class="admin-scroll">
+                <table class="admin-totals admin-numbers">
+                    <thead><tr><th>Game</th><th>Opened</th><th>Created</th><th>Joined</th><th>Started</th><th>Finished</th><th>Finished of started</th><th>Invites opened</th><th>Invited joins</th></tr></thead>
+                    <tbody id="activity-games"></tbody>
+                </table>
+            </div>
+
+            <h3>Returning visitors</h3>
+            <p class="hint">Days since the browser's previous visit. Browsers whose site data was cleared count as new.</p>
+            <table class="admin-totals admin-numbers">
+                <thead><tr><th>Visits</th><th>Count</th><th>Share</th></tr></thead>
+                <tbody id="activity-returning"></tbody>
+            </table>
+
+            <h3>Sources</h3>
+            <p class="hint">A campaign's utm_source, the site the visitor came from, "invite" for a game's page opened from outside the site (an invite link), or "direct".</p>
+            <table class="admin-totals admin-numbers">
+                <thead><tr><th>Source</th><th>Visits</th><th>Share</th></tr></thead>
+                <tbody id="activity-sources"></tbody>
+            </table>
+
+            <h3>Languages</h3>
+            <p class="hint">The browser's language and region, a rough guide to where visitors are.</p>
+            <table class="admin-totals admin-numbers">
+                <thead><tr><th>Language</th><th>Visits</th><th>Share</th></tr></thead>
+                <tbody id="activity-languages"></tbody>
+            </table>
+        </div>
+    </section>
     <p id="error" class="error" role="alert"></p>
 </main>
 <script src="common.js"></script>
