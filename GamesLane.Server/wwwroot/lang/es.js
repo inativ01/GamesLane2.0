@@ -635,6 +635,29 @@ TRANSLATIONS.es = {
     "Play a card.": "Juega una carta.",
     "Hand {n} is over.": "La mano {n} terminó.",
 
+    // Hearts
+    "Hearts": "Corazones",
+    "Hearts - GamesLane": "Corazones - GamesLane",
+    "Avoid the hearts and the queen of spades, or take them all.": "Evita los corazones y la reina de picas, o llévatelos todos.",
+    "Pass 3 cards to the left, to {name}.": "Pasa 3 cartas a la izquierda, a {name}.",
+    "Pass 3 cards to the right, to {name}.": "Pasa 3 cartas a la derecha, a {name}.",
+    "Pass 3 cards across, to {name}.": "Pasa 3 cartas al frente, a {name}.",
+    "Waiting for the others to pass their cards.": "Esperando a que los demás pasen sus cartas.",
+    "No passing in this hand.": "En esta mano no se pasan cartas.",
+    "Shot the moon!": "¡Se llevó todo!",
+    "Pass {n} cards": "Pasar {n} cartas",
+    "You passed {cards}.": "Pasaste {cards}.",
+    "You received {cards}.": "Recibiste {cards}.",
+    "Passed": "Pasó",
+
+    // Hearts: messages from the server
+    "The cards are not being passed now.": "Ahora no se están pasando cartas.",
+    "You have already passed your cards.": "Ya pasaste tus cartas.",
+    "Choose {n} cards to pass.": "Elige {n} cartas para pasar.",
+    "Lead the 2♣.": "Sal con el 2♣.",
+    "Hearts are not broken yet.": "Todavía no se ha jugado ningún corazón.",
+    "No points on the first trick: play another card.": "En la primera baza no se dan puntos: juega otra carta.",
+
     // Tic-tac-toe
     "Tic-tac-toe - GamesLane": "Gato - GamesLane",
     "Next round": "Siguiente ronda",

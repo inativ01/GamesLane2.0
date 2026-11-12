@@ -15,6 +15,7 @@ public enum GameType
     Wazoo,
     FinalCard,
     Yaniv,
+    Hearts,
 }
 
 /// <summary>

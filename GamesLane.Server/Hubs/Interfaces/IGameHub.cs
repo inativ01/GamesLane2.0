@@ -322,6 +322,12 @@ public interface IGameHub
     Task PlayTrickCard(string sessionId, int seat, string? card);
 
     /// <summary>
+    /// Hearts: <paramref name="seat"/>, which the caller must hold, passes <paramref name="cards"/> (3 of its cards, short
+    /// text such as "Q♠") before the hand's play. Once every seat has, each gets the cards passed to it.
+    /// </summary>
+    Task PassCards(string sessionId, int seat, string[]? cards);
+
+    /// <summary>
     /// The Gang: reveals the next hand, if <paramref name="revealed"/> hands have been revealed so far.
     /// </summary>
     Task RevealNext(string sessionId, int revealed);

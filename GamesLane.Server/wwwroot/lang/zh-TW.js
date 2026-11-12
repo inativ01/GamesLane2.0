@@ -636,6 +636,29 @@ TRANSLATIONS["zh-TW"] = {
     "Play a card.": "請出一張牌。",
     "Hand {n} is over.": "第 {n} 手已結束。",
 
+    // Hearts
+    "Hearts": "傷心小棧",
+    "Hearts - GamesLane": "傷心小棧 - GamesLane",
+    "Avoid the hearts and the queen of spades, or take them all.": "避開紅心和黑桃 Q，或者把它們全部收下。",
+    "Pass 3 cards to the left, to {name}.": "向左傳 3 張牌給 {name}。",
+    "Pass 3 cards to the right, to {name}.": "向右傳 3 張牌給 {name}。",
+    "Pass 3 cards across, to {name}.": "向對家傳 3 張牌給 {name}。",
+    "Waiting for the others to pass their cards.": "正在等待其他人傳牌。",
+    "No passing in this hand.": "這一手不傳牌。",
+    "Shot the moon!": "全收！",
+    "Pass {n} cards": "傳 {n} 張牌",
+    "You passed {cards}.": "您傳出了 {cards}。",
+    "You received {cards}.": "您收到了 {cards}。",
+    "Passed": "已傳牌",
+
+    // Hearts: messages from the server
+    "The cards are not being passed now.": "現在不是傳牌的時候。",
+    "You have already passed your cards.": "您已經傳過牌了。",
+    "Choose {n} cards to pass.": "請選擇 {n} 張要傳的牌。",
+    "Lead the 2♣.": "請先出梅花 2。",
+    "Hearts are not broken yet.": "還沒有人出過紅心。",
+    "No points on the first trick: play another card.": "第一墩不能出分牌：請出另一張牌。",
+
     // Tic-tac-toe
     "Tic-tac-toe - GamesLane": "井字遊戲 - GamesLane",
     "Next round": "下一輪",

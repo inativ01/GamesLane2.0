@@ -55,6 +55,8 @@ public class GameSessionStoreTests
         Assert.Equal("/final-card.html", GameSessionStore.PageFor(GameType.FinalCard));
         Assert.IsType<YanivSession>(await store.CreateAsync(GameType.Yaniv));
         Assert.Equal("/yaniv.html", GameSessionStore.PageFor(GameType.Yaniv));
+        Assert.IsType<HeartsSession>(await store.CreateAsync(GameType.Hearts));
+        Assert.Equal("/hearts.html", GameSessionStore.PageFor(GameType.Hearts));
     }
 
     [Fact]
@@ -279,7 +281,8 @@ public class GameSessionStoreTests
         ];
 
         Assert.Equal(
-            [GameType.Yaniv, GameType.Wazoo, GameType.TicTacToe, GameType.TheGang, GameType.Backgammon, GameType.RichManPoorMan, GameType.FinalCard],
+            [GameType.Yaniv, GameType.Wazoo, GameType.TicTacToe, GameType.TheGang, GameType.Backgammon, GameType.RichManPoorMan, GameType.FinalCard,
+                GameType.Hearts],
             GamePlayStats.PopularOrder(kept));
         Assert.Equal(GamePlayStats.UsualOrder, GamePlayStats.PopularOrder([]));
     }
