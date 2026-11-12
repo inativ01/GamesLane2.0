@@ -26,8 +26,10 @@
     display: none !important;
 }
 
+/* Two fast taps do not zoom in on phones; pinching still zooms. */
 html {
     -webkit-text-size-adjust: 100%;
+    touch-action: manipulation;
 }
 
 body {
@@ -3492,6 +3494,19 @@ button.danger:not(:disabled):hover {
 .admin-all td {
     border-top: 1px solid var(--line);
     font-weight: 700;
+}
+
+/* The activity tables: the numbers aligned on the end; the wide games table scrolls sideways on small screens. */
+.admin h3 {
+    margin: 1.2rem 0 0.3rem;
+}
+
+.admin-scroll {
+    overflow-x: auto;
+}
+
+.admin-numbers td:not(:first-child), .admin-numbers th:not(:first-child) {
+    text-align: end;
 }
 
 /* The cards page: rows of cards, some on a dark table. */

@@ -205,6 +205,56 @@ async function connect() {
 
 const ready = accountReady.then(connect);
 
+// Anonymous visit counts (see the privacy policy, and VisitReport on the server), from the main screen and the games'
+// pages. Once a day (UTC) per browser: the visit, where it came from (a campaign's utm_source, another site, "invite"
+// for a game's page opened from outside the site, or "direct"), the browser's language and the days since its previous
+// visit. Once a day per game: opening its page. The browser keeps only the day and the games reported that day.
+const VISITS_KEY = "visits";
+
+function visitSource(gameType) {
+    const campaign = params.get("utm_source");
+    if (campaign) return campaign;
+    let host = "";
+    try {
+        host = new URL(document.referrer).hostname;
+    } catch {
+        // No referrer.
+    }
+    if (host && host !== location.hostname) return host;
+    return gameType && !host ? "invite" : "direct";
+}
+
+async function reportVisit() {
+    const gameType = Object.keys(GAME_PAGES).find((type) => GAME_PAGES[type] === location.pathname) ?? null;
+    if (!gameType && location.pathname !== "/" && location.pathname !== "/index.html") return;
+    const today = new Date().toISOString().slice(0, 10);
+    let seen = null;
+    try {
+        seen = JSON.parse(localStorage.getItem(VISITS_KEY) ?? "null");
+    } catch {
+        // Unreadable, as if never visited.
+    }
+    const firstToday = seen?.day !== today;
+    const games = !firstToday && Array.isArray(seen.games) ? seen.games : [];
+    const openGame = gameType && !games.includes(gameType) ? gameType : null;
+    if (!firstToday && !openGame) return;
+
+    const report = {
+        game: openGame,
+        firstToday,
+        source: firstToday ? visitSource(gameType) : null,
+        language: firstToday ? navigator.language ?? null : null,
+        daysSinceLastVisit: firstToday && typeof seen?.day === "string" ? Math.round((Date.parse(today) - Date.parse(seen.day)) / 86400000) : null,
+    };
+    await accountReady;
+    const response = await postJson("/api/visits", report).catch(() => null);
+    if (response?.ok) {
+        localStorage.setItem(VISITS_KEY, JSON.stringify({ day: today, games: openGame ? [...games, openGame] : games }));
+    }
+}
+
+reportVisit();
+
 function showError(message) {
     $("error").textContent = message;
 }
@@ -1162,7 +1212,7 @@ function classicCard(card, text) {
 // suit in block letters in the top left and bottom right corners, and the suit's silhouette with the rank in the middle,
 // all in the suit's color. "JOKER" is a joker. In the GamesLane style only, also "0♥" to "9♥", "S♥" (Skip),
 // "R♥" (Reverse), "+2♥", "+♥" (a big plus sign) and "TAKI♥" (TA above KI in the middle, TAKI written downwards in the
-// corners); "WILD" is drawn like the joker, and "+4" (Wild Draw Four) like it with a road "+4" in the middle and "+4"
+// corners); "COLOR" is drawn like the joker, and "+4" (Wild Draw Four) like it with a road "+4" in the middle and "+4"
 // across the corners; "+3" like +4, and "+3X" like +3 crossed out (a red slash across the middle, a yellow and a green
 // slash through the corners); "TAKI" (no suit) like the joker with TA above KI in the middle, each letter's rim in a suit color in turn;
 // "CROWN" like the joker with a crown rimmed in gold in the middle and a gold ♛ in the corners. Without text, a
@@ -1178,7 +1228,7 @@ function cardElement(text, style = userSettings().cards) {
     if (style === "Classic") {
         return classicCard(card, text);
     }
-    if (text === "JOKER" || text === "WILD") {
+    if (text === "JOKER" || text === "COLOR") {
         return jokerCard(card, text, el("span", "joker-logo"));
     }
     if (text === "+4" || text === "+3" || text === "+3X") {

@@ -3,6 +3,7 @@ using GamesLane.Server.Auth;
 using GamesLane.Server.Games.FinalCard;
 using GamesLane.Server.Games.Wazoo;
 using GamesLane.Server.Sessions;
+using GamesLane.Server.Stats;
 using GamesLane.Server.Users;
 using Microsoft.AspNetCore.SignalR;
 
@@ -13,11 +14,13 @@ namespace GamesLane.Server.Hubs;
 /// Everyone with a session's page open (players and spectators) joins the session's group and receives public
 /// <see cref="StateUpdated"/> messages. Private, per-player information is returned only to the calling connection.
 /// Players are logged-in users, identified by their user ID, so they keep their seats after a refresh or reconnect.
+/// Games created and players joining someone else's game are counted in <see cref="ActivityCounter"/>.
 /// </summary>
 public class GameHub(
     IGameSessionStore store,
     TimeProvider timeProvider,
     IGameOptionsService savedOptions,
+    ActivityCounter activity,
     ILogger<GameHub> logger) : Hub, IGameHub
 {
     /// <summary>
@@ -118,6 +121,7 @@ public class GameHub(
                 s.TryTakeNextSeat(UserKey, profile, Context.ConnectionId, out _);
             }
         });
+        await activity.CountAsync(ActivityEvent.CreateGame, gameType, isPublic ? ActivityCounter.Public : ActivityCounter.Private);
         return session.Id;
     }
 
@@ -133,6 +137,7 @@ public class GameHub(
             if (session.TryTakeNextSeat(UserKey, profile, Context.ConnectionId, out _))
             {
                 await BroadcastState(session);
+                await activity.CountAsync(ActivityEvent.JoinGame, gameType, ActivityCounter.Public);
                 return session.Id;
             }
         }
@@ -155,12 +160,19 @@ public class GameHub(
     public async Task TakeSeat(string sessionId)
     {
         var profile = RequireProfile("Log in to take a seat.");
-        if ((await GetSession(sessionId)).IsPublic)
+        var session = await GetSession(sessionId);
+        if (session.IsPublic)
         {
             throw new HubException("Public games are joined from the main screen.");
         }
 
+        // A first seat beside others is joining a game one was invited to; the first seat of all is the creator's.
+        var joinsOthers = session.HasSeatedPlayers && !session.IsSeated(UserKey);
         await Act(sessionId, (IGameSession s, out string? error) => s.TryTakeNextSeat(UserKey, profile, Context.ConnectionId, out error));
+        if (joinsOthers)
+        {
+            await activity.CountAsync(ActivityEvent.JoinGame, session.Type, ActivityCounter.Private);
+        }
     }
 
     /// <inheritdoc />

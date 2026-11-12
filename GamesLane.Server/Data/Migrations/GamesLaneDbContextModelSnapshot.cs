@@ -22,6 +22,31 @@ namespace GamesLane.Server.Data.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("GamesLane.Server.Data.ActivityCount", b =>
+                {
+                    b.Property<DateOnly>("Day")
+                        .HasColumnType("date");
+
+                    b.Property<string>("Event")
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.Property<string>("GameType")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<string>("Detail")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<int>("Count")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Day", "Event", "GameType", "Detail");
+
+                    b.ToTable("ActivityCounts");
+                });
+
             modelBuilder.Entity("GamesLane.Server.Data.ExternalLogin", b =>
                 {
                     b.Property<string>("Provider")

@@ -10,7 +10,7 @@ const COLOR_LETTERS = { R: "Red", Y: "Yellow", G: "Green", B: "Blue" };
 const VALUE_NAMES = { S: "Stop", R: "Change Direction", "+": "Plus", T: "TAKI" };
 // The cards without a color, by their value after the "W": names and GamesLane card faces.
 const COLORLESS_NAMES = { W: "Change Color", "+4": "Change Color +4", T: "SuperTAKI", C: "Crown", "+3": "+3", "+3X": "+3 Breaker" };
-const COLORLESS_FACES = { W: "WILD", "+4": "+4", T: "TAKI", C: "CROWN", "+3": "+3", "+3X": "+3X" };
+const COLORLESS_FACES = { W: "COLOR", "+4": "+4", T: "TAKI", C: "CROWN", "+3": "+3", "+3X": "+3X" };
 
 // Each color is drawn as the suit of that color on the GamesLane cards.
 const COLOR_SUITS = { R: "♥", Y: "♦", G: "♣", B: "♠" };
@@ -49,7 +49,7 @@ function choosesColor(game, text) {
 }
 
 // A card, always a GamesLane card (the classic cards have no Stop, Change Direction or cards without a color): "R7" is
-// drawn as 7♥, "RT" as TAKI♥, "W" as WILD, "WT" as TAKI, "WC" as CROWN and "W+4" as +4. A card without a color on the
+// drawn as 7♥, "RT" as TAKI♥, "W" as COLOR, "WT" as TAKI, "WC" as CROWN and "W+4" as +4. A card without a color on the
 // pile (but a Crown) has a ring of the color to play.
 function finalCard(text, chosenColor = null) {
     const { color, value } = parseCard(text);
