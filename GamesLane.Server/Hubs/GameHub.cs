@@ -401,6 +401,11 @@ public class GameHub(
         Act(sessionId, (ITrickTakingSession s, out string? error) => s.TryPlayCard(UserKey, seat, card, out error));
 
     /// <inheritdoc />
+    public Task PassCards(string sessionId, int seat, string[]? cards) =>
+        Act(sessionId, (IHeartsSession s, out string? error) => s.TryPass(UserKey, seat, cards, out error));
+
+    /// <inheritdoc />
+
     public Task LookAtCards(string sessionId, int seat) =>
         Act(sessionId, (ISpadesSession s, out string? error) => s.TryLook(UserKey, seat, out error));
 

@@ -232,6 +232,7 @@ public class GameSessionStore(
         GameType.Wazoo => new WazooSession(id),
         GameType.FinalCard => new FinalCardSession(id),
         GameType.Yaniv => new YanivSession(id),
+        GameType.Hearts => new HeartsSession(id),
         GameType.Spades => new SpadesSession(id),
         _ => throw new ArgumentOutOfRangeException(nameof(type), type, "Unknown game type."),
     };
@@ -248,6 +249,7 @@ public class GameSessionStore(
         GameType.Wazoo => "/wazoo.html",
         GameType.FinalCard => "/final-card.html",
         GameType.Yaniv => "/yaniv.html",
+        GameType.Hearts => "/hearts.html",
         GameType.Spades => "/spades.html",
         _ => throw new ArgumentOutOfRangeException(nameof(type), type, "Unknown game type."),
     };
