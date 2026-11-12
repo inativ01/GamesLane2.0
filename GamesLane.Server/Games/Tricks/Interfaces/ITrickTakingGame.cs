@@ -30,6 +30,12 @@ public interface ITrickTakingGame
     /// <summary>The tricks each player has won in this hand.</summary>
     IReadOnlyList<int> TricksWon { get; }
 
+    /// <summary>The player who claimed the remaining tricks of this hand, or null.</summary>
+    int? Claimer { get; }
+
+    /// <summary>The cards a player held when the remaining tricks were claimed (empty without a claim).</summary>
+    IReadOnlyList<Card> ClaimedHand(int player);
+
     /// <summary>The number of actions so far, so a page can tell a new one.</summary>
     int Actions { get; }
 
@@ -50,6 +56,18 @@ public interface ITrickTakingGame
 
     /// <summary><paramref name="player"/>, whose turn it is, plays <paramref name="card"/> to the trick.</summary>
     bool TryPlay(int player, Card card, out string? error);
+
+    /// <summary>
+    /// Whether <paramref name="player"/> may claim the remaining tricks now: it is their turn to lead, and from their
+    /// own cards and those already played, their cards win every remaining trick whatever anyone plays.
+    /// </summary>
+    bool CanClaim(int player);
+
+    /// <summary>
+    /// <paramref name="player"/> claims the remaining tricks (see <see cref="CanClaim"/>): they take every card still in
+    /// a hand, and the hand is scored as if those tricks were played.
+    /// </summary>
+    bool TryClaim(int player, out string? error);
 
     /// <summary>Deals the hand after hand <paramref name="hand"/>. If it has already been dealt, nothing changes.</summary>
     bool TryNextHand(int hand, out string? error);

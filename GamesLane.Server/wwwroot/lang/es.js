@@ -629,6 +629,11 @@ TRANSLATIONS.es = {
     "The next round cannot start yet.": "La siguiente ronda aún no puede empezar.",
 
     // Trick-taking games
+    "Claim all": "Reclamar todas",
+    "You claimed the remaining tricks.": "Reclamaste las bazas restantes.",
+    "{name} claimed the remaining tricks.": "{name} reclamó las bazas restantes.",
+    "You can claim only at the start of a trick.": "Solo puedes reclamar al empezar una baza.",
+    "Your cards do not win every remaining trick.": "Tus cartas no ganan todas las bazas restantes.",
     "You won the trick.": "Ganaste la baza.",
     "{name} won the trick.": "{name} ganó la baza.",
     "4 players": "4 jugadores",
