@@ -2,9 +2,12 @@
 
 // Hearts: before each hand's play, every player passes 3 cards (left, right, across, or every fourth hand not at all);
 // then 13 tricks, following suit. Each heart taken is 1 point and the Q♠ 13; the lowest score wins once someone reaches
-// 100. Each player's own cards come in view.private. On top, the four players around the trick; below, the user's hands.
+// 100. Each player's own cards come in view.private. On top, the four players around the trick; below, the user's hands,
+// then the players' table (players can hide it).
 
 const PASS_COUNT = 3;
+const TABLE_SHOWN_KEY = "hearts.tableShown";
+const TABLE_IDS = { head: "hearts-hand-number", toggle: "hearts-toggle-table", body: "hearts-table-body", players: "hearts-players" };
 const PASS_TEXTS = {
     Left: "Pass 3 cards to the left, to {name}.",
     Right: "Pass 3 cards to the right, to {name}.",
@@ -100,14 +103,21 @@ function handPanel(game, state, view, hand) {
     });
 }
 
-// A player's facts at the table: the points taken in this hand, and while passing, whether they have passed.
+// A player's facts around the trick: while passing, whether they have passed.
 function facts(game, seat) {
-    const player = playerOf(game, seat);
-    const items = [el("span", "rp-tag", `♥ ${player.handPoints}`)];
-    if (game.phase === "Passing" && player.hasPassed) {
-        items.push(el("span", "rp-tag given", t("Passed")));
-    }
-    return items;
+    return game.phase === "Passing" && playerOf(game, seat).hasPassed ? [el("span", "rp-tag given", t("Passed"))] : [];
+}
+
+// A player in the players' table: name, Passed while passing, the hearts and the Q♠ taken in this hand, and the score.
+function playerItem(game, state, view, player) {
+    const start = el("span", "rp-start", seatLabel(state, player.seat, view));
+    if (game.phase === "Passing" && player.hasPassed) start.append(el("span", "rp-tag given", t("Passed")));
+    const end = el("span", "rp-end", el("span", "rp-count", `♥ ${player.heartsTaken}`));
+    if (player.tookQueen) end.append(el("span", "rp-tag queen", "Q♠"));
+    end.append(el("strong", "trick-player-score", t("{n} points", { n: player.score })));
+    const item = el("li", null, start, end);
+    item.classList.toggle("turn", game.phase === "Playing" && game.turn === player.seat);
+    return item;
 }
 
 // Confetti for the user's success: winning the game, or shooting the moon.
@@ -121,8 +131,6 @@ function noticeSuccess(game, state, view) {
 
 const hearts = startSessionPage("Hearts", (game, state, view) => {
     currentGame = game;
-    showScores(state, view, [t("Hand {n}", { n: game.handNumber }), t("To {n} points", { n: game.target })],
-        game.players.map((p) => ({ seat: p.seat, score: p.score, acting: game.phase === "Playing" && p.seat === game.turn })));
     $("status").textContent = statusText(game, state, view);
     noticeSuccess(game, state, view);
     $("hearts-table").replaceChildren(trickTable(game, state, view, {
@@ -134,7 +142,11 @@ const hearts = startSessionPage("Hearts", (game, state, view) => {
     $("hearts-message").hidden = !message;
     renderResult(game, state, view);
     $("hearts-hands").replaceChildren(...myHands(game, view).map((hand) => handPanel(game, state, view, hand)));
+    renderTrickTable(view, TABLE_SHOWN_KEY, TABLE_IDS,
+        `${t("Hand {n}", { n: game.handNumber })} · ${t("To {n} points", { n: game.target })}`,
+        game.players.map((p) => playerItem(game, state, view, p)));
     $("next-round").hidden = !(view.isPlayer && game.phase === "HandOver");
 });
 
 $("next-round").addEventListener("click", () => send("NextRound", currentGame?.handNumber ?? 0));
+wireTrickTable(TABLE_SHOWN_KEY, TABLE_IDS.toggle, () => hearts.refresh());

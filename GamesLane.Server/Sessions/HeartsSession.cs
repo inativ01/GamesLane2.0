@@ -6,9 +6,10 @@ namespace GamesLane.Server.Sessions;
 
 /// <summary>
 /// A player as everyone sees them: their seat, how many cards they hold, their score, the points they have taken in
-/// this hand, and whether they have passed their cards.
+/// this hand, whether they have passed their cards, and the hearts and whether the queen of spades they have taken in
+/// this hand.
 /// </summary>
-public record HeartsPlayerState(int Seat, int CardCount, int Score, int HandPoints, bool HasPassed);
+public record HeartsPlayerState(int Seat, int CardCount, int Score, int HandPoints, bool HasPassed, int HeartsTaken, bool TookQueen);
 
 /// <summary>
 /// A player at the end of a hand: the points they gained, and their score after it.
@@ -81,7 +82,8 @@ public class HeartsSession(string id, Action<Card[]>? shuffle = null) : TrickTak
             CurrentTrick(),
             LastTrick(),
             [.. Enumerable.Range(0, game.Players).Select(p => new HeartsPlayerState(
-                SeatOf(p), game.Hand(p).Count, game.Scores[p], game.HandPoints(p), game.Passed(p) is not null))],
+                SeatOf(p), game.Hand(p).Count, game.Scores[p], game.HandPoints(p), game.Passed(p) is not null,
+                game.Won(p).Count(c => c.Suit == Suit.Hearts), game.Won(p).Contains(HeartsRules.QueenOfSpades)))],
             game.Actions,
             game.LastResult is { } result
                 ? new HeartsResultState([.. result.Players.Select(p => new HeartsResultPlayerState(SeatOf(p.Player), p.Points, p.Score))],
