@@ -241,7 +241,7 @@ const hearts = startSessionPage("Hearts", (game, state, view) => {
     const message = messageText(game, state, view);
     $("hearts-message").textContent = message;
     $("hearts-message").hidden = !message;
-    $("hearts-claim").replaceChildren(...claimCards(game));
+    $("hearts-claim").replaceChildren(...claimHands(game, state, view));
     $("hearts-claim").hidden = !game.claim;
     renderResult(game, state, view);
     $("hearts-hands").replaceChildren(...myHands(game, view).map((hand) => handPanel(game, state, view, hand)));

@@ -26,14 +26,21 @@ function shownTrick(game) {
     return game.trick.cards.length > 0 || !game.lastTrick ? game.trick : game.lastTrick;
 }
 
-// Once a player has claimed the remaining tricks (`game.claim`: { seat, cards }), who claimed them; otherwise "".
+// Once a player has claimed the remaining tricks (`game.claim`: { seat, hands: [{ seat, cards }] }), who claimed them;
+// otherwise "".
 function claimText(game, state, view) {
     return game.claim ? aboutSeat(state, view, game.claim.seat, "You claimed the remaining tricks.", "{name} claimed the remaining tricks.") : "";
 }
 
-// The claimer's cards, face up on the table (none without a claim).
-function claimCards(game) {
-    return (game.claim?.cards ?? []).map((card) => cardElement(card));
+// Every player's cards when the claim was made, face up so everyone can check it: a line per player, the claimer's
+// first (outlined), then in turn order (none without a claim).
+function claimHands(game, state, view) {
+    return (game.claim?.hands ?? []).filter((hand) => hand.cards.length > 0).map((hand) => {
+        const line = el("div", "trick-claim-hand", seatLabel(state, hand.seat, view),
+            el("div", "card-row small", ...hand.cards.map((card) => cardElement(card))));
+        line.classList.toggle("claimer", hand.seat === game.claim.seat);
+        return line;
+    });
 }
 
 // Between tricks, who won the last one; otherwise "".

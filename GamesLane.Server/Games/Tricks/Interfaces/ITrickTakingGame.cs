@@ -33,8 +33,8 @@ public interface ITrickTakingGame
     /// <summary>The player who claimed the remaining tricks of this hand, or null.</summary>
     int? Claimer { get; }
 
-    /// <summary>The cards the claimer held when they claimed (empty without a claim).</summary>
-    IReadOnlyList<Card> ClaimedCards { get; }
+    /// <summary>The cards a player held when the remaining tricks were claimed (empty without a claim).</summary>
+    IReadOnlyList<Card> ClaimedHand(int player);
 
     /// <summary>The number of actions so far, so a page can tell a new one.</summary>
     int Actions { get; }

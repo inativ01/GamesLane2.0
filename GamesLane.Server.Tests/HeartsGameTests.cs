@@ -128,14 +128,17 @@ public class HeartsGameTests
         Assert.False(game.CanClaim(1));
         var before = game.Scores.ToArray();
         Assert.True(game.TryClaim(0, out error), error);
-        Assert.Equal((0, 13), (game.Claimer, game.ClaimedCards.Count));
+        Assert.Equal(0, game.Claimer);
+        Assert.Equal([13, 13, 13, 13], Enumerable.Range(0, 4).Select(p => game.ClaimedHand(p).Count));
+        Assert.All(game.ClaimedHand(0), c => Assert.Equal(Suit.Clubs, c.Suit));
         Assert.All(Enumerable.Range(0, 4), p => Assert.Empty(game.Hand(p)));
         Assert.Equal((13, 52), (game.TricksWon[0], game.Won(0).Count));
         Assert.Equal(0, game.LastResult!.Moon);
         Assert.Equal(before.Select((score, p) => score + (p == 0 ? 0 : 26)), game.Scores);
 
         game.TryNextHand(4, out _);
-        Assert.Equal((null, 0), (game.Claimer, game.ClaimedCards.Count));
+        Assert.Null(game.Claimer);
+        Assert.Empty(game.ClaimedHand(1));
     }
 
     // Each player passes their first 3 cards, if they have not passed yet.

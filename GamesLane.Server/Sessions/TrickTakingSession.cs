@@ -15,9 +15,15 @@ public record TrickCardState(int Seat, string Card);
 public record TrickState(IReadOnlyList<TrickCardState> Cards, int? WinnerSeat);
 
 /// <summary>
-/// A claim of the remaining tricks of a hand: the seat that claimed them, and the cards it held then.
+/// A seat's cards when the remaining tricks were claimed.
 /// </summary>
-public record TrickClaimState(int Seat, IReadOnlyList<string> Cards);
+public record TrickClaimHand(int Seat, IReadOnlyList<string> Cards);
+
+/// <summary>
+/// A claim of the remaining tricks of a hand: the seat that claimed them, and every seat's cards then, the claimer's
+/// first and then in turn order, so everyone can check the claim.
+/// </summary>
+public record TrickClaimState(int Seat, IReadOnlyList<TrickClaimHand> Hands);
 
 /// <summary>
 /// A trick-taking game for 4 seats (see <see cref="TrickTakingGame"/>). The players are the game's seats in seat order.
@@ -91,7 +97,10 @@ public abstract class TrickTakingSession<TGame>(string id, Action<Card[]>? shuff
         : null;
 
     /// <summary>The claim of this hand's remaining tricks, as everyone sees it, or null.</summary>
-    protected TrickClaimState? Claim() => Game.Claimer is { } claimer ? new(SeatOf(claimer), Text(Game.ClaimedCards)) : null;
+    protected TrickClaimState? Claim() => Game.Claimer is { } claimer
+        ? new(SeatOf(claimer), [.. Enumerable.Range(0, TrickTakingGame.PlayerCount).Select(i => (claimer + i) % TrickTakingGame.PlayerCount)
+            .Select(p => new TrickClaimHand(SeatOf(p), Text(Game.ClaimedHand(p))))])
+        : null;
 
     /// <summary>The game's player at <paramref name="seat"/>.</summary>
     protected int PlayerOf(int seat) => GameSeats.ToList().IndexOf(seat);

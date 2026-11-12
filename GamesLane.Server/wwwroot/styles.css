@@ -4792,15 +4792,35 @@ button.yaniv-call {
     text-align: center;
 }
 
-/* The claimer's cards, face up under the message, in one centred row (two on a narrow screen). */
+/* After a claim, every player's cards face up under the message: a line per player, the claimer's outlined. */
 .trick-claim {
-    display: flex;
+    display: grid;
+    gap: 0.3rem;
     margin-top: 0.4rem;
-    direction: ltr;
 }
 
 .trick-claim[hidden] {
     display: none;
+}
+
+.trick-claim-hand {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.2rem 0.5rem;
+    padding: 0.3rem 0.5rem;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.92);
+    color: var(--ink);
+    font-size: 0.85rem;
+}
+
+.trick-claim-hand.claimer {
+    box-shadow: inset 0 0 0 3px var(--gold);
+}
+
+.trick-claim-hand .card-row {
+    direction: ltr;
 }
 
 /* After a hand: a line per player (or team), with tags and the points. */

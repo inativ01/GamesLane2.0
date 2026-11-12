@@ -22,7 +22,7 @@ public abstract class TrickTakingGame : ITrickTakingGame
     private readonly List<TrickCard> _trick = [];
     private readonly int[] _tricksWon = new int[PlayerCount];
     private int? _claimer;
-    private Card[] _claimed = [];
+    private Card[][] _claimed = [.. Enumerable.Range(0, PlayerCount).Select(_ => Array.Empty<Card>())];
 
     /// <summary>
     /// Creates the game; the derived game's constructor then sets up the first hand (see <see cref="StartHand"/>).
@@ -59,7 +59,7 @@ public abstract class TrickTakingGame : ITrickTakingGame
     public int? Claimer => _claimer;
 
     /// <inheritdoc />
-    public IReadOnlyList<Card> ClaimedCards => _claimed;
+    public IReadOnlyList<Card> ClaimedHand(int player) => _claimed[player];
 
     /// <inheritdoc />
     public int Actions { get; protected set; }
@@ -146,10 +146,10 @@ public abstract class TrickTakingGame : ITrickTakingGame
         }
 
         _claimer = player;
-        _claimed = [.. _hands[player]];
         _tricksWon[player] += _hands[player].Count;
         for (var p = 0; p < PlayerCount; p++)
         {
+            _claimed[p] = [.. _hands[p]];
             _won[player].AddRange(_hands[p]);
             _hands[p].Clear();
         }
@@ -213,7 +213,7 @@ public abstract class TrickTakingGame : ITrickTakingGame
         _trick.Clear();
         LastTrick = null;
         _claimer = null;
-        _claimed = [];
+        Array.Fill(_claimed, []);
         IsPlaying = false;
         HandNumber++;
         Actions++;
