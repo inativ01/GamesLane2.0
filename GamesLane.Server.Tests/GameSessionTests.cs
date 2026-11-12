@@ -1652,6 +1652,36 @@ public class GameSessionTests
         Assert.Equal("This player cannot be skipped. You can end the game.", skipError);
     }
 
+    [Fact]
+    public void Each_hearts_player_shows_the_hearts_and_the_queen_of_spades_taken_in_the_hand()
+    {
+        var session = new HeartsSession("ABC123", _ => { });
+        for (var i = 0; i < 4; i++)
+        {
+            Sit(session, i);
+        }
+
+        session.TryNewGame(Players[0], 0, out _);
+        for (var seat = 0; seat < 4; seat++)
+        {
+            var cards = Assert.IsType<HeartsPrivateState>(session.GetPrivateState(Players[seat])).Hands.Single().Cards.Take(3).ToArray();
+            Assert.True(session.TryPass(Players[seat], seat, cards, out var error), error);
+        }
+
+        Assert.All(Hearts(session).Players, p => Assert.Equal((0, false), (p.HeartsTaken, p.TookQueen)));
+        while (Hearts(session).Phase == HeartsPhase.Playing)
+        {
+            var turn = Hearts(session).Turn;
+            var card = Assert.IsType<HeartsPrivateState>(session.GetPrivateState(Players[turn])).Hands.Single().Playable[0];
+            Assert.True(session.TryPlayCard(Players[turn], turn, card, out var error), error);
+        }
+
+        var players = Hearts(session).Players;
+        Assert.Equal(13, players.Sum(p => p.HeartsTaken));
+        Assert.Single(players, p => p.TookQueen);
+        Assert.All(players, p => Assert.Equal(p.HandPoints, p.HeartsTaken + (p.TookQueen ? 13 : 0)));
+    }
+
     private static HeartsState Hearts(HeartsSession session) =>
         Assert.IsType<HeartsState>(session.GetPublicState().Game);
 

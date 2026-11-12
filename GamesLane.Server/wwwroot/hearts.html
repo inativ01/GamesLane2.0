@@ -37,7 +37,6 @@
             <button id="play-again" type="button" class="small" hidden data-i18n>Play again</button>
             <button id="to-lobby" type="button" class="secondary small" hidden data-i18n>Back to the lobby</button>
         </span>
-        <ul id="scores" class="score-row"></ul>
     </div>
 </div>
 <main class="tricks hearts">
@@ -71,11 +70,23 @@
             <section class="rp-top" aria-label="Table" data-i18n-attr="aria-label">
                 <div id="hearts-table"></div>
                 <p id="hearts-message" class="trick-message" hidden></p>
+                <div id="hearts-claim" class="trick-claim" hidden></div>
                 <div id="hearts-result" class="trick-result" hidden></div>
             </section>
 
             <!-- This user's own cards, one panel per seat they hold. -->
             <div id="hearts-hands"></div>
+
+            <!-- The players in seat order, with their score. Players can hide them; observers always see them. -->
+            <section class="rp-table" aria-label="Players" data-i18n-attr="aria-label">
+                <div class="rp-table-head">
+                    <span id="hearts-hand-number" class="rp-game"></span>
+                    <button id="hearts-toggle-table" type="button" class="secondary small" hidden>Show table</button>
+                </div>
+                <div id="hearts-table-body">
+                    <ol id="hearts-players" class="rp-players"></ol>
+                </div>
+            </section>
         </div>
     </section>
 

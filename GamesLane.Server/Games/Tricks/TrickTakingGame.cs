@@ -21,6 +21,8 @@ public abstract class TrickTakingGame : ITrickTakingGame
     private readonly List<Card>[] _won = [.. Enumerable.Range(0, PlayerCount).Select(_ => new List<Card>())];
     private readonly List<TrickCard> _trick = [];
     private readonly int[] _tricksWon = new int[PlayerCount];
+    private int? _claimer;
+    private Card[][] _claimed = [.. Enumerable.Range(0, PlayerCount).Select(_ => Array.Empty<Card>())];
 
     /// <summary>
     /// Creates the game; the derived game's constructor then sets up the first hand (see <see cref="StartHand"/>).
@@ -52,6 +54,12 @@ public abstract class TrickTakingGame : ITrickTakingGame
 
     /// <inheritdoc />
     public IReadOnlyList<int> TricksWon => _tricksWon;
+
+    /// <inheritdoc />
+    public int? Claimer => _claimer;
+
+    /// <inheritdoc />
+    public IReadOnlyList<Card> ClaimedHand(int player) => _claimed[player];
 
     /// <inheritdoc />
     public int Actions { get; protected set; }
@@ -118,6 +126,41 @@ public abstract class TrickTakingGame : ITrickTakingGame
     }
 
     /// <inheritdoc />
+    public bool CanClaim(int player) =>
+        IsPlaying && Turn == player && _trick.Count == 0 && _hands[player].Count > 0 && WinsEveryTrick(player);
+
+    /// <inheritdoc />
+    public bool TryClaim(int player, out string? error)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegative(player);
+        ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(player, PlayerCount);
+        error = IsOver ? "The game is over."
+            : !IsPlaying ? "Wait until it is time to play a card."
+            : player != Turn ? "It is not your turn."
+            : _trick.Count > 0 ? "You can claim only at the start of a trick."
+            : !WinsEveryTrick(player) ? "Your cards do not win every remaining trick."
+            : null;
+        if (error is not null)
+        {
+            return false;
+        }
+
+        _claimer = player;
+        _tricksWon[player] += _hands[player].Count;
+        for (var p = 0; p < PlayerCount; p++)
+        {
+            _claimed[p] = [.. _hands[p]];
+            _won[player].AddRange(_hands[p]);
+            _hands[p].Clear();
+        }
+
+        Actions++;
+        IsPlaying = false;
+        OnHandPlayed();
+        return true;
+    }
+
+    /// <inheritdoc />
     public bool TryNextHand(int hand, out string? error)
     {
         error = hand < HandNumber ? null
@@ -169,6 +212,8 @@ public abstract class TrickTakingGame : ITrickTakingGame
 
         _trick.Clear();
         LastTrick = null;
+        _claimer = null;
+        Array.Fill(_claimed, []);
         IsPlaying = false;
         HandNumber++;
         Actions++;
@@ -197,6 +242,21 @@ public abstract class TrickTakingGame : ITrickTakingGame
         var hand = TrickCards.Sorted(_hands[player].Concat(cards)).ToList();
         _hands[player].Clear();
         _hands[player].AddRange(hand);
+    }
+
+    /// <summary>
+    /// Whether <paramref name="player"/>, leading, wins every remaining trick whatever anyone plays, judged only from
+    /// what they can know: their own cards and the cards already played. Each of their cards must be higher than every
+    /// card of its suit still out (neither in their hand nor played), and while any trump is out, they must hold only
+    /// trumps.
+    /// </summary>
+    private bool WinsEveryTrick(int player)
+    {
+        var hand = _hands[player];
+        var played = _won.SelectMany(w => w).Concat(_trick.Select(c => c.Card));
+        var outstanding = TrickCards.Deck().Except(hand).Except(played).ToList();
+        return hand.All(c => !outstanding.Any(o => o.Suit == c.Suit && o.Rank > c.Rank))
+            && (Trump is not { } trump || hand.All(c => c.Suit == trump) || !outstanding.Any(o => o.Suit == trump));
     }
 
     /// <summary>

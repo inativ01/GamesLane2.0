@@ -629,6 +629,11 @@ TRANSLATIONS.he = {
     "The next round cannot start yet.": "הסיבוב הבא עוד לא יכול להתחיל.",
 
     // Trick-taking games
+    "Claim all": "לקיחת כל השאר",
+    "You claimed the remaining tricks.": "לקחת את כל הלקיחות שנותרו.",
+    "{name} claimed the remaining tricks.": "{name} לקח את כל הלקיחות שנותרו.",
+    "You can claim only at the start of a trick.": "אפשר לקחת את כל השאר רק בתחילת לקיחה.",
+    "Your cards do not win every remaining trick.": "הקלפים שלך לא זוכים בכל הלקיחות שנותרו.",
     "You won the trick.": "זכית בלקיחה.",
     "{name} won the trick.": "{name} זכה בלקיחה.",
     "4 players": "4 שחקנים",

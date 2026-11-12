@@ -629,6 +629,11 @@ TRANSLATIONS.fr = {
     "The next round cannot start yet.": "La manche suivante ne peut pas encore commencer.",
 
     // Trick-taking games
+    "Claim all": "Tout réclamer",
+    "You claimed the remaining tricks.": "Tu as réclamé les plis restants.",
+    "{name} claimed the remaining tricks.": "{name} a réclamé les plis restants.",
+    "You can claim only at the start of a trick.": "Tu ne peux réclamer qu'au début d'un pli.",
+    "Your cards do not win every remaining trick.": "Tes cartes ne gagnent pas tous les plis restants.",
     "You won the trick.": "Tu as remporté le pli.",
     "{name} won the trick.": "{name} a remporté le pli.",
     "4 players": "4 joueurs",

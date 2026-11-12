@@ -999,6 +999,14 @@ function playFanfare() {
     }).catch(() => {});
 }
 
+// Plays `sound(audio, start)` (built by the browser) on the same audio as the fanfare, unless sound is off in the
+// user's profile.
+function playSound(sound) {
+    const audio = celebrationAudio;
+    if (!audio || !userSettings().sound) return;
+    (audio.state === "running" ? Promise.resolve() : audio.resume()).then(() => sound(audio, audio.currentTime)).catch(() => {});
+}
+
 function celebrate(state, key) {
     const stored = `confetti:${params.get("session") ?? ""}:${state.gameNumber}:${key}`;
     if (sessionStorage.getItem(stored)) return;
