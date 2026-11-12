@@ -71,7 +71,7 @@ A typical setup is a shared screen (such as a TV or laptop) connected as a spect
 
 - **?** in the top bar (on the main screen and every game page) opens the help, in the chosen language, on the side of the page (on the right, or on the left in Hebrew; on a phone, the whole screen). ✕ or Escape closes it.
 - The help has one section for the main screen, one for getting a game started (the session lobby), and one per game. Each section is a title that unfolds; the help opens with the sections about the current page unfolded: the main screen's on the main screen, and on a game page that game's (with the lobby's first while the lobby is shown). The other sections stay folded, so any game's rules can be read from anywhere.
-- Each section is short: for a game, **How to play** (the rules) and **On this screen** (how to play it on GamesLane). **More details**, folded at the bottom of each section, has the rest.
+- Each section is short, with the rest folded under **More details**. For a game: **How to play** (the rules in brief), then **More details** with the full rules and the game's options, then **On this screen** (how to play it on GamesLane), followed by its own **More details** when there is more to say about the screen.
 - The first time a user opens the main screen, or a game's page, in a browser, a tip under **?** says "New here? Tap ? for help." (on a game page, "New to this game? Tap ? for how to play.") for 10 seconds (on the main screen, after the splash screen); tapping it opens the help. It is not shown again on that page in that browser.
 - The help is also a page of its own: `/help.html` in English, e.g. `/help.fr.html` in French.
 
