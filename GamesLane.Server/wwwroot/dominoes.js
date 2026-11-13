@@ -3,10 +3,12 @@
 // Dominoes: in Block, Draw and All Fives, each player in turn adds a tile matching an end of the line (a double-six
 // set); in Mexican Train (double-twelve), each builds their own train from the round's engine, or the Mexican train, or
 // a train with a marker. Each player's own tiles come in view.private. On top, the players and the board; below, the
-// user's hands. Tiles are text such as "3-5" (in a line or train, in the direction laid). Texts about seats and the
-// result lines come from tricks.js.
+// user's hands; at the bottom, the players' table (players can hide it). Tiles are text such as "3-5" (in a line or
+// train, in the direction laid). Texts about seats, the result lines and the players' table come from tricks.js.
 
 const MEXICAN = -1;
+const TABLE_SHOWN_KEY = "dominoes.tableShown";
+const TABLE_IDS = { head: "dominoes-round", toggle: "dominoes-toggle-table", body: "dominoes-table-body", players: "dominoes-sides" };
 // Which of the 3 × 3 spots of a tile's half have a pip, for 0 to 6; higher values (double-twelve) show their number.
 const PIP_SPOTS = { 0: [], 1: [4], 2: [0, 8], 3: [0, 4, 8], 4: [0, 2, 6, 8], 5: [0, 2, 4, 6, 8], 6: [0, 2, 3, 5, 6, 8] };
 
@@ -181,18 +183,22 @@ function handPanel(game, state, view, hand) {
     return panel;
 }
 
-// The score row: the round (of the rounds in Mexican Train), the target, the boneyard, and each side's score (a team's
-// on one line).
-function renderScores(game, state, view) {
-    const facts = [
+// The players' table: its head (the round, of the rounds in Mexican Train; the target; the boneyard), then a line per
+// side (a player, or a team): its names, its tiles in hand and its score; the side to play is outlined.
+function renderTable(game, state, view) {
+    const head = [
         game.totalRounds ? t("Round {n} of {total}", { n: game.roundNumber, total: game.totalRounds }) : t("Round {n}", { n: game.roundNumber }),
         ...(game.totalRounds ? [] : [t("To {n} points", { n: game.target })]),
         t("Boneyard: {n}", { n: game.boneyard }),
-        ...(game.teams ? game.sideScores.map((side) => `${sideNames(state, game, side.side)}: ${side.score}`) : []),
-    ];
-    showScores(state, view, facts, game.teams ? [] : game.sideScores.map((side) => ({
-        seat: side.seats[0], score: side.score, acting: game.phase === "Playing" && side.seats[0] === game.turn,
-    })));
+    ].join(" · ");
+    renderTrickTable(view, TABLE_SHOWN_KEY, TABLE_IDS, head, game.sideScores.map((side) => {
+        const who = game.teams ? el("span", "seat-label", sideNames(state, game, side.side)) : seatLabel(state, side.seats[0], view);
+        const tiles = side.seats.reduce((sum, seat) => sum + playerOf(game, seat).tileCount, 0);
+        const item = el("li", null, el("span", "rp-start", who),
+            el("span", "rp-end", el("span", "rp-count", `🁢 ${tiles}`), el("strong", "trick-player-score", t("{n} points", { n: side.score }))));
+        item.classList.toggle("turn", game.phase === "Playing" && side.seats.includes(game.turn));
+        return item;
+    }));
 }
 
 // Confetti for the user's success: winning a round (playing out) or the game.
@@ -209,7 +215,6 @@ const dominoes = startSessionPage("Dominoes", (game, state, view) => {
     currentGame = game;
     const hand = handToPlay(game, view);
     if (!hand || chosenTargets(hand).length === 0) chosen = { seat: null, tile: null };
-    renderScores(game, state, view);
     $("status").textContent = statusText(game, state, view);
     noticeSuccess(game, state, view);
     renderPlayers(game, state, view);
@@ -219,7 +224,9 @@ const dominoes = startSessionPage("Dominoes", (game, state, view) => {
     $("dominoes-message").hidden = !message;
     renderResult(game, state, view);
     $("dominoes-hands").replaceChildren(...myHands(game, view).map((h) => handPanel(game, state, view, h)));
+    renderTable(game, state, view);
     $("next-round").hidden = !(view.isPlayer && game.phase === "RoundOver");
 });
 
 $("next-round").addEventListener("click", () => send("NextRound", currentGame?.roundNumber ?? 0));
+wireTrickTable(TABLE_SHOWN_KEY, TABLE_IDS.toggle, () => dominoes.refresh());

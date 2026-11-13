@@ -103,7 +103,7 @@ GamesLane.Server/              ASP.NET Core backend
     final-card.html/.js        Final Card page (GamesLane cards, each color drawn as the suit of that color)
     yaniv.html/.js             Yaniv page (the piles on top, the players' table shared with Rich man, poor man's styles)
     hearts.html/.js            Hearts page (the table and hands of tricks.js; choosing the cards to pass)
-    dominoes.html/.js          Dominoes page (tiles drawn with pips, the line or the trains, choosing where a tile goes)
+    dominoes.html/.js          Dominoes page (tiles drawn with pips, the line or the trains, choosing where a tile goes; the players' table of tricks.js)
     images/                    Logo, the GamesLane name for the header, the splash screens and the card back (web-sized copies of the originals in docs/), game pictures (SVG)
     images/the-gang/           A picture (SVG) for each challenge and specialist card, named by the card's key, e.g. quick-access.svg
     images/flags/              Flags for the language picker

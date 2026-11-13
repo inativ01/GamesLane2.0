@@ -37,7 +37,6 @@
             <button id="play-again" type="button" class="small" hidden data-i18n>Play again</button>
             <button id="to-lobby" type="button" class="secondary small" hidden data-i18n>Back to the lobby</button>
         </span>
-        <ul id="scores" class="score-row"></ul>
     </div>
 </div>
 <main class="tricks dominoes">
@@ -78,8 +77,19 @@
             <!-- This user's own tiles, one panel per seat they hold. -->
             <div id="dominoes-hands"></div>
 
-            <!-- The game's options, one per line (filled by common.js). -->
-            <div id="game-options" class="game-options" hidden></div>
+            <!-- The players (or teams) with their tiles and scores, and the game's options. Players can hide them;
+                 observers always see them. -->
+            <section class="rp-table" aria-label="Players" data-i18n-attr="aria-label">
+                <div class="rp-table-head">
+                    <span id="dominoes-round" class="rp-game"></span>
+                    <button id="dominoes-toggle-table" type="button" class="secondary small" hidden>Show table</button>
+                </div>
+                <div id="dominoes-table-body">
+                    <ol id="dominoes-sides" class="rp-players"></ol>
+                    <!-- The game's options, one per line (filled by common.js). -->
+                    <div id="game-options" class="game-options" hidden></div>
+                </div>
+            </section>
         </div>
     </section>
 
