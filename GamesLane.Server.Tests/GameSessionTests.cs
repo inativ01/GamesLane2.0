@@ -66,6 +66,49 @@ public class GameSessionTests
     }
 
     [Fact]
+    public void Opening_a_private_lobby_for_the_first_time_takes_the_next_empty_seat()
+    {
+        var session = new TheGangSession("ABC123");
+        session.TryTakeNextSeat(Alice, AliceProfile, "conn-a", out _);
+
+        session.Enter(Bob, BobProfile, "conn-b");
+        session.Enter("connection:x", null, "x");
+
+        Assert.Equal(["Alice", "Bob", null], session.GetPublicState().Seats.Take(3).Select(s => s?.Name));
+        Assert.Equal(1, session.GetPublicState().ObserverCount);
+    }
+
+    [Fact]
+    public void A_user_who_left_their_seat_keeps_watching_when_they_open_the_lobby_again()
+    {
+        var session = new TheGangSession("ABC123");
+        session.Enter(Alice, AliceProfile, "conn-a");
+        Assert.True(session.IsSeated(Alice));
+
+        session.LeaveAllSeats(Alice);
+        session.Enter(Alice, AliceProfile, "conn-a2");
+
+        Assert.False(session.IsSeated(Alice));
+    }
+
+    [Fact]
+    public void Opening_a_full_lobby_a_game_in_progress_or_a_public_game_does_not_take_a_seat()
+    {
+        var full = Seated(new TicTacToeSession("ABC123"));
+        full.Enter(Carol, CarolProfile, "conn-c");
+        Assert.False(full.IsSeated(Carol));
+
+        var started = StartedTheGang();
+        started.Enter("user:dan", new PlayerProfile("Dan", "🐻"), "conn-d");
+        Assert.False(started.IsSeated("user:dan"));
+
+        var lobby = Public(new TheGangSession("ABC123"));
+        lobby.TryTakeNextSeat(Alice, AliceProfile, "conn-a", out _);
+        lobby.Enter(Carol, CarolProfile, "conn-c");
+        Assert.False(lobby.IsSeated(Carol));
+    }
+
+    [Fact]
     public void A_user_can_take_several_seats_and_play_them_all()
     {
         var session = new TicTacToeSession("ABC123");
@@ -1942,12 +1985,16 @@ public class GameSessionTests
         return session;
     }
 
-    // Seats player `player` in the next seat, with the connection "conn-{player}".
+    // Seats player `player` in the next seat, with the connection "conn-{player}": opening the lobby seats them; during
+    // a game, they take the seat they are offered.
     private static void Sit(GameSession session, int player)
     {
         var profile = new PlayerProfile($"P{player}", "🙂");
         session.Enter(Players[player], profile, $"conn-{player}");
-        Assert.True(session.TryTakeNextSeat(Players[player], profile, $"conn-{player}", out var error), error);
+        if (!session.IsSeated(Players[player]))
+        {
+            Assert.True(session.TryTakeNextSeat(Players[player], profile, $"conn-{player}", out var error), error);
+        }
     }
 
     // Gives the seat's required cards in the exchange, or else its lowest cards.
