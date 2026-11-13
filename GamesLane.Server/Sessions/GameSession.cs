@@ -486,9 +486,10 @@ public abstract class GameSession : IGameSession
 
     /// <summary>
     /// Registers a connection that opened the session page. If <paramref name="profile"/> is given (the user is logged in),
-    /// updates the name and icon on the user's seats and returns the user's player ID. A logged-in user without a seat
-    /// who opens or reconnects to a private game in progress is offered its absent seats if it has any (see
-    /// <see cref="HasSeatOffer"/>); otherwise they watch it.
+    /// updates the name and icon on the user's seats and returns the user's player ID. A logged-in user opening a private
+    /// session for the first time while it is in the lobby takes the next empty seat if there is one; later, they keep
+    /// watching until they take a seat. A logged-in user without a seat who opens or reconnects to a private game in
+    /// progress is offered its absent seats if it has any (see <see cref="HasSeatOffer"/>); otherwise they watch it.
     /// </summary>
     public string? Enter(string userKey, PlayerProfile? profile, string connectionId)
     {
@@ -499,6 +500,11 @@ public abstract class GameSession : IGameSession
             if (profile is null)
             {
                 return null;
+            }
+
+            if (!_playerIds.ContainsKey(userKey) && !_isPublic && !_onGameScreen)
+            {
+                TryTakeNextSeat(userKey, profile, connectionId, out _);
             }
 
             foreach (var seat in _seats.Where(s => s?.UserKey == userKey))

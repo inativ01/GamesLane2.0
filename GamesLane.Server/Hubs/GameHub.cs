@@ -64,8 +64,13 @@ public class GameHub(
         }
 
         await Groups.AddToGroupAsync(Context.ConnectionId, SessionGroup(session.Id));
+        var joinsOthers = !session.IsPublic && session.HasSeatedPlayers && !session.IsSeated(UserKey);
         var playerId = session.Enter(UserKey, AuthSetup.GetProfile(Context.User), Context.ConnectionId);
         await (playerId is not null ? BroadcastState(session) : SendPublicState(session));
+        if (joinsOthers && session.IsSeated(UserKey))
+        {
+            await activity.CountAsync(ActivityEvent.JoinGame, session.Type, ActivityCounter.Private);
+        }
 
         return new SessionEntry(session.GetPublicState(), playerId, session.GetPrivateState(UserKey), session.GetChat(),
             session.HasSeatOffer(UserKey));
@@ -118,8 +123,9 @@ public class GameHub(
             if (isPublic)
             {
                 s.MakePublic();
-                s.TryTakeNextSeat(UserKey, profile, Context.ConnectionId, out _);
             }
+
+            s.TryTakeNextSeat(UserKey, profile, Context.ConnectionId, out _);
         });
         await activity.CountAsync(ActivityEvent.CreateGame, gameType, isPublic ? ActivityCounter.Public : ActivityCounter.Private);
         return session.Id;

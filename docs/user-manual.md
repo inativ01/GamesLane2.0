@@ -19,7 +19,7 @@ How to use GamesLane and the rules of each game. For how it is built, see the [d
 
 1. Open the site (e.g. https://gameslane.onrender.com). You are logged in automatically as a guest; to use an account, open your profile (your icon and name in the top bar) and log in.
 2. To play with family and friends, choose **Create a game** under **Private games**, then a game. A new **session** opens, with its game code and a join link.
-3. Send the link (or the code) to the others. Anyone who opens it can watch, or tap **Sit here** to take a seat.
+3. Send the link (or the code) to the others. A logged-in user who opens it for the first time while the session is in its lobby is seated at once if a seat is free; anyone else watches, and can tap **Sit here** to take a seat.
 4. Once enough seats are taken, any seated player presses **Start**.
 
 To play with other people on GamesLane, use **Public games** instead (see [Public games](#public-games)).
@@ -93,7 +93,8 @@ A typical setup is a shared screen (such as a TV or laptop) connected as a spect
 - A user can leave a seat by tapping it. The seats after it then move up one, so there are no gaps.
 - On every page except the main screen, the GamesLane name in the top bar goes back to the main screen (for players, this gives up their seats).
 - A user who loses their connection (closed tab, phone asleep, network lost) keeps their seats for 60 seconds, and gets them back if they return in time; their seat shows a spinner meanwhile. In the lobby, the seats are then freed, as if they had left. During a game, see [Disconnections and seats](#disconnections-and-seats).
-- Creating a private session does not seat the creator; they join the session and can then take a seat.
+- Creating a private session seats the creator at once.
+- A logged-in user opening a private session for the first time while it is in its lobby is seated at once in the next empty seat, if there is one. A user who then leaves their seat (or opens the session again later) watches until they tap **Sit here**.
 - Each game has its own number of seats and minimum to start:
 
   | Game | Seats | Needed to start |
