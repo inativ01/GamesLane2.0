@@ -108,6 +108,23 @@ public class YanivGameTests
         AssertRefused(game.TrySkip(0, out error), error, "It is not your turn.");
     }
 
+    [Fact]
+    public void Each_deal_and_each_new_closed_pile_from_the_open_pile_counts_as_a_shuffle()
+    {
+        var game = Game(null);
+        Assert.Equal(1, game.Shuffles);
+
+        // Each turn discards one card and takes one from the closed pile, until the 44 cards of the closed pile are taken.
+        for (var turn = 0; turn < 44; turn++)
+        {
+            Assert.True(game.TryDiscard(game.Turn, [game.Hand(game.Turn)[0]], false, out var error), error);
+        }
+
+        Assert.Equal((0, 44, 1), (game.ClosedPileCount, game.OpenPileCount, game.Shuffles));
+        Assert.True(game.TryDiscard(game.Turn, [game.Hand(game.Turn)[0]], false, out var last), last);
+        Assert.Equal((42, 2, 2), (game.ClosedPileCount, game.OpenPileCount, game.Shuffles));
+    }
+
     // Yaniv
 
     [Fact]
@@ -131,6 +148,23 @@ public class YanivGameTests
     }
 
     [Fact]
+    public void After_Yaniv_a_player_can_pass_their_last_turn_and_keep_their_hand()
+    {
+        var game = new YanivGame(3, null, Stacked([$"{Low} K♠ K♥ K♦ K♣ Q♠ 3♣ 3♦ 3♥ 3♠ 4♣"]));
+        AssertRefused(game.TryPass(0, out var error), error, "You can pass only after Yaniv is called.");
+        Assert.True(game.TryCallYaniv(0, out error), error);
+        AssertRefused(game.TryPass(2, out error), error, "It is not your turn.");
+
+        Assert.True(game.TryPass(1, out error), error);
+
+        Assert.Equal(Cards("K♠ K♥ K♦ K♣ Q♠"), game.Hand(1));
+        Assert.True(game.LastTurn!.Passed);
+        Assert.Equal((2, YanivPhase.Playing), (game.Turn, game.Phase));
+        Assert.True(game.TryPass(2, out error), error);
+        Assert.Equal((YanivPhase.RoundOver, 0), (game.Phase, game.LastResult!.Winner));
+    }
+
+    [Fact]
     public void A_caller_with_a_higher_hand_is_Assaf_and_the_lowest_hand_wins_and_starts_the_next_round()
     {
         var game = Game(null, "A♠ A♥ 2♠ 3♥ JOKER K♠ A♦ A♣ 2♦ 2♣ JOKER", "A♣ 2♣ 3♣ 4♣ 5♣ 6♦ 7♦ 8♦ 9♦ 10♦");
@@ -144,6 +178,7 @@ public class YanivGameTests
         Assert.True(game.TryNextRound(1, out error), error);
         Assert.True(game.TryNextRound(1, out error), error);
         Assert.Equal((2, 1, YanivPhase.Playing, 5), (game.RoundNumber, game.Turn, game.Phase, game.Hand(0).Count));
+        Assert.Equal(2, game.Shuffles);
         Assert.Null(game.Caller);
     }
 

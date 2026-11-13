@@ -82,6 +82,12 @@ public interface ITheGangGame
     int Heist { get; }
 
     /// <summary>
+    /// The number of times cards have been shuffled in this game (a new deck for each heist, and Con Artist gathering the
+    /// pocket cards), so a page can show each shuffle.
+    /// </summary>
+    int Shuffles { get; }
+
+    /// <summary>
     /// The betting stage (0 to 3: white, yellow, orange, red). After the betting, it stays at 3.
     /// </summary>
     int Stage { get; }

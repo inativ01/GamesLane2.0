@@ -62,6 +62,11 @@ public interface IRichManPoorManGame
     int Throws { get; }
 
     /// <summary>
+    /// How many times the deck has been shuffled in all the games so far, so pages can show each shuffle.
+    /// </summary>
+    int Shuffles { get; }
+
+    /// <summary>
     /// Whether <paramref name="player"/>'s last action in this round was to pass (or their turn was skipped). After
     /// a round ends, its calls stay until the next round's first throw.
     /// </summary>

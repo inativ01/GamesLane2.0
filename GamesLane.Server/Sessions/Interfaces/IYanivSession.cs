@@ -18,4 +18,9 @@ public interface IYanivSession : IRoundBasedSession
     /// <paramref name="seat"/> calls Yaniv, on its turn with a hand score of 7 or less.
     /// </summary>
     bool TryCallYaniv(string userKey, int seat, [NotNullWhen(false)] out string? error);
+
+    /// <summary>
+    /// <paramref name="seat"/> passes its last turn after a Yaniv call, keeping its hand.
+    /// </summary>
+    bool TryPass(string userKey, int seat, [NotNullWhen(false)] out string? error);
 }

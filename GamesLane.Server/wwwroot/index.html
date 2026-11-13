@@ -9,20 +9,22 @@
     <meta name="theme-color" content="#19285d">
     <link rel="stylesheet" href="styles.css">
     <script>
-        // The splash screen shows for 5 seconds when the app is first opened in this tab, and when the GamesLane name is
-        // used (/?splash). It runs on its own, so it ends even if the page's other scripts are slow or fail to load. The
-        // ?splash is removed from the address, so reloading the page does not show it again.
+        // The splash screen shows for 5 seconds when the app is first opened in this tab, and for 1 second when the
+        // GamesLane name is used later (/?splash). It runs on its own, so it ends even if the page's other scripts are
+        // slow or fail to load. The ?splash is removed from the address, so reloading the page does not show it again.
         if (!sessionStorage.getItem("splashShown") || new URLSearchParams(location.search).has("splash")) {
             const root = document.documentElement;
+            const length = sessionStorage.getItem("splashShown") ? 1000 : 5000;
             root.classList.add("splashing");
+            root.dataset.splashLength = String(length);
             sessionStorage.setItem("splashShown", "1");
             const url = new URL(location.href);
             if (url.searchParams.has("splash")) {
                 url.searchParams.delete("splash");
                 history.replaceState(null, "", url.pathname + url.search);
             }
-            setTimeout(() => root.classList.add("splash-done"), 5000);
-            setTimeout(() => root.classList.remove("splashing", "splash-done"), 5500);
+            setTimeout(() => root.classList.add("splash-done"), length);
+            setTimeout(() => root.classList.remove("splashing", "splash-done"), length + 500);
         }
     </script>
     <!-- SignalR sets a global "t" while it loads, so it comes before i18n.js, which defines t(). -->

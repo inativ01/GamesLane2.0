@@ -32,18 +32,6 @@
     </div>
     <div id="status-bar" class="status-bar" hidden>
         <p id="status" class="status"></p>
-        <span class="status-actions">
-            <button id="bg-roll" type="button" class="small icon-button" hidden title="Roll" aria-label="Roll" data-i18n-attr="title,aria-label">🎲</button>
-            <button id="bg-double" type="button" class="secondary small" hidden data-i18n>Double</button>
-            <button id="bg-take" type="button" class="small" hidden data-i18n>Take</button>
-            <button id="bg-drop" type="button" class="secondary small" hidden data-i18n>Drop</button>
-            <button id="bg-undo" type="button" class="secondary small" hidden data-i18n>Undo</button>
-            <button id="bg-done" type="button" class="small" hidden data-i18n>Done</button>
-            <button id="next-round" type="button" class="small" hidden data-i18n>Next game</button>
-            <button id="play-again" type="button" class="small" hidden data-i18n>Play again</button>
-            <button id="to-lobby" type="button" class="secondary small" hidden data-i18n>Back to the lobby</button>
-            <button id="bg-last-move" type="button" class="secondary small" hidden aria-pressed="false" data-i18n>Last move</button>
-        </span>
         <ul id="scores" class="score-row"></ul>
     </div>
 </div>
@@ -74,6 +62,19 @@
 
         <div id="game-screen" hidden>
             <div id="bg-board" class="bg-board"></div>
+            <!-- The turn's and the game's buttons, under the board. -->
+            <div class="game-actions">
+                <button id="bg-roll" type="button" class="icon-button" hidden title="Roll" aria-label="Roll" data-i18n-attr="title,aria-label">🎲</button>
+                <button id="bg-double" type="button" class="secondary" hidden data-i18n>Double</button>
+                <button id="bg-take" type="button" hidden data-i18n>Take</button>
+                <button id="bg-drop" type="button" class="secondary" hidden data-i18n>Drop</button>
+                <button id="bg-undo" type="button" class="secondary" hidden data-i18n>Undo</button>
+                <button id="bg-done" type="button" hidden data-i18n>Done</button>
+                <button id="next-round" type="button" hidden data-i18n>Next game</button>
+                <button id="play-again" type="button" hidden data-i18n>Play again</button>
+                <button id="to-lobby" type="button" class="secondary" hidden data-i18n>Back to the lobby</button>
+                <button id="bg-last-move" type="button" class="secondary" hidden aria-pressed="false" data-i18n>Last move</button>
+            </div>
             <p id="bg-message" class="bg-message" hidden></p>
 
             <!-- The game's options, one per line (filled by common.js). -->

@@ -32,11 +32,6 @@
     </div>
     <div id="status-bar" class="status-bar" hidden>
         <p id="status" class="status"></p>
-        <span class="status-actions">
-            <button id="next-round" type="button" class="small" hidden data-i18n>Next hand</button>
-            <button id="play-again" type="button" class="small" hidden data-i18n>Play again</button>
-            <button id="to-lobby" type="button" class="secondary small" hidden data-i18n>Back to the lobby</button>
-        </span>
     </div>
 </div>
 <main class="tricks hearts">
@@ -73,6 +68,13 @@
                 <div id="hearts-claim" class="trick-claim" hidden></div>
                 <div id="hearts-result" class="trick-result" hidden></div>
             </section>
+
+            <!-- The buttons between hands and after the game, under the table. -->
+            <div class="game-actions">
+                <button id="next-round" type="button" hidden data-i18n>Next hand</button>
+                <button id="play-again" type="button" hidden data-i18n>Play again</button>
+                <button id="to-lobby" type="button" class="secondary" hidden data-i18n>Back to the lobby</button>
+            </div>
 
             <!-- This user's own cards, one panel per seat they hold. -->
             <div id="hearts-hands"></div>

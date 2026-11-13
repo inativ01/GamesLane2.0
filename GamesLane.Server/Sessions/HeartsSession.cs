@@ -24,7 +24,8 @@ public record HeartsResultState(IReadOnlyList<HeartsResultPlayerState> Players, 
 /// <summary>
 /// Public Hearts state. <see cref="Turn"/>, <see cref="Winners"/> and the seats in the tricks, players and claim are
 /// seats; <see cref="Players"/> are in seat order. <see cref="Claim"/> is the claim of this hand's remaining tricks, or
-/// null. <see cref="Actions"/> counts the actions, so a page can tell a new one.
+/// null. <see cref="Actions"/> counts the actions, so a page can tell a new one, and <see cref="Shuffles"/> the shuffles
+/// of the deck, so a page can show each one.
 /// </summary>
 public record HeartsState(
     int Target,
@@ -39,7 +40,8 @@ public record HeartsState(
     IReadOnlyList<HeartsPlayerState> Players,
     int Actions,
     HeartsResultState? LastResult,
-    IReadOnlyList<int> Winners);
+    IReadOnlyList<int> Winners,
+    int Shuffles);
 
 /// <summary>
 /// A seat's private Hearts information: its cards (by suit, from 2 to A), those it may play now, the seat it passes to
@@ -92,7 +94,8 @@ public class HeartsSession(string id, Action<Card[]>? shuffle = null) : TrickTak
                 ? new HeartsResultState([.. result.Players.Select(p => new HeartsResultPlayerState(SeatOf(p.Player), p.Points, p.Score))],
                     result.Moon is { } moon ? SeatOf(moon) : null)
                 : null,
-            [.. game.Winners.Select(SeatOf)]);
+            [.. game.Winners.Select(SeatOf)],
+            game.Shuffles);
     }
 
     /// <inheritdoc />

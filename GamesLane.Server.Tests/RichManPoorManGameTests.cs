@@ -273,10 +273,11 @@ public class RichManPoorManGameTests
         var game = new RichManPoorManGame(Six, RankSorted);
         Assert.False(game.TryNextGame(1, Six, out var error));
         Assert.Equal("This game is not over yet.", error);
+        Assert.Equal(1, game.Shuffles);
 
         var exchanging = Exchanging(Six);
         Assert.True(exchanging.TryNextGame(1, [0, 1, 2, 3, 4, 5], out _));
-        Assert.Equal(2, exchanging.GameNumber);
+        Assert.Equal((2, 2), (exchanging.GameNumber, exchanging.Shuffles));
     }
 
     [Fact]

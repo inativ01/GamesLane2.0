@@ -32,11 +32,6 @@
     </div>
     <div id="status-bar" class="status-bar" hidden>
         <p id="status" class="status"></p>
-        <span class="status-actions">
-            <button id="next-round" type="button" class="small" hidden data-i18n>Next round</button>
-            <button id="play-again" type="button" class="small" hidden data-i18n>Play again</button>
-            <button id="to-lobby" type="button" class="secondary small" hidden data-i18n>Back to the lobby</button>
-        </span>
     </div>
 </div>
 <main class="yaniv">
@@ -72,6 +67,13 @@
                 <p id="yaniv-message" class="yaniv-message" hidden></p>
                 <div id="yaniv-result" class="yaniv-result" hidden></div>
             </section>
+
+            <!-- The buttons between rounds and after the game, under the piles. -->
+            <div class="game-actions">
+                <button id="next-round" type="button" hidden data-i18n>Next round</button>
+                <button id="play-again" type="button" hidden data-i18n>Play again</button>
+                <button id="to-lobby" type="button" class="secondary" hidden data-i18n>Back to the lobby</button>
+            </div>
 
             <!-- This user's own cards and hand score, one panel per seat they hold. -->
             <div id="yaniv-hands"></div>

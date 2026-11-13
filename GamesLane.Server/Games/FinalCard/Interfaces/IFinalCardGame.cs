@@ -92,6 +92,12 @@ public interface IFinalCardGame
     /// <summary>The number of actions so far, so a page can tell a new one.</summary>
     int Actions { get; }
 
+    /// <summary>
+    /// The number of times cards have been shuffled in this game (each deal, and each time the discard pile becomes a new
+    /// draw pile), so a page can show each shuffle.
+    /// </summary>
+    int Shuffles { get; }
+
     /// <summary>How the last hand ended, or null during the first.</summary>
     FinalCardHandResult? LastResult { get; }
 

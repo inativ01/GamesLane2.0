@@ -32,11 +32,6 @@
     </div>
     <div id="status-bar" class="status-bar" hidden>
         <p id="status" class="status"></p>
-        <span class="status-actions">
-            <button id="next-round" type="button" class="small" hidden data-i18n>Next game</button>
-            <button id="play-again" type="button" class="small" hidden data-i18n>Play again</button>
-            <button id="to-lobby" type="button" class="secondary small" hidden data-i18n>Back to the lobby</button>
-        </span>
     </div>
 </div>
 <main class="rich-poor">
@@ -67,6 +62,13 @@
         <div id="game-screen" hidden>
             <!-- The cards on the table (the throw to beat, or the round's winner), on top for everyone. -->
             <div id="rp-top" class="rp-pile rp-top"></div>
+
+            <!-- The buttons between games and after the game, under the cards on the table. -->
+            <div class="game-actions">
+                <button id="next-round" type="button" hidden data-i18n>Next game</button>
+                <button id="play-again" type="button" hidden data-i18n>Play again</button>
+                <button id="to-lobby" type="button" class="secondary" hidden data-i18n>Back to the lobby</button>
+            </div>
 
             <!-- This user's own cards and buttons, one panel per seat they hold. -->
             <div id="rp-hands"></div>

@@ -36,7 +36,8 @@ public record RichManPoorManJoinRequest(string PlayerId, string Name, string Ico
 /// poor man). <see cref="Turn"/>, <see cref="LastRoundWinner"/> and <see cref="Ranking"/> are seats.
 /// <see cref="CurrentThrow"/> is the throw to beat in this round (null when its starter is to throw);
 /// <see cref="LastThrow"/> is kept after its round ends. <see cref="Throws"/> counts all throws, so a page can tell a
-/// new one. <see cref="JoinRequests"/> are the users asking to join, during the exchange.
+/// new one, and <see cref="Shuffles"/> all shuffles of the deck, so a page can show each one. <see cref="JoinRequests"/>
+/// are the users asking to join, during the exchange.
 /// </summary>
 public record RichManPoorManState(
     int GameNumber,
@@ -48,7 +49,8 @@ public record RichManPoorManState(
     int Throws,
     int? LastRoundWinner,
     IReadOnlyList<int> Ranking,
-    IReadOnlyList<RichManPoorManJoinRequest> JoinRequests);
+    IReadOnlyList<RichManPoorManJoinRequest> JoinRequests,
+    int Shuffles);
 
 /// <summary>
 /// A seat's private rich man, poor man information: its cards from low to high, and in the exchange, its partner's seat,
@@ -379,7 +381,8 @@ public class RichManPoorManSession(string id, Action<Card[]>? shuffle = null, Ra
             IsExchanging
                 ? [.. _requests.Where(r => IsConnected(r.UserKey))
                     .Select(r => new RichManPoorManJoinRequest(PlayerIdFor(r.UserKey), r.Profile.Name, r.Profile.Icon))]
-                : []);
+                : [],
+            game.Shuffles);
     }
 
     /// <inheritdoc />

@@ -203,7 +203,8 @@ function lastTurnArrows(game) {
 }
 
 let selected = null;
-let lastArrival = "";
+// The checker last moved, so it slides once (null before the board is first drawn).
+let lastArrival = null;
 // Whether Last move is on: the last finished turn is drawn on the board as arrows.
 let showLast = false;
 
@@ -215,10 +216,12 @@ let rollTimer = 0;
 let seenRolls = null;
 let seenOpening = [null, null];
 
-// Starts the one-second rolling animation when the state shows a new roll (not when the page first opens).
+// Starts the one-second rolling animation, with the rattle of dice, when the state shows a new roll (not when the page
+// first opens).
 function noticeRoll(game) {
     const opening = game.phase === "Opening" || Boolean(game.openingRoll);
     if (seenRolls !== null && game.rolls !== seenRolls) {
+        playGameSound("dice");
         // After a tie, any opening die shown is a new roll; otherwise, the one that was not there before.
         const wasTie = seenOpening[0] !== null && seenOpening[0] === seenOpening[1];
         rollingSeats = opening
@@ -287,19 +290,30 @@ function drawGame(game, viewer, canMove, mayDouble) {
         board.append(highlight(mover(selected), "bg-selected"));
     }
 
-    // Checkers on the points: up to 5 in a stack, with the count on the top one if there are more.
+    // Checkers on the points: up to 5 in a stack, with the count on the top one if there are more. The checker that has
+    // just moved slides from where it was (the top of its old point, or the bar) to its new place, with a click as it
+    // lands (no click when the page first opens).
     const arrival = lastMove(game);
     const arrivalKey = arrival ? JSON.stringify([game.gameNumber, game.played.length, game.lastTurn, arrival]) : "";
     const arrivalPoint = arrival && arrivalKey !== lastArrival ? toBlack(arrival.move.to, arrival.seat) : null;
+    if (arrivalPoint !== null && lastArrival !== null) playGameSound("checker");
     lastArrival = arrivalKey;
+    const departure = arrivalPoint === null ? null : toBlack(arrival.move.from, arrival.seat);
+    const [fromX, fromY] = departure === null ? [0, 0]
+        : departure === BAR ? [BAR_X, MID_Y] : [pointX(departure), checkerY(departure, Math.min(checkersAt(game, departure)?.count ?? 0, 4))];
     for (let p = 1; p <= 24; p++) {
         const stack = checkersAt(game, p);
         if (!stack) continue;
         const shown = Math.min(stack.count, 5);
         for (let k = 0; k < shown; k++) {
             const top = k === shown - 1;
-            const piece = checker(stack.seat, pointX(p), checkerY(p, k), top && stack.count > 5 ? String(stack.count) : "");
-            if (top && p === arrivalPoint) piece.classList.add("arrived");
+            const [x, y] = [pointX(p), checkerY(p, k)];
+            const piece = checker(stack.seat, x, y, top && stack.count > 5 ? String(stack.count) : "");
+            if (top && p === arrivalPoint) {
+                piece.classList.add("arrived");
+                piece.style.setProperty("--from-x", `${fromX - x}px`);
+                piece.style.setProperty("--from-y", `${fromY - y}px`);
+            }
             board.append(piece);
         }
     }

@@ -59,6 +59,12 @@ public interface IYanivGame
     /// <summary>The number of actions so far, so a page can tell a new one.</summary>
     int Actions { get; }
 
+    /// <summary>
+    /// The number of times cards have been shuffled in this game (each deal, and each time the open pile becomes a new
+    /// closed pile), so a page can show each shuffle.
+    /// </summary>
+    int Shuffles { get; }
+
     /// <summary>How the last round ended, or null during the first.</summary>
     YanivRoundResult? LastResult { get; }
 
@@ -83,6 +89,12 @@ public interface IYanivGame
 
     /// <summary><paramref name="player"/>'s turn is skipped (they are absent): their hand stays as it is.</summary>
     bool TrySkip(int player, out string? error);
+
+    /// <summary>
+    /// <paramref name="player"/>, whose turn it is, passes their last turn after a Yaniv call: their hand stays as it is.
+    /// Before a Yaniv call, a player cannot pass.
+    /// </summary>
+    bool TryPass(int player, out string? error);
 
     /// <summary>Deals the round after round <paramref name="round"/>. If it has already been dealt, nothing changes.</summary>
     bool TryNextRound(int round, out string? error);

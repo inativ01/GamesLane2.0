@@ -78,6 +78,9 @@ public class YanivGame : IYanivGame
     public int Actions { get; private set; }
 
     /// <inheritdoc />
+    public int Shuffles { get; private set; }
+
+    /// <inheritdoc />
     public YanivRoundResult? LastResult { get; private set; }
 
     /// <inheritdoc />
@@ -186,6 +189,26 @@ public class YanivGame : IYanivGame
     }
 
     /// <inheritdoc />
+    public bool TryPass(int player, out string? error)
+    {
+        if (!TryCheckTurn(player, out error))
+        {
+            return false;
+        }
+
+        if (Caller is null)
+        {
+            error = "You can pass only after Yaniv is called.";
+            return false;
+        }
+
+        Actions++;
+        LastTurn = new YanivTurn(player, [], false, [], Passed: true);
+        EndTurn(player);
+        return true;
+    }
+
+    /// <inheritdoc />
     public bool TryNextRound(int round, out string? error)
     {
         error = round < RoundNumber ? null
@@ -211,6 +234,7 @@ public class YanivGame : IYanivGame
     {
         var deck = YanivCards.Deck();
         _shuffle(deck);
+        Shuffles++;
         _closed.Clear();
         _closed.AddRange(deck);
         _open.Clear();
@@ -308,6 +332,7 @@ public class YanivGame : IYanivGame
             var rest = _open.GetRange(0, _open.Count - 1).ToArray();
             _open.RemoveRange(0, rest.Length);
             _shuffle(rest);
+            Shuffles++;
             _closed.AddRange(rest);
         }
 

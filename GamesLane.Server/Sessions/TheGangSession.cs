@@ -63,6 +63,7 @@ public record TheGangShownCard(int FromSeat, string Card);
 /// <see cref="ShownFromSeat"/> showed a card to <see cref="ShownToSeat"/>. <see cref="CommunityCards"/> has one entry per
 /// visible shared slot: one card, or with jokers, the 2 or 3 cards that replaced a joker. <see cref="JokerSwaps"/> has a
 /// seat for each joker swapped in this heist, and <see cref="JokerSeats"/> the seats choosing a card for a joker now.
+/// <see cref="Shuffles"/> counts the shuffles, so a page can show each one.
 /// </summary>
 public record TheGangState(
     TheGangMode Mode,
@@ -95,7 +96,8 @@ public record TheGangState(
     IReadOnlyList<int> PreparedSeats,
     IReadOnlyList<int> PlayingSeats,
     IReadOnlyList<int> RevealOrder,
-    IReadOnlyList<TheGangRevealedHand> Revealed);
+    IReadOnlyList<TheGangRevealedHand> Revealed,
+    int Shuffles);
 
 /// <summary>
 /// A player's own cards in The Gang, with Coordinator, the card they picked to pass on, with Informant, a card another
@@ -303,7 +305,8 @@ public class TheGangSession(string id, Func<IReadOnlyList<Card>>? newDeck = null
                         bySeat[player], Text(game.HoleCards(player)), hand.Summary, game.RevealedInOrder[i],
                         hand.Ranking, hand.Values, weakness?.Ranking ?? false, weakness?.Cards ?? []);
                 }).ToArray()
-                : []);
+                : [],
+            game.Shuffles);
     }
 
     /// <inheritdoc />

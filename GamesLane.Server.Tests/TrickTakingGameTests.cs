@@ -45,6 +45,7 @@ public class TrickTakingGameTests
     public void The_winner_of_a_trick_leads_the_next_and_the_hand_ends_after_13_tricks()
     {
         var game = new PlainGame(Suit.Spades, null);
+        Assert.Equal(1, game.Shuffles);
         // Unshuffled: player 0 holds the clubs, 1 the diamonds, 2 the spades and 3 the hearts.
         Assert.True(game.TryPlay(0, Card("A♣"), out var error), error);
         Assert.True(game.TryPlay(1, Card("2♦"), out error), error);
@@ -64,7 +65,7 @@ public class TrickTakingGameTests
         Assert.Equal(13, game.TricksWon.Sum());
         Assert.True(game.TryNextHand(1, out error), error);
         Assert.True(game.TryNextHand(1, out error), error);
-        Assert.Equal((2, 13), (game.HandNumber, game.Hand(0).Count));
+        Assert.Equal((2, 13, 2), (game.HandNumber, game.Hand(0).Count, game.Shuffles));
     }
 
     // Plays the first card each player may play until the hand is over.

@@ -257,10 +257,11 @@ public class TheGangGameTests
         Assert.Equal("The heist is not over yet.", error);
         RevealAll(game);
 
+        Assert.Equal(1, game.Shuffles);
         Assert.True(game.TryNextHeist(1, out _));
         Assert.True(game.TryNextHeist(1, out _));
 
-        Assert.Equal(2, game.Heist);
+        Assert.Equal((2, 2), (game.Heist, game.Shuffles));
         Assert.Equal(TheGangPhase.Betting, game.Phase);
         Assert.Equal([1, 2, 3], game.MiddleChips);
         Assert.Null(game.Chip(3, 0));
@@ -599,14 +600,16 @@ public class TheGangGameTests
         var game = new TheGangGame(3, () => Cards(RankedDeck), Advanced(0, [], [TheGangCards.ConArtist]), new Random(7));
         PlayHeist(game, [3, 2, 1]);
         var before = Enumerable.Range(0, 3).SelectMany(game.HoleCards).ToArray();
+        var shuffles = game.Shuffles;
 
         Assert.True(game.TryConfirmSeen(0, out _));
         Assert.True(game.TryConfirmSeen(1, out _));
         Assert.Equal(TheGangPhase.Preparing, game.Phase);
+        Assert.Equal(shuffles, game.Shuffles);
         Assert.False(game.TryPassCard(2, 0, out _));
         Assert.True(game.TryConfirmSeen(2, out _));
 
-        Assert.Equal(TheGangPhase.Betting, game.Phase);
+        Assert.Equal((TheGangPhase.Betting, shuffles + 1), (game.Phase, game.Shuffles));
         Assert.All(Enumerable.Range(0, 3), p => Assert.Equal(2, game.HoleCards(p).Count));
         Assert.Equal(before.Select(c => c.ToString()).Order(), Enumerable.Range(0, 3).SelectMany(game.HoleCards).Select(c => c.ToString()).Order());
     }

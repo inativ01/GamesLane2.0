@@ -50,16 +50,32 @@ function lastTrickText(game, state, view) {
         : "";
 }
 
+// The card just played to the trick shown, as { seat, at } (when it was played, see animateSince), or null when the
+// page first opens. A new card plays the card's sound.
+const TRICK_ARRIVE_MS = 450;
+let trickArrived = null;
+
+function trickArrival(game, view) {
+    const trick = shownTrick(game);
+    const newest = trick.cards.at(-1);
+    if (view.changed("trick", [game.handNumber, trick.cards]) && newest) {
+        playGameSound("card");
+        trickArrived = { seat: newest.seat, at: performance.now() };
+    }
+    return trickArrived;
+}
+
 // The table, on felt: each player at their place (bottom, left, top, right) with their name, what `facts(seat)` gives
 // (e.g. tricks won) and the card they played to the trick shown; the player whose turn it is (`turn`, or null) is
-// outlined.
-function trickTable(game, state, view, { turn = null, facts = () => [] } = {}) {
+// outlined. The card of `arrived` (see trickArrival) slides in from its player's side.
+function trickTable(game, state, view, { turn = null, facts = () => [], arrived = null } = {}) {
     const trick = shownTrick(game);
     const places = ["trick-bottom", "trick-left", "trick-top", "trick-right"];
     return el("div", "trick-table", ...tableSeats(view).map((seat, i) => {
         const played = trick.cards.find((c) => c.seat === seat);
         const card = played ? cardElement(played.card) : el("span", "card trick-no-card");
         card.classList.toggle("won", played !== undefined && trick.winnerSeat === seat);
+        if (played && arrived?.seat === seat) animateSince(card, "arrive", arrived.at, TRICK_ARRIVE_MS);
         const player = el("div", "trick-player", seatLabel(state, seat, view), ...facts(seat));
         player.classList.toggle("turn", turn === seat);
         return el("div", `trick-place ${places[i]}`, player, card);

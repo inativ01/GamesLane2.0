@@ -11,9 +11,10 @@ public record YanivPlayerState(int Seat, int CardCount, int Score, bool IsOut);
 
 /// <summary>
 /// The last turn: the seat, the cards it discarded (short text, a straight from lowest to highest), whether it took the
-/// open pile's top card (<see cref="Taken"/>) or a closed card (not shown), and whether the turn was skipped.
+/// open pile's top card (<see cref="Taken"/>) or a closed card (not shown), whether the turn was skipped, and whether the
+/// player passed their last turn after a Yaniv call.
 /// </summary>
-public record YanivTurnState(int Seat, IReadOnlyList<string> Cards, bool TookOpen, string? Taken, bool Skipped);
+public record YanivTurnState(int Seat, IReadOnlyList<string> Cards, bool TookOpen, string? Taken, bool Skipped, bool Passed);
 
 /// <summary>
 /// A player at the end of a round: their cards, hand score, the points they gained, whether the bonus took 50 points off,
@@ -29,7 +30,8 @@ public record YanivResultState(int CallerSeat, int WinnerSeat, bool Assaf, IRead
 /// <summary>
 /// Public Yaniv state. <see cref="Turn"/>, <see cref="Caller"/>, <see cref="LastTurns"/> and <see cref="Winner"/> are
 /// seats; <see cref="Players"/> are in seat order. <see cref="OpenTop"/> is the card that can be taken, or null.
-/// <see cref="Actions"/> counts the actions, so a page can tell a new one.
+/// <see cref="Actions"/> counts the actions, so a page can tell a new one, and <see cref="Shuffles"/> the shuffles, so a
+/// page can show each one.
 /// </summary>
 public record YanivState(
     YanivEndMode End,
@@ -47,7 +49,8 @@ public record YanivState(
     YanivTurnState? LastTurn,
     int Actions,
     YanivResultState? LastResult,
-    int? Winner);
+    int? Winner,
+    int Shuffles);
 
 /// <summary>
 /// A seat's private Yaniv information: its cards (jokers first, then from ace to king), its hand score, and whether it can
@@ -95,6 +98,10 @@ public class YanivSession(string id, Action<Card[]>? shuffle = null) : GameSessi
     /// <inheritdoc />
     public bool TryCallYaniv(string userKey, int seat, [NotNullWhen(false)] out string? error) =>
         WithPlayer(userKey, seat, (game, player) => (game.TryCallYaniv(player, out var e), e), out error);
+
+    /// <inheritdoc />
+    public bool TryPass(string userKey, int seat, [NotNullWhen(false)] out string? error) =>
+        WithPlayer(userKey, seat, (game, player) => (game.TryPass(player, out var e), e), out error);
 
     /// <inheritdoc />
     public bool TryNextRound(string userKey, int round, [NotNullWhen(false)] out string? error)
@@ -159,14 +166,16 @@ public class YanivSession(string id, Action<Card[]>? shuffle = null) : GameSessi
             [.. Enumerable.Range(0, game.Players).Select(p => new YanivPlayerState(
                 seats[p], game.Hand(p).Count, game.Scores[p], game.IsOut(p)))],
             game.LastTurn is { } turn
-                ? new YanivTurnState(seats[turn.Player], Text(turn.Cards), turn.TookOpen, turn.Taken.Length > 0 ? turn.Taken[0].ToString() : null, turn.Skipped)
+                ? new YanivTurnState(seats[turn.Player], Text(turn.Cards), turn.TookOpen, turn.Taken.Length > 0 ? turn.Taken[0].ToString() : null,
+                    turn.Skipped, turn.Passed)
                 : null,
             game.Actions,
             game.LastResult is { } result
                 ? new YanivResultState(seats[result.Caller], seats[result.Winner], result.Assaf, [.. result.Players.Select(p =>
                     new YanivRoundPlayerState(seats[p.Player], Text(p.Cards), p.HandScore, p.Points, p.Bonus, p.Score, p.IsOut))])
                 : null,
-            game.Winner is { } winner ? seats[winner] : null);
+            game.Winner is { } winner ? seats[winner] : null,
+            game.Shuffles);
     }
 
     /// <inheritdoc />

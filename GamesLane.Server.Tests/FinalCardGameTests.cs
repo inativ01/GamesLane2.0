@@ -331,6 +331,23 @@ public class FinalCardGameTests
         Assert.All(game.Scores.Where((_, p) => p != game.Winner), score => Assert.True(score < 200));
     }
 
+    [Fact]
+    public void Every_deal_and_every_new_draw_pile_from_the_discards_counts_as_a_shuffle()
+    {
+        var random = new Random(5);
+        var shuffles = 0;
+        var game = new FinalCardGame(10, new FinalCardRules(FinalCardEndMode.Score, 200, DrawUntilPlayable: true), deck =>
+        {
+            shuffles++;
+            random.Shuffle(deck);
+        });
+        Assert.Equal(1, game.Shuffles);
+
+        PlayOut(game, () => Assert.Equal(shuffles, game.Shuffles));
+
+        Assert.True(game.Shuffles > game.HandNumber, "The discard pile was never shuffled into a new draw pile.");
+    }
+
     // Plays to the end: a player with penalty cards draws them; otherwise the player to play plays their first card they
     // can (calling Final Card first), or draws.
     private static void PlayOut(FinalCardGame game, Action? afterEach = null)
