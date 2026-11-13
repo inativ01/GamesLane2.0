@@ -13,6 +13,7 @@ const GAME_PAGES = {
     TicTacToe: "/tictactoe.html", TheGang: "/the-gang.html", Backgammon: "/backgammon.html",
     RichManPoorMan: "/rich-man-poor-man.html", Wazoo: "/wazoo.html", FinalCard: "/final-card.html", Yaniv: "/yaniv.html",
     Hearts: "/hearts.html",
+    Dominoes: "/dominoes.html",
 };
 
 const help = startHelp();

@@ -1,5 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
 using GamesLane.Server.Games.Backgammon;
+using GamesLane.Server.Games.Dominoes;
 using GamesLane.Server.Games.RichManPoorMan;
 using GamesLane.Server.Games.TheGang;
 using GamesLane.Server.Games.FinalCard;
@@ -79,6 +80,7 @@ public static class GameOptions
         GameType.FinalCard => FinalCardOptions.All,
         GameType.RichManPoorMan => RichManPoorManOptions.All,
         GameType.Yaniv => YanivOptions.All,
+        GameType.Dominoes => DominoesOptions.All,
         _ => [],
     };
 
