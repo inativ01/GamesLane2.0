@@ -1085,8 +1085,8 @@ const GAME_SOUNDS = {
         tone(audio, at, 520, 0.03, { volume: 0.035, to: 260 });
         noise(audio, at, 0.012, { volume: 0.025, type: "lowpass", frequency: 1200 });
     },
-    // A card played, drawn or turned: a short swish.
-    card: (audio, at) => noise(audio, at, 0.12, { volume: 0.3, type: "highpass", frequency: 2500 }),
+    // A card played, drawn or turned: a soft, low swish of a card sliding on the table.
+    card: (audio, at) => noise(audio, at, 0.14, { volume: 0.12, type: "bandpass", frequency: 900, q: 0.7 }),
     // A riffle: many quick card flicks, then the deck squared with a soft thud.
     shuffle: (audio, at) => {
         for (let i = 0; i < 28; i++) {
