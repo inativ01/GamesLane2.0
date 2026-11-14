@@ -1080,13 +1080,18 @@ function tone(audio, at, frequency, length, { volume = 0.2, type = "sine", to = 
 }
 
 const GAME_SOUNDS = {
-    // A soft, low "tock" for every button, like a phone's keyboard click.
-    click: (audio, at) => {
+    // A very soft, low tap for every button.
+    click: (audio, at) => tone(audio, at, 360, 0.025, { volume: 0.018, to: 180 }),
+    // A card in the hand tapped (chosen or played): a soft, low "tock", like a phone's keyboard click.
+    select: (audio, at) => {
         tone(audio, at, 520, 0.03, { volume: 0.035, to: 260 });
         noise(audio, at, 0.012, { volume: 0.025, type: "lowpass", frequency: 1200 });
     },
-    // A card played, drawn or turned: a soft, low swish of a card sliding on the table.
-    card: (audio, at) => noise(audio, at, 0.14, { volume: 0.12, type: "bandpass", frequency: 900, q: 0.7 }),
+    // A card played, drawn or turned: the answer to the card's "tock", a lower, rounder "tock-tuck" as it lands.
+    card: (audio, at) => {
+        tone(audio, at, 440, 0.06, { volume: 0.035, to: 220 });
+        tone(audio, at + 0.06, 330, 0.08, { volume: 0.03, to: 165 });
+    },
     // A riffle: many quick card flicks, then the deck squared with a soft thud.
     shuffle: (audio, at) => {
         for (let i = 0; i < 28; i++) {
@@ -1138,10 +1143,10 @@ function playGameSound(name) {
     if (GAME_SOUNDS[name]) playSound(GAME_SOUNDS[name]);
 }
 
-// Every button tapped ticks softly, on every page.
+// Every button tapped taps softly, on every page; a card in the user's hand (.rp-card) has its own "tock".
 document.addEventListener("click", (event) => {
     const target = event.target instanceof Element ? event.target.closest("button, a.button, [role='button']") : null;
-    if (target && !target.disabled) playGameSound("click");
+    if (target && !target.disabled) playGameSound(target.classList.contains("rp-card") ? "select" : "click");
 }, { capture: true });
 
 const reducedMotion = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
