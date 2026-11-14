@@ -43,9 +43,9 @@ function dieFace(value) {
     return face;
 }
 
-// The rolling animation: the dice that were not kept tumble and bounce for a moment, with the rattle of dice, when the
-// state shows a new roll (not when the page first opens). The open boxes show what the dice score only once the dice
-// have stopped.
+// The rolling animation: the dice that were not kept tumble and bounce for a moment, with the sound of the dice (of a
+// single die when only one was rolled), when the state shows a new roll (not when the page first opens). The open boxes
+// show what the dice score only once the dice have stopped.
 const ROLL_MS = 800;
 let seenRolls = null;
 let rollingUntil = 0;
@@ -53,7 +53,7 @@ let rollTimer = 0;
 
 function noticeRoll(game) {
     if (seenRolls !== null && game.rolls > seenRolls) {
-        playGameSound("dice");
+        playGameSound(game.held.filter((held) => !held).length === 1 ? "die" : "dice");
         rollingUntil = Date.now() + ROLL_MS;
         clearInterval(rollTimer);
         rollTimer = setInterval(() => {

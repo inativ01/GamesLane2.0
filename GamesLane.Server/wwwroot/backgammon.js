@@ -216,12 +216,12 @@ let rollTimer = 0;
 let seenRolls = null;
 let seenOpening = [null, null];
 
-// Starts the one-second rolling animation, with the rattle of dice, when the state shows a new roll (not when the page
-// first opens).
+// Starts the one-second rolling animation, with the sound of the dice (of a single die for an opening roll), when the
+// state shows a new roll (not when the page first opens).
 function noticeRoll(game) {
     const opening = game.phase === "Opening" || Boolean(game.openingRoll);
     if (seenRolls !== null && game.rolls !== seenRolls) {
-        playGameSound("dice");
+        playGameSound(opening && game.dice.length === 0 ? "die" : "dice");
         // After a tie, any opening die shown is a new roll; otherwise, the one that was not there before.
         const wasTie = seenOpening[0] !== null && seenOpening[0] === seenOpening[1];
         rollingSeats = opening

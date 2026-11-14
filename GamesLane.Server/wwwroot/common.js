@@ -1108,6 +1108,8 @@ const GAME_SOUNDS = {
         }
         [0.62, 0.74].forEach((delay) => noise(audio, at + delay, 0.06, { volume: 0.4, frequency: 900, q: 3 }));
     },
+    // A single die thrown: as the dice (its recording is used instead where it plays).
+    die: (audio, at) => GAME_SOUNDS.dice(audio, at),
     // A checker set down on the board: a soft, low knock.
     checker: (audio, at) => {
         tone(audio, at, 180, 0.07, { volume: 0.08 });
@@ -1144,6 +1146,7 @@ const GAME_SOUNDS = {
 // at `length` seconds if given. A browser that cannot play them gets the browser-made sound.
 const SOUND_FILES = {
     dice: { files: ["dice-throw-1"], volume: 0.8 },
+    die: { files: ["die-throw-1"], volume: 0.8 },
     shuffle: { files: ["card-shuffle"], volume: 0.7, length: 2.4 },
     checker: { files: ["chip-lay-1"], volume: 0.45 },
 };
