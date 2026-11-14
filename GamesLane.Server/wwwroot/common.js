@@ -1140,12 +1140,12 @@ const GAME_SOUNDS = {
 };
 
 // Recorded sounds (wwwroot/sounds, from Kenney's Casino Audio, CC0; see sounds/LICENSE.txt), used instead of the
-// browser-made sound of the same name: one of the files at random, at `volume`, cut off with a fade at `length`
-// seconds if given. A browser that cannot play them gets the browser-made sound.
+// browser-made sound of the same name: its file (one of `files` at random, if several), at `volume`, cut off with a fade
+// at `length` seconds if given. A browser that cannot play them gets the browser-made sound.
 const SOUND_FILES = {
-    dice: { files: ["dice-throw-1", "dice-throw-2", "dice-throw-3"], volume: 0.8 },
+    dice: { files: ["dice-throw-1"], volume: 0.8 },
     shuffle: { files: ["card-shuffle"], volume: 0.7, length: 2.4 },
-    checker: { files: ["chip-lay-1", "chip-lay-2", "chip-lay-3"], volume: 0.45 },
+    checker: { files: ["chip-lay-1"], volume: 0.45 },
 };
 const soundFiles = new Map();
 
