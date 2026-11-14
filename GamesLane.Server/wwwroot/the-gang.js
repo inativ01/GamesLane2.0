@@ -482,7 +482,9 @@ function myHand(game, state, view, hand) {
         const holderMark = el("span", "holder",
             ...(isLocked(number) ? ["🔒"] : []),
             ...(holder === undefined ? [] : [iconElement(state.seats[holder]?.icon, "holder-icon")]));
-        const chip = el("button", mine ? "chip-button mine" : "chip-button", chipElement(stage, number), holderMark);
+        const face = chipElement(stage, number);
+        if (holder !== undefined) animateSince(face, "chip-arrive", chipMoves.get(`${stage}:${holder}`) ?? -Infinity, MOVE_MS);
+        const chip = el("button", mine ? "chip-button mine" : "chip-button", face, holderMark);
         // Tapping your own chip returns it to the middle (unless it is locked).
         chip.type = "button";
         chip.disabled = lockedByOther || keepsLockedChip;
@@ -569,6 +571,7 @@ function chipTable(game, state, view) {
             const content = chip !== null ? chipElement(stage, chip)
                 : removed ? Object.assign(chipElement(stage, "?"), { title: t("{stage} chip removed (Blackout)", { stage: t(STAGES[stage]) }) })
                     : skipped(stage) ? "" : stage <= game.stage ? "–" : "";
+            if (chip !== null) animateSince(content, "chip-arrive", chipMoves.get(`${stage}:${seat}`) ?? -Infinity, MOVE_MS);
             const cell = el("td", null, voided && content instanceof Element ? voidChip(content) : content);
             cell.title = voided ? t("No longer counts: this player got new pocket cards") : removed ? t("Removed (Blackout)") : "";
             if (stage === game.stage && game.phase === "Betting" && game.readySeats.includes(seat)) {
@@ -689,6 +692,38 @@ function noticeStolenChips(game, view) {
     }
 }
 
+// For everyone, once (not when the page opens): a chip taken or returned clinks and pops into its new place, shared
+// cards turned and hands revealed come with the card's sound and flip in.
+const MOVE_MS = 600;
+const chipMoves = new Map();
+let chipsBefore = { key: "", chips: [] };
+let communityBefore = { heist: null, count: 0 };
+let communityShown = { from: 0, at: -Infinity };
+let revealedAt = -Infinity;
+
+function noticeMoves(game, view) {
+    const key = `${game.heist}:${game.stage}`;
+    const chips = game.chips[game.stage] ?? [];
+    if (view.changed("chips", [key, chips]) && chipsBefore.key === key) {
+        const moved = chips.flatMap((chip, seat) => (chip !== chipsBefore.chips[seat] ? [seat] : []));
+        moved.filter((seat) => chips[seat] !== null).forEach((seat) => chipMoves.set(`${game.stage}:${seat}`, performance.now()));
+        if (moved.length) playGameSound("chip");
+    }
+    chipsBefore = { key, chips: [...chips] };
+
+    const count = game.communityCards.length;
+    if (view.changed("community", [game.heist, count]) && count > 0) {
+        playGameSound("card");
+        communityShown = { from: communityBefore.heist === game.heist ? communityBefore.count : 0, at: performance.now() };
+    }
+    communityBefore = { heist: game.heist, count };
+
+    if (view.changed("revealed", [game.heist, game.revealed.length]) && game.revealed.length > 0) {
+        playGameSound("card");
+        revealedAt = performance.now();
+    }
+}
+
 let gangState = null;
 // Players on a phone or tablet (a touch screen without a mouse) start with the table hidden, as a shared screen usually
 // shows it; on a computer it is shown. Once a player hides or shows it, their choice is remembered on this device.
@@ -700,6 +735,8 @@ let tableHidden = savedTableHidden === null
 const gang = startSessionPage("TheGang", (game, state, view) => {
     gangState = game;
     noticeStolenChips(game, view);
+    noticeShuffles(view, state, game.shuffles);
+    noticeMoves(game, view);
     $("status").textContent = gangStatus(game, state, view);
     // A cooperative game: everyone, players and observers, gets confetti whenever the gang opens a vault.
     if (game.phase === "HeistOver" && game.succeeded) {
@@ -733,13 +770,18 @@ const gang = startSessionPage("TheGang", (game, state, view) => {
     $("toggle-table").textContent = t(tableHidden ? "Show table" : "Hide table");
     $("table-body").hidden = view.isPlayer && tableHidden;
 
-    $("community").replaceChildren(...Array.from({ length: 5 }, (_, i) => slotElement(game.communityCards[i])));
+    $("community").replaceChildren(...Array.from({ length: 5 }, (_, i) => {
+        const slot = slotElement(game.communityCards[i]);
+        if (i >= communityShown.from && game.communityCards[i]) animateSince(slot, "card-flip", communityShown.at, MOVE_MS);
+        return slot;
+    }));
     $("middle").hidden = game.phase !== "Betting";
     $("middle").replaceChildren(
         t("Middle:"),
         ...(game.middleChips.length ? game.middleChips.map((n) => chipElement(game.stage, n)) : [` ${t("none")}`]));
     $("chip-table").replaceChildren(...chipTable(game, state, view));
     $("revealed").replaceChildren(...game.revealed.map((hand) => revealedHand(game, state, view, hand)));
+    animateSince($("revealed").lastElementChild, "reveal-in", revealedAt, MOVE_MS);
     fitTable();
 }, (seat, state) => t("Player {n}", { n: (state.game && playerNumber(state.game, seat)) || seat + 1 }));
 

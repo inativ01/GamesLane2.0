@@ -233,10 +233,12 @@ const hearts = startSessionPage("Hearts", (game, state, view) => {
     currentGame = game;
     $("status").textContent = statusText(game, state, view);
     noticeSuccess(game, state, view);
+    noticeShuffles(view, state, game.shuffles);
     playSounds(game, state);
     $("hearts-table").replaceChildren(trickTable(game, state, view, {
         turn: game.phase === "Playing" ? game.turn : null,
         facts: (seat) => facts(game, seat),
+        arrived: trickArrival(game, view),
     }));
     const message = messageText(game, state, view);
     $("hearts-message").textContent = message;

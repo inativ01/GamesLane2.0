@@ -32,9 +32,9 @@ public enum YanivPhase
 /// <summary>
 /// A player's turn: the cards they discarded (a straight from lowest to highest), and whether they took the open pile's
 /// top card (<see cref="Taken"/>) or a card from the closed pile. <see cref="Skipped"/> when an absent player's turn was
-/// skipped.
+/// skipped; <see cref="Passed"/> when the player passed their last turn after a Yaniv call.
 /// </summary>
-public record YanivTurn(int Player, Card[] Cards, bool TookOpen, Card[] Taken, bool Skipped = false);
+public record YanivTurn(int Player, Card[] Cards, bool TookOpen, Card[] Taken, bool Skipped = false, bool Passed = false);
 
 /// <summary>
 /// A player at the end of a round: their cards, their hand score, the points they gained (with the Assaf penalty), whether

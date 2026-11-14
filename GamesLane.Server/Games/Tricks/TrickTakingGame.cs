@@ -65,6 +65,9 @@ public abstract class TrickTakingGame : ITrickTakingGame
     public int Actions { get; protected set; }
 
     /// <inheritdoc />
+    public int Shuffles { get; private set; }
+
+    /// <inheritdoc />
     public abstract bool IsOver { get; }
 
     /// <inheritdoc />
@@ -202,6 +205,7 @@ public abstract class TrickTakingGame : ITrickTakingGame
     {
         var deck = TrickCards.Deck();
         _shuffle(deck);
+        Shuffles++;
         for (var p = 0; p < PlayerCount; p++)
         {
             _hands[p].Clear();

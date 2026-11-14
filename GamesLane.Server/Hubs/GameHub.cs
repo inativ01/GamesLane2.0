@@ -403,6 +403,10 @@ public class GameHub(
         Act(sessionId, (IYanivSession s, out string? error) => s.TryCallYaniv(UserKey, seat, out error));
 
     /// <inheritdoc />
+    public Task PassLastTurn(string sessionId, int seat) =>
+        Act(sessionId, (IYanivSession s, out string? error) => s.TryPass(UserKey, seat, out error));
+
+    /// <inheritdoc />
     public Task PlayTrickCard(string sessionId, int seat, string? card) =>
         Act(sessionId, (ITrickTakingSession s, out string? error) => s.TryPlayCard(UserKey, seat, card, out error));
 

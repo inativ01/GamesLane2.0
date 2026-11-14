@@ -43,15 +43,17 @@ function dieFace(value) {
     return face;
 }
 
-// The rolling animation: the dice that were not kept tumble for a moment when the state shows a new roll (not when the
-// page first opens). The open boxes show what the dice score only once the dice have stopped.
-const ROLL_MS = 700;
+// The rolling animation: the dice that were not kept tumble and bounce for a moment, with the sound of the dice (of a
+// single die when only one was rolled), when the state shows a new roll (not when the page first opens). The open boxes
+// show what the dice score only once the dice have stopped.
+const ROLL_MS = 800;
 let seenRolls = null;
 let rollingUntil = 0;
 let rollTimer = 0;
 
 function noticeRoll(game) {
     if (seenRolls !== null && game.rolls > seenRolls) {
+        playGameSound(game.held.filter((held) => !held).length === 1 ? "die" : "dice");
         rollingUntil = Date.now() + ROLL_MS;
         clearInterval(rollTimer);
         rollTimer = setInterval(() => {
@@ -174,6 +176,18 @@ function renderCard(game, state, view, canAct, rolling) {
 
 let current = null;
 
+// A box scored: the chip's clink, and the new score drops into its box.
+function noticeScore(game, view) {
+    const last = game.lastTurn;
+    if (!view.changed("score", [game.round, last?.seat, last?.category]) || !last) return;
+    playGameSound("chip");
+    const column = game.players.findIndex((p) => p.seat === last.seat);
+    const row = BOXES.findIndex((box) => box.key === last.category);
+    const rows = $("yz-card").tBodies[0]?.rows;
+    const index = row < UPPER ? row : row + 2;
+    rows?.[index]?.cells[column + 1]?.classList.add("scored");
+}
+
 const wazoo = startSessionPage("Wazoo", (game, state, view) => {
     noticeRoll(game);
     const rolling = Date.now() < rollingUntil;
@@ -196,6 +210,7 @@ const wazoo = startSessionPage("Wazoo", (game, state, view) => {
     roll.title = game.rollsLeft === ROLLS ? t("Roll") : t("Roll again ({n} left)", { n: game.rollsLeft });
     roll.setAttribute("aria-label", roll.title);
     renderCard(game, state, view, canAct, rolling);
+    noticeScore(game, view);
 });
 
 $("yz-roll").addEventListener("click", () => {

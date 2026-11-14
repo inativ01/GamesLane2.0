@@ -1554,7 +1554,8 @@ public class GameSessionTests
 
     // Yaniv
 
-    // Leaves the deck in order: seat 0 gets 2♣ 3♣ 4♣ 5♣ 6♣, seat 1 gets 7♣ 8♣ 9♣ 10♣ J♣, and Q♣ is on top of the closed pile.
+    // Leaves the deck in order: seat 0 gets 2♣ 3♣ 4♣ 5♣ 6♣, seat 1 gets 7♣ 8♣ 9♣ 10♣ J♣, Q♣ is turned up on the open pile,
+    // and K♣ is on top of the closed pile.
     private static void UnshuffledYaniv(Card[] deck)
     {
     }
@@ -1571,10 +1572,11 @@ public class GameSessionTests
         var hand = Assert.IsType<YanivPrivateState>(session.GetPrivateState(Alice)).Hands.Single();
         Assert.Equal((0, 20, false), (hand.Seat, hand.HandScore, hand.CanCallYaniv));
         Assert.Equal(["2♣", "3♣", "4♣", "5♣", "6♣"], hand.Cards);
+        Assert.Equal(("Q♣", 1), (Yaniv(session).OpenTop, Yaniv(session).OpenPile));
         Assert.True(session.TryDiscard(Alice, 0, ["4♣", "2♣", "3♣"], false, out error), error);
 
         var state = Yaniv(session);
-        Assert.Equal(("4♣", 1, 3), (state.OpenTop, state.Turn, state.OpenPile));
+        Assert.Equal(("4♣", 1, 4), (state.OpenTop, state.Turn, state.OpenPile));
         Assert.Equal((0, false, null, false), (state.LastTurn!.Seat, state.LastTurn.TookOpen, state.LastTurn.Taken, state.LastTurn.Skipped));
         Assert.Equal(["2♣", "3♣", "4♣"], state.LastTurn.Cards);
         Assert.Equal([3, 5], state.Players.Select(p => p.CardCount));

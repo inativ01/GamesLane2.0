@@ -176,9 +176,45 @@ function renderPiles(game, view) {
     const closed = pile(cardElement(), String(game.drawPile), t("Draw pile: {n} cards", { n: game.drawPile }));
     closed.disabled = drawer === undefined;
     closed.addEventListener("click", () => send("DrawCard", drawer));
-    const open = pile(finalCard(game.topCard, game.color), t("Open pile"), cardName(game.topCard));
+    const top = finalCard(game.topCard, game.color);
+    const open = pile(top, t("Open pile"), cardName(game.topCard));
     open.disabled = true;
+    const from = played.at > -Infinity ? seatSpot(view, played.seat, "final-card-hands", "final-card-players") : null;
     $("final-card-piles").replaceChildren(el("div", "final-card-pile-cards", closed, open));
+    const age = animationAge(played.at, 450);
+    if (age !== null) flyFrom(top, from, age);
+}
+
+// What the last action did, for everyone, once (not when the page opens): a card played flies from its player to the
+// open pile and a card drawn from the draw pile to its player, with the card's sound; a player calling Final Card on
+// their last card gets the green banner of protection, and players caught without it the orange alarm one. A call that
+// does neither is refused by the server, so it shows nothing.
+let played = { seat: null, at: -Infinity };
+let drawnBy = null;
+
+function noticeEvents(game, state, view) {
+    if (!view.changed("actions", [state.gameNumber, game.actions])) return;
+    const play = game.events.find((e) => e.kind === "Played");
+    const draw = game.events.find((e) => e.kind === "Drew" && e.count > 0);
+    if (play) played = { seat: play.seat, at: performance.now() };
+    drawnBy = draw ? draw.seat : null;
+    if (play || draw) playGameSound("card");
+    const called = game.events.find((e) => e.kind === "CalledFinalCard");
+    const caught = game.events.filter((e) => e.kind === "Caught");
+    if (called) {
+        showBanner(`🛡 ${t("Final Card!")}`, about(state, view, called.seat, "You are protected.", "{name} is protected."), "protect", "protect");
+    }
+    if (caught.length) {
+        setTimeout(() => showBanner(`🚨 ${t("Caught!")}`, caught.map((e) => eventText(game, state, view, e)).join(" "), "caught", "caught"),
+            called ? 1800 : 0);
+    }
+}
+
+// After the page is drawn: the card drawn flies from the draw pile to its player.
+function showDraw(view) {
+    if (drawnBy === null) return;
+    flyCard(document.querySelector("#final-card-piles .final-card-pile"), seatSpot(view, drawnBy, "final-card-hands", "final-card-players"));
+    drawnBy = null;
 }
 
 // In the status bar, on the right: the color to play (any card after a Crown) and the direction of play.
@@ -196,6 +232,7 @@ function playerItem(game, state, view, player) {
     const start = el("span", "rp-start", seatLabel(state, player.seat, view));
     const end = el("span", "rp-end");
     const item = el("li", null, start, end);
+    item.dataset.seat = String(player.seat);
     item.classList.toggle("turn", game.phase === "Playing" && game.turn === player.seat);
     item.classList.toggle("left", player.finished !== null);
     if (player.protected) {
@@ -338,6 +375,8 @@ const page = startSessionPage("FinalCard", (game, state, view) => {
     $("status").textContent = statusText(game, state, view);
     renderPlay(game);
     noticeSuccess(game, state, view);
+    noticeShuffles(view, state, game.shuffles);
+    noticeEvents(game, state, view);
     const message = game.events.map((e) => eventText(game, state, view, e)).filter(Boolean).join(" ");
     $("final-card-message").textContent = message;
     $("final-card-message").hidden = !message;
@@ -351,6 +390,7 @@ const page = startSessionPage("FinalCard", (game, state, view) => {
     $("final-card-table-body").hidden = !shown;
     $("final-card-players").replaceChildren(...game.players.map((p) => playerItem(game, state, view, p)));
     $("next-round").hidden = !(view.isPlayer && game.phase === "HandOver");
+    showDraw(view);
 });
 
 $("next-round").addEventListener("click", () => send("NextRound", currentGame?.handNumber ?? 0));

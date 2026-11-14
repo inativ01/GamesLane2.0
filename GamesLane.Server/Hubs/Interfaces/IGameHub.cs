@@ -317,6 +317,11 @@ public interface IGameHub
     Task CallYaniv(string sessionId, int seat);
 
     /// <summary>
+    /// Yaniv: <paramref name="seat"/>, which the caller must hold, passes its last turn after a Yaniv call, keeping its hand.
+    /// </summary>
+    Task PassLastTurn(string sessionId, int seat);
+
+    /// <summary>
     /// Trick-taking games: <paramref name="seat"/>, which the caller must hold, plays <paramref name="card"/> (short text
     /// such as "10♥") to the trick on its turn, following the suit led if it can.
     /// </summary>

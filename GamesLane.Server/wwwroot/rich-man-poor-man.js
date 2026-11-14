@@ -252,9 +252,11 @@ function playerItem(game, state, view, player) {
     const start = el("span", "rp-start", el("span", "rp-place", `#${player.place}`));
     const end = el("span", "rp-end");
     const item = el("li", null, start);
+    item.dataset.seat = String(player.seat);
     item.classList.toggle("turn", game.phase === "Playing" && game.turn === player.seat);
     item.classList.toggle("left", !player.isActive);
     item.classList.toggle("done", player.finished !== null);
+    animateSince(item, "just-finished", finishedAt.get(player.seat) ?? -Infinity, FINISH_GLOW_MS);
     start.append(state.seats[player.seat] ? seatLabel(state, player.seat, view) : el("span", "seat-label", t("A player who left")));
     const tag = (text, className = "", group = end) => group.append(el("span", `rp-tag ${className}`, text));
     if (player.place === 1) tag(t("Rich man"), "rich", start);
@@ -464,9 +466,45 @@ function noticeTurn(game, view) {
 }
 
 // Confetti for each of the user's hands that has just been emptied (not for the last player, who keeps their cards).
+// For everyone, players and observers, a player who empties their hand gets a small banner with their place, a soft
+// chime (not for the user's own hand, which gets the fanfare) and their line in the table glows for a moment.
+const FINISH_GLOW_MS = 2500;
+const finishedAt = new Map();
+// The seats that had emptied their hands at the last update, and in which game.
+let emptiedBefore = { game: null, seats: [] };
+
 function noticeFinished(game, state, view) {
     myHands(view).filter((hand) => hand.cards.length === 0 && placeOf(game, hand.seat)?.finished)
         .forEach((hand) => celebrate(state, `${game.gameNumber}-${hand.seat}`));
+    const emptied = game.players.filter((p) => p.finished !== null && p.cardCount === 0).map((p) => p.seat);
+    const changed = view.changed("finished", [game.gameNumber, emptied]);
+    const before = emptiedBefore;
+    emptiedBefore = { game: game.gameNumber, seats: emptied };
+    if (!changed || before.game !== game.gameNumber) return;
+    emptied.filter((seat) => !before.seats.includes(seat)).forEach((seat) => {
+        finishedAt.set(seat, performance.now());
+        const n = placeOf(game, seat).finished;
+        showBanner(`🏁 ${about(state, view, seat, "You finished in place {n}!", "{name} finished in place {n}!", { n })}`, "", "small",
+            view.isMe(seat) ? null : "finished");
+    });
+}
+
+// A throw: the card's sound, and the cards fly from their player to the table.
+const THROW_MS = 450;
+let thrown = { seat: null, at: -Infinity };
+
+function noticeThrow(game, view) {
+    // Aces end the round at once, so their throw is already the last one.
+    const latest = game.currentThrow ?? game.lastThrow;
+    if (view.changed("throws", [game.gameNumber, game.throws]) && latest && game.phase === "Playing") {
+        playGameSound("card");
+        thrown = { seat: latest.seat, at: performance.now() };
+    }
+    const age = animationAge(thrown.at, THROW_MS);
+    const cards = document.querySelector("#rp-top .rp-pile-cards");
+    if (age !== null && cards && latest?.seat === thrown.seat) {
+        flyFrom(cards, seatSpot(view, thrown.seat, "rp-hands", "rp-players"), age);
+    }
 }
 
 let currentGame = null;
@@ -481,12 +519,14 @@ const tableShown = () => {
 const rich = startSessionPage("RichManPoorMan", (game, state, view) => {
     currentGame = game;
     noticeTurn(game, view);
+    noticeShuffles(view, state, game.shuffles);
     noticeFinished(game, state, view);
     const shown = !view.isPlayer || tableShown();
     document.body.classList.toggle("observer", !view.isPlayer);
     $("status").textContent = statusText(game, state, view);
     $("rp-game").textContent = t("Game {n}", { n: game.gameNumber });
     $("rp-top").replaceChildren(...pile(game, state, view));
+    noticeThrow(game, view);
     $("rp-hands").replaceChildren(...myHands(view).filter((h) => placeOf(game, h.seat))
         .map((hand) => handPanel(game, state, view, hand)));
     const join = joinPanel(game, state, view);
@@ -502,6 +542,8 @@ const rich = startSessionPage("RichManPoorMan", (game, state, view) => {
     const place = state.game && placeOf(state.game, seat)?.place;
     return place ? `#${place}` : String(seat + 1);
 });
+// The page plays its own chime when the turn comes (see notifyTurn).
+rich.turnSound = false;
 
 $("next-round").addEventListener("click", () => call("NextRound", rich.sessionId, currentGame?.gameNumber ?? 0).catch(() => {}));
 $("rp-toggle-table").addEventListener("click", () => {

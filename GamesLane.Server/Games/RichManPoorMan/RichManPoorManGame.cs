@@ -77,6 +77,9 @@ public class RichManPoorManGame : IRichManPoorManGame
     public int Throws { get; private set; }
 
     /// <inheritdoc />
+    public int Shuffles { get; private set; }
+
+    /// <inheritdoc />
     public int? LastRoundWinner { get; private set; }
 
     /// <inheritdoc />
@@ -350,6 +353,7 @@ public class RichManPoorManGame : IRichManPoorManGame
     {
         var deck = RichManPoorManRules.Deck(_order.Count);
         _shuffle(deck);
+        Shuffles++;
         for (var place = 0; place < _order.Count; place++)
         {
             var state = _players[_order[place]];

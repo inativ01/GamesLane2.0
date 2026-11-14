@@ -1588,21 +1588,30 @@ button.chat-toast span {
     flex-basis: 100%;
 }
 
-.status-actions {
-    display: inline-flex;
+/* A game's buttons for the turn, between rounds and after the game, in the game screen next to the table or board, at
+   full size. Hidden while none is shown. */
+.game-actions {
+    display: flex;
     flex-wrap: wrap;
     justify-content: center;
-    gap: 0.35rem;
+    gap: 0.5rem;
+    margin: 0.6rem 0;
 }
 
-.status-actions:not(:has(:not([hidden]))) {
+.game-actions:not(:has(:not([hidden]))) {
     display: none;
+}
+
+.game-actions button {
+    min-width: 7rem;
+    padding: 0.7rem 1.3rem;
+    font-size: 1.1rem;
 }
 
 /* A button showing only an icon, e.g. Backgammon's 🎲 Roll. */
 button.icon-button {
-    padding: 0.2rem 0.9rem;
-    font-size: 1.25rem;
+    padding: 0.35rem 1.4rem;
+    font-size: 1.8rem;
     line-height: 1;
 }
 
@@ -2496,7 +2505,7 @@ button.ready-thumb.is-ready:not(:disabled):hover {
 }
 
 .gang-controls {
-    margin: 0.25rem 0;
+    margin: 0.4rem 0;
 }
 
 /* The heist's challenge (red) and specialist (green) cards, as small cards lying on the table. */
@@ -3676,6 +3685,181 @@ a.button.is-busy {
     }
 }
 
+/* A big banner across the middle of the screen for a moment (see showBanner in common.js): it pops in, holds and fades
+   out. Each kind has its colors; "small" is a lighter one near the top. */
+.game-banner {
+    position: fixed;
+    top: 38%;
+    left: 50%;
+    z-index: 45;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.3rem;
+    max-width: 90vw;
+    padding: 1rem 2.4rem;
+    border-radius: 18px;
+    background: linear-gradient(180deg, #ffe08a, #e6a93c);
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.35), inset 0 0 0 3px rgba(255, 255, 255, 0.6);
+    color: var(--primary-dark);
+    text-align: center;
+    pointer-events: none;
+    animation: banner-pop 2.8s ease-out both;
+}
+
+.game-banner-title {
+    font-size: clamp(2.2rem, 9vw, 4.2rem);
+    font-weight: 900;
+    line-height: 1;
+    letter-spacing: 0.02em;
+}
+
+.game-banner-text {
+    font-size: 1.1rem;
+    font-weight: 700;
+}
+
+.game-banner.assaf {
+    background: linear-gradient(180deg, #f3a19a, #c0281b);
+    color: #fff;
+}
+
+.game-banner.protect {
+    background: linear-gradient(180deg, #a8e0b8, #2f7d45);
+    color: #fff;
+}
+
+.game-banner.caught {
+    background: linear-gradient(180deg, #f6b26b, #c2561a);
+    color: #fff;
+    animation-name: banner-pop, banner-shake;
+    animation-duration: 2.8s, 0.5s;
+    animation-delay: 0s, 0.25s;
+}
+
+.game-banner.small {
+    top: 5.5rem;
+    padding: 0.5rem 1.4rem;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.95);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2), inset 0 0 0 2px var(--gold);
+    animation-duration: 2.2s;
+}
+
+.game-banner.small .game-banner-title {
+    font-size: 1.15rem;
+    font-weight: 800;
+}
+
+@keyframes banner-pop {
+    0% { opacity: 0; transform: translate(-50%, -50%) scale(0.4) rotate(-6deg); }
+    12% { opacity: 1; transform: translate(-50%, -50%) scale(1.12) rotate(2deg); }
+    20% { transform: translate(-50%, -50%) scale(1) rotate(0); }
+    80% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+    100% { opacity: 0; transform: translate(-50%, -50%) scale(0.9); }
+}
+
+@keyframes banner-shake {
+    0%, 100% { margin-left: 0; }
+    20%, 60% { margin-left: -10px; }
+    40%, 80% { margin-left: 10px; }
+}
+
+/* The deck being shuffled (see showShuffle in common.js): two halves of card backs split apart and riffle together,
+   three times. */
+.shuffle-layer {
+    position: fixed;
+    inset: 0;
+    z-index: 35;
+    display: grid;
+    place-items: center;
+    pointer-events: none;
+    animation: shuffle-fade 2.4s ease-in-out both;
+}
+
+.shuffle-card {
+    grid-area: 1 / 1;
+    width: 72px;
+    height: 104px;
+    border-radius: 8px;
+    background: #19285d url("images/card-back.png") center / cover;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+    animation: shuffle-riffle 0.65s ease-in-out calc(var(--i) * 0.035s) 3 both;
+}
+
+.shuffle-card.left { --from: -64px; --turn: -14deg; }
+.shuffle-card.right { --from: 64px; --turn: 14deg; }
+
+@keyframes shuffle-riffle {
+    0% { transform: translate(0, 0); }
+    35%, 55% { transform: translate(var(--from), -8px) rotate(var(--turn)); }
+    100% { transform: translate(0, calc(var(--i) * -1.5px)); }
+}
+
+@keyframes shuffle-fade {
+    0% { opacity: 0; }
+    10%, 85% { opacity: 1; }
+    100% { opacity: 0; }
+}
+
+/* A card flying across the screen, e.g. drawn from the pile to a player (see flyCard in common.js). */
+.card.flying-card {
+    position: fixed;
+    z-index: 30;
+    margin: 0;
+    font-size: 1.5rem;
+    pointer-events: none;
+}
+
+@keyframes banner-fade {
+    0%, 100% { opacity: 0; transform: translate(-50%, -50%); }
+    10%, 85% { opacity: 1; transform: translate(-50%, -50%); }
+}
+
+/* Rich man, poor man: the line of a player who has just emptied their hand glows gold for a moment. */
+.rp-players li.just-finished {
+    animation: just-finished 2.5s ease-out both;
+}
+
+@keyframes just-finished {
+    0%, 60% { background: #ffe2a1; box-shadow: inset 0 0 0 2px var(--gold), 0 0 14px rgba(230, 169, 60, 0.7); }
+}
+
+/* The Gang: a chip just taken pops into its place. */
+.chip.chip-arrive {
+    animation: chip-arrive 0.6s cubic-bezier(0.2, 0.8, 0.3, 1.4) both;
+}
+
+@keyframes chip-arrive {
+    from { transform: scale(1.8) rotate(-25deg); opacity: 0.4; }
+}
+
+/* Shared cards turned and hands revealed flip in. */
+.card-flip,
+.revealed-hand.reveal-in {
+    animation: card-flip 0.6s ease-out both;
+}
+
+@keyframes card-flip {
+    from { transform: perspective(400px) rotateY(90deg); opacity: 0.4; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .game-banner {
+        animation: banner-fade 2.8s both;
+    }
+
+    .trick-place .card.arrive,
+    .bg-checker.arrived,
+    .yz-die.tumbling svg,
+    .yz-card td.scored,
+    .chip.chip-arrive,
+    .card-flip,
+    .revealed-hand.reveal-in {
+        animation: none;
+    }
+}
+
 /* The Gang on wide screens. Players: the top of the table and their hand on the left, the rest of the table on the
    right. */
 @media (min-width: 1000px) {
@@ -3894,16 +4078,18 @@ main.backgammon {
 .bg-checker-count { font: 700 20px Arial, sans-serif; fill: #2b2420; }
 .bg-checker.black .bg-checker-count { fill: #f4efe6; }
 
-/* The checker that has just moved drops into place. */
+/* The checker that has just moved slides from where it was (--from-x, --from-y, in board units), lifted, and drops into
+   place. */
 .bg-checker.arrived {
     transform-box: fill-box;
     transform-origin: center;
-    animation: bg-arrive 0.35s ease-out;
+    animation: bg-arrive 0.5s ease-in-out;
 }
 
 @keyframes bg-arrive {
-    from { opacity: 0.2; transform: scale(1.35); }
-    to { opacity: 1; transform: scale(1); }
+    from { transform: translate(var(--from-x, 0), var(--from-y, 0)) scale(1); }
+    60% { transform: translate(calc(var(--from-x, 0) * 0.2), calc(var(--from-y, 0) * 0.2)) scale(1.25); }
+    to { transform: translate(0, 0) scale(1); }
 }
 
 .bg-off.white { fill: #f4efe6; }
@@ -4330,12 +4516,21 @@ button.yz-roll {
 }
 
 .yz-die.tumbling svg {
-    animation: yz-tumble 0.18s linear infinite alternate;
+    animation: yz-tumble 0.2s ease-in-out infinite alternate;
 }
 
 @keyframes yz-tumble {
-    from { transform: rotate(-14deg) scale(0.94); }
-    to { transform: rotate(14deg) scale(1.04); }
+    from { transform: translateY(-10px) rotate(-35deg) scale(0.9); }
+    to { transform: translateY(4px) rotate(35deg) scale(1.06); }
+}
+
+/* The box just scored: its score drops in and glows. */
+.yz-card td.scored {
+    animation: yz-scored 0.9s ease-out;
+}
+
+@keyframes yz-scored {
+    from { background: #ffe2a1; transform: scale(1.4); }
 }
 
 .yz-message {
@@ -4732,10 +4927,19 @@ button.yaniv-call {
     min-width: 0;
 }
 
-.trick-place.trick-top { grid-area: top; }
-.trick-place.trick-left { grid-area: left; }
-.trick-place.trick-right { grid-area: right; }
-.trick-place.trick-bottom { grid-area: bottom; flex-direction: column-reverse; }
+.trick-place.trick-top { grid-area: top; --arrive-x: 0; --arrive-y: -80px; }
+.trick-place.trick-left { grid-area: left; --arrive-x: -80px; --arrive-y: 0; }
+.trick-place.trick-right { grid-area: right; --arrive-x: 80px; --arrive-y: 0; }
+.trick-place.trick-bottom { grid-area: bottom; flex-direction: column-reverse; --arrive-x: 0; --arrive-y: 100px; }
+
+/* The card just played slides in from its player's side of the table. */
+.trick-place .card.arrive {
+    animation: trick-arrive 0.45s cubic-bezier(0.2, 0.8, 0.3, 1) both;
+}
+
+@keyframes trick-arrive {
+    from { opacity: 0.3; transform: translate(var(--arrive-x), var(--arrive-y)) scale(0.8) rotate(-10deg); }
+}
 
 .trick-player {
     display: flex;

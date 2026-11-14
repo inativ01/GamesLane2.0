@@ -134,6 +134,9 @@ public partial class TheGangGame : ITheGangGame
     public int Heist { get; private set; } = 1;
 
     /// <inheritdoc />
+    public int Shuffles { get; private set; }
+
+    /// <inheritdoc />
     public int Stage { get; private set; }
 
     /// <inheritdoc />
@@ -349,6 +352,7 @@ public partial class TheGangGame : ITheGangGame
             // All pocket cards are gathered, shuffled and dealt again, the same number to each player.
             var gathered = _holeCards.SelectMany(cards => cards).ToArray();
             _random.Shuffle(gathered);
+            Shuffles++;
             var perPlayer = _holeCards[0].Length;
             _holeCards = [.. Enumerable.Range(0, PlayerCount).Select(p => gathered.Skip(perPlayer * p).Take(perPlayer).ToArray())];
             FinishPreparing();
@@ -582,6 +586,7 @@ public partial class TheGangGame : ITheGangGame
     private void Deal()
     {
         var deck = WithJokers(_newDeck());
+        Shuffles++;
         var perPlayer = Has(TheGangCards.SecurityCameras) ? 3 : 2;
         _holeCards = Enumerable.Range(0, PlayerCount).Select(p => deck.Skip(perPlayer * p).Take(perPlayer).ToArray()).ToArray();
         _slots = [.. deck.Skip(perPlayer * PlayerCount).Take(5).Select(card => (Card[])[card])];

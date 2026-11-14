@@ -111,6 +111,9 @@ public class FinalCardGame : IFinalCardGame
     public int Actions { get; private set; }
 
     /// <inheritdoc />
+    public int Shuffles { get; private set; }
+
+    /// <inheritdoc />
     public FinalCardHandResult? LastResult { get; private set; }
 
     /// <inheritdoc />
@@ -448,6 +451,7 @@ public class FinalCardGame : IFinalCardGame
     {
         var deck = Rules.Deck().ToArray();
         _shuffle(deck);
+        Shuffles++;
         _drawPile.Clear();
         _drawPile.AddRange(deck);
         _discard.Clear();
@@ -730,6 +734,7 @@ public class FinalCardGame : IFinalCardGame
             var rest = _discard.GetRange(0, _discard.Count - 1).ToArray();
             _discard.RemoveRange(0, rest.Length);
             _shuffle(rest);
+            Shuffles++;
             _drawPile.AddRange(rest);
         }
 

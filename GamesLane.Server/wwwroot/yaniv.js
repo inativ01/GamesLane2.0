@@ -88,7 +88,7 @@ function statusText(game, state, view) {
     if (!hand) {
         return `⏳ ${t("Waiting for {name}", { name: playerName(state, game.turn) })}`;
     }
-    const action = game.caller !== null ? t("Last turn: choose cards to discard, then take a card from a pile.")
+    const action = game.caller !== null ? t("Last turn: choose cards to discard, then take a card from a pile, or pass.")
         : hand.canCallYaniv ? t("Choose cards to discard, then take a card from a pile, or call Yaniv.")
             : t("Choose cards to discard, then take a card from a pile.");
     return `👉 ${view.mySeats.length > 1 ? `${playerName(state, hand.seat)}: ` : ""}${action}`;
@@ -110,6 +110,8 @@ function messageText(game, state, view) {
     const parts = [];
     if (turn?.skipped) {
         parts.push(say(turn.seat, "Your turn was skipped.", "{name}'s turn was skipped."));
+    } else if (turn?.passed) {
+        parts.push(say(turn.seat, "You passed your last turn.", "{name} passed their last turn."));
     } else if (turn?.tookOpen) {
         parts.push(say(turn.seat, "You discarded {cards} and took {card}.", "{name} discarded {cards} and took {card}.",
             { cards: cardsText(turn.cards), card: cardText(turn.taken) }));
@@ -140,13 +142,46 @@ function renderPiles(game, view) {
     };
     const closed = pile(cardElement(), String(game.closedPile), false, Boolean(ordered),
         t("Closed pile: {n} cards", { n: game.closedPile }));
-    const open = pile(game.openTop ? cardElement(game.openTop) : el("span", "card yaniv-no-card"), t("Open pile"), true,
+    const top = game.openTop ? cardElement(game.openTop) : el("span", "card yaniv-no-card");
+    const open = pile(top, t("Open pile"), true,
         Boolean(ordered && game.openTop), game.openTop ? t("Take {card}", { card: cardText(game.openTop) }) : t("The open pile is empty."));
     const staged = el("div", "yaniv-staged", ...(ordered ?? picks).map((c) => cardElement(c)));
     staged.hidden = picks.length === 0;
     staged.classList.toggle("invalid", picks.length > 0 && !ordered);
     staged.title = ordered ? t("To discard") : t("These cards cannot be discarded together.");
+    const from = discarded.at > -Infinity ? seatSpot(view, discarded.seat, "yaniv-hands", "yaniv-players") : null;
     $("yaniv-piles").replaceChildren(closed, open, staged);
+    const age = animationAge(discarded.at, 450);
+    if (age !== null && game.openTop) flyFrom(top, from, age);
+    if (taken) {
+        flyCard(taken.open ? open : closed, seatSpot(view, taken.seat, "yaniv-hands", "yaniv-players"), taken.card ? cardElement(taken.card) : cardElement());
+        taken = null;
+    }
+}
+
+// What the last turn and the round did, for everyone, once (not when the page opens): the cards discarded fly from
+// their player to the open pile, and the card taken from its pile to the player, with the card's sound. When Yaniv is
+// called, everyone gets its banner at once; when the round then shows the caller was Assaf, the red Assaf banner.
+let discarded = { seat: null, at: -Infinity };
+let taken = null;
+
+function noticeTurn(game, state, view) {
+    const turn = game.lastTurn;
+    if (view.changed("turn", [state.gameNumber, game.roundNumber, turn]) && turn && !turn.skipped && !turn.passed) {
+        playGameSound("card");
+        discarded = { seat: turn.seat, at: performance.now() };
+        taken = { seat: turn.seat, open: turn.tookOpen, card: turn.taken };
+    }
+    const callerKey = [state.gameNumber, game.roundNumber, game.caller];
+    if (view.changed("caller", callerKey) && game.caller !== null) {
+        showBanner(t("Yaniv!"), about(state, view, game.caller, "You called Yaniv!", "{name} called Yaniv!"), "yaniv", "yaniv");
+    }
+    const assaf = game.phase !== "Playing" && game.lastResult?.assaf;
+    if (view.changed("assaf", [state.gameNumber, game.roundNumber, assaf]) && assaf) {
+        const result = game.lastResult;
+        setTimeout(() => showBanner(t("Assaf!"), about(state, view, result.winnerSeat, "You have the lowest hand and win round {n}.",
+            "{name} has the lowest hand and wins round {n}.", { n: game.roundNumber }), "assaf", "assaf"), 1200);
+    }
 }
 
 // After a round: every player's hand, hand score and points, with who called Yaniv, Assaf, the winner, the bonus and
@@ -199,6 +234,13 @@ function handPanel(game, state, view, hand) {
         call.addEventListener("click", () => send("CallYaniv", hand.seat));
         foot.append(call);
     }
+    // After a Yaniv call, a player may pass their last turn and keep their hand.
+    if (myTurn && game.caller !== null) {
+        const pass = el("button", "secondary yaniv-pass", t("Pass"));
+        pass.type = "button";
+        pass.addEventListener("click", () => send("PassLastTurn", hand.seat));
+        foot.append(pass);
+    }
     return el("div", `my-hand rp-hand yaniv-hand${myTurn ? " my-turn" : ""}`, head, el("div", "card-row rp-cards", ...slots), foot);
 }
 
@@ -207,6 +249,7 @@ function playerItem(game, state, view, player) {
     const start = el("span", "rp-start", seatLabel(state, player.seat, view));
     const end = el("span", "rp-end");
     const item = el("li", null, start, end);
+    item.dataset.seat = String(player.seat);
     item.classList.toggle("turn", game.phase === "Playing" && game.turn === player.seat);
     item.classList.toggle("left", player.isOut);
     if (game.caller === player.seat && game.phase === "Playing") start.append(el("span", "rp-tag yaniv", t("Yaniv!")));
@@ -234,6 +277,8 @@ const yaniv = startSessionPage("Yaniv", (game, state, view) => {
     currentGame = game;
     $("status").textContent = statusText(game, state, view);
     noticeSuccess(game, state, view);
+    noticeShuffles(view, state, game.shuffles);
+    noticeTurn(game, state, view);
     const message = messageText(game, state, view);
     $("yaniv-message").textContent = message;
     $("yaniv-message").hidden = !message;

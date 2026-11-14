@@ -39,6 +39,9 @@ public interface ITrickTakingGame
     /// <summary>The number of actions so far, so a page can tell a new one.</summary>
     int Actions { get; }
 
+    /// <summary>The number of times the deck has been shuffled in this game, so a page can show each shuffle.</summary>
+    int Shuffles { get; }
+
     /// <summary>Whether the game has ended.</summary>
     bool IsOver { get; }
 

@@ -32,11 +32,6 @@
     </div>
     <div id="status-bar" class="status-bar" hidden>
         <p id="status" class="status"></p>
-        <span class="status-actions">
-            <button id="next-round" type="button" class="small" hidden data-i18n>Next hand</button>
-            <button id="play-again" type="button" class="small" hidden data-i18n>Play again</button>
-            <button id="to-lobby" type="button" class="secondary small" hidden data-i18n>Back to the lobby</button>
-        </span>
         <!-- On the right: the color to play and the direction of play. -->
         <span id="final-card-play" class="final-card-play"></span>
         <ul id="scores" class="score-row"></ul>
@@ -73,6 +68,13 @@
                 <div id="final-card-piles" class="final-card-piles"></div>
                 <p id="final-card-message" class="final-card-message" hidden></p>
             </section>
+
+            <!-- The buttons between hands and after the game, under the piles. -->
+            <div class="game-actions">
+                <button id="next-round" type="button" hidden data-i18n>Next hand</button>
+                <button id="play-again" type="button" hidden data-i18n>Play again</button>
+                <button id="to-lobby" type="button" class="secondary" hidden data-i18n>Back to the lobby</button>
+            </div>
 
             <!-- This user's own cards and buttons, one panel per seat they hold. -->
             <div id="final-card-hands"></div>

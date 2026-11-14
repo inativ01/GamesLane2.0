@@ -861,7 +861,7 @@ function el(tag, className, ...content) {
 // help.html in English and help.<code>.html in the others. Each section is a folded title with a short text and, folded
 // inside it, More details. Opening the panel unfolds the sections about what the page shows: the main screen, or on a
 // game page the game (and the session lobby while it is shown, see setLobby), and the other sections stay folded, so
-// any game's rules can be read from anywhere. The first time a user opens the main screen or a game's page in this
+// any game's rules can be read from anywhere. On a game page, the lobby's section links to the game's section. The first time a user opens the main screen or a game's page in this
 // browser, a tip under ? points to it for 10 seconds (after the splash screen). Pages without help (e.g. the admin page)
 // have no ?.
 function startHelp() {
@@ -902,6 +902,17 @@ function startHelp() {
         .then((html) => {
             const content = new DOMParser().parseFromString(html, "text/html").querySelector(".help-content");
             body.replaceChildren(...content.children);
+            // On a game page, the lobby's section links to the game's own section, which it unfolds and scrolls to.
+            const gameLink = body.querySelector(".help-game-link");
+            const gameSection = body.querySelector(`#help-${section}`);
+            if (gameLink && gameSection && section !== "main-screen") {
+                gameLink.hidden = false;
+                gameLink.querySelector("a").addEventListener("click", (event) => {
+                    event.preventDefault();
+                    gameSection.open = true;
+                    body.scrollTop = gameSection.offsetTop - body.offsetTop;
+                });
+            }
             return true;
         })
         .catch(() => {
@@ -931,13 +942,14 @@ function startHelp() {
 
     const tipKey = `helpTipSeen:${section}`;
     if (!localStorage.getItem(tipKey)) {
-        const splashing = document.documentElement.classList.contains("splashing");
+        const root = document.documentElement;
+        const splashing = root.classList.contains("splashing");
         setTimeout(() => {
             if (!panel.hidden) return;
             localStorage.setItem(tipKey, "1");
             tip.hidden = false;
             setTimeout(() => { tip.hidden = true; }, 10000);
-        }, splashing ? 5600 : 1000);
+        }, splashing ? Number(root.dataset.splashLength ?? 5000) + 600 : 1000);
     }
 
     return {
@@ -1026,6 +1038,260 @@ function celebrate(state, key) {
     }
     document.body.append(layer);
     setTimeout(() => layer.remove(), 5200);
+}
+
+// Game sounds, made by the browser like the fanfare (no sound files) and played with playSound, so they follow the
+// Sound switch of the user's profile: GAME_SOUNDS[name](audio, start). tone() plays a note and noise() a burst of
+// filtered noise (a card's swish, a die's click).
+let noiseBuffer = null;
+
+function noise(audio, at, length, { volume = 0.3, type = "bandpass", frequency = 2000, q = 1 } = {}) {
+    if (noiseBuffer?.sampleRate !== audio.sampleRate) {
+        noiseBuffer = audio.createBuffer(1, audio.sampleRate, audio.sampleRate);
+        const data = noiseBuffer.getChannelData(0);
+        for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+    }
+    const source = audio.createBufferSource();
+    source.buffer = noiseBuffer;
+    const filter = audio.createBiquadFilter();
+    filter.type = type;
+    filter.frequency.value = frequency;
+    filter.Q.value = q;
+    const gain = audio.createGain();
+    gain.gain.setValueAtTime(volume, at);
+    gain.gain.exponentialRampToValueAtTime(0.0001, at + length);
+    source.connect(filter).connect(gain).connect(audio.destination);
+    source.start(at, Math.random() * 0.5);
+    source.stop(at + length + 0.02);
+}
+
+function tone(audio, at, frequency, length, { volume = 0.2, type = "sine", to = null } = {}) {
+    const oscillator = audio.createOscillator();
+    const gain = audio.createGain();
+    oscillator.type = type;
+    oscillator.frequency.setValueAtTime(frequency, at);
+    if (to) oscillator.frequency.exponentialRampToValueAtTime(to, at + length);
+    gain.gain.setValueAtTime(0.0001, at);
+    gain.gain.exponentialRampToValueAtTime(volume, at + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.0001, at + length);
+    oscillator.connect(gain).connect(audio.destination);
+    oscillator.start(at);
+    oscillator.stop(at + length + 0.02);
+}
+
+const GAME_SOUNDS = {
+    // A very soft, low tap for every button.
+    click: (audio, at) => tone(audio, at, 360, 0.025, { volume: 0.018, to: 180 }),
+    // A card in the hand tapped (chosen or played): a soft, low "tock", like a phone's keyboard click.
+    select: (audio, at) => {
+        tone(audio, at, 520, 0.03, { volume: 0.035, to: 260 });
+        noise(audio, at, 0.012, { volume: 0.025, type: "lowpass", frequency: 1200 });
+    },
+    // A card played, drawn or turned: the answer to the card's "tock", a lower, rounder "tock-tuck" as it lands.
+    card: (audio, at) => {
+        tone(audio, at, 440, 0.06, { volume: 0.035, to: 220 });
+        tone(audio, at + 0.06, 330, 0.08, { volume: 0.03, to: 165 });
+    },
+    // A riffle: many quick card flicks, then the deck squared with a soft thud.
+    shuffle: (audio, at) => {
+        for (let i = 0; i < 28; i++) {
+            noise(audio, at + i * 0.032 + Math.random() * 0.01, 0.03, { volume: 0.22, frequency: 2800 + Math.random() * 1600, q: 0.8 });
+        }
+        noise(audio, at + 1.0, 0.14, { volume: 0.35, type: "lowpass", frequency: 700 });
+    },
+    // Dice rattling in a cup, then landing.
+    dice: (audio, at) => {
+        for (let i = 0; i < 10; i++) {
+            const hit = at + i * 0.055 + Math.random() * 0.03;
+            noise(audio, hit, 0.035, { volume: 0.3, frequency: 1400 + Math.random() * 2200, q: 5 });
+            tone(audio, hit, 600 + Math.random() * 600, 0.03, { volume: 0.04, type: "square" });
+        }
+        [0.62, 0.74].forEach((delay) => noise(audio, at + delay, 0.06, { volume: 0.4, frequency: 900, q: 3 }));
+    },
+    // A single die thrown: as the dice (its recording is used instead where it plays).
+    die: (audio, at) => GAME_SOUNDS.dice(audio, at),
+    // A checker set down on the board: a soft, low knock.
+    checker: (audio, at) => {
+        tone(audio, at, 180, 0.07, { volume: 0.08 });
+        noise(audio, at, 0.03, { volume: 0.04, type: "lowpass", frequency: 900 });
+    },
+    // A chip taken: a light clink.
+    chip: (audio, at) => {
+        tone(audio, at, 2400, 0.12, { volume: 0.1, type: "triangle" });
+        tone(audio, at + 0.05, 3200, 0.1, { volume: 0.07, type: "triangle" });
+    },
+    // The user's turn has come: two rising notes.
+    turn: (audio, at) => {
+        tone(audio, at, 660, 0.14, { volume: 0.12 });
+        tone(audio, at + 0.12, 990, 0.2, { volume: 0.12 });
+    },
+    // A player emptied their hand: a soft rising chime.
+    finished: (audio, at) => [784, 988, 1175].forEach((f, i) => tone(audio, at + i * 0.09, f, 0.3, { volume: 0.1, type: "triangle" })),
+    // Yaniv is called: a bright brass chord.
+    yaniv: (audio, at) => {
+        [392, 523, 659].forEach((f) => tone(audio, at, f, 0.45, { volume: 0.07, type: "sawtooth" }));
+        [523, 659, 784].forEach((f) => tone(audio, at + 0.3, f, 0.7, { volume: 0.07, type: "sawtooth" }));
+    },
+    // The caller is Assaf: a falling "wah-wah-wah-waah".
+    assaf: (audio, at) => [392, 370, 349, 330].forEach((f, i) =>
+        tone(audio, at + i * 0.3, f, i === 3 ? 0.9 : 0.27, { volume: 0.1, type: "sawtooth", to: i === 3 ? 220 : null })),
+    // A player protects their last card: a rising shimmer.
+    protect: (audio, at) => [523, 784, 1047, 1568].forEach((f, i) => tone(audio, at + i * 0.07, f, 0.35, { volume: 0.1, type: "triangle" })),
+    // A player is caught without protection: a two-tone alarm.
+    caught: (audio, at) => [0, 1, 2, 3].forEach((i) => tone(audio, at + i * 0.15, i % 2 ? 440 : 622, 0.14, { volume: 0.08, type: "square" })),
+};
+
+// Recorded sounds (wwwroot/sounds, from Kenney's Casino Audio, CC0; see sounds/LICENSE.txt), used instead of the
+// browser-made sound of the same name: its file (one of `files` at random, if several), at `volume`, cut off with a fade
+// at `length` seconds if given. A browser that cannot play them gets the browser-made sound.
+const SOUND_FILES = {
+    dice: { files: ["dice-throw-1"], volume: 0.8 },
+    die: { files: ["die-throw-1"], volume: 0.8 },
+    shuffle: { files: ["card-shuffle"], volume: 0.7, length: 2.4 },
+    checker: { files: ["chip-lay-1"], volume: 0.45 },
+};
+const soundFiles = new Map();
+
+function soundFile(audio, file) {
+    if (!soundFiles.has(file)) {
+        soundFiles.set(file, fetch(`/sounds/${file}.ogg`)
+            .then((response) => (response.ok ? response.arrayBuffer() : Promise.reject(new Error(response.statusText))))
+            .then((data) => audio.decodeAudioData(data))
+            .catch(() => null));
+    }
+    return soundFiles.get(file);
+}
+
+// The recorded sounds are loaded once the audio is set up (on the first tap), so they play at once when needed.
+addEventListener("pointerdown", () => {
+    if (celebrationAudio) Object.values(SOUND_FILES).forEach(({ files }) => files.forEach((file) => soundFile(celebrationAudio, file)));
+}, { once: true });
+
+function playGameSound(name) {
+    const recorded = SOUND_FILES[name];
+    if (!recorded) {
+        if (GAME_SOUNDS[name]) playSound(GAME_SOUNDS[name]);
+        return;
+    }
+    playSound((audio) => soundFile(audio, recorded.files[Math.floor(Math.random() * recorded.files.length)]).then((buffer) => {
+        const at = audio.currentTime;
+        if (!buffer) {
+            GAME_SOUNDS[name]?.(audio, at);
+            return;
+        }
+        const source = audio.createBufferSource();
+        const gain = audio.createGain();
+        source.buffer = buffer;
+        gain.gain.setValueAtTime(recorded.volume, at);
+        if (recorded.length && buffer.duration > recorded.length) {
+            gain.gain.setValueAtTime(recorded.volume, at + recorded.length - 0.4);
+            gain.gain.linearRampToValueAtTime(0.0001, at + recorded.length);
+            source.stop(at + recorded.length + 0.05);
+        }
+        source.connect(gain).connect(audio.destination);
+        source.start(at);
+    }));
+}
+
+// Every button tapped taps softly, on every page; a card in the user's hand (.rp-card) has its own "tock".
+document.addEventListener("click", (event) => {
+    const target = event.target instanceof Element ? event.target.closest("button, a.button, [role='button']") : null;
+    if (target && !target.disabled) playGameSound(target.classList.contains("rp-card") ? "select" : "click");
+}, { capture: true });
+
+const reducedMotion = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+// A big banner across the middle of the screen for a moment, with its sound, e.g. "Yaniv!" for everyone at the table.
+// kind chooses its colors and size (see .game-banner in styles.css; "small" is a lighter one near the top).
+function showBanner(title, text, kind, sound) {
+    playGameSound(sound);
+    const banner = el("div", `game-banner ${kind}`, el("strong", "game-banner-title", title), ...(text ? [el("span", "game-banner-text", text)] : []));
+    banner.setAttribute("role", "status");
+    document.body.append(banner);
+    setTimeout(() => banner.remove(), kind === "small" ? 2200 : 2800);
+}
+
+// The deck being shuffled: card backs riffled together in the middle of the screen, three times, with the sound of a
+// shuffle.
+function showShuffle() {
+    playGameSound("shuffle");
+    if (reducedMotion()) return;
+    const layer = el("div", "shuffle-layer", ...Array.from({ length: 12 }, (_, i) => {
+        const card = el("span", `shuffle-card ${i % 2 ? "right" : "left"}`);
+        card.style.setProperty("--i", String(Math.floor(i / 2)));
+        return card;
+    }));
+    layer.setAttribute("aria-hidden", "true");
+    document.body.append(layer);
+    setTimeout(() => layer.remove(), 2400);
+}
+
+// Shows the shuffle when a card game's state counts a new shuffle (state.game.shuffles): the deal of a new game, hand or
+// round, or a new pile made of the discards. Not when the page opens on a game already dealt.
+function noticeShuffles(view, state, shuffles) {
+    if (view.changed("shuffles", [state.gameNumber, shuffles])) showShuffle();
+}
+
+// Pages redraw their game screen on every update (a player's own cards come just after the table), which replaces the
+// elements being animated. An animation started at `startedAt` (performance.now()) goes on in the new elements from
+// where it was: animationAge gives the time it has run, or null once `duration` is over.
+function animationAge(startedAt, duration) {
+    const age = performance.now() - startedAt;
+    return age >= 0 && age < duration ? age : null;
+}
+
+// Gives `element` the CSS animation of `className` (see styles.css) while the one started at `startedAt` runs, from
+// where it is now.
+function animateSince(element, className, startedAt, duration) {
+    const age = animationAge(startedAt, duration);
+    if (age === null || !(element instanceof Element)) return;
+    element.classList.add(className);
+    element.style.animationDelay = `${-age}ms`;
+}
+
+// Moves an element from where `from` is (an element or a rectangle on the screen) to where it now is, e.g. a card
+// from a player to the pile, `age` milliseconds into the move (see animationAge). Nothing if either has no size (e.g.
+// hidden).
+function flyFrom(element, from, age = 0, duration = 450) {
+    if (!element || !from || reducedMotion()) return;
+    const start = from instanceof Element ? from.getBoundingClientRect() : from;
+    const end = element.getBoundingClientRect();
+    if (!start.width || !end.width) return;
+    const dx = start.left + start.width / 2 - (end.left + end.width / 2);
+    const dy = start.top + start.height / 2 - (end.top + end.height / 2);
+    element.animate([
+        { transform: `translate(${dx}px, ${dy}px) scale(0.7)`, opacity: 0.5 },
+        { transform: "none", opacity: 1 },
+    ], { duration, delay: -age, easing: "cubic-bezier(0.2, 0.8, 0.3, 1)" });
+}
+
+// A card (face down unless `face` is given) flying from one place to another (elements or rectangles on the screen) and
+// vanishing there, e.g. a card drawn from the pile to a player.
+function flyCard(from, to, face = cardElement()) {
+    if (!from || !to || reducedMotion()) return;
+    const start = from instanceof Element ? from.getBoundingClientRect() : from;
+    const end = to instanceof Element ? to.getBoundingClientRect() : to;
+    if (!start.width || !end.width) return;
+    face.classList.add("flying-card");
+    face.style.left = `${start.left + start.width / 2}px`;
+    face.style.top = `${start.top + start.height / 2}px`;
+    document.body.append(face);
+    const dx = end.left + end.width / 2 - (start.left + start.width / 2);
+    const dy = end.top + end.height / 2 - (start.top + start.height / 2);
+    const flight = face.animate([
+        { transform: "translate(-50%, -50%)", opacity: 1 },
+        { transform: `translate(calc(${dx}px - 50%), calc(${dy}px - 50%)) scale(0.6)`, opacity: 0.2 },
+    ], { duration: 450, easing: "ease-in" });
+    flight.onfinish = flight.oncancel = () => face.remove();
+}
+
+// Where a seat is on the screen, for cards flying to or from it: the user's own hands (the element `handsId`) for their
+// seats, otherwise the seat's line (marked data-seat) in the players' list `listId` while it is shown, otherwise just
+// above the top of the screen.
+function seatSpot(view, seat, handsId, listId) {
+    const places = [view.isMe(seat) ? $(handsId) : null, $(listId)?.querySelector(`[data-seat="${seat}"]`)];
+    const shown = places.find((place) => place?.getBoundingClientRect().width);
+    return shown ? shown.getBoundingClientRect() : new DOMRect(innerWidth / 2 - 30, -90, 60, 90);
 }
 
 // Each suit has its own color (see .card.hearts … in styles.css).
@@ -1594,19 +1860,33 @@ function optionsList(state) {
  * "Watching" for an observer. While a game is on, the status bar under it shows #status; while the game waits for
  * disconnected players, its players see a "Waiting for …" pop-up (see updateWaiting), and a user without a seat opening
  * or reconnecting to a game with disconnected players is offered their seats (see updateSeatOffer).
+ * view.changed(name, value) tells a page whether something it shows with a sound or an animation (e.g. the cards on
+ * the pile) changed since the last update: never on the first update when the page opens during a game, but always on
+ * the first one after the lobby (the start of a game). When the status bar turns gold for the user, a short chime
+ * plays, unless the page sets view.turnSound to false (it plays its own).
  */
 function startSessionPage(gameType, render, seatRole = (seat) => t("Seat {n}", { n: seat + 1 })) {
     const sessionId = (params.get("session") ?? "").toUpperCase();
     let lastState = null;
+    const seen = new Map();
+    let afterLobby = false;
+    let wasActing = null;
 
     const view = {
         sessionId,
         playerId: null,
         private: null,
         mySeats: [],
+        turnSound: true,
         get isPlayer() { return this.mySeats.length > 0; },
         isMe(seat) { return this.mySeats.includes(seat); },
         refresh() { if (lastState) update(lastState); },
+        changed(name, value) {
+            const now = JSON.stringify(value);
+            const before = seen.has(name) ? seen.get(name) : afterLobby ? undefined : now;
+            seen.set(name, now);
+            return before !== now;
+        },
     };
 
     if (!sessionId) {
@@ -1772,12 +2052,20 @@ function startSessionPage(gameType, render, seatRole = (seat) => t("Seat {n}", {
     }
 
     // A seat tile: a big icon, the name, and a note such as "Seat 2 · You". The user's own seat is a button to leave
-    // it; the empty seat is a button to sit there (the server gives the next available seat, which is this one). In a
-    // public game, leaving a seat leaves the game, and the empty seat waits for players joining from the main screen.
+    // it; the empty seat is a button to sit there (the server gives the next available seat, which is this one). A user
+    // already seated is asked first, as they then hold one more seat. In a public game, leaving a seat leaves the game,
+    // and the empty seat waits for players joining from the main screen.
+    function takeSeat() {
+        if (view.mySeats.length > 0 && !confirm(t("You already have a seat. Take this seat too, to play for one more player on this device?"))) {
+            return;
+        }
+        act("TakeSeat");
+    }
+
     function seatItem(state, seat) {
         const info = state.seats[seat];
         const action = view.isMe(seat) ? (state.isPublic ? { text: t("Leave game"), run: leaveGame } : { text: t("Leave seat"), run: () => act("LeaveSeat", seat) })
-            : !info && !state.isPublic ? { text: t("Sit here"), run: () => act("TakeSeat") }
+            : !info && !state.isPublic ? { text: t("Sit here"), run: takeSeat }
                 : null;
 
         const tile = document.createElement(action ? "button" : "div");
@@ -2001,6 +2289,9 @@ function startSessionPage(gameType, render, seatRole = (seat) => t("Seat {n}", {
             $("options-summary").replaceChildren(...optionsList(state));
             $("start-game").hidden = !(view.isPlayer && taken >= state.minSeats && (!state.isPublic || isHost(state)));
             $("start-game").textContent = t(state.gameNumber > 0 ? "New game" : "Start");
+            seen.clear();
+            afterLobby = true;
+            wasActing = false;
             return;
         }
 
@@ -2011,13 +2302,18 @@ function startSessionPage(gameType, render, seatRole = (seat) => t("Seat {n}", {
             gameOptions.hidden = gameOptions.childElementCount === 0;
         }
         render(state.game, state, view);
+        afterLobby = false;
         // Games mark their status with 👉 (the user has to act) or ⏳ (waiting for others). The marks only choose the
-        // bar's color (gold or grey) and are not shown.
+        // bar's color (gold or grey) and are not shown. A primary button shown in the game's .game-actions also turns the
+        // bar gold. When 👉 comes, the turn chime plays.
         const status = $("status");
-        const mustAct = status.textContent.includes("👉")
-            || [...$("status-bar").querySelectorAll(".status-actions button")].some((b) => !b.hidden && !b.classList.contains("secondary"));
+        const myTurn = status.textContent.includes("👉");
+        const mustAct = myTurn
+            || [...$("game-screen").querySelectorAll(".game-actions button")].some((b) => !b.hidden && !b.classList.contains("secondary"));
         status.textContent = status.textContent.replace(/[👉⏳]\uFE0F?\s*/gu, "").trim();
         $("status-bar").classList.toggle("act", mustAct);
+        if (myTurn && wasActing === false && view.turnSound) playGameSound("turn");
+        wasActing = myTurn;
     }
 
     async function enter() {

@@ -28,7 +28,8 @@ public record FinalCardResultState(int Seat, int Points);
 /// it can challenge the Change Color +4 played on it, and <see cref="WaitingForPenalty"/> that it waits for other players to
 /// draw their penalty cards. In Israeli Style, <see cref="TakiColor"/> is the color of the TAKI the seat to play is
 /// running, <see cref="ThreeBy"/> the seat of the +3 nobody has answered yet, and <see cref="AnyCard"/> tells that a Crown
-/// leads, so any card can be played. <see cref="Actions"/> counts the actions, so a page can tell a new one.
+/// leads, so any card can be played. <see cref="Actions"/> counts the actions, so a page can tell a new one, and
+/// <see cref="Shuffles"/> the shuffles, so a page can show each one.
 /// </summary>
 public record FinalCardState(
     FinalCardStyle Style,
@@ -56,7 +57,8 @@ public record FinalCardState(
     int Actions,
     FinalCardResultState? LastResult,
     IReadOnlyList<int> Ranking,
-    int? Winner);
+    int? Winner,
+    int Shuffles);
 
 /// <summary>
 /// A seat's private Final Card information: its cards, sorted by color and value, and those it can play now.
@@ -186,7 +188,8 @@ public class FinalCardSession(string id, Action<FinalCardCard[]>? shuffle = null
             game.Actions,
             game.LastResult is { } result ? new FinalCardResultState(seats[result.Winner], result.Points) : null,
             [.. ranking.Select(p => seats[p])],
-            game.Winner is { } winner ? seats[winner] : null);
+            game.Winner is { } winner ? seats[winner] : null,
+            game.Shuffles);
     }
 
     /// <inheritdoc />
