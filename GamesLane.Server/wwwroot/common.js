@@ -1108,10 +1108,10 @@ const GAME_SOUNDS = {
         }
         [0.62, 0.74].forEach((delay) => noise(audio, at + delay, 0.06, { volume: 0.4, frequency: 900, q: 3 }));
     },
-    // A checker set down on the wooden board.
+    // A checker set down on the board: a soft, low knock.
     checker: (audio, at) => {
-        tone(audio, at, 210, 0.09, { volume: 0.3 });
-        noise(audio, at, 0.05, { volume: 0.25, frequency: 1200, q: 2 });
+        tone(audio, at, 180, 0.07, { volume: 0.08 });
+        noise(audio, at, 0.03, { volume: 0.04, type: "lowpass", frequency: 900 });
     },
     // A chip taken: a light clink.
     chip: (audio, at) => {
@@ -1145,6 +1145,7 @@ const GAME_SOUNDS = {
 const SOUND_FILES = {
     dice: { files: ["dice-throw-1", "dice-throw-2", "dice-throw-3"], volume: 0.8 },
     shuffle: { files: ["card-shuffle"], volume: 0.7, length: 2.4 },
+    checker: { files: ["chip-lay-1", "chip-lay-2", "chip-lay-3"], volume: 0.45 },
 };
 const soundFiles = new Map();
 
