@@ -861,7 +861,7 @@ function el(tag, className, ...content) {
 // help.html in English and help.<code>.html in the others. Each section is a folded title with a short text and, folded
 // inside it, More details. Opening the panel unfolds the sections about what the page shows: the main screen, or on a
 // game page the game (and the session lobby while it is shown, see setLobby), and the other sections stay folded, so
-// any game's rules can be read from anywhere. The first time a user opens the main screen or a game's page in this
+// any game's rules can be read from anywhere. On a game page, the lobby's section links to the game's section. The first time a user opens the main screen or a game's page in this
 // browser, a tip under ? points to it for 10 seconds (after the splash screen). Pages without help (e.g. the admin page)
 // have no ?.
 function startHelp() {
@@ -902,6 +902,17 @@ function startHelp() {
         .then((html) => {
             const content = new DOMParser().parseFromString(html, "text/html").querySelector(".help-content");
             body.replaceChildren(...content.children);
+            // On a game page, the lobby's section links to the game's own section, which it unfolds and scrolls to.
+            const gameLink = body.querySelector(".help-game-link");
+            const gameSection = body.querySelector(`#help-${section}`);
+            if (gameLink && gameSection && section !== "main-screen") {
+                gameLink.hidden = false;
+                gameLink.querySelector("a").addEventListener("click", (event) => {
+                    event.preventDefault();
+                    gameSection.open = true;
+                    body.scrollTop = gameSection.offsetTop - body.offsetTop;
+                });
+            }
             return true;
         })
         .catch(() => {
@@ -1069,8 +1080,11 @@ function tone(audio, at, frequency, length, { volume = 0.2, type = "sine", to = 
 }
 
 const GAME_SOUNDS = {
-    // A soft tick for every button.
-    click: (audio, at) => tone(audio, at, 1800, 0.035, { volume: 0.05, type: "triangle" }),
+    // A soft, low "tock" for every button, like a phone's keyboard click.
+    click: (audio, at) => {
+        tone(audio, at, 520, 0.03, { volume: 0.035, to: 260 });
+        noise(audio, at, 0.012, { volume: 0.025, type: "lowpass", frequency: 1200 });
+    },
     // A card played, drawn or turned: a short swish.
     card: (audio, at) => noise(audio, at, 0.12, { volume: 0.3, type: "highpass", frequency: 2500 }),
     // A riffle: many quick card flicks, then the deck squared with a soft thud.

@@ -4,8 +4,9 @@ namespace GamesLane.Server.Games.Yaniv;
 
 /// <summary>
 /// Yaniv rules for one game. <c>shuffle</c> shuffles the deck before each deal, which gives the first player still in the
-/// game the first 5 cards, the next one the next 5, and so on, and leaves the rest as the closed pile, drawn from the top
-/// (for tests); it also shuffles the open pile but its top card into a new closed pile when the closed pile runs out.
+/// game the first 5 cards, the next one the next 5, and so on, turns up the next card to start the open pile, and leaves
+/// the rest as the closed pile, drawn from the top (for tests); it also shuffles the open pile but its top card into a new
+/// closed pile when the closed pile runs out, so a card is face up on the open pile after every shuffle.
 /// Round 1 is started by player 0, each later round by the winner of the round before.
 /// </summary>
 public class YanivGame : IYanivGame
@@ -227,8 +228,8 @@ public class YanivGame : IYanivGame
     }
 
     /// <summary>
-    /// Shuffles the full deck and deals each player still in the game their cards; the rest is the closed pile, and the
-    /// open pile starts empty.
+    /// Shuffles the full deck and deals each player still in the game their cards; the next card is turned up to start the
+    /// open pile, and the rest is the closed pile.
     /// </summary>
     private void Deal()
     {
@@ -252,6 +253,9 @@ public class YanivGame : IYanivGame
                 _closed.RemoveRange(0, YanivRules.HandSize);
             }
         }
+
+        _open.Add(_closed[0]);
+        _closed.RemoveAt(0);
 
         Turn = LastResult?.Winner ?? 0;
     }

@@ -64,20 +64,21 @@ public class YanivGameTests
     // Turns
 
     [Fact]
-    public void Each_player_gets_5_cards_and_the_open_pile_starts_empty()
+    public void Each_player_gets_5_cards_and_the_next_card_is_turned_up_on_the_open_pile()
     {
         var game = Game(null, "A♣ 2♣ 3♣ 4♣ 5♣ 6♦ 7♦ 8♦ 9♦ 10♦ K♥");
 
         Assert.Equal(["A♣", "2♣", "3♣", "4♣", "5♣"], game.Hand(0).Select(c => c.ToString()));
-        Assert.Equal((0, 44, 0, YanivPhase.Playing), (game.Turn, game.ClosedPileCount, game.OpenPileCount, game.Phase));
-        Assert.Null(game.OpenTop);
-        AssertRefused(game.TryDiscard(0, Cards("5♣"), true, out var error), error, "The open pile is empty. Take a card from the closed pile.");
+        Assert.Equal((0, 43, 1, YanivPhase.Playing), (game.Turn, game.ClosedPileCount, game.OpenPileCount, game.Phase));
+        Assert.Equal(Card("K♥"), game.OpenTop);
+        Assert.True(game.TryDiscard(0, Cards("5♣"), true, out var error), error);
+        Assert.Contains(Card("K♥"), game.Hand(0));
     }
 
     [Fact]
     public void A_player_discards_then_takes_a_card_and_the_discards_go_on_the_open_pile_lowest_first()
     {
-        var game = Game(null, "A♣ 2♣ 3♣ 9♠ 5♥ 6♦ 7♦ 8♦ K♦ K♥ Q♥");
+        var game = Game(null, "A♣ 2♣ 3♣ 9♠ 5♥ 6♦ 7♦ 8♦ K♦ K♥ 4♠ Q♥");
 
         AssertRefused(game.TryDiscard(1, Cards("K♥"), false, out var error), error, "It is not your turn.");
         AssertRefused(game.TryDiscard(0, Cards("K♥"), false, out error), error, "You do not have those cards.");
@@ -86,7 +87,7 @@ public class YanivGameTests
         Assert.True(game.TryDiscard(0, Cards("3♣ A♣ 2♣"), false, out error), error);
 
         Assert.Equal(["9♠", "5♥", "Q♥"], game.Hand(0).Select(c => c.ToString()));
-        Assert.Equal((1, 3, 43), (game.Turn, game.OpenPileCount, game.ClosedPileCount));
+        Assert.Equal((1, 4, 42), (game.Turn, game.OpenPileCount, game.ClosedPileCount));
         Assert.Equal(Card("3♣"), game.OpenTop);
         Assert.Equal(new[] { "A♣", "2♣", "3♣" }, game.LastTurn!.Cards.Select(c => c.ToString()));
 
@@ -114,8 +115,8 @@ public class YanivGameTests
         var game = Game(null);
         Assert.Equal(1, game.Shuffles);
 
-        // Each turn discards one card and takes one from the closed pile, until the 44 cards of the closed pile are taken.
-        for (var turn = 0; turn < 44; turn++)
+        // Each turn discards one card and takes one from the closed pile, until the 43 cards of the closed pile are taken.
+        for (var turn = 0; turn < 43; turn++)
         {
             Assert.True(game.TryDiscard(game.Turn, [game.Hand(game.Turn)[0]], false, out var error), error);
         }
@@ -130,7 +131,7 @@ public class YanivGameTests
     [Fact]
     public void After_Yaniv_the_others_play_one_last_turn_and_the_caller_wins_a_tie()
     {
-        var game = Game(null, $"{Low} K♠ A♦ A♣ 2♦ 2♣ JOKER");
+        var game = Game(null, $"{Low} K♠ A♦ A♣ 2♦ 2♣ 9♣ JOKER");
         Assert.True(game.CanCallYaniv(0));
         Assert.True(game.TryCallYaniv(0, out var error), error);
         Assert.Equal((1, 0), (game.Turn, game.Caller));
@@ -167,7 +168,7 @@ public class YanivGameTests
     [Fact]
     public void A_caller_with_a_higher_hand_is_Assaf_and_the_lowest_hand_wins_and_starts_the_next_round()
     {
-        var game = Game(null, "A♠ A♥ 2♠ 3♥ JOKER K♠ A♦ A♣ 2♦ 2♣ JOKER", "A♣ 2♣ 3♣ 4♣ 5♣ 6♦ 7♦ 8♦ 9♦ 10♦");
+        var game = Game(null, "A♠ A♥ 2♠ 3♥ JOKER K♠ A♦ A♣ 2♦ 2♣ 9♣ JOKER", "A♣ 2♣ 3♣ 4♣ 5♣ 6♦ 7♦ 8♦ 9♦ 10♦");
         game.TryCallYaniv(0, out _);
         game.TryDiscard(1, Cards("K♠"), false, out _);
 
@@ -234,8 +235,8 @@ public class YanivGameTests
     }
 
     // A round where player 0 calls Yaniv with 6 points, and player 1, in their last turn, discards 3♣ and takes the
-    // closed pile's top card: they then hold kept and drawn.
-    private static string Round(string kept, string drawn) => $"{Low} 3♣ {kept} {drawn}";
+    // closed pile's top card (under the 9♣ turned up): they then hold kept and drawn.
+    private static string Round(string kept, string drawn) => $"{Low} 3♣ {kept} 9♣ {drawn}";
 
     private static void PlayRound(YanivGame game)
     {
@@ -248,7 +249,7 @@ public class YanivGameTests
     }
 
     // A game whose deals put the given cards (short text, separated by spaces) on top of the deck, one deal per round:
-    // the first player's 5 cards, the next player's, and so on, then the closed pile.
+    // the first player's 5 cards, the next player's, and so on, then the card turned up, then the closed pile.
     private static YanivGame Game(YanivRules? rules, params string[] deals) => new(2, rules, Stacked(deals));
 
     private static Action<Card[]> Stacked(string[] deals)

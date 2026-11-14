@@ -29,7 +29,9 @@ public interface IYanivGame
     /// <summary>After a Yaniv call, the players still to play their last turn, in order.</summary>
     IReadOnlyList<int> LastTurns { get; }
 
-    /// <summary>The top card of the open pile, the only one that can be taken, or null while it is empty.</summary>
+    /// <summary>
+    /// The top card of the open pile, the only one that can be taken (each deal turns one up), or null while it is empty.
+    /// </summary>
     Card? OpenTop { get; }
 
     /// <summary>The cards in the open pile.</summary>

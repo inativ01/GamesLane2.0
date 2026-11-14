@@ -72,6 +72,7 @@ A typical setup is a shared screen (such as a TV or laptop) connected as a spect
 - **?** in the top bar (on the main screen and every game page) opens the help, in the chosen language, on the side of the page (on the right, or on the left in Hebrew; on a phone, the whole screen). ✕ or Escape closes it.
 - The help has one section for the main screen, one for getting a game started (the session lobby), and one per game. Each section is a title that unfolds; the help opens with the sections about the current page unfolded: the main screen's on the main screen, and on a game page that game's (with the lobby's first while the lobby is shown). The other sections stay folded, so any game's rules can be read from anywhere.
 - Each section is short, with the rest folded under **More details**. For a game: **How to play** (the rules in brief), then **More details** with the full rules and the game's options, then **On this screen** (how to play it on GamesLane), followed by its own **More details** when there is more to say about the screen.
+- On a game page, the lobby's section starts with how seats work (users are usually seated at once; tap your seat or **Leave my seat (watch)** to watch, **Sit here** to play again) and has a **📖 How to play this game** link that unfolds the game's section and scrolls to it (not on the help page of its own).
 - The first time a user opens the main screen, or a game's page, in a browser, a tip under **?** says "New here? Tap ? for help." (on a game page, "New to this game? Tap ? for how to play.") for 10 seconds (on the main screen, after the splash screen); tapping it opens the help. It is not shown again on that page in that browser.
 - The help is also a page of its own: `/help.html` in English, e.g. `/help.fr.html` in French.
 
@@ -315,7 +316,7 @@ A game can offer **options**, i.e. rule variants (so far The Gang's, backgammon'
 
 ### Yaniv
 
-2–4 players, in quick rounds, with a 52-card deck and 2 jokers. Each round, every player gets 5 cards; the rest is the **closed pile**, and the **open pile** starts empty. Players take turns in seat order; round 1 is started by the first seat, each later round by the winner of the round before.
+2–4 players, in quick rounds, with a 52-card deck and 2 jokers. Each round, every player gets 5 cards, the next card is turned face up to start the **open pile**, and the rest is the **closed pile**. After every shuffle a card is face up on the open pile: at each deal, and when the closed pile runs out and the open pile (except its top card) is shuffled into a new closed pile. Players take turns in seat order; round 1 is started by the first seat, each later round by the winner of the round before.
 
 - **Goal:** lower your **hand score**, the sum of your cards' values: an ace 1, a joker 0, 2 to 10 their number, J, Q and K 10 (e.g. A, 7, 10, K is 1 + 7 + 10 + 10 = 28).
 - **A turn:** tap the cards to discard, then tap the pile to take a card from: the closed pile, or the open pile's top card (only the top card can be taken). The cards chosen wait next to the open pile until you take a card; they then go on the open pile, a straight from lowest to highest, so its highest card is the next player's top card. In a series, jokers go under the other cards. You may discard:
