@@ -1,11 +1,13 @@
+using System.Buffers.Binary;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using GamesLane.Server.Games.RichManPoorMan;
 using GamesLane.Server.Sessions;
 
 namespace GamesLane.Server.Tests;
 
-// Checks the translation files in wwwroot/lang against each other, the languages in i18n.js, the pages, and the
-// translated privacy policies and help.
+// Checks the translation files in wwwroot/lang against each other, the languages in i18n.js, the pages, the
+// translated privacy policies and help, and the app manifest.
 public partial class TranslationsTests
 {
     private static readonly string Wwwroot = FindWwwroot();
@@ -35,6 +37,9 @@ public partial class TranslationsTests
 
     [GeneratedRegex(@"<details class=""help-section"" id=""help-([a-z-]+)""")]
     private static partial Regex HelpSection();
+
+    [GeneratedRegex(@"^    ""?([\w-]+)""?: \{ title:", RegexOptions.Multiline)]
+    private static partial Regex OfflineTexts();
 
     [Theory]
     [MemberData(nameof(TranslatedLanguages))]
@@ -140,6 +145,31 @@ public partial class TranslationsTests
         var expected = new[] { "main-screen", "lobby" }.Concat(games).Order();
 
         Assert.Equal(expected, HelpSections(File.ReadAllText(Path.Combine(Wwwroot, "help.html"))).Order());
+    }
+
+    // The site is installable as an app: every page links the manifest, whose icons exist at the sizes it states, and
+    // the service worker's offline page has a text for every language.
+    [Fact]
+    public void Every_page_links_the_app_manifest_whose_icons_and_offline_texts_are_complete()
+    {
+        foreach (var page in Directory.GetFiles(Wwwroot, "*.html"))
+        {
+            Assert.Contains("<link rel=\"manifest\" href=\"/manifest.webmanifest\">", File.ReadAllText(page));
+        }
+
+        using var manifest = JsonDocument.Parse(File.ReadAllText(Path.Combine(Wwwroot, "manifest.webmanifest")));
+        var icons = manifest.RootElement.GetProperty("icons").EnumerateArray().ToList();
+        Assert.Contains(icons, icon => icon.GetProperty("sizes").GetString() == "192x192");
+        Assert.Contains(icons, icon => icon.GetProperty("sizes").GetString() == "512x512" && icon.GetProperty("purpose").GetString() == "maskable");
+        foreach (var icon in icons)
+        {
+            var png = File.ReadAllBytes(Path.Combine(Wwwroot, icon.GetProperty("src").GetString()!.TrimStart('/')));
+            var size = BinaryPrimitives.ReadInt32BigEndian(png.AsSpan(16));
+            Assert.Equal(icon.GetProperty("sizes").GetString(), $"{size}x{BinaryPrimitives.ReadInt32BigEndian(png.AsSpan(20))}");
+        }
+
+        var offline = OfflineTexts().Matches(File.ReadAllText(Path.Combine(Wwwroot, "sw.js"))).Select(match => match.Groups[1].Value);
+        Assert.Equal(LanguageCodes().Order(), offline.Order());
     }
 
     private static List<string> HelpSections(string html) => HelpSection().Matches(html).Select(match => match.Groups[1].Value).ToList();
