@@ -3766,7 +3766,7 @@ a.button.is-busy {
 }
 
 /* The deck being shuffled (see showShuffle in common.js): two halves of card backs split apart and riffle together,
-   twice. */
+   three times. */
 .shuffle-layer {
     position: fixed;
     inset: 0;
@@ -3774,7 +3774,7 @@ a.button.is-busy {
     display: grid;
     place-items: center;
     pointer-events: none;
-    animation: shuffle-fade 1.5s ease-in-out both;
+    animation: shuffle-fade 2.4s ease-in-out both;
 }
 
 .shuffle-card {
@@ -3784,7 +3784,7 @@ a.button.is-busy {
     border-radius: 8px;
     background: #19285d url("images/card-back.png") center / cover;
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
-    animation: shuffle-riffle 0.65s ease-in-out calc(var(--i) * 0.035s) 2 both;
+    animation: shuffle-riffle 0.65s ease-in-out calc(var(--i) * 0.035s) 3 both;
 }
 
 .shuffle-card.left { --from: -64px; --turn: -14deg; }

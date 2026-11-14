@@ -1139,8 +1139,54 @@ const GAME_SOUNDS = {
     caught: (audio, at) => [0, 1, 2, 3].forEach((i) => tone(audio, at + i * 0.15, i % 2 ? 440 : 622, 0.14, { volume: 0.08, type: "square" })),
 };
 
+// Recorded sounds (wwwroot/sounds, from Kenney's Casino Audio, CC0; see sounds/LICENSE.txt), used instead of the
+// browser-made sound of the same name: one of the files at random, at `volume`, cut off with a fade at `length`
+// seconds if given. A browser that cannot play them gets the browser-made sound.
+const SOUND_FILES = {
+    dice: { files: ["dice-throw-1", "dice-throw-2", "dice-throw-3"], volume: 0.8 },
+    shuffle: { files: ["card-shuffle"], volume: 0.7, length: 2.4 },
+};
+const soundFiles = new Map();
+
+function soundFile(audio, file) {
+    if (!soundFiles.has(file)) {
+        soundFiles.set(file, fetch(`/sounds/${file}.ogg`)
+            .then((response) => (response.ok ? response.arrayBuffer() : Promise.reject(new Error(response.statusText))))
+            .then((data) => audio.decodeAudioData(data))
+            .catch(() => null));
+    }
+    return soundFiles.get(file);
+}
+
+// The recorded sounds are loaded once the audio is set up (on the first tap), so they play at once when needed.
+addEventListener("pointerdown", () => {
+    if (celebrationAudio) Object.values(SOUND_FILES).forEach(({ files }) => files.forEach((file) => soundFile(celebrationAudio, file)));
+}, { once: true });
+
 function playGameSound(name) {
-    if (GAME_SOUNDS[name]) playSound(GAME_SOUNDS[name]);
+    const recorded = SOUND_FILES[name];
+    if (!recorded) {
+        if (GAME_SOUNDS[name]) playSound(GAME_SOUNDS[name]);
+        return;
+    }
+    playSound((audio) => soundFile(audio, recorded.files[Math.floor(Math.random() * recorded.files.length)]).then((buffer) => {
+        const at = audio.currentTime;
+        if (!buffer) {
+            GAME_SOUNDS[name]?.(audio, at);
+            return;
+        }
+        const source = audio.createBufferSource();
+        const gain = audio.createGain();
+        source.buffer = buffer;
+        gain.gain.setValueAtTime(recorded.volume, at);
+        if (recorded.length && buffer.duration > recorded.length) {
+            gain.gain.setValueAtTime(recorded.volume, at + recorded.length - 0.4);
+            gain.gain.linearRampToValueAtTime(0.0001, at + recorded.length);
+            source.stop(at + recorded.length + 0.05);
+        }
+        source.connect(gain).connect(audio.destination);
+        source.start(at);
+    }));
 }
 
 // Every button tapped taps softly, on every page; a card in the user's hand (.rp-card) has its own "tock".
@@ -1161,7 +1207,8 @@ function showBanner(title, text, kind, sound) {
     setTimeout(() => banner.remove(), kind === "small" ? 2200 : 2800);
 }
 
-// The deck being shuffled: card backs riffled together in the middle of the screen, with the riffle's sound.
+// The deck being shuffled: card backs riffled together in the middle of the screen, three times, with the sound of a
+// shuffle.
 function showShuffle() {
     playGameSound("shuffle");
     if (reducedMotion()) return;
@@ -1172,7 +1219,7 @@ function showShuffle() {
     }));
     layer.setAttribute("aria-hidden", "true");
     document.body.append(layer);
-    setTimeout(() => layer.remove(), 1500);
+    setTimeout(() => layer.remove(), 2400);
 }
 
 // Shows the shuffle when a card game's state counts a new shuffle (state.game.shuffles): the deal of a new game, hand or
