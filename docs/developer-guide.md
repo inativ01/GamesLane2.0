@@ -102,7 +102,9 @@ GamesLane.Server/              ASP.NET Core backend
     final-card.html/.js        Final Card page (GamesLane cards, each color drawn as the suit of that color)
     yaniv.html/.js             Yaniv page (the piles on top, the players' table shared with Rich man, poor man's styles)
     hearts.html/.js            Hearts page (the table and hands of tricks.js; choosing the cards to pass)
-    images/                    Logo, the GamesLane name for the header, the splash screens and the card back (web-sized copies of the originals in docs/), game pictures (SVG)
+    manifest.webmanifest       Makes the site installable as an app (name, colors, start page, icons); linked from every page
+    sw.js                      Service worker, registered by common.js: caches nothing (games are live); only when a page cannot be reached does it show a short offline page in the device's language, with Try again
+    images/                    Logo (logo-32/180/256, and the app icons logo-192, logo-512 and logo-maskable-512, the logo inside the safe zone on the page background), the GamesLane name for the header, the splash screens and the card back (web-sized copies of the originals in docs/), game pictures (SVG)
     images/the-gang/           A picture (SVG) for each challenge and specialist card, named by the card's key, e.g. quick-access.svg
     images/flags/              Flags for the language picker
 GamesLane.Server.Tests/        Unit tests

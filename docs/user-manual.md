@@ -3,6 +3,7 @@
 How to use GamesLane and the rules of each game. For how it is built, see the [developer guide](developer-guide.md).
 
 - [Getting started](#getting-started)
+- [Installing the app](#installing-the-app)
 - [Users and logging in](#users-and-logging-in)
 - [Main screen](#main-screen)
 - [Languages](#languages)
@@ -25,6 +26,18 @@ How to use GamesLane and the rules of each game. For how it is built, see the [d
 To play with other people on GamesLane, use **Public games** instead (see [Public games](#public-games)).
 
 A typical setup is a shared screen (such as a TV or laptop) connected as a spectator to show the board, while each player uses their own phone to view their hand and play. To try several players on one computer, use a separate browser tab for each user.
+
+## Installing the app
+
+GamesLane can be added to a phone's or computer's home screen, and then opens like an app: with its own icon, full screen, without the browser's address bar. It is the same site, so it is always up to date, and nothing is downloaded from an app store.
+
+- **Android (Chrome):** open the site, tap the ⋮ menu, then **Install app** (or **Add to Home screen**). Chrome may also offer it in a banner at the bottom.
+- **iPhone and iPad (Safari):** open the site in Safari, tap the Share button (the square with an arrow), scroll down and tap **Add to Home Screen**, then **Add**. Since iOS 16.4 this also works from Chrome and other browsers, from their Share menu.
+- **Computer (Chrome or Edge):** click the install icon at the right end of the address bar, or the browser's menu, then **Install GamesLane**.
+
+To remove it, remove it like any other app (on Android, long-press the icon and choose **Uninstall**; on iPhone, long-press it and choose **Remove App**). Without a connection, the app shows a short message with **Try again** instead of the browser's error page.
+
+On iPhone and iPad, the installed app keeps its own data, apart from Safari's: it starts as a new guest, so log in to your account there, or choose your name and icon again.
 
 ## Users and logging in
 

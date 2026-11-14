@@ -17,6 +17,11 @@ const GAME_PAGES = {
 
 const help = startHelp();
 
+// The service worker (sw.js) lets the site be installed as an app (see manifest.webmanifest). It caches nothing.
+if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("/sw.js").catch((err) => console.warn("Could not register the service worker.", err));
+}
+
 // The login token is kept per browser tab, so each tab can have its own user.
 // A new tab starts with the most recently logged-in user. A guest exists only in their token, which does not expire.
 const TOKEN_KEY = "loginToken";
