@@ -5,7 +5,7 @@ using GamesLane.Server.Sessions;
 namespace GamesLane.Server.Notifications;
 
 /// <summary>
-/// Notifies the iPhone app's users when it becomes their turn and no page of the game is in view for them: the phone
+/// Notifies the iPhone and Android apps' users when it becomes their turn and no page of the game is in view for them: the phone
 /// asleep, another app in front, the app closed, or the app on another page. A user is watching while one of their
 /// connections to the session is open and its page is in view (pages report going out of view, see
 /// <see cref="SetPageHidden"/>, so a notification does not wait for the connection to time out). A turn notifies once,

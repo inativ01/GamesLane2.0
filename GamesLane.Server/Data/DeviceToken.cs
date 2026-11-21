@@ -1,15 +1,39 @@
 namespace GamesLane.Server.Data;
 
 /// <summary>
-/// An iPhone running the app, which gets a notification when it is its user's turn: Apple's device token for the app,
-/// the user (a saved user or a guest), and the language of the notifications. Deleted after 30 days without use.
+/// The kind of phone a <see cref="DeviceToken"/> is for, which decides the service that delivers its notifications.
+/// </summary>
+public enum DevicePlatform
+{
+    /// <summary>An iPhone or iPad: Apple's push notification service.</summary>
+    Ios,
+
+    /// <summary>An Android phone or tablet: Firebase Cloud Messaging.</summary>
+    Android,
+}
+
+/// <summary>
+/// A phone running the app, which gets a notification when it is its user's turn: the token the notification service
+/// gave the app, the kind of phone, the user (a saved user or a guest), and the language of the notifications. Deleted
+/// after 30 days without use.
 /// </summary>
 public class DeviceToken
 {
     /// <summary>
-    /// The device token Apple gave the app, in hexadecimal.
+    /// The longest token kept: Firebase's tokens have no fixed length (about 160 characters today).
+    /// </summary>
+    public const int MaxTokenLength = 1000;
+
+    /// <summary>
+    /// The token the notification service gave the app: Apple's device token in hexadecimal on an iPhone, or
+    /// Firebase's registration token on Android.
     /// </summary>
     public required string Token { get; set; }
+
+    /// <summary>
+    /// The kind of phone.
+    /// </summary>
+    public DevicePlatform Platform { get; set; }
 
     /// <summary>
     /// The user the device belongs to, as the game hub knows them, e.g. <c>user:guest:...</c>.

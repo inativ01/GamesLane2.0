@@ -114,6 +114,49 @@ public class NotificationTests
     public void Device_tokens_are_64_to_200_hexadecimal_digits(string? token, bool valid) =>
         Assert.Equal(valid, NotificationEndpoints.IsDeviceToken(token));
 
+    [Fact]
+    public void Android_tokens_are_Firebase_s_and_keep_their_case_while_iPhone_tokens_are_hexadecimal_in_lowercase()
+    {
+        var firebase = "dQw4w9WgXcQ:APA91bH-" + new string('x', 120) + "_Zz";
+
+        Assert.True(NotificationEndpoints.IsDeviceToken(firebase, DevicePlatform.Android));
+        Assert.False(NotificationEndpoints.IsDeviceToken(firebase, DevicePlatform.Ios));
+        Assert.False(NotificationEndpoints.IsDeviceToken("short:token", DevicePlatform.Android));
+        Assert.False(NotificationEndpoints.IsDeviceToken(firebase + " ", DevicePlatform.Android));
+        Assert.False(NotificationEndpoints.IsDeviceToken(null, DevicePlatform.Android));
+        Assert.True(NotificationEndpoints.IsDeviceToken(AliceDevice, DevicePlatform.Ios));
+
+        Assert.Equal(firebase, NotificationEndpoints.StoredToken(firebase, DevicePlatform.Android));
+        Assert.Equal(new string('a', 64), NotificationEndpoints.StoredToken(new string('A', 64), DevicePlatform.Ios));
+    }
+
+    [Theory]
+    [InlineData(null, DevicePlatform.Ios)]
+    [InlineData("", DevicePlatform.Ios)]
+    [InlineData("ios", DevicePlatform.Ios)]
+    [InlineData("Android", DevicePlatform.Android)]
+    [InlineData("windows", null)]
+    public void A_registration_without_a_platform_is_from_the_iPhone_app(string? platform, DevicePlatform? expected) =>
+        Assert.Equal(expected, NotificationEndpoints.ParsePlatform(platform));
+
+    [Fact]
+    public async Task Each_device_s_notification_goes_through_its_platform_s_service()
+    {
+        using var appleKey = ECDsa.Create(ECCurve.NamedCurves.nistP256);
+        using var googleKey = RSA.Create(2048);
+        var appleServer = new AppleServer(HttpStatusCode.OK, "");
+        var googleServer = new GoogleServer(HttpStatusCode.OK, "{}");
+        var sender = new PushSender(Sender(appleServer, appleKey), FirebaseSender(googleServer, googleKey));
+        var notification = new PushNotification("T", "B", "/", "ABC123");
+
+        Assert.True(sender.IsConfigured);
+        Assert.Equal(PushResult.Sent, await sender.SendAsync(Device(sandbox: false), notification));
+        Assert.Equal(PushResult.Sent, await sender.SendAsync(AndroidDevice(), notification));
+
+        Assert.Single(appleServer.Requests);
+        Assert.Single(googleServer.Sends);
+    }
+
     private static TicTacToeSession StartedTicTacToe()
     {
         var session = new TicTacToeSession("ABC123");
@@ -150,9 +193,9 @@ public class NotificationTests
     {
         public Dictionary<string, DeviceToken> Tokens { get; } = [];
 
-        public Task SaveAsync(string token, string userKey, bool isSandbox, string language, DateTimeOffset now)
+        public Task SaveAsync(string token, DevicePlatform platform, string userKey, bool isSandbox, string language, DateTimeOffset now)
         {
-            Tokens[token] = new DeviceToken { Token = token, UserKey = userKey, IsSandbox = isSandbox, Language = language, UpdatedAt = now };
+            Tokens[token] = new DeviceToken { Token = token, Platform = platform, UserKey = userKey, IsSandbox = isSandbox, Language = language, UpdatedAt = now };
             return Task.CompletedTask;
         }
 
@@ -270,6 +313,154 @@ public class NotificationTests
 
     private sealed class FixedTime : TimeProvider
     {
-        public override DateTimeOffset GetUtcNow() => Now;
+        public DateTimeOffset Value { get; set; } = Now;
+
+        public override DateTimeOffset GetUtcNow() => Value;
+    }
+
+    // Firebase Cloud Messaging
+
+    private const string FirebaseProject = "gameslane-12345";
+    private const string ServiceAccount = "firebase-adminsdk@gameslane-12345.iam.gserviceaccount.com";
+    private static readonly string AndroidToken = "fcm:" + new string('t', 150);
+
+    [Fact]
+    public async Task An_Android_notification_goes_to_the_project_with_Google_s_access_token_the_channel_and_the_page_to_open()
+    {
+        using var key = RSA.Create(2048);
+        var google = new GoogleServer(HttpStatusCode.OK, """{"name":"projects/gameslane-12345/messages/1"}""");
+        var sender = FirebaseSender(google, key);
+        var notification = new PushNotification("Backgammon", "Your turn", "/backgammon.html?session=ABC123", "ABC123");
+
+        Assert.Equal(PushResult.Sent, await sender.SendAsync(AndroidDevice(), notification));
+        Assert.Equal(PushResult.Sent, await sender.SendAsync(AndroidDevice(), notification));
+
+        var exchange = Assert.Single(google.TokenRequests);
+        Assert.Equal("urn:ietf:params:oauth:grant-type:jwt-bearer", exchange["grant_type"]);
+        var parts = exchange["assertion"].Split('.');
+        using var payload = JsonDocument.Parse(Base64UrlEncoder.DecodeBytes(parts[1]));
+        Assert.Equal(ServiceAccount, payload.RootElement.GetProperty("iss").GetString());
+        Assert.Equal(FcmPushSender.Scope, payload.RootElement.GetProperty("scope").GetString());
+        Assert.Equal(FirebaseSettings.DefaultTokenUri, payload.RootElement.GetProperty("aud").GetString());
+        Assert.Equal(Now.ToUnixTimeSeconds(), payload.RootElement.GetProperty("iat").GetInt64());
+        Assert.True(key.VerifyData(Encoding.ASCII.GetBytes($"{parts[0]}.{parts[1]}"), Base64UrlEncoder.DecodeBytes(parts[2]),
+            HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1));
+
+        Assert.Equal(2, google.Sends.Count);
+        var send = google.Sends[0];
+        Assert.Equal($"https://fcm.googleapis.com/v1/projects/{FirebaseProject}/messages:send", send.Uri);
+        Assert.Equal("Bearer ya29.access", send.Headers["Authorization"]);
+        using var body = JsonDocument.Parse(send.Body);
+        var message = body.RootElement.GetProperty("message");
+        Assert.Equal(AndroidToken, message.GetProperty("token").GetString());
+        Assert.Equal("Backgammon", message.GetProperty("notification").GetProperty("title").GetString());
+        Assert.Equal("Your turn", message.GetProperty("notification").GetProperty("body").GetString());
+        Assert.Equal("/backgammon.html?session=ABC123", message.GetProperty("data").GetProperty("path").GetString());
+        Assert.Equal("ABC123", message.GetProperty("data").GetProperty("session").GetString());
+        var android = message.GetProperty("android");
+        Assert.Equal("HIGH", android.GetProperty("priority").GetString());
+        Assert.Equal("3600s", android.GetProperty("ttl").GetString());
+        Assert.Equal(FcmPushSender.ChannelId, android.GetProperty("notification").GetProperty("channel_id").GetString());
+        Assert.Equal("ABC123", android.GetProperty("notification").GetProperty("tag").GetString());
+    }
+
+    [Fact]
+    public async Task Google_s_access_token_is_asked_for_again_shortly_before_it_expires()
+    {
+        using var key = RSA.Create(2048);
+        var google = new GoogleServer(HttpStatusCode.OK, "{}");
+        var time = new FixedTime();
+        var sender = FirebaseSender(google, key, time);
+
+        await sender.SendAsync(AndroidDevice(), new PushNotification("T", "B", "/", "ABC123"));
+        time.Value = Now.AddMinutes(50);
+        await sender.SendAsync(AndroidDevice(), new PushNotification("T", "B", "/", "ABC123"));
+        Assert.Single(google.TokenRequests);
+
+        time.Value = Now.AddMinutes(56);
+        await sender.SendAsync(AndroidDevice(), new PushNotification("T", "B", "/", "ABC123"));
+        Assert.Equal(2, google.TokenRequests.Count);
+    }
+
+    [Theory]
+    [InlineData(HttpStatusCode.NotFound, """{"error":{"status":"NOT_FOUND","details":[{"errorCode":"UNREGISTERED"}]}}""", PushResult.Unregistered)]
+    [InlineData(HttpStatusCode.BadRequest, """{"error":{"status":"INVALID_ARGUMENT","details":[{"errorCode":"UNREGISTERED"}]}}""", PushResult.Unregistered)]
+    [InlineData(HttpStatusCode.BadRequest, """{"error":{"status":"INVALID_ARGUMENT"}}""", PushResult.Failed)]
+    [InlineData(HttpStatusCode.TooManyRequests, """{"error":{"status":"RESOURCE_EXHAUSTED"}}""", PushResult.Failed)]
+    [InlineData(HttpStatusCode.InternalServerError, "", PushResult.Failed)]
+    public async Task Firebase_s_refusals_tell_whether_to_forget_the_device(HttpStatusCode status, string body, PushResult expected)
+    {
+        using var key = RSA.Create(2048);
+
+        Assert.Equal(expected, await FirebaseSender(new GoogleServer(status, body), key)
+            .SendAsync(AndroidDevice(), new PushNotification("T", "B", "/", "ABC123")));
+    }
+
+    [Fact]
+    public async Task Without_the_Firebase_key_nothing_is_sent_and_a_refused_access_token_sends_nothing()
+    {
+        var google = new GoogleServer(HttpStatusCode.OK, "{}");
+        var unconfigured = new FcmPushSender(FirebaseSettings.None, new Clients(google), new FixedTime(), NullLogger<FcmPushSender>.Instance);
+
+        Assert.False(unconfigured.IsConfigured);
+        Assert.Equal(PushResult.Failed, await unconfigured.SendAsync(AndroidDevice(), new PushNotification("T", "B", "/", "ABC123")));
+        Assert.Empty(google.TokenRequests);
+
+        using var key = RSA.Create(2048);
+        var refusing = new GoogleServer(HttpStatusCode.OK, "{}") { TokenStatus = HttpStatusCode.BadRequest };
+        Assert.Equal(PushResult.Failed, await FirebaseSender(refusing, key).SendAsync(AndroidDevice(), new PushNotification("T", "B", "/", "ABC123")));
+        Assert.Empty(refusing.Sends);
+    }
+
+    [Fact]
+    public void The_Firebase_key_is_read_from_the_service_account_file_Firebase_downloads()
+    {
+        var settings = FirebaseSettings.Parse("""
+            {"type":"service_account","project_id":"gameslane-12345","private_key_id":"abc",
+             "private_key":"-----BEGIN PRIVATE KEY-----\nMIIB\n-----END PRIVATE KEY-----\n",
+             "client_email":"firebase-adminsdk@gameslane-12345.iam.gserviceaccount.com",
+             "token_uri":"https://oauth2.googleapis.com/token"}
+            """);
+
+        Assert.Equal(("gameslane-12345", ServiceAccount, FirebaseSettings.DefaultTokenUri),
+            (settings.ProjectId, settings.ClientEmail, settings.TokenUri));
+        Assert.StartsWith("-----BEGIN PRIVATE KEY-----\n", settings.PrivateKey);
+        Assert.True(settings.HasKey);
+        Assert.False(FirebaseSettings.None.HasKey);
+    }
+
+    private static DeviceToken AndroidDevice() =>
+        new() { Token = AndroidToken, Platform = DevicePlatform.Android, UserKey = Alice, Language = "en" };
+
+    private static FcmPushSender FirebaseSender(GoogleServer handler, RSA key, TimeProvider? time = null) =>
+        new(new FirebaseSettings(FirebaseProject, ServiceAccount, key.ExportPkcs8PrivateKeyPem(), FirebaseSettings.DefaultTokenUri),
+            new Clients(handler), time ?? new FixedTime(), NullLogger<FcmPushSender>.Instance);
+
+    /// <summary>Google's token address and Firebase's send address.</summary>
+    private sealed class GoogleServer(HttpStatusCode status, string body) : HttpMessageHandler
+    {
+        public HttpStatusCode TokenStatus { get; init; } = HttpStatusCode.OK;
+
+        public List<Dictionary<string, string>> TokenRequests { get; } = [];
+
+        public List<SentRequest> Sends { get; } = [];
+
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            var content = await request.Content!.ReadAsStringAsync(cancellationToken);
+            if (request.RequestUri!.ToString() == FirebaseSettings.DefaultTokenUri)
+            {
+                TokenRequests.Add(content.Split('&').Select(p => p.Split('=', 2))
+                    .ToDictionary(p => Uri.UnescapeDataString(p[0]), p => Uri.UnescapeDataString(p[1])));
+                return new HttpResponseMessage(TokenStatus)
+                {
+                    Content = new StringContent("""{"access_token":"ya29.access","expires_in":3600,"token_type":"Bearer"}"""),
+                };
+            }
+
+            var headers = request.Headers.ToDictionary(h => h.Key, h => string.Join(",", h.Value));
+            Sends.Add(new SentRequest(request.RequestUri.ToString(), request.Version, headers, content));
+            return new HttpResponseMessage(status) { Content = new StringContent(body) };
+        }
     }
 }

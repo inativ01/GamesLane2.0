@@ -3,7 +3,7 @@ using GamesLane.Server.Data;
 namespace GamesLane.Server.Notifications;
 
 /// <summary>
-/// Where the iPhones that get turn notifications are kept (the database).
+/// Where the phones that get turn notifications are kept (the database).
 /// </summary>
 public interface IDeviceTokenRepository
 {
@@ -11,7 +11,7 @@ public interface IDeviceTokenRepository
     /// Saves <paramref name="token"/> as <paramref name="userKey"/>'s device, replacing whoever had it before, and marks
     /// it used at <paramref name="now"/>.
     /// </summary>
-    Task SaveAsync(string token, string userKey, bool isSandbox, string language, DateTimeOffset now);
+    Task SaveAsync(string token, DevicePlatform platform, string userKey, bool isSandbox, string language, DateTimeOffset now);
 
     /// <summary>
     /// The devices of <paramref name="userKey"/>.
@@ -19,7 +19,7 @@ public interface IDeviceTokenRepository
     Task<IReadOnlyList<DeviceToken>> GetForUserAsync(string userKey);
 
     /// <summary>
-    /// Forgets a device, e.g. once Apple says the app was removed from it.
+    /// Forgets a device, e.g. once its notification service says the app was removed from it.
     /// </summary>
     Task DeleteAsync(string token);
 

@@ -1,7 +1,7 @@
 namespace GamesLane.Server.Notifications;
 
 /// <summary>
-/// Forgets the iPhones whose app has not registered for <see cref="UnusedLimit"/> (it registers every time it opens the
+/// Forgets the phones whose app has not registered for <see cref="UnusedLimit"/> (it registers every time it opens the
 /// site). Runs shortly after the server starts, then every few hours.
 /// </summary>
 public class DeviceTokenCleanup(

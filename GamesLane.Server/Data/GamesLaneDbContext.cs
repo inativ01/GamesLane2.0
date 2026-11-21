@@ -51,7 +51,7 @@ public class GamesLaneDbContext(DbContextOptions<GamesLaneDbContext> options) : 
     public DbSet<ActivityCount> ActivityCounts => Set<ActivityCount>();
 
     /// <summary>
-    /// The iPhones that get a notification when it is their user's turn.
+    /// The phones that get a notification when it is their user's turn.
     /// </summary>
     public DbSet<DeviceToken> DeviceTokens => Set<DeviceToken>();
 
@@ -137,7 +137,8 @@ public class GamesLaneDbContext(DbContextOptions<GamesLaneDbContext> options) : 
         modelBuilder.Entity<DeviceToken>(device =>
         {
             device.HasKey(d => d.Token);
-            device.Property(d => d.Token).HasMaxLength(200);
+            device.Property(d => d.Token).HasMaxLength(DeviceToken.MaxTokenLength);
+            device.Property(d => d.Platform).HasConversion<string>().HasMaxLength(10).HasDefaultValue(DevicePlatform.Ios);
             device.Property(d => d.UserKey).HasMaxLength(100);
             device.Property(d => d.Language).HasMaxLength(10);
             device.HasIndex(d => d.UserKey);

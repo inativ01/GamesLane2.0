@@ -3,7 +3,7 @@ using GamesLane.Server.Sessions;
 namespace GamesLane.Server.Notifications;
 
 /// <summary>
-/// Tells the iPhone app's users when it becomes their turn while they are not watching the game.
+/// Tells the iPhone and Android apps' users when it becomes their turn while they are not watching the game.
 /// </summary>
 public interface ITurnNotifier
 {

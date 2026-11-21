@@ -50,8 +50,8 @@ namespace GamesLane.Server.Data.Migrations
             modelBuilder.Entity("GamesLane.Server.Data.DeviceToken", b =>
                 {
                     b.Property<string>("Token")
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)");
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
 
                     b.Property<bool>("IsSandbox")
                         .HasColumnType("boolean");
@@ -60,6 +60,13 @@ namespace GamesLane.Server.Data.Migrations
                         .IsRequired()
                         .HasMaxLength(10)
                         .HasColumnType("character varying(10)");
+
+                    b.Property<string>("Platform")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasDefaultValue("Ios");
 
                     b.Property<DateTimeOffset>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");

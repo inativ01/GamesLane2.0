@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- The site's page background and theme color (styles.css, theme-color). -->
+    <color name="page_background">#F5F1EA</color>
+    <color name="notification_color">#19285D</color>
+</resources>

@@ -20,6 +20,7 @@ It is a complete reimplementation of the original [GamesLane](https://github.com
 - [User manual](docs/user-manual.md): how to play, sessions and seats, and the rules of every game.
 - [Developer guide](docs/developer-guide.md): architecture, project structure, the hub API, database, setup, deployment and project status.
 - [App Store submission](docs/app-store.md): the iPhone app's listing, privacy answers, age rating and review notes.
+- [Google Play submission](docs/play-store.md): setting up Google Play and Firebase, and the Android app's listing, Data safety answers, content rating and review notes.
 
 ## Tech stack
 
@@ -28,7 +29,7 @@ It is a complete reimplementation of the original [GamesLane](https://github.com
 - Plain HTML, CSS and JavaScript (no build step)
 - xUnit tests
 - Hosted on Render (Docker)
-- iPhone app: Capacitor, showing the site, with turn notifications through Apple's push notification service (see the [developer guide](docs/developer-guide.md#iphone-app))
+- iPhone and Android apps: Capacitor, showing the site, with turn notifications through Apple's push notification service and Firebase Cloud Messaging (see the developer guide's [iPhone app](docs/developer-guide.md#iphone-app) and [Android app](docs/developer-guide.md#android-app))
 
 ## Getting started
 
@@ -54,7 +55,7 @@ dotnet test
 ```
 GamesLane.Server/        ASP.NET Core backend: game rules, sessions, SignalR hub, auth, database, and the web pages (wwwroot/)
 GamesLane.Server.Tests/  Unit tests
-GamesLane.iOS/           iPhone app (Capacitor)
-docs/                    User manual, developer guide and App Store submission
+GamesLane.Mobile/        iPhone and Android apps (Capacitor)
+docs/                    User manual, developer guide, App Store and Google Play submissions
 Dockerfile               Build for Render
 ```

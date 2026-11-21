@@ -344,6 +344,24 @@ public class IdentityTests
         Assert.True((apple with { KeyId = "ABC123DEFG", PrivateKey = "-----BEGIN PRIVATE KEY-----" }).CanSignInOnWebsite);
     }
 
+    [Fact]
+    public void The_asset_links_let_join_links_and_the_sign_in_tab_open_the_Android_app_once_its_certificates_are_set()
+    {
+        var configuration = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
+        {
+            ["Android:PackageName"] = "com.gameslane.app",
+            ["Android:CertificateFingerprints"] = "aa:bb:cc, DD:EE:FF,aa:bb:cc",
+        }).Build();
+
+        var android = AndroidSettings.From(configuration);
+        var json = System.Text.Json.JsonSerializer.Serialize(android.AssetLinks());
+
+        Assert.Equal(
+            """[{"relation":["delegate_permission/common.handle_all_urls","delegate_permission/common.get_login_creds"],"target":{"namespace":"android_app","package_name":"com.gameslane.app","sha256_cert_fingerprints":["AA:BB:CC","DD:EE:FF"]}}]""",
+            json);
+        Assert.Empty((android with { CertificateFingerprints = [] }).AssetLinks());
+    }
+
     // Sign in with Apple in the iPhone app: an identity token signs in only if Apple signed it for the app, it has not
     // expired, it carries the hash of the page's nonce, and it was not used before.
     private const string AppleSubject = "001234.abcdef0123456789.1234";

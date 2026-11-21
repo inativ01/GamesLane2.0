@@ -328,7 +328,7 @@ $("join-form").addEventListener("submit", async (event) => {
 // The offer to install GamesLane as an app (see manifest.webmanifest), under the main menu. Browsers that can install
 // it themselves (Chrome and Edge, on Android and on computers) tell the page so, and Install app opens their install
 // dialog. On iPhone and iPad, only Safari's Share menu can install it, so Install app shows how. Not offered in the
-// installed app (or the iPhone app, GamesLane.iOS), once it is installed, or after Not now (remembered in this browser).
+// installed app (or the iPhone and Android apps, GamesLane.Mobile), once it is installed, or after Not now (remembered in this browser).
 const INSTALL_DISMISSED_KEY = "installDismissed";
 const isInstalledApp = matchMedia("(display-mode: standalone)").matches || navigator.standalone === true
     || window.Capacitor?.isNativePlatform?.() === true;

@@ -112,18 +112,19 @@ public static class AuthSetup
     public const string LoginRateLimit = "login";
 
     /// <summary>
-    /// Where an external sign-in started by the iPhone app returns to (see <see cref="MapExternalSignInEndpoints"/>).
+    /// Where an external sign-in started by the iPhone or Android app returns to (see <see cref="MapExternalSignInEndpoints"/>).
     /// </summary>
     public const string AppSignInPath = "/auth/app-signin";
 
     /// <summary>
-    /// The address on the site that ends the iPhone app's sign-in window, which only the app can receive (see
-    /// <see cref="AppleSettings.SiteAssociation"/>). Opened anywhere else, it goes to the main screen.
+    /// The address on the site that ends the app's sign-in window, which only the app can receive (see
+    /// <see cref="AppleSettings.SiteAssociation"/> and <see cref="AndroidSettings.AssetLinks"/>). Opened anywhere else, it
+    /// goes to the main screen.
     /// </summary>
     public const string AppReturnPath = "/auth/app-return";
 
     /// <summary>
-    /// How long the code that brings an external sign-in back to the iPhone app is valid.
+    /// How long the code that brings an external sign-in back to the app is valid.
     /// </summary>
     public static readonly TimeSpan AppSignInCodeLifetime = TimeSpan.FromMinutes(5);
 
@@ -228,6 +229,7 @@ public static class AuthSetup
 
         builder.Services.AddSingleton(new AuthProviders(enabled));
         builder.Services.AddSingleton(apple);
+        builder.Services.AddSingleton(AndroidSettings.From(builder.Configuration));
         builder.Services.AddSingleton<UsedAppSignInCodes>();
         builder.Services.AddSingleton<AppleIdentityTokens>();
         builder.Services.AddSingleton<AppleAccountTokens>();
@@ -245,12 +247,13 @@ public static class AuthSetup
     /// <summary>
     /// Maps external sign-in: <c>GET /auth/signin/{provider}</c> starts it, and <c>POST /auth/external</c> exchanges
     /// its result for a login token, creating the user on first sign-in.
-    /// The iPhone app signs in with <c>?app=true&amp;challenge=...</c> in Apple's sign-in window, whose cookies the app's
-    /// web view does not share: <c>GET /auth/app-signin</c> then returns to the app with a short-lived code (see
-    /// <see cref="AppReturnUrl"/>), which the page exchanges for a login token with <c>POST /auth/app-signin</c>, with the
-    /// verifier of the challenge (see <see cref="AppSignInChallenge"/>). Sign in with Apple in the app uses Apple's own
-    /// sheet instead, whose identity token the page exchanges with <c>POST /auth/apple-app</c>.
-    /// Also maps <c>/.well-known/apple-app-site-association</c>.
+    /// The iPhone and Android apps sign in with <c>?app=true&amp;challenge=...</c> in Apple's sign-in window or a Chrome
+    /// Auth Tab, whose cookies the app's web view does not share: <c>GET /auth/app-signin</c> then returns to the app with
+    /// a short-lived code (see <see cref="AppReturnUrl"/>), which the page exchanges for a login token with
+    /// <c>POST /auth/app-signin</c>, with the verifier of the challenge (see <see cref="AppSignInChallenge"/>). Sign in
+    /// with Apple in the iPhone app uses Apple's own sheet instead, whose identity token the page exchanges with
+    /// <c>POST /auth/apple-app</c>; the Android app signs in with Apple as with the other providers.
+    /// Also maps <c>/.well-known/apple-app-site-association</c> and <c>/.well-known/assetlinks.json</c>.
     /// </summary>
     public static void MapExternalSignInEndpoints(this WebApplication app)
     {
@@ -309,6 +312,7 @@ public static class AuthSetup
         }).RequireRateLimiting(LoginRateLimit);
 
         app.MapGet("/.well-known/apple-app-site-association", (AppleSettings apple) => Results.Json(apple.SiteAssociation()));
+        app.MapGet("/.well-known/assetlinks.json", (AndroidSettings android) => Results.Json(android.AssetLinks()));
     }
 
     /// <summary>

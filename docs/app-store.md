@@ -1,6 +1,6 @@
 # App Store submission
 
-Everything App Store Connect asks for when submitting the GamesLane iPhone app (`GamesLane.iOS`), ready to copy. Keep it in step with the app: the privacy answers must match the app's privacy manifest (`ios/App/App/PrivacyInfo.xcprivacy`) and the [privacy policy](../GamesLane.Server/wwwroot/privacy.html).
+Everything App Store Connect asks for when submitting the GamesLane iPhone app (`GamesLane.Mobile/ios`), ready to copy. The Android app's submission is in [play-store.md](play-store.md). Keep it in step with the app: the privacy answers must match the app's privacy manifest (`ios/App/App/PrivacyInfo.xcprivacy`) and the [privacy policy](../GamesLane.Server/wwwroot/privacy.html).
 
 - [Before submitting](#before-submitting)
 - [App information](#app-information)

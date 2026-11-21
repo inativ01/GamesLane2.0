@@ -1,0 +1,12 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name" translatable="false">GamesLane</string>
+    <string name="title_activity_main" translatable="false">GamesLane</string>
+    <string name="package_name" translatable="false">com.gameslane.app</string>
+    <string name="custom_url_scheme" translatable="false">com.gameslane.app</string>
+    <!-- The site whose join links and sign-in end open the app (see AndroidManifest.xml and the site's assetlinks.json). -->
+    <string name="app_link_host" translatable="false">gameslane.onrender.com</string>
+    <string name="turn_channel_id" translatable="false">turns</string>
+    <!-- The name of the turn notifications in the phone's settings. -->
+    <string name="turn_channel_name">Your turn</string>
+</resources>

@@ -6,13 +6,14 @@
 const $ = (id) => document.getElementById(id);
 const params = new URLSearchParams(location.search);
 
-// The iPhone app (GamesLane.iOS) and its own features (ios/App/App/GamesLanePlugin.swift): signing in with a provider
-// in Apple's sign-in window, vibrating, and turn notifications. appPlugin is null on the website and in app versions
-// without the plugin.
+// The iPhone and Android apps (GamesLane.Mobile) and their own features (ios/App/App/GamesLanePlugin.swift and
+// android/app/src/main/java/com/gameslane/app/GamesLanePlugin.java): signing in with a provider in the phone's sign-in
+// window, vibrating, and turn notifications. appPlugin is null on the website and in app versions without the plugin.
 const isNativeApp = window.Capacitor?.isNativePlatform?.() === true;
 const appPlugin = isNativeApp ? window.Capacitor.Plugins?.GamesLane ?? null : null;
+const appPlatform = isNativeApp ? window.Capacitor.getPlatform?.() ?? "ios" : null;
 
-// Vibrates the device when the user's turn comes: in the iPhone app, and in browsers that can (not Safari).
+// Vibrates the device when the user's turn comes: in the apps, and in browsers that can (not Safari).
 function vibrateForTurn() {
     if (appPlugin) {
         appPlugin.vibrate().catch(() => {});
@@ -21,7 +22,7 @@ function vibrateForTurn() {
     }
 }
 
-// Turn notifications in the iPhone app (see TurnNotifier on the server): the app registers the device for the
+// Turn notifications in the apps (see TurnNotifier on the server): the app registers the device for the
 // logged-in user, in the page's language, on every page, and asks the user to allow notifications once they are seated
 // in a game (ask). Without the permission, or in app versions without registerForNotifications, nothing happens.
 let notificationsAsked = false;
@@ -31,13 +32,15 @@ async function registerForNotifications(ask) {
     notificationsAsked ||= ask;
     try {
         const device = await appPlugin.registerForNotifications({ ask });
-        await postJson("/api/notifications/device", { token: device.token, sandbox: device.sandbox, language: language.code });
+        await postJson("/api/notifications/device", {
+            token: device.token, sandbox: device.sandbox, language: language.code, platform: device.platform ?? appPlatform,
+        });
     } catch {
         // Not allowed, or the server could not be reached: no notifications this time.
     }
 }
 
-// In the iPhone app, the screen stays on while a game is played (e.g. a shared screen on the table), and for
+// In the apps, the screen stays on while a game is played (e.g. a shared screen on the table), and for
 // AWAKE_AFTER_GAME once it is over, so the result can be read; elsewhere it dims as usual. The app keeps the setting
 // across pages, so every page starts by turning it off.
 const AWAKE_AFTER_GAME = 5 * 60 * 1000;
@@ -85,7 +88,7 @@ if ("serviceWorker" in navigator) {
 const TOKEN_KEY = "loginToken";
 // The login token this tab had before logging in or out. The next page load gives that user's seats to the new user.
 const PREVIOUS_TOKEN_KEY = "previousToken";
-// What the iPhone app's sign-in brings back to the reloaded page (see completeExternalSignIn). Declared before
+// What the app's sign-in brings back to the reloaded page (see completeExternalSignIn). Declared before
 // accountReady, which reads them as soon as the page loads.
 const APP_SIGNIN_CODE_KEY = "appSignInCode";
 const APP_SIGNIN_VERIFIER_KEY = "appSignInVerifier";
@@ -271,7 +274,7 @@ async function restartConnection() {
     if (ok) connectionRestored();
 }
 
-// Tells the server when the page goes out of view (e.g. the iPhone app in the background) or comes back, so the app's
+// Tells the server when the page goes out of view (e.g. the app in the background) or comes back, so the app's
 // user is notified as soon as their turn comes while it is out of view. A new connection counts as in view.
 function reportPageHidden() {
     if (connection.state === signalR.HubConnectionState.Connected) {
@@ -443,7 +446,7 @@ async function call(method, ...args) {
 }
 
 // After signing in with an external provider (e.g. Google), the page returns with ?signin=external
-// and exchanges the short-lived sign-in cookie for this tab's login token. In the iPhone app, the page reloads with
+// and exchanges the short-lived sign-in cookie for this tab's login token. In the apps, the page reloads with
 // ?signin=app instead, and exchanges the code the app's sign-in window returned with, and the verifier of the
 // challenge the sign-in started with (see signInInApp); or with ?signin=apple, and exchanges the identity token of
 // Sign in with Apple, with its nonce, the user's name and Apple's authorization code (see signInWithAppleInApp).
@@ -493,7 +496,7 @@ async function secretAndHash() {
     return { secret, hash };
 }
 
-// After signing in in the iPhone app, reloads the page with ?signin=<kind> to finish (see completeExternalSignIn).
+// After signing in in the app, reloads the page with ?signin=<kind> to finish (see completeExternalSignIn).
 function finishSignInInApp(kind, code, verifier, name = "", authorizationCode = "") {
     sessionStorage.setItem(APP_SIGNIN_CODE_KEY, code);
     sessionStorage.setItem(APP_SIGNIN_VERIFIER_KEY, verifier);
@@ -504,8 +507,9 @@ function finishSignInInApp(kind, code, verifier, name = "", authorizationCode = 
     location.replace(url.pathname + url.search);
 }
 
-// In the iPhone app, signs in with a provider in Apple's sign-in window, which ends at /auth/app-return on this site
-// (an address only the app can receive) with a code (or an error); the page then reloads with ?signin=app to exchange
+// In the apps, signs in with a provider in the phone's sign-in window (Apple's on iPhones, a Chrome Auth Tab on
+// Android), which ends at /auth/app-return on this site (an address only the app can receive, see
+// apple-app-site-association and assetlinks.json) with a code (or an error); the page then reloads with ?signin=app to exchange
 // it. The sign-in starts with the challenge (SHA-256 hash) of a random verifier that only this page knows. Returns
 // false if the sign-in did not complete; the user closing the window is not an error.
 async function signInInApp(provider) {
@@ -891,8 +895,9 @@ const PROVIDER_LOGOS = {
 };
 
 // The profile dialog's login part, for guests: Log in and Create account tabs, and a button per external provider
-// (Apple first). The iPhone app signs in with providers in Apple's sign-in window (see signInInApp), and with Apple in
-// Apple's own sheet (see signInWithAppleInApp), which the app offers even when the website does not; an app version
+// (Apple first). The apps sign in with providers in the phone's sign-in window (see signInInApp); the iPhone app signs
+// in with Apple in Apple's own sheet (see signInWithAppleInApp), which it offers even when the website does not, and
+// the Android app signs in with Apple as with the other providers, when the website offers it. An app version
 // without the plugin leaves out Google, which does not allow sign-in inside an app's web view.
 // `profile` gives the display name and icon for a new account.
 function setUpLogin(dialog, profile) {
