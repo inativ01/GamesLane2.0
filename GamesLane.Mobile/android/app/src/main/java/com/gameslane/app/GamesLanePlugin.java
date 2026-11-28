@@ -36,7 +36,7 @@ import com.google.firebase.messaging.FirebaseMessaging;
  * the same as the iPhone app's (ios/App/App/GamesLanePlugin.swift): signing in with a provider in a Chrome Auth Tab,
  * vibrating when the user's turn comes, turn notifications, and keeping the screen on during a game. Join links (App
  * Links, https://gameslane.onrender.com/join/...) and tapped notifications open their page in the app's web view, and
- * the back button goes back in it.
+ * the back button goes back in it (on a TV, it leaves the app: the web TV app has no pages to go back to).
  */
 @CapacitorPlugin(
     name = "GamesLane",
@@ -74,7 +74,7 @@ public class GamesLanePlugin extends Plugin {
                     @Override
                     public void handleOnBackPressed() {
                         WebView webView = getBridge().getWebView();
-                        if (webView.canGoBack()) {
+                        if (webView.canGoBack() && !MainActivity.isTv(getContext())) {
                             webView.goBack();
                         } else {
                             getActivity().moveTaskToBack(true);

@@ -20,8 +20,9 @@ public record TvPairRequest(string? Code);
 public record TvTexts(IReadOnlyDictionary<string, IReadOnlyDictionary<string, string>> Translations);
 
 /// <summary>
-/// The Apple TV app (see <see cref="TvService"/>): the services, and the endpoints where a TV registers and gets the
-/// site's texts, and where users pair TVs, list them and unpair them.
+/// The TV apps (the Apple TV app, and the web TV app, <c>tv.html</c>; see <see cref="TvService"/>): the services, and the
+/// endpoints where a TV registers and gets the site's texts and its pairing QR code, and where users pair TVs, list them
+/// and unpair them.
 /// </summary>
 public static class TvEndpoints
 {
@@ -33,7 +34,7 @@ public static class TvEndpoints
     /// <summary>
     /// The name of a TV that gives none.
     /// </summary>
-    public const string DefaultName = "Apple TV";
+    public const string DefaultName = "TV";
 
     /// <summary>
     /// The icon of TVs.
@@ -44,6 +45,11 @@ public static class TvEndpoints
     /// The longest TV name kept.
     /// </summary>
     public const int MaxNameLength = 30;
+
+    /// <summary>
+    /// The longest text made into a QR code.
+    /// </summary>
+    public const int MaxQrTextLength = 200;
 
     private const int TvsPerHour = 20;
 
@@ -76,8 +82,15 @@ public static class TvEndpoints
     }
 
     /// <summary>
-    /// Maps <c>/api/tv/register</c>, <c>/api/tv/texts/{language}</c>, <c>/api/tv/pair</c>, <c>/api/tv</c> and
-    /// <c>/api/tv/{tvId}</c>.
+    /// The QR code of <paramref name="text"/> as an SVG picture, or null for no text or one longer than
+    /// <see cref="MaxQrTextLength"/>.
+    /// </summary>
+    public static string? QrSvg(string? text) =>
+        text is { Length: > 0 and <= MaxQrTextLength } ? QrCode.Encode(text)?.ToSvg() : null;
+
+    /// <summary>
+    /// Maps <c>/api/tv/register</c>, <c>/api/tv/texts/{language}</c>, <c>/api/tv/qr</c>, <c>/api/tv/pair</c>,
+    /// <c>/api/tv</c> and <c>/api/tv/{tvId}</c>.
     /// </summary>
     public static void MapTvEndpoints(this WebApplication app)
     {
@@ -91,6 +104,10 @@ public static class TvEndpoints
 
         app.MapGet("/api/tv/texts/{language}", (string language, TvTexts texts) =>
             Results.Ok(texts.Translations.TryGetValue(language, out var translations) ? translations : new Dictionary<string, string>()));
+
+        // The web TV app's pairing screen shows the QR code of the site's address with its code.
+        app.MapGet("/api/tv/qr", (string? text) =>
+            QrSvg(text) is { } svg ? Results.Text(svg, "image/svg+xml") : Results.BadRequest(new { error = "Give a short text." }));
 
         // Typing or scanning the code proves the user is in front of the TV; codes are guessed no faster than logins.
         app.MapPost("/api/tv/pair", async (TvPairRequest request, HttpContext context, TvService tvs) =>

@@ -6,6 +6,13 @@
 const $ = (id) => document.getElementById(id);
 const params = new URLSearchParams(location.search);
 
+// A game page shown by the web TV app (tv.html, see tv.js) in its frame: <page>?session=CODE&display=tv. It logs in as
+// the TV (its token is kept by tv.js), watches the game without the top bar, the menu, the chat or the help, always
+// with sounds, and tells tv.js when the game cannot be found.
+const tvDisplay = params.get("display") === "tv";
+const TV_TOKEN_KEY = "tvToken";
+document.documentElement.classList.toggle("tv-display", tvDisplay);
+
 // The iPhone and Android apps (GamesLane.Mobile) and their own features (ios/App/App/GamesLanePlugin.swift and
 // android/app/src/main/java/com/gameslane/app/GamesLanePlugin.java): signing in with a provider in the phone's sign-in
 // window, vibrating, and turn notifications. appPlugin is null on the website and in app versions without the plugin.
@@ -28,7 +35,7 @@ function vibrateForTurn() {
 let notificationsAsked = false;
 
 async function registerForNotifications(ask) {
-    if (typeof appPlugin?.registerForNotifications !== "function" || !token || (ask && notificationsAsked)) return;
+    if (tvDisplay || typeof appPlugin?.registerForNotifications !== "function" || !token || (ask && notificationsAsked)) return;
     notificationsAsked ||= ask;
     try {
         const device = await appPlugin.registerForNotifications({ ask });
@@ -49,7 +56,7 @@ let awakePhase = null;
 let awakeTimer = 0;
 
 function keepScreenAwake(on) {
-    if (typeof appPlugin?.keepAwake !== "function" || screenKeptAwake === on) return;
+    if (tvDisplay || typeof appPlugin?.keepAwake !== "function" || screenKeptAwake === on) return;
     screenKeptAwake = on;
     appPlugin.keepAwake({ on }).catch(() => {});
 }
@@ -106,6 +113,7 @@ if (params.get("tv")) {
 }
 
 function loadToken() {
+    if (tvDisplay) return localStorage.getItem(TV_TOKEN_KEY) ?? "";
     let value = sessionStorage.getItem(TOKEN_KEY);
     if (value === null) {
         value = localStorage.getItem(TOKEN_KEY) ?? "";
@@ -117,6 +125,10 @@ function loadToken() {
 let token = loadToken();
 
 function saveToken(value) {
+    if (tvDisplay) {
+        token = value;
+        return;
+    }
     if (!value && localStorage.getItem(TOKEN_KEY) === token) {
         localStorage.removeItem(TOKEN_KEY);
     } else if (value) {
@@ -159,6 +171,9 @@ const SETTINGS_KEY = "settings";
 const SETTINGS_EVENT = "settingschange";
 
 function userSettings() {
+    if (tvDisplay) {
+        return { chat: false, sound: true, cards: "New" };
+    }
     if (account?.settings) {
         return account.settings;
     }
@@ -222,7 +237,7 @@ async function transferSeats() {
 const accountReady = (async () => {
     await completeExternalSignIn();
     account = await fetchAccount();
-    if (account && !account.signedIn) {
+    if (account && !account.signedIn && !tvDisplay) {
         saveToken("");
         if (await becomeGuest()) {
             account = await fetchAccount();
@@ -373,7 +388,7 @@ function visitSource(gameType) {
 
 async function reportVisit() {
     const gameType = Object.keys(GAME_PAGES).find((type) => GAME_PAGES[type] === location.pathname) ?? null;
-    if (!gameType && location.pathname !== "/" && location.pathname !== "/index.html") return;
+    if (tvDisplay || (!gameType && location.pathname !== "/" && location.pathname !== "/index.html")) return;
     const today = new Date().toISOString().slice(0, 10);
     let seen = null;
     try {
@@ -1221,12 +1236,12 @@ function el(tag, className, ...content) {
 // game page the game (and the session lobby while it is shown, see setLobby), and the other sections stay folded, so
 // any game's rules can be read from anywhere. On a game page, the lobby's section links to the game's section. The first time a user opens the main screen or a game's page in this
 // browser, a tip under ? points to it for 10 seconds (after the splash screen). Pages without help (e.g. the admin page)
-// have no ?.
+// have no ?, nor have game pages on a TV.
 function startHelp() {
     const page = location.pathname === "/" ? "/index.html" : location.pathname;
     const section = page === "/index.html" ? "main-screen"
         : Object.values(GAME_PAGES).includes(page) ? page.slice(1, -".html".length) : null;
-    if (!section) {
+    if (!section || tvDisplay) {
         return { setLobby() {} };
     }
     let topics = [section];
@@ -1335,16 +1350,22 @@ if (navigator.audioSession) {
 }
 
 // The fanfare is made by the browser, so no sound file is needed. Browsers only allow sound after the user has tapped
-// the page, so it is set up on each tap and resumed when the page is shown again.
+// the page, so it is set up on each tap and resumed when the page is shown again. A TV is never tapped: its page sets it
+// up at once (TV browsers and the Android TV app allow it), and again on each press of the remote's keys.
 let celebrationAudio = null;
-addEventListener("pointerdown", () => {
+function setUpAudio() {
     try {
         celebrationAudio ??= new AudioContext();
         celebrationAudio.resume().catch(() => {});
     } catch {
         // No sound on this browser.
     }
-}, { capture: true });
+}
+addEventListener("pointerdown", setUpAudio, { capture: true });
+if (tvDisplay) {
+    setUpAudio();
+    addEventListener("keydown", setUpAudio, { capture: true });
+}
 document.addEventListener("visibilitychange", () => {
     if (!document.hidden) celebrationAudio?.resume().catch(() => {});
 });
@@ -2752,8 +2773,8 @@ function startSessionPage(gameType, render, seatRole = (seat) => t("Seat {n}", {
         lastState = state;
         view.mySeats = state.seats.flatMap((s, i) => (s && s.playerId === view.playerId ? [i] : []));
         // The server sends the state to everyone just before it answers EnterSession, so until then (no playerId yet)
-        // the user's seats are not known.
-        if (state.isPublic && !view.isPlayer) {
+        // the user's seats are not known. A TV watches a public game as any game.
+        if (state.isPublic && !view.isPlayer && !tvDisplay) {
             if (view.playerId && !leaving) location.replace("/?left=1");
             return;
         }
@@ -2829,6 +2850,7 @@ function startSessionPage(gameType, render, seatRole = (seat) => t("Seat {n}", {
             entry = await call("EnterSession", sessionId);
         } catch {
             $("session").hidden = true;
+            if (tvDisplay) parent.postMessage({ tvGameNotFound: sessionId }, location.origin);
             return;
         } finally {
             hideBusy();

@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>GamesLane</title>
+    <link rel="icon" href="images/logo-32.png">
+    <link rel="apple-touch-icon" href="images/logo-180.png">
+    <link rel="manifest" href="/manifest.webmanifest">
+    <meta name="apple-mobile-web-app-title" content="GamesLane">
+    <meta name="theme-color" content="#19285d">
+    <link rel="stylesheet" href="styles.css">
+    <!-- SignalR sets a global "t" while it loads, so it comes before i18n.js, which defines t(). -->
+    <script src="https://cdn.jsdelivr.net/npm/@microsoft/signalr@10.0.11/dist/browser/signalr.min.js"></script>
+    <script src="lang/he.js"></script>
+    <script src="lang/es.js"></script>
+    <script src="lang/fr.js"></script>
+    <script src="lang/pt.js"></script>
+    <script src="lang/zh-CN.js"></script>
+    <script src="lang/zh-TW.js"></script>
+    <script src="i18n.js"></script>
+</head>
+<body class="tv-app">
+<!-- The web TV app: see tv.js. -->
+<div id="tv-panel" class="tv-panel"></div>
+<iframe id="tv-game" class="tv-game" title="GamesLane" hidden></iframe>
+<p id="tv-reconnecting" class="tv-reconnecting" hidden></p>
+<script src="tv.js"></script>
+</body>
+</html>

@@ -195,7 +195,10 @@ On iPhone and iPad, the installed app starts as a new guest: log in to your acco
 
 ## Watching on a TV
 
-With the GamesLane app on an Apple TV, the TV shows the games you open, as someone watching: the table and what every player sees, never your cards or anyone's hidden cards, with the game sounds and without the chat. The Apple TV app is not in the App Store yet. It shows every game's lobby (the players), and Poker Heist during the game: the shared cards, the chips, the chip table with what the heist's cards did, the hands as they are revealed, and the heist's cards with what each one does. Other games show "This game cannot be shown on the TV yet." until they are added.
+With the GamesLane app on a TV, the TV shows the games you open, as someone watching: the table and what every player sees, never your cards or anyone's hidden cards, with the game sounds and without the chat.
+
+- **Google TV and Android TV** (the GamesLane app from Google Play; coming soon), and any TV or computer with a browser at `gameslane.onrender.com/tv.html`: every game, as it shows on the website to someone watching. LG and Samsung TVs are planned.
+- **Apple TV** (not in the App Store yet): every game's lobby (the players), and Poker Heist during the game: the shared cards, the chips, the chip table with what the heist's cards did, the hands as they are revealed, and the heist's cards with what each one does. Other games show "This game cannot be shown on the TV yet." until they are added.
 
 - **Pairing** (with an account): open GamesLane on the TV. It shows a QR code and a code (a new one every 10 minutes, and after each use), with the names of the accounts already paired with it. Scan the QR code with your phone, or open your profile and enter the code under **TVs**, then tap **Pair TV**. As a guest, you are first asked to log in or create an account. You can pair several TVs, and a TV can be paired with several accounts.
 - **Watch on TV:** in your profile, under **TVs**, turn on **Watch on TV** for a TV that is open (**Ready**). From then on, the games you open in this tab show on the TV too, in your language, until you close the tab or turn Watch on TV off. Between games, the TV says it is waiting for you.

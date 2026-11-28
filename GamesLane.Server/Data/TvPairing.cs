@@ -1,7 +1,7 @@
 namespace GamesLane.Server.Data;
 
 /// <summary>
-/// A TV running the Apple TV app, paired with a saved user, who can then watch their games on it. A user can pair many
+/// A TV running a TV app, paired with a saved user, who can then watch their games on it. A user can pair many
 /// TVs, and a TV many users. Deleted 90 days after its last use, and with the user.
 /// </summary>
 public class TvPairing

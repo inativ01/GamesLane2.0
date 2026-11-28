@@ -23,7 +23,7 @@ public record TvViewer(string Name, string Icon, string Language, string? Sessio
 public record PairedTv(string TvId, string Name, TvAvailability Status);
 
 /// <summary>
-/// The Apple TV app (see the developer guide): pairing TVs with saved users through the code a TV shows, and Watch on
+/// The TV apps (see the developer guide): pairing TVs with saved users through the code a TV shows, and Watch on
 /// TV, which shows the games a user opens on one of their TVs, as an observer. Every change is sent to the TV as
 /// <see cref="TvUpdated"/>; the user's pages whose Watch on TV ends get <see cref="WatchOnTvEnded"/>.
 /// </summary>

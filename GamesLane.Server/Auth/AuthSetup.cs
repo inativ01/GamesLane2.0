@@ -107,7 +107,7 @@ public static class AuthSetup
     public const string RegisteredKind = "Registered";
 
     /// <summary>
-    /// The kind of a TV running the Apple TV app (see <c>Tv/TvService</c>): it only watches games, so it has no profile.
+    /// The kind of a TV running a TV app (see <c>Tv/TvService</c>): it only watches games, so it has no profile.
     /// Its token does not expire, like a guest's.
     /// </summary>
     public const string TvKind = "TV";

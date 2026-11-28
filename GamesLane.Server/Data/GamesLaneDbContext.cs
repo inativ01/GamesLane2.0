@@ -56,7 +56,7 @@ public class GamesLaneDbContext(DbContextOptions<GamesLaneDbContext> options) : 
     public DbSet<DeviceToken> DeviceTokens => Set<DeviceToken>();
 
     /// <summary>
-    /// The TVs (the Apple TV app) paired with users.
+    /// The TVs (the TV apps) paired with users.
     /// </summary>
     public DbSet<TvPairing> TvPairings => Set<TvPairing>();
 

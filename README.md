@@ -10,7 +10,7 @@ GamesLane is an online platform for playing classic board and card games with fr
 - **Play together in real time:** a private game with family and friends has a code and a join link; a public game matches you with other people on GamesLane. A typical setup is a shared screen (a TV or laptop) showing the table, while each player plays on their own phone.
 - **Accounts:** everyone starts as a guest (a random name and icon). Signing in with a username and password, or with Apple, Google, Microsoft or Discord, keeps the profile, game order and game options on any device. Accounts unused for 30 days are deleted automatically.
 - **Never lose a game:** players who drop out get their seat back when they return; meanwhile the others can skip their turn (Rich man, poor man, Yaniv, Dominoes) or end the game, a newcomer can take over their seat, and sessions survive a server restart (they are kept for 6 hours after everyone has left).
-- **Watch on TV:** a registered user pairs a TV running the Apple TV app (in testing; Poker Heist first) with the code or QR code it shows, and the games they open then also show on the TV, as an observer.
+- **Watch on TV:** a registered user pairs a TV with the code or QR code it shows, and the games they open then also show on the TV, as an observer: every game on Google TV / Android TV (the Android app) or any TV browser (`/tv.html`), and Poker Heist first on Apple TV (in testing). LG, Samsung and Roku are planned.
 - **Languages:** English, Hebrew (right to left), Spanish (Mexico), French (France), Portuguese (Brazil), Simplified Chinese (mainland China) and Traditional Chinese (Taiwan), chosen from the flag in the top bar.
 - **Help on every page:** the ? button shows how to use the current page and the rules of its game, short first with more details on request.
 
@@ -30,6 +30,7 @@ GamesLane is an online platform for playing classic board and card games with fr
 - Hosted on Render (Docker)
 - iPhone and Android apps: Capacitor, showing the site, with turn notifications through Apple's push notification service and Firebase Cloud Messaging (see the developer guide's [iPhone app](docs/developer-guide.md#iphone-app) and [Android app](docs/developer-guide.md#android-app))
 - Apple TV app: native SwiftUI, drawing the games from the hub's public state (see the [developer guide](docs/developer-guide.md#apple-tv-app))
+- Web TV app: a page of the site that shows each game's own page as a TV (see the [developer guide](docs/developer-guide.md#web-tv-app-google-tv-lg-samsung))
 
 ## Getting started
 

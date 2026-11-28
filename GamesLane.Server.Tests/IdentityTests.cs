@@ -252,7 +252,7 @@ public class IdentityTests
         Assert.True(used.TryUse("code", time.Now.AddMinutes(5)));
     }
 
-    // TVs (the Apple TV app): their login, pairing codes, and Watch on TV
+    // TVs (the TV apps): their login, pairing codes and QR codes, and Watch on TV
 
     private static readonly Guid OtherId = Guid.Parse("1c2d3e4f-5a6b-4c7d-8e9f-0a1b2c3d4e5f");
     private static readonly DateTimeOffset TvStart = new(2026, 11, 22, 12, 0, 0, TimeSpan.Zero);
@@ -274,11 +274,62 @@ public class IdentityTests
 
     [Theory]
     [InlineData("  Living \n  Room ", "Living Room")]
-    [InlineData("", "Apple TV")]
-    [InlineData(null, "Apple TV")]
+    [InlineData("", "TV")]
+    [InlineData(null, "TV")]
     [InlineData("A very long name for the TV in the living room", "A very long name for the TV in")]
     public void A_tv_is_named_on_one_short_line(string? name, string expected) =>
         Assert.Equal(expected, TvEndpoints.TvName(name));
+
+    // The standard's example: "HELLO WORLD" in version 1-M, and its 10 error correction codewords.
+    [Fact]
+    public void A_qr_codes_error_correction_matches_the_standard()
+    {
+        byte[] data = [32, 91, 11, 120, 209, 114, 220, 77, 67, 64, 236, 17, 236, 17, 236, 17];
+
+        Assert.Equal([196, 35, 39, 119, 235, 215, 231, 226, 93, 23], QrCode.ReedSolomonRemainder(data, QrCode.ReedSolomonDivisor(10)));
+        Assert.Equal(0b101010000010010, QrCode.FormatBits(0));
+        Assert.Equal(0b101000100100101, QrCode.FormatBits(1));
+    }
+
+    [Fact]
+    public void A_pairing_address_makes_the_smallest_qr_code_with_its_fixed_patterns()
+    {
+        var qr = QrCode.Encode("https://gameslane.onrender.com/?tv=ABCDEF")!;
+
+        Assert.Equal(3, qr.Version);
+        Assert.Equal(29, qr.Size);
+        foreach (var (x, y) in new[] { (0, 0), (qr.Size - 7, 0), (0, qr.Size - 7) })
+        {
+            // A finder: a dark ring, a light ring, a dark 3 × 3 middle, and a light separator around it.
+            Assert.True(qr[x, y] && qr[x + 6, y + 6] && qr[x + 2, y + 2] && qr[x + 4, y + 3]);
+            Assert.False(qr[x + 1, y + 1] || qr[x + 5, y + 1]);
+        }
+
+        Assert.False(qr[7, 7]);
+        Assert.True(qr[8, qr.Size - 8]);
+        Assert.All(Enumerable.Range(8, qr.Size - 16), i => Assert.Equal(i % 2 == 0, qr[i, 6]));
+        // The alignment pattern of version 3, at (22, 22).
+        Assert.True(qr[22, 22] && qr[20, 20] && !qr[21, 21]);
+        // The format bits, around the top left finder, then split between the other two.
+        var bits = QrCode.FormatBits(qr.Mask);
+        Assert.All(Enumerable.Range(0, 6), i => Assert.Equal(((bits >> i) & 1) != 0, qr[8, i]));
+        Assert.All(Enumerable.Range(0, 8), i => Assert.Equal(((bits >> i) & 1) != 0, qr[qr.Size - 1 - i, 8]));
+    }
+
+    [Fact]
+    public void Qr_codes_hold_up_to_213_bytes_and_the_endpoint_refuses_longer_texts()
+    {
+        Assert.Equal(1, QrCode.Encode("GamesLane")!.Version);
+        Assert.Equal(10, QrCode.Encode(new string('a', 200))!.Version);
+        Assert.Equal(57, QrCode.Encode(new string('a', 213))!.Size);
+        Assert.Null(QrCode.Encode(new string('a', 214)));
+
+        var svg = TvEndpoints.QrSvg("https://gameslane.onrender.com/?tv=ABCDEF")!;
+        Assert.StartsWith("<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 37 37\"", svg);
+        Assert.Null(TvEndpoints.QrSvg(""));
+        Assert.Null(TvEndpoints.QrSvg(null));
+        Assert.Null(TvEndpoints.QrSvg(new string('a', TvEndpoints.MaxQrTextLength + 1)));
+    }
 
     [Fact]
     public void A_tv_pairing_code_works_once_while_the_tv_is_open_and_until_it_expires()

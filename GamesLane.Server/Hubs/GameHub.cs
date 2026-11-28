@@ -17,7 +17,7 @@ namespace GamesLane.Server.Hubs;
 /// <see cref="StateUpdated"/> messages. Private, per-player information is returned only to the calling connection.
 /// Players are logged-in users, identified by their user ID, so they keep their seats after a refresh or reconnect.
 /// Games created and players joining someone else's game are counted in <see cref="ActivityCounter"/>. After every
-/// change, <see cref="ITurnNotifier"/> notifies the iPhone app's users whose turn it has become. TVs (the Apple TV app)
+/// change, <see cref="ITurnNotifier"/> notifies the iPhone app's users whose turn it has become. TVs (the TV apps)
 /// connect here too, and show the games of the user who links them (<see cref="TvService"/>). Only admins can start, or
 /// join as a public game, the <see cref="AdminUsers.AdminOnlyGames"/>.
 /// </summary>

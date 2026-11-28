@@ -4,6 +4,7 @@ Setting up Google Play and Firebase for the GamesLane Android app (`GamesLane.Mo
 
 - [Setup](#setup)
 - [Before submitting](#before-submitting)
+- [Google TV and Android TV](#google-tv-and-android-tv)
 - [Store listing](#store-listing)
 - [Graphics](#graphics)
 - [App content](#app-content)
@@ -11,6 +12,7 @@ Setting up Google Play and Firebase for the GamesLane Android app (`GamesLane.Mo
 - [Content rating](#content-rating)
 - [Releases and testing](#releases-and-testing)
 - [Review notes](#review-notes)
+- [Review notes for Google TV](#review-notes-for-google-tv)
 
 ## Setup
 
@@ -96,6 +98,17 @@ gh secret set ANDROID_UPLOAD_KEY_PASSWORD
 - [ ] The closed test (12 testers, 14 days) done, if Play Console asks for it.
 - [ ] Graphics and screenshots.
 - [ ] **App content** and **Data safety** filled in, then the store listing; then a production release.
+- [ ] Google TV: see [Google TV and Android TV](#google-tv-and-android-tv).
+
+## Google TV and Android TV
+
+The same app and listing (`com.gameslane.app`) runs on TVs, where it shows the web TV app (see the developer guide's [Web TV app](developer-guide.md#web-tv-app-google-tv-lg-samsung)). Google reviews the TV version separately, against its [TV app quality](https://developer.android.com/docs/quality-guidelines/tv-app-quality) checklist.
+
+1. **Try it:** Android Studio → Device Manager → **Create device** → **TV** → Google TV (1080p), API 34 or later; then `npm run emulator` and choose it. Check: the banner on the TV's home screen, the pairing screen, pairing from a phone, a game of each kind showing in full on the screen, the sounds, the screen staying on, and the remote's Back button leaving the app.
+2. **Turn on the form factor:** Play Console → the app → **Test and release → Advanced settings → Form factors → + Add form factor → Google TV and Android TV**, and accept its terms.
+3. **TV graphics** (Store presence → Main store listing → the Google TV tab): the TV banner, 1280 × 720 PNG or JPEG (the splash picture with the GamesLane name, like the app's banner), and 1 to 8 TV screenshots, 1920 × 1080 (the emulator's camera button): the pairing screen, a lobby, and three or four games.
+4. **Release** a build with the TV changes to a test track, then **Test and release → Advanced settings → Form factors → Google TV → Manage → opt in to Google TV**, which sends it for TV review (it can take a few weeks). The review notes for the TV are under [Review notes for Google TV](#review-notes-for-google-tv).
+5. **Data safety:** the TV's ID and name (the same as the Apple TV app's) are in [Data safety](#data-safety); update the answers in Play Console before the TV review.
 
 ## Store listing
 
@@ -152,7 +165,8 @@ Policy and programs → App content:
 | Photos and videos → Photos | An uploaded profile picture | Optional | App functionality |
 | App activity → Other user-generated content | Chat messages in a game | Optional | App functionality |
 | App activity → App interactions | The games created or joined and the moves made; anonymous daily counts (visits, games opened, created, joined, finished) | Required | App functionality, Analytics |
-| Device or other IDs | The Firebase registration token for turn notifications, if allowed | Optional | App functionality |
+| Device or other IDs | The Firebase registration token for turn notifications, if allowed; on a TV, the TV's ID, saved with the accounts paired with it | Optional | App functionality |
+| App info and performance → Other | On a TV, the TV's name (e.g. "Living Room TV"), saved with the accounts paired with it and shown to them | Optional | App functionality |
 
 Not collected: email address, phone number, location, contacts, financial information, web browsing history, crash logs or diagnostics. Passwords are kept only as a salted hash.
 
@@ -201,4 +215,21 @@ Chat is available only in private games, played with people one invites by link 
 
 CONTACT
 gameslane@yahoo.com
+```
+
+## Review notes for Google TV
+
+For the TV review, with a review account (a username and password account made for it on the website, its password only in Play Console, never in the repository):
+
+```
+On Google TV and Android TV, GamesLane shows a player's games on the TV, as someone watching them sees them, for a family or group playing together in one room. The games are played on phones, tablets or computers; the TV only shows them, so it needs nothing but the remote to open it. No ads, no purchases, no tracking.
+
+TO TRY IT (needs a second device, e.g. a phone or computer)
+1. Open GamesLane on the TV. It shows a QR code and a pairing code.
+2. On the phone or computer, open https://gameslane.onrender.com and log in with the review account (Log in, at the top right).
+3. Scan the QR code, or open the profile (the name at the top right) and enter the code under TVs, then Pair TV.
+4. In the profile, turn on Watch on TV for this TV. The TV says it is waiting for the player.
+5. On the phone or computer, create a game (for example Backgammon), sit on enough seats and Start. The TV shows the game and follows every move, with sounds.
+
+The remote's Back button leaves the app.
 ```

@@ -24,7 +24,7 @@ public interface IGameHub
     Task SetPageHidden(bool hidden);
 
     /// <summary>
-    /// TVs only (the Apple TV app). Marks the TV open and returns its status: its pairing code, the users paired with it,
+    /// TVs only (the TV apps). Marks the TV open and returns its status: its pairing code, the users paired with it,
     /// and the user whose games it shows. Later changes arrive as <see cref="TvService.TvUpdated"/>; the TV calls this
     /// again when its code expires.
     /// </summary>

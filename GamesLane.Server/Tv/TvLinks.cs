@@ -40,7 +40,7 @@ public record TvChange(IReadOnlyList<string> TvIds, IReadOnlyList<string> EndedC
 }
 
 /// <summary>
-/// The TVs that are open (the Apple TV app connected to the hub), their pairing codes, and the links between users and
+/// The TVs that are open (a TV app connected to the hub), their pairing codes, and the links between users and
 /// TVs (Watch on TV), kept in memory. A TV shows the games of one user at a time, and a user's games show on one TV at a
 /// time. A link lasts while the TV and one of the user's pages are connected; it ends once either has been gone for
 /// <see cref="ReconnectWindow"/> (so it survives the user moving from page to page), or when the user stops it. Each

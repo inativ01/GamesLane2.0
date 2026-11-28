@@ -228,6 +228,25 @@ public partial class TranslationsTests
         Assert.Contains("document.querySelector(\".brand\").addEventListener(\"click\"", home);
     }
 
+    // The web TV app opens each game's page (the server's PageFor) in its frame, as a TV (?display=tv): the page then
+    // logs in with the TV's token, is in the user's language, and never becomes a guest.
+    [Fact]
+    public void The_web_tv_app_shows_every_game_on_its_page_as_a_tv()
+    {
+        var tv = File.ReadAllText(Path.Combine(Wwwroot, "tv.js"));
+        var pages = Regex.Match(tv, @"const TV_GAME_PAGES = \{(.*?)\};", RegexOptions.Singleline).Groups[1].Value;
+        var listed = Regex.Matches(pages, @"(\w+): ""([^""]+)""").ToDictionary(match => match.Groups[1].Value, match => match.Groups[2].Value);
+        Assert.Equal(Enum.GetValues<GameType>().ToDictionary(type => type.ToString(), GameSessionStore.PageFor), listed);
+        Assert.Contains("&display=tv&lang=", tv);
+
+        var common = File.ReadAllText(Path.Combine(Wwwroot, "common.js"));
+        Assert.Contains("const tvDisplay = params.get(\"display\") === \"tv\";", common);
+        Assert.Contains("if (tvDisplay) return localStorage.getItem(TV_TOKEN_KEY)", common);
+        Assert.Contains("!account.signedIn && !tvDisplay", common);
+        Assert.Contains("const TV_TOKEN_KEY = \"tvToken\";", tv);
+        Assert.Contains("query.get(\"display\") === \"tv\" ? query.get(\"lang\")", File.ReadAllText(Path.Combine(Wwwroot, "i18n.js")));
+    }
+
     // On iPhones, the sounds play as background sounds: they do not stop music or a podcast that is playing.
     [Fact]
     public void Sounds_do_not_stop_other_audio()

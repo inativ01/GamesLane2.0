@@ -7,7 +7,8 @@
 // without translations stay in English. The choice is remembered in this browser; until the user chooses, the first of
 // the browser's preferred languages that the page offers, otherwise English. The locale is the variant of the language
 // (e.g. Mexican Spanish), used to choose a voice for reading aloud. Chinese has two languages: Simplified (zh-CN) and
-// Traditional (zh-TW), which browsers set to the Traditional script or to Taiwan, Hong Kong or Macau get.
+// Traditional (zh-TW), which browsers set to the Traditional script or to Taiwan, Hong Kong or Macau get. A game page on
+// a TV (?display=tv, see tv.js) is in the language of the user it shows (?lang=<code>).
 
 var TRANSLATIONS = window.TRANSLATIONS ?? {};
 
@@ -35,7 +36,8 @@ const language = (() => {
     const browserLanguage = (navigator.languages?.length ? navigator.languages : [navigator.language ?? ""])
         .map(languageCode)
         .find((code) => offeredLanguages.some((lang) => lang.code === code));
-    const preferred = localStorage.getItem(LANGUAGE_KEY) ?? browserLanguage;
+    const query = new URLSearchParams(location.search);
+    const preferred = (query.get("display") === "tv" ? query.get("lang") : null) ?? localStorage.getItem(LANGUAGE_KEY) ?? browserLanguage;
     return offeredLanguages.find((lang) => lang.code === preferred) ?? LANGUAGES[0];
 })();
 document.documentElement.lang = language.code;
